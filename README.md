@@ -6,7 +6,7 @@ Los usuarios pueden descubrir planes cercanos, crear su propio parche, unirse a 
 
 El proyecto busca diferenciarse mediante un enfoque basado en la intención: el usuario puede indicar qué quiere hacer, cuándo, cuánto desea gastar y qué tan lejos está dispuesto a desplazarse, y Parchemos le ayuda a encontrar o construir el plan adecuado.
 
-Inicialmente, Parchemos está enfocado en 📍 Villavicencio y el Meta, con una visión de crecimiento hacia otras ciudades de Colombia. Además de conectar usuarios, la plataforma busca integrar 🏪 negocios y emprendimientos locales para promover experiencias, actividades y promociones.
+Inicialmente, Parchemos está enfocado en Villavicencio y el Meta, con una visión de crecimiento hacia otras ciudades de Colombia. Además de conectar usuarios, la plataforma busca integrar negocios y emprendimientos locales para promover experiencias, actividades y promociones.
 
 🎯 Misión
 
@@ -16,4 +16,4 @@ Conectar personas, planes y negocios locales de forma sencilla, creando oportuni
 
 Convertir a Parchemos en una plataforma líder de experiencias sociales locales en Colombia, comenzando en Villavicencio y creciendo hacia otras ciudades. Buscamos transformar la pregunta “¿qué hacemos?” en una oportunidad para descubrir, crear y compartir nuevas experiencias.
 
-🔥 “You Open the Parche?”
+🔥 “You Open the Parche?” 
