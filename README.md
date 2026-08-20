@@ -10,4 +10,4 @@ Inicialmente, Parchemos está enfocado en Villavicencio y el Meta, con una visi�
 
 La visión de Parchemos es convertirse en una plataforma de experiencias sociales locales, pasando de la pregunta “¿qué hacemos?” a una respuesta sencilla:
 
-“¡Ya tenemos parche!”
+“Open the parche?”
