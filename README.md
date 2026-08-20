@@ -8,6 +8,6 @@ El proyecto busca diferenciarse mediante un enfoque basado en la intención: el 
 
 Inicialmente, Parchemos está enfocado en Villavicencio y el Meta, con una visión de crecimiento hacia otras ciudades de Colombia. Además de conectar usuarios, la plataforma busca integrar negocios y emprendimientos locales para promover experiencias, actividades y promociones.
 
-La visión de Parchemos es convertirse en una plataforma de experiencias sociales locales, pasando de la pregunta “¿qué hacemos?” a una respuesta sencilla:
+La visión de Parchemos es convertirse en una plataforma de experiencias sociales locales, pasando de la pregunta “¿qué hacemos?” a una respuesta sencilla.
 
-“Open the parche?”
+“You Open the Parche?”
