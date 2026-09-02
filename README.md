@@ -1,4 +1,4 @@
-📍 Parchemos
+  📍 Vente al Parche
 
 "Vente al Parche" es una plataforma regional diseñada para conectar personas con planes, actividades y experiencias en su ciudad. Su objetivo es solucionar una situación cotidiana: querer salir, hacer algo diferente o conocer personas, pero no saber qué hacer, con quién hacerlo o dónde ir.
 
