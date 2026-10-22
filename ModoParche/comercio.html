@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para negocios — ModoParche</title>
+<link rel="icon" type="image/svg+xml" href="assets/im.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="comercio.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <div class="logo"><span class="logo-dot"></span>ModoParche</div>
+    <nav class="nav-links">
+      <a href="Index.html">Inicio</a>
+      <a href="Equipo.html">Equipo y contacto</a>
+      <a href="ComerciO.html" class="current">Para negocios</a>
+    </nav>
+    <div class="nav-right">
+      <a href="login.html" class="nav-login">Iniciar sesión</a>
+      <a href="#alianza" class="cta-open"><span class="pulse"></span>Aliar mi negocio</a>
+    </div>
+  </div>
+</header>
+
+<section class="biz-hero">
+  <div>
+    <div class="kicker"><span class="line"></span>Para negocios locales</div>
+    <h1>Llena mesas y cupos <span>sin pagar publicidad a ciegas</span>.</h1>
+    <p class="lede">Tu negocio abre su propio parche directo en el feed en vivo de ModoParche: la gente que ya está buscando algo como lo tuyo, en Villavicencio, hoy.</p>
+    <div class="biz-hero-actions">
+      <a href="#alianza" class="btn-primary">Quiero aliarme</a>
+      <a href="#planes" class="btn-ghost">Ver planes</a>
+    </div>
+  </div>
+  <div class="stat-stack">
+    <div class="card stat-card"><div class="n">4.2x</div><div class="l">más reservas promedio en negocios aliados durante el primer mes</div></div>
+    <div class="card stat-card"><div class="n">0%</div><div class="l">comisión sobre lo que consuma el grupo, solo pagas tu plan</div></div>
+  </div>
+</section>
+
+<section class="panel-section">
+  <div class="wrap">
+    <div class="section-head"><h2>Cómo funciona la alianza</h2><p>De crear tu cuenta a tener gente en la puerta, en tres pasos.</p></div>
+    <div class="steps">
+      <div class="card step-card">
+        <div class="num">1</div>
+        <h3>Creas tu perfil</h3>
+        <p>Registras tu negocio, ubicación y qué tipo de planes ofreces.</p>
+      </div>
+      <div class="card step-card">
+        <div class="num">2</div>
+        <h3>Abres un parche</h3>
+        <p>Publicas un cupo, una promo relámpago o un evento con horario y cantidad de personas.</p>
+      </div>
+      <div class="card step-card">
+        <div class="num">3</div>
+        <h3>Llega el grupo</h3>
+        <p>El radar te muestra frente a la gente correcta y ves en tiempo real cuántos cupos se llenan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel-section" id="planes">
+  <div class="wrap">
+    <div class="section-head"><h2>Planes para negocios</h2><p>Empieza gratis, crece cuando el radar te empiece a llenar mesas.</p></div>
+    <div class="plans">
+      <div class="card plan-card">
+        <div class="plan-name">Parche básico</div>
+        <div class="plan-price">Gratis</div>
+        <div class="plan-desc">Para probar si el radar funciona para tu negocio.</div>
+        <ul class="plan-features">
+          <li>2 parches activos al mes</li>
+          <li>Perfil de negocio en el feed</li>
+          <li>Métricas básicas de cupos llenados</li>
+        </ul>
+        <a href="#alianza" class="btn-ghost btn-block">Empezar gratis</a>
+      </div>
+      <div class="card plan-card featured">
+        <div class="plan-name">Parche Villavo</div>
+        <div class="plan-price">$89.000 <small>/ mes</small></div>
+        <div class="plan-desc">El plan que usan la mayoría de aliados activos.</div>
+        <ul class="plan-features">
+          <li>Parches ilimitados</li>
+          <li>Promos relámpago destacadas</li>
+          <li>Prioridad en el Intent Radar</li>
+          <li>Estadísticas de quién llega y a qué hora</li>
+        </ul>
+        <a href="#alianza" class="btn-primary btn-block">Aliar mi negocio</a>
+      </div>
+      <div class="card plan-card">
+        <div class="plan-name">Cadena / varios locales</div>
+        <div class="plan-price">A la medida</div>
+        <div class="plan-desc">Para más de una sede en Villavicencio o fuera de ella.</div>
+        <ul class="plan-features">
+          <li>Panel centralizado por sede</li>
+          <li>Campañas coordinadas entre locales</li>
+          <li>Acompañamiento directo del equipo</li>
+        </ul>
+        <a href="equipo.html" class="btn-ghost btn-block">Hablar con el equipo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel-section panel-flush" id="alianza">
+  <div class="wrap biz-signup-layout">
+    <div class="section-head flush">
+      <h2>Aliemos tu negocio</h2>
+      <p>Déjanos tus datos y activamos tu perfil en menos de 48 horas. Un asesor de ModoParche te contacta para configurar tu primer parche.</p>
+    </div>
+    <form class="card signup-form" onsubmit="handleBizSignup(event)">
+      <div class="field-row">
+        <div class="field"><label for="bizName">Nombre del negocio</label><input type="text" id="bizName" required placeholder="Ej. Café Origen Barzal"></div>
+        <div class="field">
+          <label for="bizType">Tipo de negocio</label>
+          <select id="bizType">
+            <option>Café o restaurante</option>
+            <option>Bar o rumba</option>
+            <option>Turismo y aventura</option>
+            <option>Coworking o eventos</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="bizPhone">WhatsApp</label><input type="tel" id="bizPhone" required placeholder="300 000 0000"></div>
+        <div class="field"><label for="bizAddress">Ubicación en Villavicencio</label><input type="text" id="bizAddress" required placeholder="Barrio o dirección"></div>
+      </div>
+      <div class="field"><label for="bizMsg">Cuéntanos qué tipo de parches quieres abrir</label><textarea id="bizMsg" placeholder="Ej. promos entre semana, cupos para grupos los viernes..."></textarea></div>
+      <button type="submit" class="btn-primary btn-block">Enviar solicitud de alianza</button>
+      <p id="bizStatus" class="status-msg"></p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-row">
+    <div><span class="foot-brand">ModoParche</span> · Villavicencio, Meta</div>
+    <div class="foot-links">
+      <a href="index.html">Inicio</a>
+      <a href="equipo.html">Equipo y contacto</a>
+      <a href="login.html">Iniciar sesión</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function handleBizSignup(e){
+    e.preventDefault();
+    document.getElementById('bizStatus').textContent = 'Solicitud enviada. Te escribimos por WhatsApp en menos de 48 horas.';
+    e.target.reset();
+  }
+</script>
+</body>
+</html>

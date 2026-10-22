@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi panel — ModoParche</title>
+
+<!-- Tipografías: Bebas Neue (títulos, igual que el resto del sitio) + Inter (texto) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Leaflet (mapa interactivo con OpenStreetMap, sin API key) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- =====================================================
+       SIDEBAR (fijo en escritorio, off-canvas en móvil)
+  ====================================================== -->
+  <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
+    <a href="index.html" class="brand" aria-label="ModoParche, ir a la página de inicio">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Modo<br>Parche</span>
+    </a>
+
+    <nav class="side-nav">
+      <button class="nav-item active" data-view="inicio">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Inicio</span>
+      </button>
+      <button class="nav-item" data-view="explorar">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+        <span>Explorar parches</span>
+      </button>
+      <button class="nav-item" data-view="mapa">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span>Mapa de parches</span>
+      </button>
+      <button class="nav-item" data-view="reservas">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        <span>Mis reservas</span>
+        <span class="nav-count" id="nav-reservas-count" hidden>0</span>
+      </button>
+      <button class="nav-item" data-view="perfil">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <p>Villavicencio, Meta</p>
+      <a href="login.html">Cerrar sesión</a>
+    </div>
+  </aside>
+
+  <!-- Fondo oscuro cuando el sidebar está abierto en móvil -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- =====================================================
+       COLUMNA PRINCIPAL
+  ====================================================== -->
+  <div class="main-col">
+
+    <!-- HEADER -->
+    <header class="topbar">
+      <button class="icon-btn hamburger" id="btn-menu" aria-label="Abrir menú" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+
+      <label class="search" aria-label="Buscar parches">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input type="search" id="search-input" placeholder="Busca un parche, un lugar o una categoría" autocomplete="off">
+      </label>
+
+      <button class="btn-create" id="btn-create">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Abrir el parche</span>
+      </button>
+
+      <div class="notif-wrap">
+        <button class="icon-btn" id="btn-notif" aria-label="Notificaciones" aria-expanded="false">
+          <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span class="notif-badge" id="notif-badge">3</span>
+        </button>
+        <div class="notif-panel" id="notif-panel" hidden>
+          <h3>Notificaciones</h3>
+          <ul>
+            <li><b>Cata de café de origen</b> empieza hoy. Quedan 2 cupos.</li>
+            <li><b>Laura M.</b> se unió a tu parche de trivia.</li>
+            <li>Nuevo parche de <b>Aventura</b> cerca de ti.</li>
+          </ul>
+        </div>
+      </div>
+
+      <button class="mini-profile" data-view="perfil" aria-label="Ir a mi perfil">
+        <span class="avatar" id="avatar-top">CR</span>
+        <span class="mini-name" id="name-top">Camilo</span>
+      </button>
+    </header>
+
+    <!-- =====================================================
+         CONTENIDO: vistas intercambiables
+    ====================================================== -->
+    <main class="content" id="content">
+
+      <!-- ---------- INICIO ---------- -->
+      <section class="view active" id="view-inicio" aria-labelledby="t-inicio">
+        <div class="welcome">
+          <div>
+            <h1 id="t-inicio">Hola, <span id="welcome-name">Camilo</span>. Hoy hay parche.</h1>
+            <p id="welcome-sub">Estos son los planes que más van con lo que te gusta.</p>
+          </div>
+          <div class="stats" id="stats"></div>
+        </div>
+
+        <div class="section-title">
+          <h2>Para ti, ahora</h2>
+          <button class="link-btn" data-view="explorar">Ver todos los parches</button>
+        </div>
+        <div class="grid" id="grid-inicio"></div>
+      </section>
+
+      <!-- ---------- EXPLORAR ---------- -->
+      <section class="view" id="view-explorar" aria-labelledby="t-explorar">
+        <div class="section-title">
+          <h2 id="t-explorar">Explorar parches</h2>
+          <span class="result-count" id="result-count"></span>
+        </div>
+        <div class="chips" id="chips" role="group" aria-label="Filtrar por categoría"></div>
+        <div class="grid" id="grid-explorar"></div>
+      </section>
+
+      <!-- ---------- MAPA ---------- -->
+      <section class="view" id="view-mapa" aria-labelledby="t-mapa">
+        <div class="section-title">
+          <h2 id="t-mapa">Mapa de parches</h2>
+          <span class="result-count">Toca un marcador para ver el plan</span>
+        </div>
+        <div class="map-shell">
+          <div id="mapa-parches"></div>
+        </div>
+      </section>
+
+      <!-- ---------- MIS RESERVAS ---------- -->
+      <section class="view" id="view-reservas" aria-labelledby="t-reservas">
+        <div class="section-title">
+          <h2 id="t-reservas">Mis reservas</h2>
+        </div>
+        <div class="reserva-list" id="reserva-list"></div>
+      </section>
+
+      <!-- ---------- PERFIL ---------- -->
+      <section class="view" id="view-perfil" aria-labelledby="t-perfil">
+        <div class="section-title">
+          <h2 id="t-perfil">Perfil</h2>
+        </div>
+        <div class="profile-card" id="profile-card"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- =====================================================
+     MODAL: ABRIR EL PARCHE (crear plan) — Rediseño premium 2 columnas
+====================================================== -->
+<div class="modal-backdrop" id="modal-create" hidden>
+  <div class="modal modal-create-wide" role="dialog" aria-modal="true" aria-labelledby="modal-create-title">
+    <button class="modal-close" data-close aria-label="Cerrar">&times;</button>
+    <h2 id="modal-create-title">Abrir el parche</h2>
+    <p class="modal-sub">Cuéntanos qué vas a hacer y la gente de Villavo se suma.</p>
+
+    <form id="form-create" novalidate>
+      <div class="modal-create-body">
+        <!-- Columna izquierda: inputs -->
+        <div class="modal-col-inputs">
+          <div class="field">
+            <label for="f-titulo">Título del parche</label>
+            <input type="text" id="f-titulo" name="titulo" required maxlength="70" placeholder="Ej: Partido de micro en La Grama">
+            <span class="field-error" id="err-titulo"></span>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="f-categoria">Categoría</label>
+              <select id="f-categoria" name="categoria" required></select>
+              <span class="field-error" id="err-categoria"></span>
+            </div>
+            <div class="field">
+              <label for="f-cupos">Cupos</label>
+              <input type="number" id="f-cupos" name="cupos" min="2" max="200" value="8" required>
+              <span class="field-error" id="err-cupos"></span>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="f-fecha">Fecha y hora</label>
+              <input type="datetime-local" id="f-fecha" name="fecha" required>
+              <span class="field-error" id="err-fecha"></span>
+            </div>
+            <div class="field">
+              <label for="f-ubicacion">Ubicación</label>
+              <input type="text" id="f-ubicacion" name="ubicacion" required maxlength="80" placeholder="Barrio o sitio">
+              <span class="field-error" id="err-ubicacion"></span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-descripcion">Descripción</label>
+            <textarea id="f-descripcion" name="descripcion" rows="3" required maxlength="400" placeholder="¿Qué se va a hacer? ¿Hay que llevar algo?"></textarea>
+            <span class="field-error" id="err-descripcion"></span>
+          </div>
+        </div>
+
+        <!-- Columna derecha: preview + mini-mapa -->
+        <div class="modal-col-preview">
+          <div class="create-preview" id="create-preview">
+            <span class="create-preview-emoji" id="create-preview-emoji">🎉</span>
+            <span class="create-preview-label">Vista previa</span>
+          </div>
+          <div class="field">
+            <label>📍 Ubicación en el mapa</label>
+            <p class="mini-mapa-hint">Clic en el mapa para fijar la ubicación exacta.</p>
+            <div id="mini-mapa-crear"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn-primary">Publicar parche</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =====================================================
+     MODAL: DETALLE DE UN PARCHE
+====================================================== -->
+<div class="modal-backdrop" id="modal-detail" hidden>
+  <div class="modal modal-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <button class="modal-close" data-close aria-label="Cerrar">&times;</button>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Aviso temporal (toast) -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Leaflet JS y lógica de la app -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

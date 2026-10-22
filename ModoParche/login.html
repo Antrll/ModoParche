@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión — ModoParche</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo"><span class="logo-dot"></span>ModoParche</a>
+    <nav class="nav-links">
+      <a href="index.html">Inicio</a>
+      <a href="equipo.html">Equipo y contacto</a>
+      <a href="comercios.html">Para negocios</a>
+    </nav>
+    <div class="nav-right"><a href="index.html" class="nav-login">Volver al inicio</a></div>
+  </div>
+</header>
+
+<div class="auth-shell">
+  <!-- Panel de la izquierda (Diseño) -->
+  <div class="brand-panel">
+    <div>
+      <div class="kicker"><span class="line"></span>Villavicencio, Meta</div>
+      <h1>Entra y mira qué parche tiene <span>tu radar</span> para hoy.</h1>
+    </div>
+    <div class="mini-feed">
+      <div class="mini-card">
+        <div><div class="t">Cata de café, Los Centauros</div><div class="m">Hoy · 5:00 PM</div></div>
+        <span class="mini-badge">92% match</span>
+      </div>
+      <div class="mini-card">
+        <div><div class="t">Caminata en Kirpas Ecoparque</div><div class="m">Hoy · 4:30 PM</div></div>
+        <span class="mini-badge">87% match</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de la derecha (Formularios funcionales) -->
+  <div class="auth-panel">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuth('login', this)">Iniciar sesión</button>
+      <button class="auth-tab" onclick="switchAuth('signup', this)">Crear cuenta</button>
+    </div>
+
+    <!-- FORMULARIO DE LOGIN -->
+    <div class="auth-view active" id="view-login">
+      <h2>Qué bueno verte de nuevo</h2>
+      <p class="sub">Entra para ver los parches abiertos en Villavo ahora mismo.</p>
+
+      <form action="procesar_login.php" method="POST">
+        <div class="field">
+          <label>Correo o Teléfono</label>
+          <input type="text" name="credencial" required placeholder="tu@correo.com o celular">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" name="password" required placeholder="••••••••">
+        </div>
+        <div class="form-foot">
+          <label class="checkbox-row"><input type="checkbox">Recordarme</label>
+          <a href="#">¿Olvidaste tu contraseña?</a>
+        </div>
+        <button type="submit" class="btn-primary btn-block">Entrar</button>
+      </form>
+    </div>
+
+    <!-- FORMULARIO DE REGISTRO (WIZARD DE 3 PASOS) -->
+    <div class="auth-view" id="view-signup">
+
+      <div class="wizard-progress">
+        <span class="wz-dot active" data-dot="1"></span>
+        <span class="wz-dot" data-dot="2"></span>
+        <span class="wz-dot" data-dot="3"></span>
+      </div>
+
+      <form action="registro.php" method="POST" id="form-registro">
+
+        <!-- PASO 1: Datos de acceso -->
+        <div class="wz-step active" id="wz-step-1">
+          <h2>Crea tu cuenta</h2>
+          <p class="sub">Empecemos por lo básico.</p>
+
+          <div class="field">
+            <label>Nombre Completo</label>
+            <input type="text" name="nombre" required placeholder="¿Cómo te llamas?">
+          </div>
+          <div class="field">
+            <label>Cédula</label>
+            <input type="text" name="cedula" required inputmode="numeric" placeholder="Tu número de documento">
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <input type="text" name="telefono" required inputmode="numeric" placeholder="Tu número de celular">
+          </div>
+          <div class="field">
+            <label>Correo</label>
+            <input type="email" name="email" required placeholder="tu@correo.com">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input type="password" name="password" required pattern="(?=.*[A-Z]).{8,}"
+                   title="Debe tener al menos 8 caracteres y una letra mayúscula"
+                   placeholder="Mínimo 8 caracteres y 1 mayúscula">
+          </div>
+
+          <div class="wz-actions">
+            <span></span>
+            <button type="button" class="btn-primary" onclick="wzNext(1)">Siguiente</button>
+          </div>
+        </div>
+
+        <!-- PASO 2: Identificación / perfil -->
+        <div class="wz-step" id="wz-step-2">
+          <h2>Cuéntanos más de ti</h2>
+          <p class="sub">Esto nos ayuda a mostrarte planes cerca y a tu medida.</p>
+
+          <div class="field">
+            <label>Ciudad</label>
+            <select name="ciudad_id" required>
+              <option value="">Selecciona una ciudad</option>
+              <option value="1" selected>Villavicencio</option>
+              <option value="2">Acacías</option>
+              <option value="3">Restrepo</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Fecha de nacimiento</label>
+            <input type="date" name="fecha_nacimiento">
+          </div>
+
+          <div class="field">
+            <label>Instagram (opcional)</label>
+            <input type="text" name="instagram_usuario" placeholder="@tuusuario">
+          </div>
+
+          <div class="wz-actions">
+            <button type="button" class="btn-secondary" onclick="wzPrev(2)">Atrás</button>
+            <button type="button" class="btn-primary" onclick="wzNext(2)">Siguiente</button>
+          </div>
+        </div>
+
+        <!-- PASO 3: Intereses -->
+        <!-- NOTA: estos IDs deben coincidir con la tabla `categorias` de tu base de datos.
+             Según tu último dump: 1=Rumba, 2=Comida, 3=Aventura, 4=Deporte, 5=Cultura, 6=Gaming.
+             Si agregas/quitas una categoría en la BD, actualiza esta lista a mano. -->
+        <div class="wz-step" id="wz-step-3">
+          <h2>¿Qué tipo de parches te gustan?</h2>
+          <p class="sub">Elige mínimo una categoría. Podrás cambiarlas después.</p>
+
+          <div class="field">
+            <div class="pill-group">
+              <label class="pill"><input type="checkbox" name="categorias[]" value="1"><span>Rumba</span></label>
+              <label class="pill"><input type="checkbox" name="categorias[]" value="2"><span>Comida</span></label>
+              <label class="pill"><input type="checkbox" name="categorias[]" value="3"><span>Aventura</span></label>
+              <label class="pill"><input type="checkbox" name="categorias[]" value="4"><span>Deporte</span></label>
+              <label class="pill"><input type="checkbox" name="categorias[]" value="5"><span>Cultura</span></label>
+              <label class="pill"><input type="checkbox" name="categorias[]" value="6"><span>Gaming</span></label>
+            </div>
+          </div>
+
+          <p class="status-msg" id="wz-error" style="display:none;"></p>
+
+          <div class="wz-actions">
+            <button type="button" class="btn-secondary" onclick="wzPrev(3)">Atrás</button>
+            <button type="submit" class="btn-primary btn-block" id="wz-submit">Crear cuenta</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="login.js"></script>
+</body>
+</html>

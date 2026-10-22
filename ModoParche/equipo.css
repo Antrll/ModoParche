@@ -1,0 +1,296 @@
+/* =========================================
+   BASE Y FUENTES
+========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-color: #ffffff;
+  --text-main: #111111;
+  --text-muted: #666666;
+  --gray-light: #f4f4f5;
+  --gray-border: #e5e7eb;
+  --accent-color: #FF5A1F;
+  --font-heading: 'Bebas Neue', cursive;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+h1, h2, h3, .logo {
+  font-family: var(--font-heading);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: #fff;
+  padding: 12px 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* =========================================
+   NAVEGACIÓN
+========================================= */
+.nav {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 2px solid var(--text-main);
+  padding: 16px 0;
+  z-index: 100;
+}
+
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--accent-color);
+  border-radius: 50%;
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+  font-weight: 600;
+}
+
+.nav-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.cta-open {
+  background: var(--text-main);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+}
+
+/* =========================================
+   HERO EQUIPO
+========================================= */
+.page-hero {
+  padding: 100px 0;
+  text-align: center;
+}
+
+.kicker {
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.page-hero h1 {
+  font-size: 4rem;
+  max-width: 900px;
+  margin: 0 auto 20px;
+  line-height: 1;
+}
+
+.lede {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.panel-section {
+  padding: 60px 0;
+  border-top: 2px solid var(--gray-border);
+}
+
+.section-head h2 {
+  font-size: 3rem;
+  margin-bottom: 30px;
+}
+
+/* =========================================
+   TARJETAS (ESTILO BRUTALISTA)
+========================================= */
+.mission-grid, 
+.team-grid, 
+.values-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+.card {
+  border: 2px solid var(--text-main);
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 4px 4px 0px var(--text-main);
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px var(--accent-color);
+}
+
+.mission-card h3 {
+  font-size: 2rem;
+  color: var(--accent-color);
+}
+
+/* PERFILES DEL EQUIPO */
+.team-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.team-photo-1 { background: #111; }
+.team-photo-2 { background: var(--text-muted); }
+.team-photo-3 { background: var(--accent-color); }
+
+.team-body .name {
+  font-size: 2rem;
+  font-family: var(--font-heading);
+}
+
+.team-body .role {
+  font-weight: bold;
+  color: var(--accent-color);
+  margin-bottom: 10px;
+}
+
+/* VALORES */
+.value-item .num {
+  font-family: var(--font-heading);
+  font-size: 4rem;
+  color: var(--gray-border);
+  line-height: 1;
+}
+
+.value-item h3 {
+  font-size: 1.8rem;
+  margin: 10px 0;
+}
+
+/* =========================================
+   FORMULARIO DE CONTACTO
+========================================= */
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+}
+
+.item {
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--gray-border);
+  padding-bottom: 10px;
+}
+
+.item .lbl {
+  font-weight: bold;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.item .val {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.field input, 
+.field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--text-main);
+  border-radius: 8px;
+  font-family: var(--font-body);
+}
+
+.btn-block {
+  width: 100%;
+  font-size: 1.1rem;
+}
+
+.status-msg {
+  text-align: center;
+  color: var(--accent-color);
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
+footer {
+  background: var(--text-main);
+  color: #fff;
+  padding: 40px 0;
+  margin-top: 60px;
+}
+
+.foot-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.foot-brand {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+}

@@ -1,0 +1,341 @@
+/* =========================================
+   BASE Y FUENTES
+========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-color: #ffffff;
+  --text-main: #111111;
+  --text-muted: #666666;
+  --gray-light: #f4f4f5;
+  --gray-border: #e5e7eb;
+  --accent-color: #FF5A1F;
+  --font-heading: 'Bebas Neue', cursive;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+h1, h2, h3, .logo {
+  font-family: var(--font-heading);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* =========================================
+   NAVEGACIÓN
+========================================= */
+.nav {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 2px solid var(--text-main);
+  padding: 16px 0;
+  z-index: 100;
+}
+
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--accent-color);
+  border-radius: 50%;
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+  font-weight: 600;
+}
+
+.nav-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.cta-open {
+  background: var(--text-main);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+}
+
+/* =========================================
+   HERO NEGOCIOS Y ESTADÍSTICAS
+========================================= */
+.biz-hero {
+  padding: 80px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.biz-hero h1 {
+  font-size: 4rem;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.biz-hero h1 span {
+  color: var(--accent-color);
+}
+
+.lede {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-bottom: 30px;
+}
+
+.kicker {
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.biz-hero-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: #fff;
+  padding: 12px 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-main);
+  border: 2px solid var(--text-main);
+  padding: 10px 24px;
+  font-weight: bold;
+  border-radius: 8px;
+}
+
+.stat-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--text-main);
+  color: #fff;
+  padding: 32px;
+  border-radius: 12px;
+}
+
+.stat-card .n {
+  font-family: var(--font-heading);
+  font-size: 4rem;
+  color: var(--accent-color);
+  line-height: 1;
+}
+
+/* =========================================
+   PASOS Y PLANES
+========================================= */
+.panel-section {
+  padding: 80px 0;
+}
+
+.section-head {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.section-head h2 {
+  font-size: 3rem;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.step-card {
+  border: 2px solid var(--gray-border);
+  padding: 32px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.step-card .num {
+  font-family: var(--font-heading);
+  font-size: 5rem;
+  color: var(--gray-light);
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  line-height: 1;
+  z-index: -1;
+}
+
+.step-card h3 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+/* PLANES DE PRECIOS */
+.plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.plan-card {
+  border: 2px solid var(--gray-border);
+  padding: 32px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-card.featured {
+  border-color: var(--accent-color);
+  background: #fffaf8;
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(255, 90, 31, 0.1);
+}
+
+.plan-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.plan-price {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  margin: 10px 0;
+}
+
+.plan-features {
+  margin: 24px 0;
+  flex-grow: 1;
+  padding-left: 20px;
+}
+
+.plan-features li {
+  margin-bottom: 10px;
+}
+
+.btn-block {
+  width: 100%;
+  text-align: center;
+  display: block;
+  margin-top: auto;
+}
+
+/* =========================================
+   FORMULARIO DE ALIANZA
+========================================= */
+.biz-signup-layout {
+  max-width: 700px;
+  margin: 0 auto;
+  background: var(--gray-light);
+  padding: 40px;
+  border-radius: 16px;
+  border: 2px solid var(--text-main);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.field input, 
+.field select, 
+.field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  font-family: var(--font-body);
+}
+
+.field textarea {
+  height: 100px;
+  resize: none;
+  margin-bottom: 16px;
+}
+
+.status-msg {
+  text-align: center;
+  font-weight: bold;
+  color: #166534;
+  margin-top: 16px;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
+footer {
+  background: var(--text-main);
+  color: #fff;
+  padding: 40px 0;
+}
+
+.foot-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.foot-brand {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+}

@@ -1,0 +1,411 @@
+/* =========================================
+   BASE Y FUENTES
+========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-color: #ffffff;
+  --text-main: #111111;
+  --text-muted: #666666;
+  --gray-light: #f4f4f5;
+  --gray-border: #e5e7eb;
+  --accent-color: #FF5A1F;
+  --font-heading: 'Bebas Neue', cursive;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-color);
+  color: var(--text-main);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, .logo {
+  font-family: var(--font-heading);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: #fff;
+  padding: 12px 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* =========================================
+   HEADER MINIMALISTA PARA LOGIN
+========================================= */
+.nav {
+  padding: 16px 24px;
+  border-bottom: 2px solid var(--text-main);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--accent-color);
+  border-radius: 50%;
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+  font-weight: 600;
+}
+
+.nav-login {
+  font-weight: bold;
+  border-bottom: 2px solid var(--text-main);
+}
+
+/* =========================================
+   LAYOUT DE AUTENTICACIÓN (2 Columnas)
+========================================= */
+.auth-shell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex-grow: 1;
+}
+
+/* Panel Izquierdo Oscuro */
+.brand-panel {
+  background: var(--text-main);
+  color: #fff;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.kicker {
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 10px;
+}
+
+.brand-panel h1 {
+  font-size: 4rem;
+  line-height: 1;
+  margin-bottom: 40px;
+}
+
+.brand-panel h1 span {
+  color: var(--accent-color);
+}
+
+.mini-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mini-card {
+  background: rgba(255,255,255,0.1);
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.mini-card .t {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.mini-card .m {
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+.mini-badge {
+  background: var(--accent-color);
+  padding: 4px 8px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  color: #fff;
+}
+
+/* =========================================
+   PANEL DERECHO (Formularios)
+========================================= */
+.auth-panel {
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 2px solid var(--gray-border);
+  margin-bottom: 30px;
+}
+
+.auth-tab {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  font-family: var(--font-heading);
+  padding-bottom: 10px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: 0.3s;
+}
+
+.auth-tab.active {
+  color: var(--text-main);
+  border-bottom: 4px solid var(--accent-color);
+}
+
+.auth-view {
+  display: none;
+}
+
+.auth-view.active {
+  display: block;
+  animation: fadeIn 0.4s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Formularios y Botones Sociales */
+.auth-view h2 {
+  font-size: 2.5rem;
+  margin-bottom: 5px;
+}
+
+.auth-view .sub {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.social-btn {
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.divider {
+  text-align: center;
+  margin: 24px 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.divider::before, 
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--gray-border);
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  font-family: var(--font-body);
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--text-main);
+}
+
+.form-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.btn-block {
+  width: 100%;
+  font-size: 1.1rem;
+}
+
+.status-msg {
+  text-align: center;
+  color: var(--accent-color);
+  font-weight: bold;
+  margin-top: 16px;
+  font-size: 0.9rem;
+}
+
+/* =========================================
+   WIZARD DE REGISTRO (3 PASOS)
+========================================= */
+.wizard-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.wz-dot {
+  height: 6px;
+  flex: 1;
+  background: var(--gray-border);
+  border-radius: 4px;
+  transition: 0.3s;
+}
+
+.wz-dot.active {
+  background: var(--accent-color);
+}
+
+.wz-step {
+  display: none;
+}
+
+.wz-step.active {
+  display: block;
+  animation: fadeIn 0.4s;
+}
+
+.wz-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--text-main);
+  border: 2px solid var(--gray-border);
+  padding: 12px 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-main);
+}
+
+/* Selects (ciudad) */
+.field select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  background: #fff;
+}
+
+.field select:focus {
+  outline: none;
+  border-color: var(--text-main);
+}
+
+/* Pills de categorías (checkboxes con estilo de botón) */
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pill {
+  position: relative;
+}
+
+.pill input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.pill span {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 2px solid var(--gray-border);
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.pill input[type="checkbox"]:checked + span {
+  background: var(--text-main);
+  border-color: var(--text-main);
+  color: #fff;
+}
+
+.pill input[type="checkbox"]:focus-visible + span {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}

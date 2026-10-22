@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equipo y contacto — ModoParche</title>
+<link rel="icon" type="image/svg+xml" href="Assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="equipo.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <div class="logo"><span class="logo-dot"></span>ModoParche</div>
+    <nav class="nav-links">
+      <a href="Index.html">Inicio</a>
+      <a href="Equipo.html" class="current">Equipo y contacto</a>
+      <a href="ComerciO.html">Para negocios</a>
+    </nav>
+    <div class="nav-right">
+      <a href="login.html" class="nav-login">Iniciar sesión</a>
+      <a href="Index.html#feed" class="cta-open"><span class="pulse"></span>Abrir un parche</a>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="kicker"><span class="line"></span>Quiénes somos</div>
+    <h1>Un grupo de llaneros armando la infraestructura social de su propia ciudad.</h1>
+    <p class="lede">ModoParche nació en Villavicencio porque estábamos cansados de planear salidas por grupos de WhatsApp que nunca cuadran. Construimos la herramienta que nos hubiera gustado tener.</p>
+  </div>
+</section>
+
+<section class="panel-section">
+  <div class="wrap">
+    <div class="section-head"><h2>Por qué existimos</h2></div>
+    <div class="mission-grid">
+      <div class="card mission-card">
+        <h3>La misión</h3>
+        <p>Hacer que armar un plan en Villavicencio tome segundos, no cadenas eternas de mensajes. Conectamos personas con vibras compatibles y negocios locales con la gente que ya quiere estar ahí.</p>
+      </div>
+      <div class="card mission-card">
+        <h3>La visión</h3>
+        <p>Empezamos en Villavo porque es donde vivimos, pero construimos para que cualquier ciudad intermedia de Colombia tenga su propio radar de planes activos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel-section">
+  <div class="wrap">
+    <div class="section-head"><h2>El equipo</h2><p>Las personas detrás del radar.</p></div>
+    <div class="team-grid">
+      <div class="card team-card">
+        <div class="team-photo team-photo-1">DG</div>
+        <div class="team-body">
+          <div class="name">David García</div>
+          <div class="role">Producto y desarrollo</div>
+          <div class="bio">Lidera la parte técnica y el diseño de producto. Estudiante de ingeniería en Villavicencio.</div>
+        </div>
+      </div>
+      <div class="card team-card">
+        <div class="team-photo team-photo-2">JG</div>
+        <div class="team-body">
+          <div class="name">Julian Guevara</div>
+          <div class="role">Diseño y experiencia</div>
+          <div class="bio">Piensa la experiencia de cada parche, desde el primer tap hasta el cupo lleno.</div>
+        </div>
+      </div>
+      <div class="card team-card">
+        <div class="team-photo team-photo-3">+</div>
+        <div class="team-body">
+          <div class="name">Súmate al equipo</div>
+          <div class="role">Vacante abierta</div>
+          <div class="bio">Estamos armando el equipo. Escríbenos si quieres construir esto con nosotros.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel-section">
+  <div class="wrap">
+    <div class="section-head"><h2>Cómo trabajamos</h2></div>
+    <div class="values-row">
+      <div class="card value-item">
+        <div class="num">01</div>
+        <h3>De la calle, para la calle</h3>
+        <p>Cada decisión de producto parte de un parche real que armamos o intentamos armar en Villavo.</p>
+      </div>
+      <div class="card value-item">
+        <div class="num">02</div>
+        <h3>Los negocios ganan primero</h3>
+        <p>Si un local no llena una mesa gracias a nosotros, no estamos haciendo bien el trabajo.</p>
+      </div>
+      <div class="card value-item">
+        <div class="num">03</div>
+        <h3>Simple antes que completo</h3>
+        <p>Preferimos una función que se usa todos los días a diez que nadie encuentra.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel-section panel-flush">
+  <div class="wrap">
+    <div class="section-head"><h2>Contacto</h2><p>¿Tienes una idea, una alianza o quieres unirte al equipo? Escríbenos.</p></div>
+    <div class="contact-layout">
+      <div class="contact-info">
+        <div class="item"><div class="lbl">Correo</div><div class="val">hola@modoparche.co</div></div>
+        <div class="item"><div class="lbl">WhatsApp</div><div class="val">+57 300 000 0000</div></div>
+        <div class="item"><div class="lbl">Ciudad</div><div class="val">Villavicencio, Meta, Colombia</div></div>
+        <div class="item"><div class="lbl">Horario de respuesta</div><div class="val">Lunes a sábado, 8:00 AM – 7:00 PM</div></div>
+      </div>
+      <form class="card contact-form" onsubmit="handleContact(event)">
+        <div class="field"><label for="name">Nombre</label><input type="text" id="name" required placeholder="¿Cómo te llamas?"></div>
+        <div class="field"><label for="email">Correo</label><input type="email" id="email" required placeholder="tu@correo.com"></div>
+        <div class="field"><label for="msg">Mensaje</label><textarea id="msg" required placeholder="Cuéntanos qué necesitas"></textarea></div>
+        <button type="submit" class="btn-primary btn-block">Enviar mensaje</button>
+        <p id="contactStatus" class="status-msg"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-row">
+    <div><span class="foot-brand">ModoParche</span> · Villavicencio, Meta</div>
+    <div class="foot-links">
+      <a href="index.html">Inicio</a>
+      <a href="comercios.html">Para negocios</a>
+      <a href="login.html">Iniciar sesión</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function handleContact(e){
+    e.preventDefault();
+    document.getElementById('contactStatus').textContent = 'Listo, recibimos tu mensaje. Te respondemos pronto.';
+    e.target.reset();
+  }
+</script>
+</body>
+</html>
