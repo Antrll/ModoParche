@@ -1,263 +1,760 @@
-﻿<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi panel — ModoParche</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>Mi panel · Modo Parche</title>
 <link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
 
-<!-- Tipografías: Bebas Neue (títulos, igual que el resto del sitio) + Inter (texto) -->
+<!-- Tipografía del sitio: Gagalin (local) + Inter. Anton y Bebas Neue quedan de respaldo. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Leaflet (mapa interactivo con OpenStreetMap, sin API key) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!-- Leaflet (mapa) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
 <link rel="stylesheet" href="dashboard.css">
+<script>
+  // Aplica el tema antes de pintar para evitar el parpadeo
+  (function () {
+    try {
+      var t = localStorage.getItem('mp_theme');
+      if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body>
 
-<div class="app">
+<!-- =====================================================================
+     SPRITE DE ÍCONOS (todo vectorial, nada de emojis)
+===================================================================== -->
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- Marca -->
+    <symbol id="i-rock" viewBox="0 0 24 24"><path d="M7.5 12.5V4.2a1.6 1.6 0 0 1 3.2 0V11"/><path d="M15.3 11V4.2a1.6 1.6 0 0 1 3.2 0V14c0 4.1-2.9 7-6.6 7h-.8C7.6 21 5.5 18.6 5.5 15.4v-1.6c0-1 .8-1.6 2-1.3"/><path d="M10.7 11v-.4a1.15 1.15 0 0 1 2.3 0v.4M13 11v-.4a1.15 1.15 0 0 1 2.3 0"/><path d="M7.5 13.6h5.4a1.4 1.4 0 0 1 0 2.8h-2.4"/></symbol>
 
-  <!-- =====================================================
-       SIDEBAR (fijo en escritorio, off-canvas en móvil)
-  ====================================================== -->
-  <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
-    <a href="index.html" class="brand" aria-label="ModoParche, ir a la página de inicio">
-      <span class="brand-dot"></span>
-      <span class="brand-name">Modo<br>Parche</span>
+    <!-- Navegación -->
+    <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></symbol>
+    <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 8v1.5M14 11.3v1.4M14 14.5V16"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.8 3.5 2.8 3.5 5.7"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
+
+    <!-- Categorías -->
+    <symbol id="i-cat-todos" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7"/><rect x="13.5" y="3.5" width="7" height="7"/><rect x="3.5" y="13.5" width="7" height="7"/><rect x="13.5" y="13.5" width="7" height="7"/></symbol>
+    <symbol id="i-cat-rumba" viewBox="0 0 24 24"><path d="M4.5 4h15L12 12.5z"/><path d="M12 12.5V20M8 20h8"/><path d="M15.5 4 18 1.5"/><circle cx="17.5" cy="7" r="1.6"/></symbol>
+    <symbol id="i-cat-comida" viewBox="0 0 24 24"><path d="M4 11a8 6.5 0 0 1 16 0z"/><path d="M2.5 14.5h19"/><path d="M4.5 14.5v1.8A3.2 3.2 0 0 0 7.7 19.5h8.6a3.2 3.2 0 0 0 3.2-3.2v-1.8"/><path d="M9 8h.01M12 7h.01M15 8h.01"/></symbol>
+    <symbol id="i-cat-chill" viewBox="0 0 24 24"><path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3.5v2.5M12 3.5v2.5"/></symbol>
+    <symbol id="i-cat-pueblear" viewBox="0 0 24 24"><path d="M2.5 20 9 9.5l4 6 3-4 5.5 8.5z"/><circle cx="17" cy="5.5" r="2.2"/></symbol>
+    <symbol id="i-cat-rio" viewBox="0 0 24 24"><path d="M2.5 15.5c2 0 2-1.5 4.7-1.5s2.7 1.5 4.8 1.5 2.1-1.5 4.7-1.5 2.7 1.5 4.8 1.5"/><path d="M2.5 20c2 0 2-1.5 4.7-1.5s2.7 1.5 4.8 1.5 2.1-1.5 4.7-1.5 2.7 1.5 4.8 1.5"/><path d="M12 11V8M8.5 8 12 2.5 15.5 8z"/></symbol>
+    <symbol id="i-cat-deportes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 7.5 4 2.9-1.5 4.6h-5L8 10.4z"/><path d="M12 3v4.5M16 10.4l4.5-1.5M14.5 15l2.6 3.8M9.5 15l-2.6 3.8M8 10.4 3.5 8.9"/></symbol>
+    <symbol id="i-cat-conciertos" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/><path d="M9 9.5l11-2"/></symbol>
+    <symbol id="i-cat-pet" viewBox="0 0 24 24"><circle cx="6.5" cy="10.5" r="1.8"/><circle cx="10.5" cy="6.5" r="1.8"/><circle cx="15.5" cy="6.8" r="1.8"/><circle cx="18.8" cy="11" r="1.8"/><path d="M8 17.2c0-3.1 2-5.7 4.5-5.7s4.5 2.6 4.5 5.7c0 1.8-1.3 2.8-2.8 2.8-1.1 0-1.4-.6-1.7-.6s-.7.6-1.8.6C9.3 20 8 19 8 17.2z"/></symbol>
+    <symbol id="i-cat-cultura" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.9-1.7H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><path d="M7.5 11h.01M10 7h.01M15 7.5h.01"/></symbol>
+    <symbol id="i-cat-gaming" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="4"/><path d="M7.5 10.5v4M5.5 12.5h4"/><path d="M15.5 11.5h.01M18 13.5h.01"/></symbol>
+
+    <!-- Interfaz -->
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="currentColor"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.8 7-7 0-3.5-2.2-6.2-4-8 0 2.5-1.5 4-3 4 .5-3-1-6.5-4-9 0 3.5-3 6-3 10.5C5 18.5 8 22 12 22z"/><path d="M12 22c-1.8 0-3-1.3-3-3.2 0-1.8 1.4-3 3-4.8 1.6 1.8 3 3 3 4.8 0 1.9-1.2 3.2-3 3.2z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+    <symbol id="i-w-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M2.5 12h2M19.5 12h2M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-w-rain" viewBox="0 0 24 24"><path d="M7 15a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19.5 9 3.5 3.5 0 0 1 18 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/></symbol>
+    <symbol id="i-w-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19.5 12 3.5 3.5 0 0 1 18 18z"/><path d="M15 4.5a3 3 0 0 1 4.5 2.6"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M4 16v-4l2-5h12l2 5v4z"/><path d="M4 12h16M6 16v3M18 16v3"/><path d="M8 14h.01M16 14h.01"/></symbol>
+    <symbol id="i-moto" viewBox="0 0 24 24"><circle cx="5.5" cy="16.5" r="3"/><circle cx="18.5" cy="16.5" r="3"/><path d="M5.5 16.5 9 10h5l4.5 6.5M13 6h3l2.5 4.5M9 10 7.5 7H5"/></symbol>
+    <symbol id="i-thumb" viewBox="0 0 24 24"><path d="M7 11v9H3.5v-9z"/><path d="M7 11l4-7c1.5 0 2.5 1 2 3l-.7 3H19a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17.8 20H7"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.3M8.2 13.2l7.6 4.3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-story" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M10 18.5h4"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"/><path d="m11 13 10-10"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v5M18 9.5v5"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 9"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-whats" viewBox="0 0 24 24"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19z"/><path d="M9 9.2c0 3 2.6 5.6 5.6 5.6l1-1.6-2-1-1 .9c-1-.5-1.5-1-2-2l.9-1-1-2z"/></symbol>
+    <symbol id="i-live" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 10v4h3l7 4V6L6 10z"/><path d="M16 9a3 3 0 0 1 0 6M18.5 6.5a7 7 0 0 1 0 11"/></symbol>
+    <symbol id="i-anchor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v14M5 13a7 7 0 0 0 14 0M8.5 11h7"/></symbol>
+    <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="15" r="6"/><path d="M8.5 10 6 3h4l2 4 2-4h4l-2.5 7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H3z"/><path d="M3 7l12-4v4"/><path d="M16.5 13.5h.01"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4"/></symbol>
+    <symbol id="i-roof" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="1"/><path d="M12 4v4M9 13.5h.01M15 13.5h.01M9.5 17h5"/><circle cx="12" cy="3.5" r="1"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12"/><path d="M16 8V4H4v12h4"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 6h4l10 12h4M3 18h4l3-3.6M14 9.6 17 6h4M18 3l3 3-3 3M18 15l3 3-3 3"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="17.5" cy="18" r="2.2"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14"/><path d="m3 6 9 7 9-7"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4"/><path d="m10.5 12.5 9-9M16 7l3 3M18.5 4.5l2 2"/></symbol>
+    <symbol id="i-city" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l6-3v16M11 21V10h8v11"/><path d="M8 11h.01M8 14h.01M8 17h.01M15 13h.01M15 16h.01"/></symbol>
+    <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5 16c.6-1.6 2-2.4 3.5-2.4S11.4 14.4 12 16M14.5 10h4M14.5 13.5h3"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+    <symbol id="i-users-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></symbol>
+    <symbol id="i-umbrella" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6.5a2 2 0 0 1-4 0"/><path d="M12 3V2"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- =====================================================================
+       SIDEBAR (computador)
+  ===================================================================== -->
+  <aside class="sidebar" aria-label="Navegación principal">
+    <a href="index.html" class="brand" aria-label="Modo Parche, ir al inicio">
+      <span class="brand-mark"><svg class="ic"><use href="#i-rock"/></svg></span>
+      <span class="brand-name">Modo <b>Parche</b></span>
     </a>
 
     <nav class="side-nav">
-      <button class="nav-item active" data-view="inicio">
-        <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
-        <span>Inicio</span>
-      </button>
-      <button class="nav-item" data-view="explorar">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
-        <span>Explorar parches</span>
-      </button>
-      <button class="nav-item" data-view="mapa">
-        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        <span>Mapa de parches</span>
-      </button>
-      <button class="nav-item" data-view="reservas">
-        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-        <span>Mis reservas</span>
-        <span class="nav-count" id="nav-reservas-count" hidden>0</span>
-      </button>
-      <button class="nav-item" data-view="perfil">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-        <span>Perfil</span>
-      </button>
+      <p class="side-label">Menú</p>
+      <button class="nav-item is-active" data-nav="radar"><svg class="ic"><use href="#i-radar"/></svg><span>El Radar</span><span class="nav-live" aria-hidden="true"></span></button>
+      <button class="nav-item" data-nav="mapa"><svg class="ic"><use href="#i-map"/></svg><span>Mapa en Vivo</span></button>
+      <button class="nav-item" data-nav="mis"><svg class="ic"><use href="#i-ticket"/></svg><span>Mis Parches</span><span class="nav-count" id="nav-count-mis" hidden>0</span></button>
+      <button class="nav-item" data-nav="parceros"><svg class="ic"><use href="#i-users"/></svg><span>Parceros Frecuentes</span></button>
+      <button class="nav-item" data-nav="perfil"><svg class="ic"><use href="#i-user"/></svg><span>Mi Perfil</span></button>
     </nav>
 
-    <div class="side-foot">
-      <p>Villavicencio, Meta</p>
-      <a href="login.html">Cerrar sesión</a>
+    <div class="rep-card" id="rep-card">
+      <!-- Se llena desde JS: reputación e insignias -->
     </div>
+
+    <button type="button" class="side-logout" data-action="logout"><svg class="ic"><use href="#i-logout"/></svg> Cerrar sesión</button>
   </aside>
 
-  <!-- Fondo oscuro cuando el sidebar está abierto en móvil -->
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-  <!-- =====================================================
+  <!-- =====================================================================
        COLUMNA PRINCIPAL
-  ====================================================== -->
+  ===================================================================== -->
   <div class="main-col">
 
-    <!-- HEADER -->
-    <header class="topbar">
-      <button class="icon-btn hamburger" id="btn-menu" aria-label="Abrir menú" aria-expanded="false">
-        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
+    <header class="topbar" id="topbar">
+      <a href="index.html" class="topbar-brand" aria-label="Modo Parche">
+        <span class="brand-mark brand-mark--sm"><svg class="ic"><use href="#i-rock"/></svg></span>
+      </a>
 
-      <label class="search" aria-label="Buscar parches">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-        <input type="search" id="search-input" placeholder="Busca un parche, un lugar o una categoría" autocomplete="off">
-      </label>
-
-      <button class="btn-create" id="btn-create">
-        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-        <span>Abrir el parche</span>
-      </button>
-
-      <div class="notif-wrap">
-        <button class="icon-btn" id="btn-notif" aria-label="Notificaciones" aria-expanded="false">
-          <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
-          <span class="notif-badge" id="notif-badge">3</span>
+      <div class="search" id="search">
+        <button class="icon-btn search-toggle" id="search-toggle" aria-label="Abrir buscador" aria-expanded="false" aria-controls="search-input">
+          <svg class="ic"><use href="#i-search"/></svg>
         </button>
-        <div class="notif-panel" id="notif-panel" hidden>
-          <h3>Notificaciones</h3>
-          <ul>
-            <li><b>Cata de café de origen</b> empieza hoy. Quedan 2 cupos.</li>
-            <li><b>Laura M.</b> se unió a tu parche de trivia.</li>
-            <li>Nuevo parche de <b>Aventura</b> cerca de ti.</li>
-          </ul>
-        </div>
+        <label class="search-field">
+          <svg class="ic"><use href="#i-search"/></svg>
+          <span class="sr-only">Buscar parches</span>
+          <input type="search" id="search-input" placeholder="Busca por plan, barrio o lugar: Capachos, Buenavista..." autocomplete="off">
+          <button type="button" class="search-clear" id="search-clear" aria-label="Limpiar búsqueda" hidden><svg class="ic"><use href="#i-close"/></svg></button>
+        </label>
       </div>
 
-      <button class="mini-profile" data-view="perfil" aria-label="Ir a mi perfil">
-        <span class="avatar" id="avatar-top">CR</span>
-        <span class="mini-name" id="name-top">Camilo</span>
+      <button class="desparche" id="desparche" role="switch" aria-checked="false" title="Solo parches abiertos que arrancan en las próximas 2 horas cerca de ti">
+        <span class="desparche-led" aria-hidden="true"></span>
+        <span class="desparche-text"><b><span class="dl-long">Estoy </span>desparchado</b><small id="desparche-sub">Próx. 2 h · 25 km</small></span>
+        <span class="switch" aria-hidden="true"><span class="switch-knob"></span></span>
       </button>
+
+      <div class="topbar-tools">
+        <button class="icon-btn" id="btn-ruleta" aria-label="Ruleta desparchada" title="Ruleta desparchada">
+          <svg class="ic"><use href="#i-dice"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-theme" aria-label="Cambiar a modo oscuro" title="Día / Noche">
+          <svg class="ic ic-sun"><use href="#i-sun"/></svg>
+          <svg class="ic ic-moon"><use href="#i-moon"/></svg>
+        </button>
+        <div class="notif">
+          <button class="icon-btn" id="btn-notif" aria-label="Notificaciones" aria-expanded="false" aria-controls="notif-panel">
+            <svg class="ic"><use href="#i-bell"/></svg>
+            <span class="notif-badge" id="notif-badge" hidden>0</span>
+          </button>
+          <div class="notif-panel" id="notif-panel" hidden>
+            <div class="notif-head">
+              <h3>Notificaciones</h3>
+              <button class="text-btn" id="notif-read">Marcar como leídas</button>
+            </div>
+            <ul class="notif-list" id="notif-list"></ul>
+          </div>
+        </div>
+        <button class="mini-avatar" data-nav="perfil" aria-label="Ir a mi perfil" id="mini-avatar"></button>
+      </div>
+
+      <button class="btn btn--primary btn-open" data-action="crear"><svg class="ic"><use href="#i-plus"/></svg><span>Abrir el parche</span></button>
     </header>
 
-    <!-- =====================================================
-         CONTENIDO: vistas intercambiables
-    ====================================================== -->
     <main class="content" id="content">
 
-      <!-- ---------- INICIO ---------- -->
-      <section class="view active" id="view-inicio" aria-labelledby="t-inicio">
-        <div class="welcome">
-          <div>
-            <h1 id="t-inicio">Hola, <span id="welcome-name">Camilo</span>. Hoy hay parche.</h1>
-            <p id="welcome-sub">Estos son los planes que más van con lo que te gusta.</p>
+      <!-- ===================== VISTA: EL RADAR ===================== -->
+      <section class="view is-active" id="view-radar" aria-labelledby="t-radar">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> En vivo en Villavicencio <span class="tnum" id="hero-clock"></span></p>
+            <h1 class="display" id="t-radar">¿Qué se arma hoy, <span class="hl" id="hero-name">parcero</span>?</h1>
+            <p class="hero-sub" id="hero-sub">Planes abiertos cerca de ti. Escoge uno y cáele.</p>
           </div>
-          <div class="stats" id="stats"></div>
+          <div class="hero-stats" id="hero-stats"></div>
         </div>
 
-        <div class="section-title">
-          <h2>Para ti, ahora</h2>
-          <button class="link-btn" data-view="explorar">Ver todos los parches</button>
+        <div class="desparche-banner" id="desparche-banner" hidden></div>
+
+        <div class="radar-layout">
+          <div class="radar-main">
+            <div class="cat-bar snap-row" id="cat-bar" role="toolbar" aria-label="Categorías"></div>
+
+            <div class="filter-row">
+              <div class="seg" id="budget-seg" role="group" aria-label="Presupuesto">
+                <button class="seg-btn is-active" data-budget="todos">Cualquier bolsillo</button>
+                <button class="seg-btn" data-budget="eco">Económico / Gratis</button>
+                <button class="seg-btn" data-budget="moderado">Moderado</button>
+                <button class="seg-btn" data-budget="full">Con todos los juguetes</button>
+              </div>
+              <label class="range">
+                <span class="range-label"><svg class="ic"><use href="#i-crosshair"/></svg> Hasta <b class="tnum" id="dist-out">25 km</b></span>
+                <input type="range" id="dist-range" min="1" max="25" step="1" value="25" aria-label="Distancia máxima en kilómetros">
+              </label>
+              <label class="select-sm">
+                <span class="sr-only">Ordenar</span>
+                <select id="sort-select">
+                  <option value="pronto">Arrancan más pronto</option>
+                  <option value="cerca">Más cerca</option>
+                  <option value="vibra">Más con tu vibra</option>
+                  <option value="barato">Más barato</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="result-line">
+              <p class="result-count tnum" id="radar-count"></p>
+              <button class="text-btn" id="reset-filters" hidden>Limpiar filtros</button>
+            </div>
+
+            <div class="parche-grid" id="radar-grid" aria-live="polite"></div>
+          </div>
+
+          <aside class="radar-aside">
+            <div class="card widget">
+              <div class="widget-head">
+                <h2 class="widget-title"><svg class="ic"><use href="#i-radar"/></svg> Radar rápido</h2>
+                <span class="chip-live"><span class="live-dot"></span> Vivo</span>
+              </div>
+              <div class="widget-map" id="radar-map" aria-label="Mapa de parches que arrancan pronto"></div>
+              <h3 class="widget-sub">Arrancan pronto</h3>
+              <ol class="soon-list" id="soon-list"></ol>
+              <button class="btn btn--ghost btn--block" data-action="simular"><svg class="ic"><use href="#i-live"/></svg> Simular parche en vivo</button>
+            </div>
+          </aside>
         </div>
-        <div class="grid" id="grid-inicio"></div>
       </section>
 
-      <!-- ---------- EXPLORAR ---------- -->
-      <section class="view" id="view-explorar" aria-labelledby="t-explorar">
-        <div class="section-title">
-          <h2 id="t-explorar">Explorar parches</h2>
-          <span class="result-count" id="result-count"></span>
-        </div>
-        <div class="chips" id="chips" role="group" aria-label="Filtrar por categoría"></div>
-        <div class="grid" id="grid-explorar"></div>
-      </section>
-
-      <!-- ---------- MAPA ---------- -->
+      <!-- ===================== VISTA: MAPA EN VIVO ===================== -->
       <section class="view" id="view-mapa" aria-labelledby="t-mapa">
-        <div class="section-title">
-          <h2 id="t-mapa">Mapa de parches</h2>
-          <span class="result-count">Toca un marcador para ver el plan</span>
+        <div class="view-head">
+          <div>
+            <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Tiempo real</p>
+            <h1 class="display" id="t-mapa">Mapa en vivo</h1>
+          </div>
+          <button class="btn btn--ink" data-action="simular"><svg class="ic"><use href="#i-live"/></svg><span>Simular nuevo parche en vivo</span></button>
         </div>
-        <div class="map-shell">
-          <div id="mapa-parches"></div>
+
+        <div class="map-layout">
+          <div class="map-stage card">
+            <div id="live-map" aria-label="Mapa de parches en Villavicencio"></div>
+
+            <div class="time-bar snap-row" id="time-bar" role="toolbar" aria-label="Filtrar por día">
+              <button class="time-btn is-active" data-time="hoy">Hoy</button>
+              <button class="time-btn" data-time="manana">Mañana</button>
+              <span class="time-sep" aria-hidden="true"></span>
+              <div class="time-quick" id="time-quick"></div>
+              <label class="time-select">
+                <span>En:</span>
+                <select id="time-select" aria-label="Elegir día"></select>
+                <svg class="ic"><use href="#i-chev-down"/></svg>
+              </label>
+              <label class="time-date" title="Fecha específica">
+                <svg class="ic"><use href="#i-calendar"/></svg>
+                <input type="date" id="time-date" aria-label="Fecha específica">
+              </label>
+              <span class="time-sep" aria-hidden="true"></span>
+              <button class="time-btn" data-time="todos">Todos los días</button>
+            </div>
+
+            <div class="map-counter tnum" id="map-counter" aria-live="polite"></div>
+            <button class="map-locate icon-btn" id="map-locate" aria-label="Centrar en Villavicencio" title="Centrar mapa"><svg class="ic"><use href="#i-crosshair"/></svg></button>
+            <div class="map-empty" id="map-empty" hidden></div>
+          </div>
+
+          <aside class="map-list card">
+            <div class="map-list-head">
+              <h2 class="widget-title"><svg class="ic"><use href="#i-pin"/></svg> En el mapa</h2>
+              <span class="map-legend"><i class="lg lg--pin"></i> Parche <i class="lg lg--flash"></i> Relámpago <i class="lg lg--own"></i> Tuyo</span>
+            </div>
+            <ol class="map-items" id="map-items"></ol>
+          </aside>
         </div>
       </section>
 
-      <!-- ---------- MIS RESERVAS ---------- -->
-      <section class="view" id="view-reservas" aria-labelledby="t-reservas">
-        <div class="section-title">
-          <h2 id="t-reservas">Mis reservas</h2>
+      <!-- ===================== VISTA: MIS PARCHES ===================== -->
+      <section class="view" id="view-mis" aria-labelledby="t-mis">
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Tu agenda</p>
+            <h1 class="display" id="t-mis">Mis parches</h1>
+          </div>
+          <div class="seg" id="mis-seg" role="tablist" aria-label="Filtrar mis parches">
+            <button class="seg-btn is-active" data-mis="unido" role="tab" aria-selected="true">Me uní</button>
+            <button class="seg-btn" data-mis="propios" role="tab" aria-selected="false">Los que armé</button>
+            <button class="seg-btn" data-mis="historial" role="tab" aria-selected="false">Ya fui</button>
+          </div>
+          <div class="view-links">
+            <button class="btn btn--ghost btn--xs" data-nav="parceros"><svg class="ic"><use href="#i-users"/></svg> Parceros frecuentes</button>
+          </div>
         </div>
-        <div class="reserva-list" id="reserva-list"></div>
+        <div class="parche-grid" id="mis-grid"></div>
       </section>
 
-      <!-- ---------- PERFIL ---------- -->
+      <!-- ===================== VISTA: PARCEROS FRECUENTES ===================== -->
+      <section class="view" id="view-parceros" aria-labelledby="t-parceros">
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Tu combo</p>
+            <h1 class="display" id="t-parceros">Parceros frecuentes</h1>
+          </div>
+          <p class="view-note">Se suman cuando, después de un parche, marcas <b>Volver a parchar</b>.</p>
+        </div>
+        <div class="people-grid" id="parceros-grid"></div>
+        <h2 class="block-title">Gente con la que coincides</h2>
+        <div class="people-grid" id="sugeridos-grid"></div>
+      </section>
+
+      <!-- ===================== VISTA: MI PERFIL ===================== -->
       <section class="view" id="view-perfil" aria-labelledby="t-perfil">
-        <div class="section-title">
-          <h2 id="t-perfil">Perfil</h2>
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Tu identidad</p>
+            <h1 class="display" id="t-perfil">Mi perfil</h1>
+          </div>
+          <div class="view-links">
+            <button class="btn btn--ghost btn--xs" data-nav="parceros"><svg class="ic"><use href="#i-users"/></svg> Parceros frecuentes</button>
+            <button type="button" class="btn btn--ghost btn--xs" data-action="logout"><svg class="ic"><use href="#i-logout"/></svg> Cerrar sesión</button>
+          </div>
         </div>
-        <div class="profile-card" id="profile-card"></div>
+
+        <div class="profile-layout">
+          <!-- Identidad -->
+          <div class="card id-card">
+            <div class="id-avatar" id="id-avatar"></div>
+            <h2 class="id-name" id="id-name">Camilo Rojas</h2>
+            <p class="id-handle" id="id-handle">Villavicencio</p>
+
+            <div class="id-mode seg seg--full" role="radiogroup" aria-label="Cómo te ven">
+              <button class="seg-btn" data-idmode="foto" role="radio" aria-checked="false"><svg class="ic"><use href="#i-camera"/></svg> Foto real</button>
+              <button class="seg-btn is-active" data-idmode="avatar" role="radio" aria-checked="true"><svg class="ic"><use href="#i-user"/></svg> Avatar urbano</button>
+            </div>
+
+            <dl class="id-verified">
+              <div><dt><svg class="ic"><use href="#i-idcard"/></svg> Cédula</dt><dd class="tnum"><span id="id-cedula">1.121.***.456</span> <span class="ok-tag"><svg class="ic"><use href="#i-shield"/></svg> Verificada</span></dd></div>
+              <div><dt><svg class="ic"><use href="#i-star"/></svg> Reputación</dt><dd class="tnum" id="id-rep">4.8 / 5.0 · 42 reseñas</dd></div>
+            </dl>
+
+            <div class="id-badges" id="id-badges"></div>
+
+            <div class="id-vibes">
+              <h3 class="mini-title">Tus vibras</h3>
+              <p class="mini-note">Suben tu Parcheómetro en los planes que más te cuadran.</p>
+              <div class="vibe-chips" id="vibe-chips"></div>
+            </div>
+          </div>
+
+          <!-- Editor visual -->
+          <div class="card editor-card">
+            <!-- Foto real con encuadre -->
+            <div class="editor-pane" id="pane-foto" hidden>
+              <h2 class="card-title">Encuadra tu foto</h2>
+              <p class="mini-note">Ajusta zoom y posición para que tu cara se vea completa dentro del círculo.</p>
+              <div class="crop-wrap">
+                <div class="crop-frame" id="crop-frame">
+                  <img id="crop-img" alt="Tu foto de perfil" hidden>
+                  <div class="crop-empty" id="crop-empty"><svg class="ic"><use href="#i-camera"/></svg><span>Sube una foto</span></div>
+                </div>
+                <div class="crop-controls">
+                  <label class="file-btn btn btn--ghost">
+                    <svg class="ic"><use href="#i-upload"/></svg> Subir desde el celular
+                    <input type="file" id="crop-file" accept="image/*" hidden>
+                  </label>
+                  <div class="input-wrap">
+                    <svg class="ic"><use href="#i-link"/></svg>
+                    <input type="url" id="crop-url" class="input" placeholder="O pega el enlace de una imagen">
+                    <button class="btn btn--ink btn--xs" type="button" id="crop-url-btn">Usar</button>
+                  </div>
+                  <label class="slider"><span>Zoom <b class="tnum" id="out-zoom">1.0x</b></span><input type="range" id="crop-zoom" min="1" max="3" step="0.01" value="1"></label>
+                  <label class="slider"><span>Horizontal <b class="tnum" id="out-x">0</b></span><input type="range" id="crop-x" min="-50" max="50" step="1" value="0"></label>
+                  <label class="slider"><span>Vertical <b class="tnum" id="out-y">0</b></span><input type="range" id="crop-y" min="-50" max="50" step="1" value="0"></label>
+                  <button class="btn btn--primary" type="button" id="crop-save"><svg class="ic"><use href="#i-check"/></svg> Guardar encuadre</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Constructor de avatar -->
+            <div class="editor-pane" id="pane-avatar">
+              <div class="pane-head">
+                <h2 class="card-title">Constructor de avatar urbano</h2>
+                <button class="btn btn--ghost btn--xs" type="button" id="avatar-random"><svg class="ic"><use href="#i-shuffle"/></svg> Al azar</button>
+              </div>
+              <div class="builder">
+                <div class="builder-preview" id="builder-preview"></div>
+                <div class="builder-options" id="builder-options"></div>
+              </div>
+              <button class="btn btn--primary" type="button" id="avatar-save"><svg class="ic"><use href="#i-check"/></svg> Guardar avatar</button>
+            </div>
+          </div>
+
+          <!-- Datos permitidos -->
+          <form class="card data-card" id="form-perfil" novalidate>
+            <h2 class="card-title">Tus datos</h2>
+            <p class="mini-note">Solo puedes cambiar estos. Nombre y cédula quedan verificados.</p>
+
+            <div class="field">
+              <label for="p-tel">Teléfono</label>
+              <div class="input-wrap"><svg class="ic"><use href="#i-phone"/></svg><input class="input" type="tel" id="p-tel" inputmode="numeric" maxlength="10" placeholder="3001234567"></div>
+              <p class="field-msg" aria-live="polite"></p>
+            </div>
+            <div class="field">
+              <label for="p-mail">Correo</label>
+              <div class="input-wrap"><svg class="ic"><use href="#i-mail"/></svg><input class="input" type="email" id="p-mail" placeholder="tucorreo@gmail.com"></div>
+              <p class="field-msg" aria-live="polite"></p>
+            </div>
+            <div class="field">
+              <label for="p-pass">Nueva contraseña <span class="opt">(opcional)</span></label>
+              <div class="input-wrap">
+                <svg class="ic"><use href="#i-key"/></svg>
+                <input class="input" type="password" id="p-pass" placeholder="Déjala vacía para no cambiarla" autocomplete="new-password">
+                <button type="button" class="text-btn pass-eye" id="pass-eye" aria-pressed="false">Ver</button>
+              </div>
+              <ul class="pass-rules" id="pass-rules">
+                <li data-rule="len"><svg class="ic"><use href="#i-check"/></svg> Mínimo 8 caracteres</li>
+                <li data-rule="upper"><svg class="ic"><use href="#i-check"/></svg> Una letra mayúscula</li>
+              </ul>
+              <p class="field-msg" aria-live="polite"></p>
+            </div>
+            <div class="field">
+              <label for="p-city">Ciudad</label>
+              <div class="input-wrap input-wrap--select"><svg class="ic"><use href="#i-city"/></svg>
+                <select class="input" id="p-city">
+                  <option>Villavicencio</option>
+                  <option>Acacías</option>
+                  <option>Restrepo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="readonly-row">
+              <div><span>Nombre</span><b id="ro-nombre">Camilo Rojas</b></div>
+              <div><span>Cédula</span><b class="tnum" id="ro-cedula">1.121.***.456</b></div>
+            </div>
+
+            <button class="btn btn--primary btn--block" type="submit"><svg class="ic"><use href="#i-check"/></svg> Guardar cambios</button>
+          </form>
+        </div>
       </section>
 
     </main>
   </div>
 </div>
 
-<!-- =====================================================
-     MODAL: ABRIR EL PARCHE (crear plan) — Rediseño premium 2 columnas
-====================================================== -->
-<div class="modal-backdrop" id="modal-create" hidden>
-  <div class="modal modal-create-wide" role="dialog" aria-modal="true" aria-labelledby="modal-create-title">
-    <button class="modal-close" data-close aria-label="Cerrar">&times;</button>
-    <h2 id="modal-create-title">Abrir el parche</h2>
-    <p class="modal-sub">Cuéntanos qué vas a hacer y la gente de Villavo se suma.</p>
+<!-- =====================================================================
+     BARRA INFERIOR (celular)
+===================================================================== -->
+<nav class="bottom-nav" aria-label="Navegación">
+  <button class="bn-item is-active" data-nav="radar"><svg class="ic"><use href="#i-radar"/></svg><span>Radar</span></button>
+  <button class="bn-item" data-nav="mapa"><svg class="ic"><use href="#i-map"/></svg><span>Mapa</span></button>
+  <button class="bn-center" data-action="crear" aria-label="Abrir el parche"><svg class="ic"><use href="#i-plus"/></svg><span>Abrir</span></button>
+  <button class="bn-item" data-nav="mis"><svg class="ic"><use href="#i-ticket"/></svg><span>Mis parches</span></button>
+  <button class="bn-item" data-nav="perfil"><svg class="ic"><use href="#i-user"/></svg><span>Perfil</span></button>
+</nav>
 
-    <form id="form-create" novalidate>
-      <div class="modal-create-body">
-        <!-- Columna izquierda: inputs -->
-        <div class="modal-col-inputs">
-          <div class="field">
-            <label for="f-titulo">Título del parche</label>
-            <input type="text" id="f-titulo" name="titulo" required maxlength="70" placeholder="Ej: Partido de micro en La Grama">
-            <span class="field-error" id="err-titulo"></span>
-          </div>
+<!-- =====================================================================
+     MODAL: ABRIR / EDITAR PARCHE
+===================================================================== -->
+<div class="modal" id="modal-create" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--xl" role="dialog" aria-modal="true" aria-labelledby="create-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow" id="create-eyebrow">Nuevo plan</p>
+        <h2 class="modal-title" id="create-title">Abrir el parche</h2>
+      </div>
+      <button class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="f-categoria">Categoría</label>
-              <select id="f-categoria" name="categoria" required></select>
-              <span class="field-error" id="err-categoria"></span>
-            </div>
-            <div class="field">
-              <label for="f-cupos">Cupos</label>
-              <input type="number" id="f-cupos" name="cupos" min="2" max="200" value="8" required>
-              <span class="field-error" id="err-cupos"></span>
-            </div>
-          </div>
+    <form id="form-create" class="create-grid" novalidate>
+      <!-- Columna izquierda: vista previa, portada, mini mapa -->
+      <div class="create-left">
+        <p class="mini-title">Así se va a ver</p>
+        <div class="create-preview" id="create-preview"></div>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="f-fecha">Fecha y hora</label>
-              <input type="datetime-local" id="f-fecha" name="fecha" required>
-              <span class="field-error" id="err-fecha"></span>
-            </div>
-            <div class="field">
-              <label for="f-ubicacion">Ubicación</label>
-              <input type="text" id="f-ubicacion" name="ubicacion" required maxlength="80" placeholder="Barrio o sitio">
-              <span class="field-error" id="err-ubicacion"></span>
-            </div>
-          </div>
+        <p class="mini-title">Portada</p>
+        <div class="cover-picker" id="cover-picker"></div>
 
-          <div class="field">
-            <label for="f-descripcion">Descripción</label>
-            <textarea id="f-descripcion" name="descripcion" rows="3" required maxlength="400" placeholder="¿Qué se va a hacer? ¿Hay que llevar algo?"></textarea>
-            <span class="field-error" id="err-descripcion"></span>
-          </div>
-        </div>
-
-        <!-- Columna derecha: preview + mini-mapa -->
-        <div class="modal-col-preview">
-          <div class="create-preview" id="create-preview">
-            <span class="create-preview-emoji" id="create-preview-emoji">🎉</span>
-            <span class="create-preview-label">Vista previa</span>
-          </div>
-          <div class="field">
-            <label>📍 Ubicación en el mapa</label>
-            <p class="mini-mapa-hint">Clic en el mapa para fijar la ubicación exacta.</p>
-            <div id="mini-mapa-crear"></div>
-          </div>
+        <div class="field field--map" id="field-map">
+          <p class="mini-title">Punto de encuentro <span class="opt">Toca el mapa para soltar el pin</span></p>
+          <div class="mini-map" id="create-map"></div>
+          <p class="coords tnum" id="create-coords">Sin ubicación todavía</p>
+          <p class="field-msg" aria-live="polite"></p>
         </div>
       </div>
 
-      <div class="modal-actions">
-        <button type="button" class="btn-ghost" data-close>Cancelar</button>
-        <button type="submit" class="btn-primary">Publicar parche</button>
+      <!-- Columna derecha: campos -->
+      <div class="create-right">
+        <div class="field">
+          <label for="c-titulo">Título del parche</label>
+          <div class="input-wrap"><svg class="ic"><use href="#i-text"/></svg><input class="input" id="c-titulo" name="titulo" maxlength="60" placeholder="Ej: Micro en La Bombonera"></div>
+          <p class="field-msg" aria-live="polite"></p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="c-categoria">Categoría</label>
+            <div class="input-wrap input-wrap--select"><svg class="ic"><use href="#i-cat-todos"/></svg><select class="input" id="c-categoria" name="categoria"></select></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="c-cupos">Cupos máximos</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-users"/></svg><input class="input tnum" id="c-cupos" name="cupos" type="number" min="2" max="60" value="8" inputmode="numeric"></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="c-fecha">Fecha</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-calendar"/></svg><input class="input tnum" id="c-fecha" name="fecha" type="date"></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="c-hora">Hora</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-clock"/></svg><input class="input tnum" id="c-hora" name="hora" type="time"></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="c-lugar">Nombre del lugar</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-pin"/></svg><input class="input" id="c-lugar" name="lugar" maxlength="60" placeholder="Ej: Parque Los Fundadores"></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="c-barrio">Barrio</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-city"/></svg><input class="input" id="c-barrio" name="barrio" list="barrios" maxlength="40" placeholder="Ej: Barzal"></div>
+            <datalist id="barrios"></datalist>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="c-costo">Costo de entrada</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-tag"/></svg><input class="input tnum" id="c-costo" name="costo" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="c-presupuesto">Presupuesto estimado</label>
+            <div class="input-wrap"><svg class="ic"><use href="#i-wallet"/></svg><input class="input tnum" id="c-presupuesto" name="presupuesto" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
+            <p class="field-msg" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="c-desc">Descripción</label>
+          <textarea class="input" id="c-desc" name="descripcion" rows="3" maxlength="280" placeholder="¿Qué se va a hacer? ¿Hay que llevar algo?"></textarea>
+          <p class="field-msg" aria-live="polite"></p>
+        </div>
+
+        <div class="field">
+          <label for="c-planb">Plan B si llueve <span class="opt">(opcional)</span></label>
+          <div class="input-wrap"><svg class="ic"><use href="#i-umbrella"/></svg><input class="input" id="c-planb" name="planb" maxlength="70" placeholder="Ej: Nos movemos al C.C. Primavera Urbana"></div>
+          <p class="field-msg" aria-live="polite"></p>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn--primary" id="create-submit"><svg class="ic"><use href="#i-bolt"/></svg><span>Publicar parche</span></button>
+        </div>
       </div>
     </form>
   </div>
 </div>
 
-<!-- =====================================================
-     MODAL: DETALLE DE UN PARCHE
-====================================================== -->
-<div class="modal-backdrop" id="modal-detail" hidden>
-  <div class="modal modal-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
-    <button class="modal-close" data-close aria-label="Cerrar">&times;</button>
-    <div id="detail-body"></div>
+<!-- =====================================================================
+     MODAL: DETALLE DEL PARCHE + CHAT
+===================================================================== -->
+<div class="modal" id="modal-detail" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--xl modal-panel--flush" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <button class="icon-btn modal-x" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    <div class="detail" id="detail-body"></div>
   </div>
 </div>
 
-<!-- Aviso temporal (toast) -->
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<!-- =====================================================================
+     MODAL: RULETA DESPARCHADA
+===================================================================== -->
+<div class="modal" id="modal-ruleta" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="ruleta-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow">Que decida la suerte</p>
+        <h2 class="modal-title" id="ruleta-title">Ruleta desparchada</h2>
+      </div>
+      <button class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="modal-body">
+      <div class="field">
+        <label for="ruleta-budget">¿Cuánto tienes para gastar?</label>
+        <div class="input-wrap"><svg class="ic"><use href="#i-wallet"/></svg><input class="input tnum" id="ruleta-budget" type="number" min="0" step="5000" value="20000" inputmode="numeric"></div>
+        <div class="quick-chips" id="ruleta-chips">
+          <button class="chip" data-budget-q="0">Gratis</button>
+          <button class="chip" data-budget-q="10000">$10.000</button>
+          <button class="chip is-active" data-budget-q="20000">$20.000</button>
+          <button class="chip" data-budget-q="50000">$50.000</button>
+        </div>
+      </div>
 
-<!-- Leaflet JS y lógica de la app -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <div class="slot" id="slot">
+        <div class="slot-window"><div class="slot-reel" id="slot-reel"><span>Gira la ruleta</span></div></div>
+        <span class="slot-arrow slot-arrow--l" aria-hidden="true"></span>
+        <span class="slot-arrow slot-arrow--r" aria-hidden="true"></span>
+      </div>
+
+      <div class="ruleta-result" id="ruleta-result" aria-live="polite"></div>
+
+      <button class="btn btn--primary btn--block btn--lg" id="ruleta-spin"><svg class="ic"><use href="#i-dice"/></svg><span>Girar la ruleta</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     MODAL: TICKET PARA IG STORIES
+===================================================================== -->
+<div class="modal" id="modal-ticket" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="ticket-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="modal-head">
+      <h2 class="modal-title" id="ticket-title">Ticket para Stories</h2>
+      <button class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="modal-body">
+      <div class="story-preview" id="story-preview"></div>
+      <div class="form-actions form-actions--split">
+        <button class="btn btn--ghost" id="story-share"><svg class="ic"><use href="#i-share"/></svg> Compartir</button>
+        <button class="btn btn--primary" id="story-download"><svg class="ic"><use href="#i-download"/></svg> Descargar PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     MODAL: COMPARTIR PARCHE SEGURO
+===================================================================== -->
+<div class="modal" id="modal-share" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow">Para tu familia</p>
+        <h2 class="modal-title" id="share-title">Compartir parche seguro</h2>
+      </div>
+      <button class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="modal-body" id="share-body"></div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     MODAL: CALIFICAR (post-parche)
+===================================================================== -->
+<div class="modal" id="modal-rating" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="rating-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow">Post-parche</p>
+        <h2 class="modal-title" id="rating-title">¿Qué tal la gente?</h2>
+      </div>
+      <button class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="modal-body" id="rating-body"></div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     MODAL: CONFIRMACIÓN (reemplaza confirm() del navegador)
+===================================================================== -->
+<div class="modal" id="modal-confirm" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--xs" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="modal-body confirm">
+      <span class="confirm-mark"><svg class="ic"><use href="#i-alert"/></svg></span>
+      <h2 class="modal-title" id="confirm-title">¿Seguro?</h2>
+      <p id="confirm-text"></p>
+      <div class="form-actions form-actions--split">
+        <button class="btn btn--ghost" data-close>No, déjalo</button>
+        <button class="btn btn--danger" id="confirm-ok">Sí, cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Avisos flotantes -->
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Pantalla de carga mientras se verifica la sesión -->
+<div class="boot" id="boot" role="status" aria-live="polite">
+  <span class="boot-mark"><svg class="ic"><use href="#i-rock"/></svg></span>
+  <p class="boot-title">Modo <b>Parche</b></p>
+  <p class="boot-text" id="boot-text">Prendiendo el radar...</p>
+  <div class="boot-actions" id="boot-actions" hidden></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="supabase-client.js"></script>
 <script src="dashboard.js"></script>
 </body>

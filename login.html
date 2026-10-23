@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -115,10 +115,10 @@
         <h2>Qué bueno verte</h2>
         <p class="sub">Entra para ver los parches abiertos en Villavo ahora mismo.</p>
 
-        <form action="procesar_login.php" method="POST" id="form-login" data-validate>
+        <form action="#" method="POST" id="form-login" data-validate>
           <div class="field">
-            <label for="login-cred">Correo o teléfono</label>
-            <input type="text" id="login-cred" name="credencial" required autocomplete="username" placeholder="tu@correo.com o 300 000 0000" data-error="Escribe tu correo o tu número de celular.">
+            <label for="login-cred">Correo</label>
+            <input type="email" id="login-cred" name="credencial" required autocomplete="username" placeholder="tu@correo.com" data-error="Escribe el correo con el que te registraste.">
           </div>
 
           <div class="field">
@@ -141,6 +141,11 @@
             <p>Escríbenos desde tu correo registrado a <a href="mailto:modoparcheoficial@gmail.com?subject=Recuperar%20acceso%20ModoParche" class="text-link">modoparcheoficial@gmail.com</a> y restablecemos tu clave hoy mismo.</p>
           </div>
 
+          <div class="status" id="login-status" role="alert" tabindex="-1">
+            <span class="status-icon" aria-hidden="true">!</span>
+            <div class="status-text"></div>
+          </div>
+
           <button type="submit" class="btn btn--block" id="login-submit">Entrar a mi radar
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
@@ -160,7 +165,7 @@
           <li class="wz-dot" data-dot="3"><span>Tus gustos</span></li>
         </ol>
 
-        <form action="registro.php" method="POST" id="form-registro" data-validate>
+        <form action="#" method="POST" id="form-registro" data-validate>
 
           <!-- PASO 1: Datos de acceso -->
           <div class="wz-step active" id="wz-step-1">
@@ -275,6 +280,11 @@
               <div class="status-text">Selecciona al menos una categoría de interés.</div>
             </div>
 
+            <div class="status" id="reg-status" role="alert" tabindex="-1">
+              <span class="status-icon" aria-hidden="true">!</span>
+              <div class="status-text"></div>
+            </div>
+
             <div class="wz-actions">
               <button type="button" class="btn btn--paper" onclick="wzPrev(3)">Atrás</button>
               <button type="submit" class="btn" id="wz-submit">Crear mi cuenta
@@ -291,8 +301,9 @@
 
 </main>
 
-<script src="mp-base.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" defer></script>
 <script src="supabase-client.js" defer></script>
+<script src="mp-base.js" defer></script>
 <script src="login.js" defer></script>
 </body>
 </html>
