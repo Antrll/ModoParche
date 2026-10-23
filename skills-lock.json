@@ -2,9 +2,16 @@
   "version": 1,
   "skills": {
     "design-taste-frontend": {
-      "source": "../Users/andre/AppData/Local/Temp/taste-skill-repo/taste-skill-main",
-      "sourceType": "local",
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
       "computedHash": "69021ac7e671c0c0d85d65b570003cef360b1c296323fa28c042884e146478ca"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
     }
   }
 }
