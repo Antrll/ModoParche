@@ -26,7 +26,9 @@ El panel (`dashboard.html`) es para usuarios con cuenta. El login y el registro 
 ### Activar la base de datos (una sola vez)
 
 1. Entra a tu proyecto en Supabase y abre **SQL Editor > New query**.
-2. Pega todo el archivo `supabase/migrations/20261022230000_dashboard_usuarios.sql` y dale **Run**.
+2. Pega y corre (**Run**), en este orden, los archivos de `supabase/migrations/`:
+   - `20261022230000_dashboard_usuarios.sql`: tablas, seguridad, triggers y parches de ejemplo.
+   - `20261023120000_coordenadas_reales.sql`: deja 8 parches de ejemplo en coordenadas reales de Villavicencio.
 3. En **Authentication > URL Configuration** agrega la URL del sitio (por ejemplo la de Vercel) en *Site URL* y en *Redirect URLs*, para que el enlace de confirmación del correo vuelva al dashboard.
 
 El script se puede correr más de una vez. Crea perfiles, parches, chat, rutas, notificaciones, calificaciones y parceros frecuentes con seguridad por filas (RLS). Las tablas viejas del prototipo (`parches`, `parche_miembros`, `usuarios`, `intereses_usuario`) quedan renombradas como `legacy_*` y sin acceso público. No se borra ningún dato.
@@ -37,7 +39,7 @@ El script se puede correr más de una vez. Crea perfiles, parches, chat, rutas, 
 | --- | --- |
 | `supabase-client.js` | Crea el cliente de Supabase con la llave pública (anon). |
 | `login.js` | Registro en 3 pasos e inicio de sesión con Supabase Auth. |
-| `dashboard.js` | Radar, mapa en vivo, chat, rutas, perfil; lee y guarda en Supabase y escucha cambios en tiempo real. |
+| `dashboard.js` | Explorar, mapa en tiempo real con GPS del usuario, mis parches con chat, perfil y constructor de avatar; lee y guarda en Supabase y escucha cambios en tiempo real. |
 | `supabase/migrations/` | Esquema, seguridad, triggers y parches de ejemplo de Villavicencio. |
 
 ### Modo demo
