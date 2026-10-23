@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    MODOPARCHE — DASHBOARD  ·  Urbano / Brutalista Premium
    Secciones:
    1. Datos y configuración
@@ -693,6 +693,22 @@
       creados.unshift({ ...nuevo, fecha: fecha.toISOString() });
       guardarLS(KEY_CREADOS, creados);
 
+      if (window.ModoParcheDB) {
+        const catMap = { 'Rumba': 1, 'Comida': 2, 'Aventura': 3, 'Deporte': 4, 'Cultura': 5, 'Gaming': 6 };
+        window.ModoParcheDB.crearParche({
+          titulo: nuevo.titulo,
+          descripcion: nuevo.descripcion,
+          categoria_id: catMap[nuevo.categoria] || 1,
+          ciudad_id: 1,
+          lugar: nuevo.ubicacion,
+          fecha: nuevo.fecha.toISOString(),
+          cupo: nuevo.cupos,
+          precio: nuevo.precio,
+          organizador_nombre: nuevo.organizador,
+          lat: nuevo.lat,
+          lng: nuevo.lng
+        }).catch(err => console.warn('Error sincronizando parche con Supabase:', err));
+      }
       state.parches.unshift(nuevo);
       state.reservas.add(nuevo.id);
       guardarLS(KEY_RESERVAS, [...state.reservas]);

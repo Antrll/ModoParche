@@ -1,4 +1,4 @@
-// login.js - Lógica de autenticación y wizard de registro en 3 pasos
+﻿// login.js - Lógica de autenticación y wizard de registro en 3 pasos
 
 function switchAuth(view, btn) {
   document.querySelectorAll('.auth-tab').forEach(t => {
@@ -100,13 +100,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (formReg) {
     formReg.addEventListener('change', syncCategories);
-    formReg.addEventListener('submit', e => {
+    formReg.addEventListener('submit', async e => {
       const marcadas = formReg.querySelectorAll('input[name="categorias[]"]:checked');
       if (marcadas.length === 0) {
         e.preventDefault();
         if (errorMsg) errorMsg.classList.add('is-visible');
         return;
       }
+
+      // Si Supabase DB está configurado, procesar registro directamente
+      if (window.ModoParcheDB) {
+        e.preventDefault();
+        const btn = document.getElementById('wz-submit');
+        if (btn) {
+          btn.classList.add('is-loading');
+          btn.setAttribute('aria-busy', 'true');
+        }
+
+        const formData = new FormData(formReg);
+        const cats = Array.from(marcadas).map(c => c.value);
+        const datos = {
+          nombre: formData.get('nombre'),
+          cedula: formData.get('cedula'),
+          telefono: formData.get('telefono'),
+          email: formData.get('email'),
+          password: formData.get('password'),
+          ciudad_id: parseInt(formData.get('ciudad_id') || '1', 10),
+          fecha_nacimiento: formData.get('fecha_nacimiento') || null,
+          instagram: formData.get('instagram_usuario') || null,
+          categorias: cats
+        };
+
+        try {
+          const usuario = await window.ModoParcheDB.registrarUsuario(datos);
+          localStorage.setItem('mp_user', JSON.stringify(usuario));
+          alert('¡Cuenta creada exitosamente en Supabase! Bienvenido a ModoParche.');
+          window.location.href = 'dashboard.html';
+        } catch (err) {
+          console.error(err);
+          alert('Error al registrar: ' + (err.message || 'Verifica los datos ingresados.'));
+          if (btn) {
+            btn.classList.remove('is-loading');
+            btn.removeAttribute('aria-busy');
+          }
+        }
+        return;
+      }
+
       const btn = document.getElementById('wz-submit');
       if (btn) {
         btn.classList.add('is-loading');
@@ -115,14 +155,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. Formulario de login: validación en línea + estado de carga
+  // 4. Formulario de login: validación en línea + estado de carga + Supabase
   const formLogin = document.getElementById('form-login');
   if (formLogin) {
-    formLogin.addEventListener('submit', e => {
+    formLogin.addEventListener('submit', async e => {
       if (window.MP && !window.MP.validateWithin(formLogin)) {
         e.preventDefault();
         return;
       }
+
+      if (window.ModoParcheDB) {
+        e.preventDefault();
+        const btn = document.getElementById('login-submit');
+        if (btn) {
+          btn.classList.add('is-loading');
+          btn.setAttribute('aria-busy', 'true');
+        }
+
+        const cred = document.getElementById('login-cred')?.value?.trim();
+        const pass = document.getElementById('login-pass')?.value;
+
+        try {
+          const usuario = await window.ModoParcheDB.login(cred, pass);
+          localStorage.setItem('mp_user', JSON.stringify(usuario));
+          alert('¡Bienvenido de nuevo, ' + usuario.nombre + '!');
+          window.location.href = 'dashboard.html';
+        } catch (err) {
+          console.error(err);
+          alert(err.message || 'Datos incorrectos. Intenta de nuevo.');
+          if (btn) {
+            btn.classList.remove('is-loading');
+            btn.removeAttribute('aria-busy');
+          }
+        }
+        return;
+      }
+
       const btn = document.getElementById('login-submit');
       if (btn) {
         btn.classList.add('is-loading');
