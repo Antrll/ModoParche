@@ -3,146 +3,325 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equipo y contacto — ModoParche</title>
-<link rel="icon" type="image/svg+xml" href="Assets/favicon.svg">
+<title>Equipo y contacto - ModoParche</title>
+<meta name="description" content="Conoce al equipo llanero detrás de ModoParche en Villavicencio. Misión, visión, manifiesto y contacto directo.">
+<meta name="theme-color" content="#FF5A1F">
+<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="src/assets/Branding/favicon-192.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="equipo.css">
+<script>document.documentElement.classList.add('mp-js');</script>
 </head>
-<body>
+<body class="page-team">
+
+<a class="skip-link" href="#main">Saltar al contenido</a>
 
 <header class="nav">
   <div class="wrap nav-row">
-    <div class="logo"><span class="logo-dot"></span>ModoParche</div>
-    <nav class="nav-links">
-      <a href="Index.html">Inicio</a>
-      <a href="Equipo.html" class="current">Equipo y contacto</a>
-      <a href="ComerciO.html">Para negocios</a>
+    <a href="index.html" class="logo" aria-label="ModoParche, inicio">
+      <img src="src/assets/web/isotipo-96.png" alt="" width="44" height="44">Modo<b>Parche</b>
+    </a>
+    <nav class="nav-links" aria-label="Principal">
+      <a href="index.html">Inicio</a>
+      <a href="equipo.html" aria-current="page">Equipo y contacto</a>
+      <a href="comercio.html">Para negocios</a>
     </nav>
     <div class="nav-right">
       <a href="login.html" class="nav-login">Iniciar sesión</a>
-      <a href="Index.html#feed" class="cta-open"><span class="pulse"></span>Abrir un parche</a>
+      <a href="index.html#feed" class="btn btn--sm"><span class="pulse" aria-hidden="true"></span>Abrir un parche</a>
+      <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
     </div>
   </div>
 </header>
 
-<section class="page-hero">
-  <div class="wrap">
-    <div class="kicker"><span class="line"></span>Quiénes somos</div>
-    <h1>Un grupo de llaneros armando la infraestructura social de su propia ciudad.</h1>
-    <p class="lede">ModoParche nació en Villavicencio porque estábamos cansados de planear salidas por grupos de WhatsApp que nunca cuadran. Construimos la herramienta que nos hubiera gustado tener.</p>
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <nav aria-label="Menú móvil">
+    <a href="index.html">Inicio</a>
+    <a href="equipo.html" aria-current="page">Equipo</a>
+    <a href="comercio.html">Negocios</a>
+    <a href="login.html">Entrar</a>
+  </nav>
+  <div class="mobile-menu-foot">
+    <a href="#contacto" class="btn btn--block">Escribir al equipo</a>
+    <p>Villavicencio, Meta · @modoparcheoficial</p>
+  </div>
+</div>
+
+<main id="main">
+
+<!-- ============================================================
+     HERO - QUIÉNES SOMOS
+============================================================ -->
+<section class="team-hero" aria-labelledby="team-hero-title">
+  <div class="wrap team-hero-grid">
+    <div class="team-hero-copy" data-reveal-group="90">
+      <h1 id="team-hero-title" data-reveal-lines>
+        <span class="line-mask"><span>Hecho en Villavo</span></span>
+        <span class="line-mask"><span class="accent">para la calle</span></span>
+      </h1>
+      <p class="team-lede" data-reveal>Somos un grupo de llaneros armando la infraestructura social de nuestra propia ciudad. ModoParche nació porque estábamos cansados de planear salidas por grupos de WhatsApp que nunca cuadran.</p>
+      <div class="team-hero-actions" data-reveal>
+        <a href="#contacto" class="btn">Hablar con nosotros
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#manifiesto" class="link">Leer el manifiesto</a>
+      </div>
+    </div>
+
+    <figure class="team-hero-art media" data-reveal="scale" data-error="No pudimos cargar el Orangeprint">
+      <img src="src/assets/web/orangeprint.jpg" alt="Orangeprint de ModoParche: despiece del símbolo con corona, mano rockera, rayos y llamas" width="1536" height="1024">
+    </figure>
   </div>
 </section>
 
-<section class="panel-section">
+<!-- ============================================================
+     EL MANIFIESTO - MISIÓN Y VISIÓN
+============================================================ -->
+<section class="manifesto teeth-top" id="manifiesto" aria-labelledby="manifesto-title">
+  <div class="wrap manifesto-grid">
+    <div class="manifesto-head" data-reveal-group>
+      <h2 class="h-xl" id="manifesto-title" data-reveal>Por qué existimos</h2>
+      <p data-reveal>Construimos la herramienta que nos habría gustado tener cada viernes a las siete de la noche en Villavicencio.</p>
+    </div>
+
+    <article class="manifesto-block manifesto-block--orange" data-reveal>
+      <h3>La misión</h3>
+      <p>Hacer que armar un plan en Villavicencio tome segundos, no cadenas eternas de mensajes. Conectamos personas con vibras compatibles y negocios locales con la gente que ya quiere estar ahí.</p>
+    </article>
+
+    <article class="manifesto-block manifesto-block--paper" data-reveal>
+      <h3>La visión</h3>
+      <p>Empezamos en Villavo porque es donde vivimos, pero construimos para que cualquier ciudad intermedia de Colombia tenga su propio radar de planes activos.</p>
+    </article>
+
+    <figure class="manifesto-photo media" data-reveal="scale" data-error="No pudimos cargar la imagen">
+      <img src="src/assets/web/valla.jpg" alt="Valla de ModoParche en Villavicencio al atardecer" width="1536" height="1024" loading="lazy" decoding="async">
+    </figure>
+  </div>
+</section>
+
+<!-- ============================================================
+     EL EQUIPO
+============================================================ -->
+<section class="roster" id="equipo" aria-labelledby="roster-title">
   <div class="wrap">
-    <div class="section-head"><h2>Por qué existimos</h2></div>
-    <div class="mission-grid">
-      <div class="card mission-card">
-        <h3>La misión</h3>
-        <p>Hacer que armar un plan en Villavicencio tome segundos, no cadenas eternas de mensajes. Conectamos personas con vibras compatibles y negocios locales con la gente que ya quiere estar ahí.</p>
-      </div>
-      <div class="card mission-card">
-        <h3>La visión</h3>
-        <p>Empezamos en Villavo porque es donde vivimos, pero construimos para que cualquier ciudad intermedia de Colombia tenga su propio radar de planes activos.</p>
-      </div>
+    <div class="roster-head" data-reveal-group>
+      <h2 class="h-xl" id="roster-title" data-reveal>Nuestro equipo</h2>
+      <p data-reveal>Las manos detrás del radar: diseñado, programado y probado en las calles de Villavicencio.</p>
+    </div>
+
+    <div class="roster-grid" data-reveal-group="90">
+      <article class="member member--ink" data-reveal>
+        <div class="member-top">
+          <div class="member-monogram" aria-hidden="true">DG</div>
+        </div>
+        <div class="member-body">
+          <h3>David García</h3>
+          <p><b>Producto y código.</b> Lidera la arquitectura técnica, la base de datos y el motor del radar en Villavicencio.</p>
+        </div>
+      </article>
+
+      <article class="member member--orange" data-reveal>
+        <div class="member-top">
+          <div class="member-monogram" aria-hidden="true">JG</div>
+        </div>
+        <div class="member-body">
+          <h3>Julian Guevara</h3>
+          <p><b>Diseño y experiencia.</b> Piensa cada parche desde el primer toque hasta el cupo lleno y la gráfica callejera de la marca.</p>
+        </div>
+      </article>
+
+      <!-- Estado vacío con intención: silla disponible en el equipo -->
+      <article class="member member--open" data-reveal>
+        <div class="member-top">
+          <div class="empty-mark"><img src="src/assets/web/isotipo-light.png" alt="" width="44" height="44"></div>
+        </div>
+        <div class="member-body">
+          <h3>Falta tu silla</h3>
+          <p><b>Vacante abierta.</b> Buscamos manos en comunidad, contenido callejero o desarrollo en Villavo. Escríbenos directo.</p>
+          <a href="#contacto" class="btn btn--sm" data-topic="Quiero sumarme al equipo">Postularme ahora</a>
+        </div>
+      </article>
     </div>
   </div>
 </section>
 
-<section class="panel-section">
-  <div class="wrap">
-    <div class="section-head"><h2>El equipo</h2><p>Las personas detrás del radar.</p></div>
-    <div class="team-grid">
-      <div class="card team-card">
-        <div class="team-photo team-photo-1">DG</div>
-        <div class="team-body">
-          <div class="name">David García</div>
-          <div class="role">Producto y desarrollo</div>
-          <div class="bio">Lidera la parte técnica y el diseño de producto. Estudiante de ingeniería en Villavicencio.</div>
+<!-- ============================================================
+     CÓMO TRABAJAMOS
+============================================================ -->
+<section class="values" id="principios" aria-labelledby="values-title">
+  <div class="wrap values-grid">
+    <div class="values-head" data-reveal-group>
+      <h2 class="h-lg" id="values-title" data-reveal>Cómo trabajamos</h2>
+      <p data-reveal>Tres reglas internas para decidir qué entra a ModoParche y qué se queda por fuera.</p>
+      <div class="values-photos" data-reveal>
+        <figure class="media" data-error=""><img src="src/assets/web/deportivo.jpg" alt="Afiche deportivo de ModoParche en un parque" width="1000" height="1500" loading="lazy" decoding="async"></figure>
+        <figure class="media" data-error=""><img src="src/assets/web/paradero.jpg" alt="Afiche de ModoParche en un paradero de bus" width="1000" height="1500" loading="lazy" decoding="async"></figure>
+      </div>
+    </div>
+
+    <div class="values-list" data-reveal-group="90">
+      <article class="value-band value-band--1" data-reveal>
+        <h3>De la calle</h3>
+        <p>Cada decisión de producto parte de un parche real que armamos o intentamos armar en Villavicencio: una cata, un cotejo, una caminata o una pola.</p>
+      </article>
+      <article class="value-band value-band--2" data-reveal>
+        <h3>Negocios primero</h3>
+        <p>Si un café, un bar o un mirador aliado no llena una mesa gracias a nosotros, no estamos haciendo bien el trabajo.</p>
+      </article>
+      <article class="value-band value-band--3" data-reveal>
+        <h3>Simple y directo</h3>
+        <p>Preferimos una función que la gente de Villavo use todos los días a diez pantallas que nadie encuentra.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CONTACTO
+============================================================ -->
+<section class="contact teeth-top" id="contacto" aria-labelledby="contact-title">
+  <div class="wrap contact-grid">
+    <div class="contact-info" data-reveal-group>
+      <h2 class="h-xl" id="contact-title" data-reveal>Hablemos sin rodeos</h2>
+      <p class="contact-lede" data-reveal>¿Tienes una idea, quieres aliar tu negocio o sumarte al equipo? Escríbenos y te respondemos directo.</p>
+
+      <dl class="contact-facts" data-reveal>
+        <div>
+          <dt>Correo</dt>
+          <dd><a href="mailto:modoparcheoficial@gmail.com" class="text-link">modoparcheoficial@gmail.com</a></dd>
+        </div>
+        <div>
+          <dt>Instagram</dt>
+          <dd><a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener" class="text-link">@modoparcheoficial</a></dd>
+        </div>
+        <div>
+          <dt>Ciudad</dt>
+          <dd>Villavicencio, Meta, Colombia</dd>
+        </div>
+        <div>
+          <dt>Horario de respuesta</dt>
+          <dd>Lunes a sábado · 8:00 a. m. – 7:00 p. m.</dd>
+        </div>
+      </dl>
+    </div>
+
+    <form class="contact-form" id="contactForm" data-validate data-demo-form data-success="<b>¡Mensaje enviado!</b><small>Lo leemos hoy mismo y te respondemos al correo que dejaste.</small>">
+      <div class="field">
+        <span class="field-label">¿Sobre qué nos escribes?</span>
+        <div class="topic-chips" id="topicChips">
+          <button type="button" class="topic-chip is-active" data-set-topic="Tengo una idea o parche">Tengo una idea</button>
+          <button type="button" class="topic-chip" data-set-topic="Quiero sumarme al equipo">Sumarme al equipo</button>
+          <button type="button" class="topic-chip" data-set-topic="Tengo un negocio en Villavo">Tengo un negocio</button>
+          <button type="button" class="topic-chip" data-set-topic="Prensa o alianza">Alianza</button>
+        </div>
+        <input type="hidden" name="topic" id="contactTopic" value="Tengo una idea o parche">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="name">Tu nombre</label>
+          <input type="text" id="name" name="name" required placeholder="¿Cómo te llamas?" data-error="Dinos cómo te llamas.">
+        </div>
+        <div class="field">
+          <label for="email">Tu correo</label>
+          <input type="email" id="email" name="email" required placeholder="tu@correo.com" data-error="Escribe un correo válido para responderte.">
         </div>
       </div>
-      <div class="card team-card">
-        <div class="team-photo team-photo-2">JG</div>
-        <div class="team-body">
-          <div class="name">Julian Guevara</div>
-          <div class="role">Diseño y experiencia</div>
-          <div class="bio">Piensa la experiencia de cada parche, desde el primer tap hasta el cupo lleno.</div>
-        </div>
+
+      <div class="field">
+        <label for="msg">Mensaje</label>
+        <textarea id="msg" name="msg" required placeholder="Cuéntanos qué tienes en mente…" data-error="Escribe tu mensaje antes de enviarlo."></textarea>
       </div>
-      <div class="card team-card">
-        <div class="team-photo team-photo-3">+</div>
-        <div class="team-body">
-          <div class="name">Súmate al equipo</div>
-          <div class="role">Vacante abierta</div>
-          <div class="bio">Estamos armando el equipo. Escríbenos si quieres construir esto con nosotros.</div>
-        </div>
+
+      <button type="submit" class="btn btn--block">Enviar mensaje
+        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+
+      <div class="status" role="status" aria-live="polite" tabindex="-1">
+        <span class="status-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+        </span>
+        <div class="status-text"></div>
       </div>
-    </div>
+    </form>
   </div>
 </section>
 
-<section class="panel-section">
+</main>
+
+<footer class="foot">
   <div class="wrap">
-    <div class="section-head"><h2>Cómo trabajamos</h2></div>
-    <div class="values-row">
-      <div class="card value-item">
-        <div class="num">01</div>
-        <h3>De la calle, para la calle</h3>
-        <p>Cada decisión de producto parte de un parche real que armamos o intentamos armar en Villavo.</p>
+    <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
+      <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
+    </svg>
+    <div class="foot-grid">
+      <div class="foot-intro">
+        <p>Planes en grupo para Villavicencio. Hecho en el Meta por gente que sale a parchar.</p>
+        <a href="login.html" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
       </div>
-      <div class="card value-item">
-        <div class="num">02</div>
-        <h3>Los negocios ganan primero</h3>
-        <p>Si un local no llena una mesa gracias a nosotros, no estamos haciendo bien el trabajo.</p>
+      <div class="foot-col">
+        <h2>Esta página</h2>
+        <a href="#manifiesto">El manifiesto</a>
+        <a href="#equipo">El equipo</a>
+        <a href="#principios">Cómo trabajamos</a>
+        <a href="#contacto">Contacto</a>
       </div>
-      <div class="card value-item">
-        <div class="num">03</div>
-        <h3>Simple antes que completo</h3>
-        <p>Preferimos una función que se usa todos los días a diez que nadie encuentra.</p>
+      <div class="foot-col">
+        <h2>ModoParche</h2>
+        <a href="index.html">Inicio</a>
+        <a href="comercio.html">Para negocios</a>
+        <a href="login.html">Iniciar sesión</a>
+      </div>
+      <div class="foot-col foot-contact">
+        <h2>Escríbenos</h2>
+        <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
+        <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
+        <p>Villavicencio, Meta</p>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="panel-section panel-flush">
-  <div class="wrap">
-    <div class="section-head"><h2>Contacto</h2><p>¿Tienes una idea, una alianza o quieres unirte al equipo? Escríbenos.</p></div>
-    <div class="contact-layout">
-      <div class="contact-info">
-        <div class="item"><div class="lbl">Correo</div><div class="val">hola@modoparche.co</div></div>
-        <div class="item"><div class="lbl">WhatsApp</div><div class="val">+57 300 000 0000</div></div>
-        <div class="item"><div class="lbl">Ciudad</div><div class="val">Villavicencio, Meta, Colombia</div></div>
-        <div class="item"><div class="lbl">Horario de respuesta</div><div class="val">Lunes a sábado, 8:00 AM – 7:00 PM</div></div>
-      </div>
-      <form class="card contact-form" onsubmit="handleContact(event)">
-        <div class="field"><label for="name">Nombre</label><input type="text" id="name" required placeholder="¿Cómo te llamas?"></div>
-        <div class="field"><label for="email">Correo</label><input type="email" id="email" required placeholder="tu@correo.com"></div>
-        <div class="field"><label for="msg">Mensaje</label><textarea id="msg" required placeholder="Cuéntanos qué necesitas"></textarea></div>
-        <button type="submit" class="btn-primary btn-block">Enviar mensaje</button>
-        <p id="contactStatus" class="status-msg"></p>
-      </form>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap foot-row">
-    <div><span class="foot-brand">ModoParche</span> · Villavicencio, Meta</div>
-    <div class="foot-links">
-      <a href="index.html">Inicio</a>
-      <a href="comercios.html">Para negocios</a>
-      <a href="login.html">Iniciar sesión</a>
+    <div class="foot-bottom">
+      <p>© <span data-year>2026</span> ModoParche · Hecho en Villavo</p>
+      <button type="button" class="foot-top" data-to-top>Volver arriba
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+      </button>
     </div>
   </div>
 </footer>
 
+<button class="to-top" type="button" aria-label="Volver arriba">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="mp-base.js" defer></script>
 <script>
-  function handleContact(e){
-    e.preventDefault();
-    document.getElementById('contactStatus').textContent = 'Listo, recibimos tu mensaje. Te respondemos pronto.';
-    e.target.reset();
+(() => {
+  const chips = Array.from(document.querySelectorAll('[data-set-topic]'));
+  const topicIn = document.getElementById('contactTopic');
+  const msgIn = document.getElementById('msg');
+
+  function selectTopic(label) {
+    chips.forEach(c => c.classList.toggle('is-active', c.dataset.setTopic === label));
+    if (topicIn) topicIn.value = label;
   }
+
+  chips.forEach(c => c.addEventListener('click', () => selectTopic(c.dataset.setTopic)));
+
+  document.querySelectorAll('[data-topic]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectTopic(btn.dataset.topic);
+      if (msgIn && !msgIn.value.trim()) {
+        msgIn.placeholder = 'Cuéntanos qué haces en Villavo y en qué te gustaría aportar al equipo…';
+      }
+    });
+  });
+})();
 </script>
 </body>
 </html>

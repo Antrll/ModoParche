@@ -1,296 +1,396 @@
-/* =========================================
-   BASE Y FUENTES
-========================================= */
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+/* =====================================================================
+   ModoParche - equipo.css
+   Equipo, manifiesto y contacto directo en Villavicencio.
+===================================================================== */
 
-:root {
-  --bg-color: #ffffff;
-  --text-main: #111111;
-  --text-muted: #666666;
-  --gray-light: #f4f4f5;
-  --gray-border: #e5e7eb;
-  --accent-color: #FF5A1F;
-  --font-heading: 'Bebas Neue', cursive;
-  --font-body: 'Inter', sans-serif;
+.h-xl { font-size: var(--t-xl); line-height: .9; letter-spacing: -.01em; }
+.h-lg { font-size: var(--t-lg); line-height: .94; letter-spacing: -.01em; }
+
+/* =====================================================================
+   1. HERO - Hecho en Villavo para la calle
+===================================================================== */
+.team-hero {
+  background: var(--paper);
+  color: var(--ink);
+  padding: clamp(48px, 7vw, 96px) 0 clamp(72px, 9vw, 128px);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: var(--font-body);
-  background: var(--bg-color);
-  color: var(--text-main);
-  line-height: 1.6;
-}
-
-h1, h2, h3, .logo {
-  font-family: var(--font-heading);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-.wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.btn-primary {
-  background: var(--accent-color);
-  color: #fff;
-  padding: 12px 24px;
-  font-weight: bold;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-
-/* =========================================
-   NAVEGACIÓN
-========================================= */
-.nav {
-  position: sticky;
-  top: 0;
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 2px solid var(--text-main);
-  padding: 16px 0;
-  z-index: 100;
-}
-
-.nav-row {
-  display: flex;
-  justify-content: space-between;
+.team-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(28px, 4vw, 56px);
   align-items: center;
 }
 
-.logo {
-  font-size: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo-dot {
-  width: 14px;
-  height: 14px;
-  background: var(--accent-color);
-  border-radius: 50%;
-}
-
-.nav-links {
-  display: flex;
+.team-hero-copy {
+  grid-column: 1 / 7;
+  display: grid;
+  justify-items: start;
   gap: 24px;
-  font-weight: 600;
 }
 
-.nav-right {
+.team-hero h1 {
+  font-size: var(--t-xl);
+  line-height: .88;
+}
+.team-hero h1 .accent {
+  color: var(--orange);
+}
+
+.team-lede {
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink);
+  max-width: 46ch;
+}
+
+.team-hero-actions {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 22px;
 }
 
-.cta-open {
-  background: var(--text-main);
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: bold;
+.team-hero-art {
+  grid-column: 7 / 13;
+  aspect-ratio: 3 / 2;
+  background: var(--orange);
 }
 
-/* =========================================
-   HERO EQUIPO
-========================================= */
-.page-hero {
-  padding: 100px 0;
-  text-align: center;
+/* =====================================================================
+   2. MANIFIESTO - Misión y Visión sobre tinta negra
+===================================================================== */
+.manifesto {
+  --teeth-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: var(--gap-section) 0;
 }
 
-.kicker {
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-
-.page-hero h1 {
-  font-size: 4rem;
-  max-width: 900px;
-  margin: 0 auto 20px;
-  line-height: 1;
-}
-
-.lede {
-  font-size: 1.2rem;
-  color: var(--text-muted);
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.panel-section {
-  padding: 60px 0;
-  border-top: 2px solid var(--gray-border);
-}
-
-.section-head h2 {
-  font-size: 3rem;
-  margin-bottom: 30px;
-}
-
-/* =========================================
-   TARJETAS (ESTILO BRUTALISTA)
-========================================= */
-.mission-grid, 
-.team-grid, 
-.values-row {
+.manifesto-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 22px;
+  align-items: stretch;
 }
 
-.card {
-  border: 2px solid var(--text-main);
-  padding: 32px;
-  border-radius: 12px;
-  box-shadow: 4px 4px 0px var(--text-main);
-  transition: 0.2s;
-}
-
-.card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0px var(--accent-color);
-}
-
-.mission-card h3 {
-  font-size: 2rem;
-  color: var(--accent-color);
-}
-
-/* PERFILES DEL EQUIPO */
-.team-photo {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+.manifesto-head {
+  grid-column: 1 / 6;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-heading);
-  font-size: 2.5rem;
-  color: #fff;
-  margin-bottom: 20px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  padding-right: 16px;
+}
+.manifesto-head p {
+  font-size: var(--t-body);
+  color: var(--paper);
+  max-width: 34ch;
 }
 
-.team-photo-1 { background: #111; }
-.team-photo-2 { background: var(--text-muted); }
-.team-photo-3 { background: var(--accent-color); }
-
-.team-body .name {
-  font-size: 2rem;
-  font-family: var(--font-heading);
+.manifesto-block {
+  padding: clamp(28px, 4vw, 44px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+}
+.manifesto-block h3 {
+  font-size: var(--t-lg);
+}
+.manifesto-block p {
+  font-size: var(--t-body);
+  line-height: 1.55;
 }
 
-.team-body .role {
-  font-weight: bold;
-  color: var(--accent-color);
-  margin-bottom: 10px;
+.manifesto-block--orange {
+  grid-column: 6 / 10;
+  background: var(--orange);
+  color: var(--ink);
+}
+.manifesto-block--paper {
+  grid-column: 10 / 13;
+  background: var(--paper);
+  color: var(--ink);
 }
 
-/* VALORES */
-.value-item .num {
-  font-family: var(--font-heading);
-  font-size: 4rem;
-  color: var(--gray-border);
-  line-height: 1;
-}
-
-.value-item h3 {
-  font-size: 1.8rem;
-  margin: 10px 0;
-}
-
-/* =========================================
-   FORMULARIO DE CONTACTO
-========================================= */
-.contact-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-}
-
-.item {
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--gray-border);
-  padding-bottom: 10px;
-}
-
-.item .lbl {
-  font-weight: bold;
-  color: var(--accent-color);
-  text-transform: uppercase;
-  font-size: 0.9rem;
-}
-
-.item .val {
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-.field {
-  margin-bottom: 16px;
-}
-
-.field label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.field input, 
-.field textarea {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid var(--text-main);
-  border-radius: 8px;
-  font-family: var(--font-body);
-}
-
-.btn-block {
-  width: 100%;
-  font-size: 1.1rem;
-}
-
-.status-msg {
-  text-align: center;
-  color: var(--accent-color);
-  font-weight: bold;
+.manifesto-photo {
+  grid-column: 1 / 13;
+  aspect-ratio: 21 / 9;
   margin-top: 10px;
 }
 
-/* =========================================
-   FOOTER
-========================================= */
-footer {
-  background: var(--text-main);
-  color: #fff;
-  padding: 40px 0;
-  margin-top: 60px;
+/* =====================================================================
+   3. EL EQUIPO
+===================================================================== */
+.roster {
+  background: var(--paper);
+  color: var(--ink);
+  padding: var(--gap-section) 0;
 }
 
-.foot-row {
+.roster-head {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  font-weight: 600;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: clamp(36px, 5vw, 60px);
+}
+.roster-head p {
+  font-size: var(--t-body);
+  color: var(--ink);
+  max-width: 36ch;
 }
 
-.foot-brand {
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.member {
+  grid-column: span 4;
+  padding: clamp(28px, 3.6vw, 42px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 36px;
+  transition: transform .35s var(--ease-out);
+}
+.member:hover {
+  transform: translateY(-6px);
+}
+
+.member--ink    { background: var(--ink);    color: var(--paper); }
+.member--orange { background: var(--orange); color: var(--ink); }
+.member--open   { background: var(--soft);   color: var(--ink); }
+
+.member-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.member-monogram {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: var(--t-lg);
+  line-height: 1;
+  clip-path: var(--burst);
+  transition: transform .5s var(--ease-out);
+}
+.member:hover .member-monogram {
+  transform: rotate(12deg) scale(1.06);
+}
+.member--ink .member-monogram {
+  background: var(--orange);
+  color: var(--ink);
+}
+.member--orange .member-monogram {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.member-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  background: rgba(255, 255, 255, .14);
+}
+.member--orange .member-tag {
+  background: var(--ink);
+  color: var(--paper);
+}
+.member--open .member-tag {
+  background: var(--orange);
+  color: var(--ink);
+}
+
+.member-body {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+.member-body h3 {
+  font-size: var(--t-lg);
+}
+.member-body p {
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.member--ink .member-body p {
+  color: var(--paper);
+}
+
+/* =====================================================================
+   4. CÓMO TRABAJAMOS
+===================================================================== */
+.values {
+  background: var(--soft);
+  color: var(--ink);
+  padding: var(--gap-section) 0;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(32px, 4vw, 56px);
+  align-items: start;
+}
+
+.values-head {
+  grid-column: 1 / 6;
+  display: grid;
+  gap: 20px;
+}
+.values-head p {
+  max-width: 38ch;
+  color: var(--ink);
+}
+.values-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+.values-photos figure {
+  aspect-ratio: 2 / 3;
+}
+
+.values-list {
+  grid-column: 6 / 13;
+  display: grid;
+  gap: 16px;
+}
+
+.value-band {
+  padding: clamp(28px, 3.8vw, 44px);
+  display: grid;
+  gap: 10px;
+}
+.value-band h3 {
+  font-size: var(--t-lg);
+}
+.value-band p {
+  font-size: var(--t-body);
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+.value-band--1 { background: var(--paper);       color: var(--ink); }
+.value-band--2 { background: var(--orange);      color: var(--ink); }
+.value-band--3 { background: var(--ink);         color: var(--paper); }
+.value-band--3 h3 { color: var(--orange); }
+.value-band--3 p { color: var(--paper); }
+
+/* =====================================================================
+   5. CONTACTO
+===================================================================== */
+.contact {
+  --teeth-color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
+  padding: var(--gap-section) 0;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(32px, 4.5vw, 64px);
+  align-items: start;
+}
+
+.contact-info {
+  grid-column: 1 / 6;
+  display: grid;
+  gap: 22px;
+}
+.contact-lede {
+  color: var(--ink);
+  max-width: 40ch;
+}
+
+.contact-facts {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+.contact-facts div {
+  background: var(--soft);
+  padding: 18px 22px;
+  display: grid;
+  gap: 4px;
+}
+.contact-facts dt {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--orange-deep);
+}
+.contact-facts dd {
+  font-size: var(--t-body);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.contact-form {
+  grid-column: 6 / 13;
+  background: var(--soft);
+  padding: clamp(26px, 4vw, 48px);
+}
+
+.topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.topic-chip {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  transition: background-color .2s ease, color .2s ease, transform .2s var(--ease-out);
+}
+.topic-chip:hover {
+  background: var(--orange-soft);
+  transform: translateY(-2px);
+}
+.topic-chip.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* =====================================================================
+   6. RESPONSIVE
+===================================================================== */
+@media (max-width: 1080px) {
+  .manifesto-head { grid-column: 1 / 13; }
+  .manifesto-block--orange { grid-column: 1 / 7; }
+  .manifesto-block--paper  { grid-column: 7 / 13; }
+  .member { grid-column: span 6; }
+  .member--open { grid-column: 1 / 13; }
+  .values-grid,
+  .contact-grid { grid-template-columns: 1fr; }
+  .values-head, .values-list { grid-column: 1 / -1; }
+  .contact-info, .contact-form { grid-column: 1 / -1; }
+}
+
+@media (max-width: 900px) {
+  .team-hero-grid,
+  .manifesto-grid,
+  .roster-grid { grid-template-columns: 1fr; }
+  .team-hero-copy, .team-hero-art,
+  .manifesto-head, .manifesto-block--orange, .manifesto-block--paper, .manifesto-photo,
+  .member { grid-column: 1 / -1; }
+  .manifesto-photo { aspect-ratio: 16 / 9; }
 }

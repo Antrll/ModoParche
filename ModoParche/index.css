@@ -1,5 +1,5 @@
 /* =====================================================================
-   ModoParche — index.css
+   ModoParche - index.css
    Dirección: Colour Chapters (capítulos de color plano de piso a techo,
    tipografía Gagalin + Inter, estética callejera de Villavicencio).
 ===================================================================== */
@@ -23,7 +23,7 @@
 }
 
 /* =====================================================================
-   1. HERO — El nombre apilado en dos tintas sobre campo naranja
+   1. HERO - El nombre apilado en dos tintas sobre campo naranja
 ===================================================================== */
 .hero {
   position: relative;
@@ -52,8 +52,8 @@
   grid-column: 1 / 10;
   grid-row: 1 / 3;
   align-self: start;
-  font-size: clamp(5.2rem, 16.5vw, 15.2rem);
-  line-height: .82;
+  font-size: var(--t-mega);
+  line-height: .84;
   letter-spacing: -.02em;
   color: var(--paper);
   user-select: none;
@@ -86,7 +86,7 @@
 }
 .hero-seal-ring text {
   font-family: var(--font-display);
-  font-size: 13.5px;
+  font-size: var(--t-sm);
   letter-spacing: 3px;
   text-transform: uppercase;
   fill: var(--ink);
@@ -111,7 +111,7 @@
   z-index: 2;
 }
 .hero-lede {
-  font-size: clamp(1.0625rem, 1.25vw, 1.25rem);
+  font-size: var(--t-body);
   line-height: 1.5;
   font-weight: 500;
   color: var(--ink);
@@ -139,7 +139,7 @@
 }
 .hero-marquee span {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: var(--t-body);
   letter-spacing: .04em;
   text-transform: uppercase;
 }
@@ -152,7 +152,7 @@
 }
 
 /* =====================================================================
-   2. RADAR EN VIVO — Lo que el visitante puede probar
+   2. RADAR EN VIVO - Lo que el visitante puede probar
 ===================================================================== */
 .radar {
   background: var(--ink);
@@ -173,8 +173,8 @@
   gap: 22px;
 }
 .radar-lede {
-  color: rgba(255, 255, 255, .82);
-  font-size: 1.125rem;
+  color: var(--paper);
+  font-size: var(--t-body);
   max-width: 42ch;
 }
 
@@ -190,7 +190,7 @@
 }
 .radar-filters legend {
   font-weight: 700;
-  font-size: .9375rem;
+  font-size: var(--t-sm);
   color: var(--paper);
   margin-bottom: 8px;
 }
@@ -218,7 +218,7 @@
   min-height: 42px;
   padding: 0 16px;
   font-weight: 700;
-  font-size: .9375rem;
+  font-size: var(--t-sm);
   background: #1d1d20;
   color: var(--paper);
   transition: background-color .2s ease, color .2s ease, transform .2s var(--ease-out);
@@ -260,13 +260,13 @@
   min-height: 40px;
   padding: 0 10px;
   font-weight: 700;
-  font-size: .9rem;
-  color: rgba(255, 255, 255, .78);
+  font-size: var(--t-sm);
+  color: var(--paper);
   text-align: center;
   transition: background-color .2s ease, color .2s ease;
 }
 .segmented label:hover span {
-  color: var(--paper);
+  color: var(--orange);
 }
 .segmented input:checked + span {
   background: var(--paper);
@@ -297,15 +297,16 @@
   border-bottom: 2px solid var(--ink);
 }
 .radar-count {
-  font-size: 1.05rem;
+  font-size: var(--t-body);
   font-weight: 700;
+  color: var(--ink);
 }
 .radar-count b {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 2.4rem;
+  font-size: var(--t-lg);
   line-height: 1;
-  color: var(--orange);
+  color: var(--orange-deep);
   margin-right: 4px;
 }
 .radar-live {
@@ -359,10 +360,10 @@
 .plan-match b {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 1.55rem;
+  font-size: var(--t-lg);
 }
 .plan-match span {
-  font-size: .72rem;
+  font-size: var(--t-sm);
   font-weight: 700;
 }
 
@@ -382,31 +383,31 @@
   padding: 2px 9px;
   background: var(--ink);
   color: var(--paper);
-  font-size: .78rem;
+  font-size: var(--t-sm);
   font-weight: 700;
 }
 .plan-spots {
-  font-size: .82rem;
+  font-size: var(--t-sm);
   font-weight: 700;
   color: var(--orange-deep);
 }
 .plan-title {
   font-family: var(--font-body);
-  font-size: 1.08rem;
+  font-size: var(--t-body);
   font-weight: 800;
   text-transform: none;
   letter-spacing: 0;
   line-height: 1.25;
 }
 .plan-meta {
-  font-size: .9rem;
-  color: var(--muted);
+  font-size: var(--t-sm);
+  color: var(--ink);
 }
 
 .plan-join {
   min-height: 42px;
   padding: 0 16px;
-  font-size: .875rem;
+  font-size: var(--t-sm);
   font-weight: 700;
   background: var(--paper);
   color: var(--ink);
@@ -454,16 +455,16 @@
 }
 .radar-empty[hidden] { display: none; }
 .radar-empty h3 {
-  font-size: 2rem;
+  font-size: var(--t-lg);
 }
 .radar-empty p {
-  color: var(--muted);
+  color: var(--ink);
   max-width: 44ch;
 }
 
 .radar-note {
   font-size: var(--t-sm);
-  color: var(--muted);
+  color: var(--ink);
 }
 
 /* =====================================================================
@@ -529,12 +530,15 @@
 .tile--paper  { background: var(--soft); }
 .tile--ink    { background: var(--ink); }
 
-.tile-face img {
-  max-height: 78%;
+.tile-face img,
+.tile-face.media img {
   width: auto;
+  height: auto;
+  max-width: 82%;
+  max-height: 78%;
   object-fit: contain;
   mix-blend-mode: multiply;
-  transition: transform .6s var(--ease-out);
+  transition: opacity .5s ease, transform .6s var(--ease-out);
 }
 .tile-face img.cutout {
   mix-blend-mode: normal;
@@ -545,7 +549,7 @@
 
 .tile h3 {
   font-family: var(--font-body);
-  font-size: 1.2rem;
+  font-size: var(--t-body);
   font-weight: 800;
   text-transform: none;
   letter-spacing: 0;
@@ -553,14 +557,14 @@
   margin-top: 4px;
 }
 .tile p {
-  font-size: 1rem;
-  color: var(--muted);
+  font-size: var(--t-body);
+  color: var(--ink);
   line-height: 1.45;
   max-width: 34ch;
 }
 
 /* =====================================================================
-   4. CÓMO FUNCIONA — Acordeón horizontal de paneles
+   4. CÓMO FUNCIONA - Acordeón horizontal de paneles
 ===================================================================== */
 .how {
   --teeth-color: var(--soft);
@@ -581,7 +585,7 @@
 }
 .how-intro p {
   grid-column: 8 / 13;
-  font-size: 1.125rem;
+  font-size: var(--t-body);
   color: var(--ink);
 }
 
@@ -620,7 +624,7 @@
   justify-content: flex-start;
   text-align: left;
   font-family: var(--font-display);
-  font-size: 1.65rem;
+  font-size: var(--t-lg);
   letter-spacing: .03em;
   text-transform: uppercase;
   writing-mode: vertical-rl;
@@ -650,12 +654,12 @@
 }
 
 .stage-body h3 {
-  font-size: clamp(2.2rem, 3.6vw, 3.3rem);
+  font-size: var(--t-xl);
   line-height: .94;
   max-width: 16ch;
 }
 .stage-body p {
-  font-size: 1.125rem;
+  font-size: var(--t-body);
   line-height: 1.55;
   max-width: 36ch;
   z-index: 2;
@@ -673,7 +677,7 @@
 .stage-art--chips span {
   padding: 10px 18px;
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: var(--t-lg);
   text-transform: uppercase;
   background: #222226;
   color: var(--paper);
@@ -697,12 +701,12 @@
 .stage-art--match b {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 3.6rem;
+  font-size: var(--t-xl);
   color: var(--orange);
 }
 .stage-art--match span {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: var(--t-lg);
   text-transform: uppercase;
 }
 .stage-art--seats {
@@ -722,7 +726,7 @@
 .stage-art--seats span {
   margin-left: 8px;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: var(--t-lg);
   text-transform: uppercase;
 }
 .stage-art--fire {
@@ -757,7 +761,7 @@
   min-height: 50px;
   padding: 0 24px;
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: var(--t-lg);
   letter-spacing: .03em;
   text-transform: uppercase;
   background: var(--soft);
@@ -797,7 +801,7 @@
   gap: 22px;
 }
 .who-copy h3 {
-  font-size: clamp(2.1rem, 3.6vw, 3.2rem);
+  font-size: var(--t-lg);
 }
 
 .checks {
@@ -807,7 +811,7 @@
 .checks li {
   position: relative;
   padding-left: 34px;
-  font-size: 1.0625rem;
+  font-size: var(--t-body);
 }
 .checks li::before {
   content: "";
@@ -856,7 +860,7 @@
   position: relative;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(4.6rem, 7.5vw, 6.4rem);
+  font-size: var(--t-xl);
   line-height: 1;
   color: var(--ink);
 }
@@ -869,20 +873,21 @@
   color: var(--paper);
   padding: 6px 22px 5px;
   font-family: var(--font-display);
-  font-size: 1.65rem;
+  font-size: var(--t-lg);
   letter-spacing: 3px;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 /* =====================================================================
-   6. CAMPAÑA — Piezas de calle sobre el titular
+   6. CAMPAÑA - Piezas de calle sobre el titular
 ===================================================================== */
 .campaign {
   --teeth-color: var(--orange);
   background: var(--orange);
   color: var(--ink);
   padding: var(--gap-section) 0;
+  overflow-x: clip;
 }
 
 .campaign-stage {
@@ -891,7 +896,7 @@
 }
 
 .campaign-title {
-  font-size: clamp(4.2rem, 13.5vw, 12.6rem);
+  font-size: var(--t-mega);
   line-height: .84;
   text-align: center;
   color: var(--ink);
@@ -949,13 +954,13 @@
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: var(--t-lg);
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
 .campaign-note {
-  font-size: 1.05rem;
+  font-size: var(--t-body);
   font-weight: 600;
   color: var(--ink);
 }
@@ -1017,13 +1022,13 @@
   gap: 16px;
   color: var(--paper);
   font-family: var(--font-display);
-  font-size: 1.45rem;
+  font-size: var(--t-lg);
   letter-spacing: 2px;
   text-transform: uppercase;
 }
 .lb-count {
   font-family: var(--font-body);
-  font-size: .9rem;
+  font-size: var(--t-sm);
   font-weight: 700;
   color: var(--orange);
 }
@@ -1078,17 +1083,17 @@
   gap: 18px;
 }
 .street-lead {
-  font-size: 1.25rem;
+  font-size: var(--t-body);
   font-weight: 600;
   color: var(--paper);
 }
 .street-copy p {
-  color: rgba(255, 255, 255, .82);
+  color: var(--paper);
   max-width: 48ch;
 }
 .street-shout {
   font-family: var(--font-display);
-  font-size: clamp(2.1rem, 4vw, 3.2rem);
+  font-size: var(--t-xl);
   color: var(--orange) !important;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -1102,7 +1107,7 @@
 }
 
 /* =====================================================================
-   8. PREGUNTAS FRECUENTES — Una banda por pregunta
+   8. PREGUNTAS FRECUENTES - Una banda por pregunta
 ===================================================================== */
 .faq {
   background: var(--paper);
@@ -1139,19 +1144,19 @@
 .faq-row dt {
   grid-column: 1 / 6;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 2.5vw, 2.3rem);
+  font-size: var(--t-lg);
   line-height: 1;
   text-transform: uppercase;
 }
 .faq-row dd {
   grid-column: 7 / 13;
-  font-size: 1.0625rem;
+  font-size: var(--t-body);
   line-height: 1.6;
   max-width: 58ch;
 }
 
 /* =====================================================================
-   9. CIERRE — La ficha de acción (The action tile)
+   9. CIERRE - La ficha de acción (The action tile)
 ===================================================================== */
 .close {
   background: var(--paper);
@@ -1193,14 +1198,14 @@
   overflow: hidden;
 }
 .close-tile h2 {
-  font-size: clamp(2.8rem, 5.2vw, 4.4rem);
+  font-size: var(--t-xl);
   line-height: .9;
   max-width: 14ch;
   position: relative;
   z-index: 2;
 }
 .close-tile p {
-  font-size: 1.125rem;
+  font-size: var(--t-body);
   font-weight: 500;
   max-width: 40ch;
   position: relative;
@@ -1232,16 +1237,20 @@
    10. RESPONSIVE
 ===================================================================== */
 @media (max-width: 1080px) {
-  .radar-intro { grid-column: 1 / 13; }
-  .radar-panel { grid-column: 1 / 13; }
-  .spec-head { grid-column: 1 / 13; position: static; }
-  .tiles { grid-column: 1 / 13; }
-  .how-intro h2 { grid-column: 1 / 13; }
-  .how-intro p { grid-column: 1 / 13; }
+  .radar-grid,
+  .spec-grid,
+  .how-intro { grid-template-columns: 1fr; }
+  .radar-intro,
+  .radar-panel,
+  .spec-head,
+  .tiles,
+  .how-intro h2,
+  .how-intro p { grid-column: 1 / -1; position: static; }
 }
 
 @media (max-width: 900px) {
-  .hero-title { grid-column: 1 / 13; grid-row: 1; font-size: clamp(4.8rem, 21vw, 9.5rem); }
+  .hero-grid { column-gap: 12px; }
+  .hero-title { grid-column: 1 / 13; grid-row: 1; }
   .hero-seal { grid-column: 8 / 13; grid-row: 1; align-self: end; width: clamp(140px, 28vw, 210px); }
   .hero-foot { grid-column: 1 / 13; grid-row: 2; }
 
@@ -1255,15 +1264,18 @@
     align-items: center;
   }
 
-  .who-copy { grid-column: 1 / 13; }
-  .who-art { grid-column: 1 / 13; order: -1; width: min(100%, 220px); }
+  .who-panel { grid-template-columns: 1fr; }
+  .who-copy { grid-column: 1 / -1; }
+  .who-art { grid-column: 1 / -1; order: -1; width: min(100%, 220px); }
 
   .prints { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
   .print--a, .print--b, .print--c, .print--d, .print--e { grid-column: auto; margin-top: 0; }
   .print--c { grid-column: 1 / -1; }
 
-  .street-grid h2, .street-copy { grid-column: 1 / 13; }
-  .faq-row dt, .faq-row dd { grid-column: 1 / 13; }
+  .street-grid,
+  .faq-row { grid-template-columns: 1fr; }
+  .street-grid h2, .street-copy,
+  .faq-row dt, .faq-row dd { grid-column: 1 / -1; }
 
   .close-row { grid-template-columns: 1fr 1fr; padding-inline: var(--margin); }
   .close-tile { grid-column: 1 / -1; order: -1; }
@@ -1271,7 +1283,7 @@
 }
 
 @media (max-width: 620px) {
-  .hero-seal { display: none; }
+  .hero-seal { grid-column: 6 / 13; grid-row: 1; align-self: end; justify-self: end; width: 156px; margin-top: 84px; }
   .tiles { grid-template-columns: repeat(2, 1fr); gap: 22px 10px; }
   .tile-wide { grid-column: 1 / -1; order: -1; }
   .plan { grid-template-columns: 68px 1fr; }

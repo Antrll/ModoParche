@@ -3,182 +3,295 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Iniciar sesión — ModoParche</title>
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<title>Iniciar sesión - ModoParche</title>
+<meta name="description" content="Inicia sesión o crea tu cuenta en ModoParche para ver los planes en grupo abiertos hoy en Villavicencio.">
+<meta name="theme-color" content="#111111">
+<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="src/assets/Branding/favicon-192.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="login.css">
+<script>document.documentElement.classList.add('mp-js');</script>
 </head>
-<body>
+<body class="page-auth">
+
+<a class="skip-link" href="#main">Saltar al formulario</a>
 
 <header class="nav">
   <div class="wrap nav-row">
-    <a href="index.html" class="logo"><span class="logo-dot"></span>ModoParche</a>
-    <nav class="nav-links">
+    <a href="index.html" class="logo" aria-label="ModoParche, inicio">
+      <img src="src/assets/web/isotipo-96.png" alt="" width="44" height="44">Modo<b>Parche</b>
+    </a>
+    <nav class="nav-links" aria-label="Principal">
       <a href="index.html">Inicio</a>
       <a href="equipo.html">Equipo y contacto</a>
-      <a href="comercios.html">Para negocios</a>
+      <a href="comercio.html">Para negocios</a>
     </nav>
-    <div class="nav-right"><a href="index.html" class="nav-login">Volver al inicio</a></div>
+    <div class="nav-right">
+      <a href="index.html" class="nav-login">Volver al inicio</a>
+      <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
+    </div>
   </div>
 </header>
 
-<div class="auth-shell">
-  <!-- Panel de la izquierda (Diseño) -->
-  <div class="brand-panel">
-    <div>
-      <div class="kicker"><span class="line"></span>Villavicencio, Meta</div>
-      <h1>Entra y mira qué parche tiene <span>tu radar</span> para hoy.</h1>
-    </div>
-    <div class="mini-feed">
-      <div class="mini-card">
-        <div><div class="t">Cata de café, Los Centauros</div><div class="m">Hoy · 5:00 PM</div></div>
-        <span class="mini-badge">92% match</span>
-      </div>
-      <div class="mini-card">
-        <div><div class="t">Caminata en Kirpas Ecoparque</div><div class="m">Hoy · 4:30 PM</div></div>
-        <span class="mini-badge">87% match</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Panel de la derecha (Formularios funcionales) -->
-  <div class="auth-panel">
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuth('login', this)">Iniciar sesión</button>
-      <button class="auth-tab" onclick="switchAuth('signup', this)">Crear cuenta</button>
-    </div>
-
-    <!-- FORMULARIO DE LOGIN -->
-    <div class="auth-view active" id="view-login">
-      <h2>Qué bueno verte de nuevo</h2>
-      <p class="sub">Entra para ver los parches abiertos en Villavo ahora mismo.</p>
-
-      <form action="procesar_login.php" method="POST">
-        <div class="field">
-          <label>Correo o Teléfono</label>
-          <input type="text" name="credencial" required placeholder="tu@correo.com o celular">
-        </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input type="password" name="password" required placeholder="••••••••">
-        </div>
-        <div class="form-foot">
-          <label class="checkbox-row"><input type="checkbox">Recordarme</label>
-          <a href="#">¿Olvidaste tu contraseña?</a>
-        </div>
-        <button type="submit" class="btn-primary btn-block">Entrar</button>
-      </form>
-    </div>
-
-    <!-- FORMULARIO DE REGISTRO (WIZARD DE 3 PASOS) -->
-    <div class="auth-view" id="view-signup">
-
-      <div class="wizard-progress">
-        <span class="wz-dot active" data-dot="1"></span>
-        <span class="wz-dot" data-dot="2"></span>
-        <span class="wz-dot" data-dot="3"></span>
-      </div>
-
-      <form action="registro.php" method="POST" id="form-registro">
-
-        <!-- PASO 1: Datos de acceso -->
-        <div class="wz-step active" id="wz-step-1">
-          <h2>Crea tu cuenta</h2>
-          <p class="sub">Empecemos por lo básico.</p>
-
-          <div class="field">
-            <label>Nombre Completo</label>
-            <input type="text" name="nombre" required placeholder="¿Cómo te llamas?">
-          </div>
-          <div class="field">
-            <label>Cédula</label>
-            <input type="text" name="cedula" required inputmode="numeric" placeholder="Tu número de documento">
-          </div>
-          <div class="field">
-            <label>Teléfono</label>
-            <input type="text" name="telefono" required inputmode="numeric" placeholder="Tu número de celular">
-          </div>
-          <div class="field">
-            <label>Correo</label>
-            <input type="email" name="email" required placeholder="tu@correo.com">
-          </div>
-          <div class="field">
-            <label>Contraseña</label>
-            <input type="password" name="password" required pattern="(?=.*[A-Z]).{8,}"
-                   title="Debe tener al menos 8 caracteres y una letra mayúscula"
-                   placeholder="Mínimo 8 caracteres y 1 mayúscula">
-          </div>
-
-          <div class="wz-actions">
-            <span></span>
-            <button type="button" class="btn-primary" onclick="wzNext(1)">Siguiente</button>
-          </div>
-        </div>
-
-        <!-- PASO 2: Identificación / perfil -->
-        <div class="wz-step" id="wz-step-2">
-          <h2>Cuéntanos más de ti</h2>
-          <p class="sub">Esto nos ayuda a mostrarte planes cerca y a tu medida.</p>
-
-          <div class="field">
-            <label>Ciudad</label>
-            <select name="ciudad_id" required>
-              <option value="">Selecciona una ciudad</option>
-              <option value="1" selected>Villavicencio</option>
-              <option value="2">Acacías</option>
-              <option value="3">Restrepo</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Fecha de nacimiento</label>
-            <input type="date" name="fecha_nacimiento">
-          </div>
-
-          <div class="field">
-            <label>Instagram (opcional)</label>
-            <input type="text" name="instagram_usuario" placeholder="@tuusuario">
-          </div>
-
-          <div class="wz-actions">
-            <button type="button" class="btn-secondary" onclick="wzPrev(2)">Atrás</button>
-            <button type="button" class="btn-primary" onclick="wzNext(2)">Siguiente</button>
-          </div>
-        </div>
-
-        <!-- PASO 3: Intereses -->
-        <!-- NOTA: estos IDs deben coincidir con la tabla `categorias` de tu base de datos.
-             Según tu último dump: 1=Rumba, 2=Comida, 3=Aventura, 4=Deporte, 5=Cultura, 6=Gaming.
-             Si agregas/quitas una categoría en la BD, actualiza esta lista a mano. -->
-        <div class="wz-step" id="wz-step-3">
-          <h2>¿Qué tipo de parches te gustan?</h2>
-          <p class="sub">Elige mínimo una categoría. Podrás cambiarlas después.</p>
-
-          <div class="field">
-            <div class="pill-group">
-              <label class="pill"><input type="checkbox" name="categorias[]" value="1"><span>Rumba</span></label>
-              <label class="pill"><input type="checkbox" name="categorias[]" value="2"><span>Comida</span></label>
-              <label class="pill"><input type="checkbox" name="categorias[]" value="3"><span>Aventura</span></label>
-              <label class="pill"><input type="checkbox" name="categorias[]" value="4"><span>Deporte</span></label>
-              <label class="pill"><input type="checkbox" name="categorias[]" value="5"><span>Cultura</span></label>
-              <label class="pill"><input type="checkbox" name="categorias[]" value="6"><span>Gaming</span></label>
-            </div>
-          </div>
-
-          <p class="status-msg" id="wz-error" style="display:none;"></p>
-
-          <div class="wz-actions">
-            <button type="button" class="btn-secondary" onclick="wzPrev(3)">Atrás</button>
-            <button type="submit" class="btn-primary btn-block" id="wz-submit">Crear cuenta</button>
-          </div>
-        </div>
-
-      </form>
-    </div>
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <nav aria-label="Menú móvil">
+    <a href="index.html">Inicio</a>
+    <a href="equipo.html">Equipo</a>
+    <a href="comercio.html">Negocios</a>
+    <a href="login.html" aria-current="page">Entrar</a>
+  </nav>
+  <div class="mobile-menu-foot">
+    <a href="index.html" class="btn btn--block">Volver al inicio</a>
+    <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
 </div>
 
-<script src="login.js"></script>
+<main id="main" class="auth-shell">
+
+  <!-- ============================================================
+       COLUMNA IZQUIERDA - Escaparate de Villavicencio
+  ============================================================ -->
+  <section class="brand-panel" aria-labelledby="auth-hero-title">
+    <div class="brand-top" data-reveal-group="90">
+      <h1 id="auth-hero-title" data-reveal-lines>
+        <span class="line-mask"><span>Entra al radar</span></span>
+        <span class="line-mask"><span class="accent">de Villavo</span></span>
+      </h1>
+      <p class="brand-lede" data-reveal>Mira qué parches están abiertos hoy, cuántos cupos quedan y quiénes salen con tu misma vibra.</p>
+    </div>
+
+    <!-- Muestra en vivo de parches -->
+    <div class="mini-feed" data-ui data-reveal>
+      <div class="mini-head">
+        <span>Parches abiertos hoy</span>
+        <span class="radar-live"><span class="pulse" aria-hidden="true"></span>Villavicencio</span>
+      </div>
+      <div class="mini-card">
+        <div>
+          <div class="t">Cata de café, Los Centauros</div>
+          <div class="m">Hoy · 5:00 p. m. · Quedan 3 cupos</div>
+        </div>
+        <span class="mini-badge">92% match</span>
+      </div>
+      <div class="mini-card">
+        <div>
+          <div class="t">Caminata en Kirpas Ecoparque</div>
+          <div class="m">Sáb · 6:00 a. m. · Gratis</div>
+        </div>
+        <span class="mini-badge">87% match</span>
+      </div>
+    </div>
+
+    <!-- Tira fotográfica de la campaña en la calle -->
+    <div class="brand-strip" data-reveal-group="80">
+      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/restaurante.jpg" alt="Tablero de ModoParche en restaurante" width="1000" height="1500" loading="lazy"></figure>
+      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/discoteca.jpg" alt="Afiche de ModoParche en discoteca" width="1000" height="1500" loading="lazy"></figure>
+      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/deportivo.jpg" alt="Afiche deportivo de ModoParche" width="1000" height="1500" loading="lazy"></figure>
+      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/paradero.jpg" alt="Afiche de ModoParche en paradero" width="1000" height="1500" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       COLUMNA DERECHA - Iniciar sesión / Crear cuenta
+  ============================================================ -->
+  <section class="auth-panel" aria-label="Acceso a tu cuenta">
+    <div class="auth-box" data-reveal-group="70">
+
+      <div class="auth-tabs" role="tablist" aria-label="Acceso o registro" data-reveal>
+        <button type="button" role="tab" id="tab-login" aria-controls="view-login" aria-selected="true" class="auth-tab active" onclick="switchAuth('login', this)">Iniciar sesión</button>
+        <button type="button" role="tab" id="tab-signup" aria-controls="view-signup" aria-selected="false" class="auth-tab" onclick="switchAuth('signup', this)">Crear cuenta</button>
+      </div>
+
+      <!-- ========================================================
+           VISTA 1: INICIAR SESIÓN
+      ======================================================== -->
+      <div class="auth-view active" id="view-login" role="tabpanel" aria-labelledby="tab-login" data-reveal>
+        <h2>Qué bueno verte</h2>
+        <p class="sub">Entra para ver los parches abiertos en Villavo ahora mismo.</p>
+
+        <form action="procesar_login.php" method="POST" id="form-login" data-validate>
+          <div class="field">
+            <label for="login-cred">Correo o teléfono</label>
+            <input type="text" id="login-cred" name="credencial" required autocomplete="username" placeholder="tu@correo.com o 300 000 0000" data-error="Escribe tu correo o tu número de celular.">
+          </div>
+
+          <div class="field">
+            <label for="login-pass">Contraseña</label>
+            <div class="pass-wrap">
+              <input type="password" id="login-pass" name="password" required autocomplete="current-password" placeholder="Tu contraseña" data-error="Ingresa tu contraseña.">
+              <button type="button" class="pass-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="i-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0112 19c-6.4 0-10-7-10-7a18.5 18.5 0 015.1-5.9M9.9 4.2A10.5 10.5 0 0112 4c6.4 0 10 7 10 7a18.5 18.5 0 01-2.2 3.2M1 1l22 22"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-foot">
+            <label class="check"><input type="checkbox" name="remember"><span>Recordarme</span></label>
+            <button type="button" class="text-link btn-link" id="forgotToggle" aria-expanded="false" aria-controls="forgotBox">¿Olvidaste tu contraseña?</button>
+          </div>
+
+          <div class="forgot-box" id="forgotBox" hidden>
+            <p>Escríbenos desde tu correo registrado a <a href="mailto:modoparcheoficial@gmail.com?subject=Recuperar%20acceso%20ModoParche" class="text-link">modoparcheoficial@gmail.com</a> y restablecemos tu clave hoy mismo.</p>
+          </div>
+
+          <button type="submit" class="btn btn--block" id="login-submit">Entrar a mi radar
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <p class="auth-switch">¿Aún no tienes cuenta? <button type="button" class="text-link btn-link" onclick="switchAuth('signup', document.getElementById('tab-signup'))">Créala en tres pasos</button></p>
+      </div>
+
+      <!-- ========================================================
+           VISTA 2: CREAR CUENTA (WIZARD DE 3 PASOS)
+      ======================================================== -->
+      <div class="auth-view" id="view-signup" role="tabpanel" aria-labelledby="tab-signup" hidden>
+
+        <ol class="wizard-progress" aria-label="Progreso del registro">
+          <li class="wz-dot active" data-dot="1"><span>Tus datos</span></li>
+          <li class="wz-dot" data-dot="2"><span>Tu perfil</span></li>
+          <li class="wz-dot" data-dot="3"><span>Tus gustos</span></li>
+        </ol>
+
+        <form action="registro.php" method="POST" id="form-registro" data-validate>
+
+          <!-- PASO 1: Datos de acceso -->
+          <div class="wz-step active" id="wz-step-1">
+            <h2>Crea tu cuenta</h2>
+            <p class="sub">Empecemos por tus datos para entrar.</p>
+
+            <div class="field">
+              <label for="reg-nombre">Nombre completo</label>
+              <input type="text" id="reg-nombre" name="nombre" required autocomplete="name" placeholder="¿Cómo te llamas?" data-error="Escribe tu nombre y apellido.">
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="reg-cedula">Cédula</label>
+                <input type="text" id="reg-cedula" name="cedula" required inputmode="numeric" pattern="[0-9]{5,15}" placeholder="Tu documento" data-error="Ingresa solo números (5 a 15 dígitos).">
+              </div>
+              <div class="field">
+                <label for="reg-tel">Teléfono</label>
+                <input type="text" id="reg-tel" name="telefono" required inputmode="numeric" pattern="[0-9 +()-]{7,15}" placeholder="300 000 0000" data-error="Ingresa tu número de celular.">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="reg-email">Correo electrónico</label>
+              <input type="email" id="reg-email" name="email" required autocomplete="email" placeholder="tu@correo.com" data-error="Escribe un correo válido (ej. nombre@correo.com).">
+            </div>
+
+            <div class="field">
+              <label for="reg-pass">Contraseña</label>
+              <div class="pass-wrap">
+                <input type="password" id="reg-pass" name="password" required autocomplete="new-password"
+                       pattern="(?=.*[A-Z]).{8,}"
+                       title="Debe tener al menos 8 caracteres y una letra mayúscula"
+                       placeholder="Mínimo 8 caracteres y 1 mayúscula"
+                       data-error="Usa mínimo 8 caracteres e incluye al menos una letra mayúscula.">
+                <button type="button" class="pass-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                  <svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="i-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0112 19c-6.4 0-10-7-10-7a18.5 18.5 0 015.1-5.9M9.9 4.2A10.5 10.5 0 0112 4c6.4 0 10 7 10 7a18.5 18.5 0 01-2.2 3.2M1 1l22 22"/></svg>
+                </button>
+              </div>
+              <ul class="pass-rules" id="passRules" aria-live="polite">
+                <li data-rule="len">8 caracteres o más</li>
+                <li data-rule="upper">Al menos 1 letra mayúscula</li>
+              </ul>
+            </div>
+
+            <div class="wz-actions">
+              <span></span>
+              <button type="button" class="btn" onclick="wzNext(1)">Continuar
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- PASO 2: Perfil -->
+          <div class="wz-step" id="wz-step-2">
+            <h2>Tu perfil en el Meta</h2>
+            <p class="sub">Esto nos ayuda a mostrarte parches cerca de donde estás.</p>
+
+            <div class="field">
+              <label for="reg-ciudad">Ciudad</label>
+              <select id="reg-ciudad" name="ciudad_id" required data-error="Selecciona tu ciudad.">
+                <option value="">Selecciona una ciudad</option>
+                <option value="1" selected>Villavicencio</option>
+                <option value="2">Acacías</option>
+                <option value="3">Restrepo</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="reg-fecha">Fecha de nacimiento <span class="field-hint">(opcional)</span></label>
+              <input type="date" id="reg-fecha" name="fecha_nacimiento">
+            </div>
+
+            <div class="field">
+              <label for="reg-ig">Instagram <span class="field-hint">(opcional)</span></label>
+              <input type="text" id="reg-ig" name="instagram_usuario" placeholder="@tuusuario">
+            </div>
+
+            <div class="wz-actions">
+              <button type="button" class="btn btn--paper" onclick="wzPrev(2)">Atrás</button>
+              <button type="button" class="btn" onclick="wzNext(2)">Continuar
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- PASO 3: Intereses (IDs de la BD: 1=Rumba, 2=Comida, 3=Aventura, 4=Deporte, 5=Cultura, 6=Gaming) -->
+          <div class="wz-step" id="wz-step-3">
+            <h2>¿Qué te gusta parchar?</h2>
+            <p class="sub">Elige mínimo una categoría. Podrás cambiarlas cuando quieras.</p>
+
+            <div class="field">
+              <div class="pill-group" id="catGroup">
+                <label class="pill"><input type="checkbox" name="categorias[]" value="1"><span>Rumba</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="2"><span>Comida</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="3"><span>Aventura</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="4"><span>Deporte</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="5"><span>Cultura</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="6"><span>Gaming</span></label>
+              </div>
+            </div>
+
+            <!-- Estado vacío / resumen de selección de categorías -->
+            <div class="cat-empty" id="catEmpty">
+              <div class="empty-mark"><img src="src/assets/web/isotipo-light.png" alt="" width="40" height="40"></div>
+              <p id="catSummary">Elige al menos una categoría para encender tu radar personal.</p>
+            </div>
+
+            <div class="status status--error" id="wz-error" role="alert">
+              <span class="status-icon" aria-hidden="true">!</span>
+              <div class="status-text">Selecciona al menos una categoría de interés.</div>
+            </div>
+
+            <div class="wz-actions">
+              <button type="button" class="btn btn--paper" onclick="wzPrev(3)">Atrás</button>
+              <button type="submit" class="btn" id="wz-submit">Crear mi cuenta
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script src="mp-base.js" defer></script>
+<script src="login.js" defer></script>
 </body>
 </html>

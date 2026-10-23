@@ -1,5 +1,5 @@
 /* =====================================================================
-   ModoParche — index.js
+   ModoParche - index.js
    1. Radar interactivo (carga, filtro en vivo, estado vacío, apartar cupo)
    2. Acordeón de etapas ("Cómo funciona")
    3. Pestañas ("Un parche para cada quien")
@@ -201,7 +201,7 @@
                 <p class="plan-meta">${p.place} · ${p.whenLabel} · ${p.priceLabel}</p>
               </div>
               <button type="button" class="plan-join ${isJoined ? 'is-joined' : ''}" data-plan="${p.id}" aria-pressed="${isJoined}">
-                ${isJoined ? 'Cupo apartado ✓' : 'Me sumo'}
+                ${isJoined ? 'Cupo apartado' : 'Me sumo'}
               </button>
             </li>
           `;

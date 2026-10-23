@@ -1,5 +1,5 @@
 /* =====================================================================
-   ModoParche — mp-base.js
+   ModoParche - mp-base.js
    Comportamiento compartido: navegación, menú móvil, entradas,
    imágenes con estado de carga, contraseñas, formularios y "volver arriba".
 ===================================================================== */
