@@ -1,634 +1,16 @@
 /* =====================================================================
    Modo Parche Business · empresa-dashboard.js
-   Parte 1: charts.js de la taste-skill de Leonxlnx (gráficas SVG sin
-   dependencias, con las reglas de app-screens.md). Parte 2: el panel.
-===================================================================== */
+   1. Utilidades             8. Cupones, validador y escáner
+   2. Datos de muestra       9. Asistentes, chat y modo puerta
+   3. Estado y derivados    10. Mapa comercial
+   4. Efectos               11. Perfil (solo lectura)
+   5. Navegación            12. Diálogos
+   6. Tarjeta del local     13. Eventos e inicio
+   7. Resumen y parches
 
-// tasteskill / charts.js — small, dependency-free charts for app screens, drawn in SVG from your data.
-// They follow references/app-screens.md: one question per chart, one series that matters, 3–5 quiet
-// horizontal gridlines, round ticks that top out above the largest value, 2px straight lines with no
-// markers, square bars, no gradients, a bare tooltip, tabular figures. Colours come from CSS variables:
-//   --chart-1 … --chart-4 (series), --chart-muted (other series), --chart-mark (a marked period; ink by default),
-//   --chart-span (the opacity of a shaded span: about .06 on light, .12 on dark), --chart-track (a time strip's track),
-//   --grid, --axis-ink, --ink, --surface, --raised, --rule, --negative
-// Usage (after this file loads):
-//   Charts.line(el, { labels: ['1 Oct', …], series: [{ name: 'Requests', values: [...] }], format: Charts.fmt.compact })
-//   Charts.bars(el, { labels, values, highlight: 6, format })        one bar (or [indices]) may carry the accent; dim: [indices]
-//   Charts.diverging(el, { labels, up, down, above: 'Sold', below: 'Bought', mark: [3, 9], markLabel: 'Car charged' })
-//   Charts.ring(el, { value: 0.72, label: '72%', sub: 'of capacity' }) a progress ring with its total inside
-//   Charts.barList(el, [{ label: 'Berlin', value: 412 }, …], { format, thin })  a ranked list where the row is the bar
-//   Charts.plan(el, [{ label: 'Groceries', planned: 600, spent: 412, committed: 60 }, …], { scale: 'row' | 'plan' })  planned against spent
-//   Charts.bullet(el, [{ label: 'Bonds', value: 0.31, target: 0.25 }, …])   share against a target
-//   Charts.timeline(el, rows, kinds, { days, today, weekends })      who is away when, each kind of booking its own mark
-//   Charts.matrix(el, rows, { cols, comfort: 2, today })             slack against a minimum, team by day
-//   Charts.timeStrip(el, rows, { open: '08:00', close: '15:00', compareLabel: 'Last Sunday' })  when, within the day
-// line, bars and diverging take annotations: [{ at: index, label: 'Deploy a3f09c1', short: 'a3f09c1' }] or spans
-// [{ from, to, label: 'Cloud' }]. Their labels sit in rows above the plot, measured once the fonts have loaded, and no
-// leader line crosses another label; the rows are reserved only when a label exists. reference: { value, label }, its
-// label set where no series passes.
-// line takes step: true for a balance that only changes on given days; today: index (the forecast after it is dashed)
-// with todayLabel: 'Now 20:34' (set clear of the line); endLabel: true (the last value at the line's end); max: caps a
-// flat series with one spike (the peak is labelled); yTicks: fixed ticks for a bounded quantity (0–100%); tickFormat:
-// axis labels apart from the tooltip format; xAt: the indices to label. Without xAt the x labels keep one step.
-// diverging, timeline, matrix and timeStrip return { svg, legend }, and line returns { legend } for two series or more:
-// the legend is drawn from the same style objects as the marks, so a swatch is always the mark scaled down. Put it in
-// the card's header, or pass legend: element (or a selector) to have it filled.
-// Numbers follow the page's language (<html lang>). Every chart gets role="img" and an aria-label that states what it shows.
-(() => {
-  const NS = 'http://www.w3.org/2000/svg', MINUS = '\u2212', ROW = 14, LANE = (rows) => 8 + rows * ROW + (rows ? 4 : 0);
-  const css = (el, name, fb) => getComputedStyle(el).getPropertyValue(name).trim() || fb;
-  const cssNum = (el, name, fb) => { const v = parseFloat(css(el, name, '')); return Number.isFinite(v) ? v : fb; };
-  const svg = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v); if (parent) parent.appendChild(n); return n; };
-  const text = (parent, str, attrs) => { const t = svg('text', attrs, parent); t.textContent = str; return t; };
-  const titled = (parent, str) => { svg('title', {}, parent).textContent = str; return parent; };
-  // numbers follow the page's language (<html lang>), so separators match the rest of the screen
-  const nf = (o) => new Intl.NumberFormat(document.documentElement.lang || 'en', o);
-  const fmt = {
-    int: (v) => nf({ maximumFractionDigits: 0 }).format(v),
-    dec: (d) => (v) => nf({ minimumFractionDigits: d, maximumFractionDigits: d }).format(v),
-    pct: (d = 1) => (v) => nf({ style: 'percent', minimumFractionDigits: d, maximumFractionDigits: d }).format(v),
-    money: (cur = 'EUR', d = 0) => (v) => nf({ style: 'currency', currency: cur, minimumFractionDigits: d, maximumFractionDigits: d }).format(v),
-    compact: (v) => nf({ notation: 'compact', maximumFractionDigits: 1 }).format(v),
-    ms: (v) => `${nf({ maximumFractionDigits: 0 }).format(v)} ms`,
-    // a sign on every change, with a true minus: fmt.signed() → '+2', '0', '−1'; fmt.signed(fmt.dec(1)) → '+0.4'
-    signed: (f = (v) => nf({ maximumFractionDigits: 0 }).format(v)) => (v) => (v > 0 ? '+' : v < 0 ? MINUS : '') + f(Math.abs(v)),
-    // minutes since midnight as a 24-hour time: 680 → '11:20'
-    clock: (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`, // taste-skill-ignore: a clock, not a counter
-  };
-  const minutes = (t) => (t == null || t === '' ? null : typeof t === 'number' ? t : (([hh, mm]) => hh * 60 + (mm || 0))(String(t).split(':').map(Number)));
-  // Round ticks (steps of 1, 2, 2.5 or 5 × 10^n) whose top sits above the largest value.
-  function ticks(min, max, count = 4) {
-    if (max === min) max = min + 1;
-    const raw = (max - min) / count, mag = 10 ** Math.floor(Math.log10(raw));
-    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || 10 * mag;
-    const lo = Math.floor(min / step) * step; let hi = Math.ceil(max / step) * step; if (hi <= max) hi += step;
-    const out = []; for (let v = lo; v <= hi + step / 2; v += step) out.push(+v.toFixed(10));
-    return out;
-  }
-  // x labels keep one step all the way: every k-th label, with k chosen so the labels fit the width, and a step that
-  // lands on the last label when one gives enough labels. Never a forced end label that breaks the step. Clock labels
-  // ('08:30') step in whole hours (or halves and quarters) from a round time, so a half-hourly axis reads 06:00, 09:00.
-  function xPicks(labels, span, at) {
-    const n = labels.length;
-    if (at) return at.filter((i) => i >= 0 && i < n);
-    if (n <= 1) return n ? [0] : [];
-    const longest = Math.max(...labels.map((l) => String(l).length));
-    const cap = Math.max(2, Math.min(8, Math.floor(span / (longest * 7 + 18))));
-    if (n <= cap) return [...Array(n).keys()];
-    const mins = labels.every((l) => /^\d{1,2}:\d{2}$/.test(String(l))) ? labels.map(minutes) : null;
-    const d = mins ? mins[1] - mins[0] : 0;
-    let first = null, land = null;
-    for (let k = 1; k < n; k++) {
-      const stepM = k * d, clock = mins && d > 0;
-      if (clock && (stepM >= 60 ? ![1, 2, 3, 4, 6, 12].includes(stepM / 60) : 60 % stepM !== 0)) continue;
-      // start on a round time: a multiple of the step (09:00 for three hours), or a whole hour for shorter steps
-      let s = clock ? mins.findIndex((m) => m % Math.max(60, stepM) === 0) : 0;
-      if (s < 0) s = Math.max(0, mins.findIndex((m) => m % 60 === 0));
-      const count = Math.floor((n - 1 - s) / k) + 1;
-      if (count > cap) continue;
-      if (first == null) first = { k, s };
-      if ((n - 1 - s) % k === 0) { land = { k, s, count }; break; }
-    }
-    const pick = land && land.count >= Math.max(3, Math.ceil(cap * 0.6)) ? land : first || { k: n - 1, s: 0 };
-    const out = []; for (let i = pick.s; i < n; i += pick.k) out.push(i);
-    return out;
-  }
-  // colours: tokens resolved to rgb, so a mark can be mixed with the surface (a pale fill, a darker step)
-  const swatchProbe = document.createElement('span'); swatchProbe.style.display = 'none';
-  const rgb = (el, value) => {
-    el.appendChild(swatchProbe); swatchProbe.style.color = ''; swatchProbe.style.color = value;
-    const c = getComputedStyle(swatchProbe).color; swatchProbe.remove();
-    const m = c.match(/-?[\d.]+/g); if (!m || m.length < 3) return null;
-    return c.startsWith('color(') ? m.slice(0, 3).map((v) => Math.round(+v * 255)) : m.slice(0, 3).map(Number);
-  };
-  const mix = (el, a, b, t) => { const p = rgb(el, a), q = rgb(el, b); return p && q ? `rgb(${p.map((v, i) => Math.round(v * t + q[i] * (1 - t))).join(',')})` : a; };
-  // text width, measured in the chart's own face (falls back to an estimate when the chart is hidden)
-  const measure = (s, str, size = 11, weight = 400) => { const t = text(s, str, { x: -999, y: -999, 'font-size': size, 'font-weight': weight, visibility: 'hidden' }); let wd = 0; try { wd = t.getComputedTextLength(); } catch {} t.remove(); return wd > 0 ? wd : String(str).length * size * 0.56; };
-  const fit = (s, str, max, size, weight) => { str = String(str); if (measure(s, str, size, weight) <= max) return str; while (str.length > 1 && measure(s, str + '\u2026', size, weight) > max) str = str.slice(0, -1); return str.trimEnd() + '\u2026'; };
-  function frame(el, h) {
-    el.innerHTML = '';
-    const w = Math.max(240, el.clientWidth || 600);
-    const s = svg('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%', height: h, role: 'img', style: 'display:block;overflow:visible;font-variant-numeric:tabular-nums' }, el);
-    return { s, w, h };
-  }
-  function tooltip(el) {
-    let t = el.querySelector('.chart-tip');
-    if (!t) { t = document.createElement('div'); t.className = 'chart-tip'; t.style.cssText = 'position:absolute;pointer-events:none;padding:6px 8px;font:inherit;font-size:12px;line-height:1.35;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity 120ms ease;background:var(--surface,#fff);color:var(--ink,#111);border:1px solid var(--grid,#e5e7eb)'; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; el.appendChild(t); }
-    return t;
-  }
-  function axes(g, el, { w, h, padL, padB, yt, y, labels, x, band = false, at = null, tick, avoid = null }) {
-    const grid = css(el, '--grid', '#e8e8e8'), ink = css(el, '--axis-ink', '#6b6b6b'), s = g.ownerSVGElement;
-    for (const v of yt) {
-      const yy = y(v);
-      svg('line', { x1: padL, x2: w, y1: yy, y2: yy, stroke: grid, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
-      text(g, tick(v), { x: padL - 8, y: yy + 4, 'text-anchor': 'end', 'font-size': 12, fill: ink });
-    }
-    const n = labels.length;
-    for (const i of xPicks(labels, w - padL, at)) {
-      const lab = String(labels[i]), tw = measure(s, lab, 12), xx = x(i);
-      // the first and last labels are pulled inside the plot; none runs past either edge
-      let left = band ? xx - tw / 2 : i === 0 ? xx : i === n - 1 ? xx - tw : xx - tw / 2;
-      left = Math.max(band ? 0 : padL, Math.min(w - tw, left));
-      if (avoid && left < avoid[1] + 8 && left + tw > avoid[0] - 8) continue;
-      text(g, lab, { x: left, y: h - padB + 18, 'font-size': 12, fill: ink });
-    }
-  }
-  // Annotation labels sit in rows above the plot, never on the data. A label sits beside the top of its own leader
-  // line, right of it or left of it, in one of three rows. A place is free when no other label in that row overlaps
-  // it, no leader line passes through it, and its own leader passes through no label below it. The layout is searched
-  // (close markers often need the first label on the left so the next leader runs clear): full labels first, then
-  // short forms (`short`), and only then is a label dropped to its marker's tooltip, with a note in the console.
-  function lane(s, items, w, maxRows = 3) {
-    const gap = 6, rank = (it) => (it.fixed != null ? 0 : it.span ? 1 : 2);
-    // fixed captions first, then spans, then markers from left to right
-    const order = [...items].sort((a, b) => rank(a) - rank(b) || (a.x ?? a.x0) - (b.x ?? b.x0));
-    const opts = order.map((it) => {
-      const out = [];
-      for (const str of [it.label, it.short].filter(Boolean)) {
-        const tw = measure(s, str, 11) + (it.glyph ? 9 : 0), mid = it.span ? (it.x0 + it.x1) / 2 : 0;
-        const cands = it.fixed != null ? [[it.fixed, it.fixed + tw]] : it.span ? [[mid - tw / 2, mid + tw / 2], [it.x0, it.x0 + tw], [it.x1 - tw, it.x1]] : [[it.x + 4, it.x + 4 + tw], [it.x - 4 - tw, it.x - 4]];
-        for (let row = 0; row < maxRows; row++) for (const [x0, x1] of cands) if (x0 >= 0 && x1 <= w) out.push({ ...it, text: str, isShort: str !== it.label, row, x0, x1 });
-      }
-      return out;
-    });
-    const free = (c, placed) => placed.every((p) => p.dropped || (!(p.row === c.row && c.x0 < p.x1 + gap && c.x1 > p.x0 - gap)
-      && !(p.leader != null && p.row >= c.row && p.leader > c.x0 - 3 && p.leader < c.x1 + 3)
-      && !(c.leader != null && p.row <= c.row && c.leader > p.x0 - 3 && c.leader < p.x1 + 3)));
-    let best = null, steps = 0;
-    const solve = (i, placed, allowShort, allowDrop) => {
-      if (++steps > 20000) return false;
-      if (i === order.length) { best = placed.slice(); return true; }
-      for (const c of opts[i]) { if ((c.isShort && !allowShort) || !free(c, placed)) continue; placed.push(c); if (solve(i + 1, placed, allowShort, allowDrop)) return true; placed.pop(); }
-      if (allowDrop) { placed.push({ ...order[i], dropped: true }); if (solve(i + 1, placed, allowShort, allowDrop)) return true; placed.pop(); }
-      return false;
-    };
-    for (const [sh, dr] of [[false, false], [true, false], [true, true]]) { steps = 0; if (solve(0, [], sh, dr)) break; }
-    const placed = (best || []).filter((p) => !p.dropped), dropped = (best || order.map((it) => ({ ...it, dropped: true }))).filter((p) => p.dropped);
-    return { placed, dropped, rows: placed.length ? Math.max(...placed.map((p) => p.row)) + 1 : 0 };
-  }
-  function prepNotes(s, annotations = [], x, w, extra = []) {
-    const items = [];
-    for (const a of annotations || []) {
-      if (a.from != null) items.push({ span: true, x0: Math.min(x(a.from), x(a.to)), x1: Math.max(x(a.from), x(a.to)), label: a.label, short: a.short, colour: a.colour });
-      else if (a.at != null) items.push({ x: x(a.at), at: a.at, leader: x(a.at), label: a.label, short: a.short, colour: a.colour });
-    }
-    items.push(...extra);
-    return { items, ...lane(s, items.filter((it) => it.label), w) };
-  }
-  // shaded spans go under the data; marker lines and the label rows over it
-  function notesUnder(g, el, N, { padT, h, padB }) {
-    const ink = css(el, '--axis-ink', '#6b6b6b'), op = cssNum(el, '--chart-span', 0.07);
-    for (const it of N.items) if (it.span) svg('rect', { x: it.x0, y: padT, width: it.x1 - it.x0, height: h - padT - padB, fill: ink, opacity: op }, g);
-  }
-  function notesOver(g, el, N, { padT, h, padB }) {
-    const ink = css(el, '--axis-ink', '#6b6b6b');
-    // a marker line runs to the plot's foot, or stops above the bar it points at (it.end)
-    for (const it of N.items) if (it.leader != null && !it.drawn) svg('line', { x1: it.leader, x2: it.leader, y1: padT, y2: Math.max(padT, it.end ?? h - padB), stroke: ink, 'stroke-width': 1, opacity: 0.45, 'shape-rendering': 'crispEdges' }, g);
-    for (const p of N.placed) {
-      const base = padT - 9 - p.row * ROW;
-      if (p.leader != null) svg('line', { x1: p.leader, x2: p.leader, y1: base - 8, y2: padT, stroke: ink, 'stroke-width': 1, opacity: 0.45, 'shape-rendering': 'crispEdges' }, g);
-      if (p.glyph) svg('path', { d: p.glyph === 'up' ? `M${p.x0} ${base - 1}l3 -6l3 6z` : `M${p.x0} ${base - 7}l3 6l3 -6z`, fill: ink }, g);
-      text(g, p.text, { x: p.x0 + (p.glyph ? 9 : 0), y: base, 'font-size': 11, fill: p.colour || ink });
-    }
-    const el2 = g.ownerSVGElement.parentNode; el2._warned = el2._warned || new Set();
-    for (const d of N.dropped) {
-      if (d.leader != null) { const hit = svg('line', { x1: d.leader, x2: d.leader, y1: padT, y2: h - padB, stroke: 'transparent', 'stroke-width': 8 }, g); titled(hit, d.label, {}); }
-      if (!el2._warned.has(d.label)) { el2._warned.add(d.label); console.warn(`Charts: no room above the plot for "${d.label}". Give it a short form (short) or label fewer markers.`); }
-    }
-  }
-  // does a label box touch a drawn line? polylines are [[x, y], …]; a box is { x0, x1, y0, y1 }
-  function hits(b, lines) {
-    for (const pts of lines) for (let k = 1; k < pts.length; k++) {
-      const a = pts[k - 1], c = pts[k]; if (!a || !c) continue;
-      if (a[0] === c[0]) { if (a[0] >= b.x0 - 3 && a[0] <= b.x1 + 3 && Math.max(a[1], c[1]) >= b.y0 - 3 && Math.min(a[1], c[1]) <= b.y1 + 3) return true; continue; }
-      const lo = Math.max(b.x0 - 3, Math.min(a[0], c[0])), hi = Math.min(b.x1 + 3, Math.max(a[0], c[0]));
-      for (let xx = lo; xx <= hi; xx += 2) { const yy = a[1] + ((xx - a[0]) / (c[0] - a[0])) * (c[1] - a[1]); if (yy >= b.y0 - 3 && yy <= b.y1 + 3) return true; }
-    }
-    return false;
-  }
-  const boxHits = (b, boxes) => boxes.some((r) => b.x0 < r.x1 + 3 && b.x1 > r.x0 - 3 && b.y0 < r.y1 + 3 && b.y1 > r.y0 - 3);
-  // a reference line (a budget, an SLO) with its label at an end where no series passes
-  function references(g, el, refs, { y, padL, w, lines = [], boxes = [] }) {
-    const ink = css(el, '--axis-ink', '#6b6b6b'), s = g.ownerSVGElement;
-    for (const r of [].concat(refs || [])) {
-      const yy = y(r.value);
-      svg('line', { x1: padL, x2: w, y1: yy, y2: yy, stroke: ink, 'stroke-width': 1, 'stroke-dasharray': '4 4', opacity: 0.7 }, g);
-      if (!r.label) continue;
-      const tw = measure(s, r.label, 11), right = r.at !== 'left';
-      const cand = [[right, -5], [right, 13], [!right, -5], [!right, 13]].map(([rt, dy]) => ({ x0: rt ? w - tw : padL + 4, x1: rt ? w : padL + 4 + tw, y0: yy + dy - 9, y1: yy + dy + 2, base: yy + dy }));
-      const b = cand.find((c) => !hits(c, lines) && !boxHits(c, boxes)) || cand[0];
-      text(g, r.label, { x: b.x0, y: b.base, 'font-size': 11, fill: ink });
-    }
-  }
-  // One style object per kind of mark draws both the mark and its legend swatch, so the two cannot drift apart.
-  function paintRect(parent, st, x, y, w, h, r = 0) {
-    let fill = st.fill || 'none';
-    if (st.hatch) {
-      const s = parent.ownerSVGElement || parent, id = 'h' + Math.random().toString(36).slice(2, 8);
-      const p = svg('pattern', { id, width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, svg('defs', {}, s));
-      svg('rect', { width: 5, height: 5, fill: st.fill }, p); svg('line', { x1: 0, y1: 0, x2: 0, y2: 5, stroke: st.hatch, 'stroke-width': 1.2 }, p);
-      fill = `url(#${id})`;
-    }
-    const inset = st.stroke ? (st.width || 1) / 2 : 0;
-    const n = svg('rect', { x: x + inset, y: y + inset, width: Math.max(0, w - inset * 2), height: Math.max(0, h - inset * 2), rx: r, fill, stroke: st.stroke, 'stroke-width': st.stroke ? st.width || 1 : null, 'stroke-dasharray': st.dash, opacity: st.opacity, 'shape-rendering': r ? null : 'crispEdges' }, parent);
-    if (st.edge) svg('rect', { x, y, width: 3, height: h, rx: Math.min(r, 1.5), fill: st.edge }, parent);
-    return n;
-  }
-  const legendCss = ':where(.chart-legend){list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;line-height:16px;color:var(--muted,#5f6368)}:where(.chart-legend li){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}:where(.chart-legend svg){flex:none;overflow:visible}@media (max-width:480px){:where(.chart-legend){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}';
-  function legendEl(items, target) {
-    if (!document.getElementById('charts-legend-css')) { const st = document.createElement('style'); st.id = 'charts-legend-css'; st.textContent = legendCss; document.head.appendChild(st); }
-    const ul = document.createElement('ul'); ul.className = 'chart-legend';
-    for (const it of items) {
-      const li = document.createElement('li'), sw = svg('svg', { width: it.w || 14, height: 12, 'aria-hidden': 'true' });
-      it.draw(sw); li.append(sw, document.createTextNode(it.label)); ul.appendChild(li);
-    }
-    const t = typeof target === 'string' ? document.querySelector(target) : target;
-    if (t) t.replaceChildren(ul);
-    return ul;
-  }
-  const rectSwatch = (st, w = 14, h = 10, r = 2) => (sw) => paintRect(sw, st, 0, (12 - h) / 2, w, h, r);
-  // charts are laid out with measured text: draw again once the page's fonts have arrived
-  function settle(draw) { if (document.fonts) { document.fonts.ready.then(draw); document.fonts.addEventListener?.('loadingdone', draw, { once: true }); } }
-  const heightOf = (h) => (typeof h === 'function' ? h() : h);
-
-  function line(el, { labels, series, format = fmt.int, tickFormat = null, height = 220, fill = false, min, max, step = false, annotations, reference, today = null, todayLabel = 'Today', endLabel = false, yTicks = null, xAt = null, legend = null }) {
-    el._fmt = format;
-    const colourOf = (sr, k) => sr.colour || (k === 0 ? css(el, '--chart-1', '#2f6fdf') : css(el, `--chart-${k + 1}`, css(el, '--chart-muted', '#a3a3a3')));
-    const draw = () => {
-      const { s, w, h } = frame(el, heightOf(height));
-      const all = series.flatMap((x) => x.values.filter((v) => v != null)).concat([].concat(reference || []).map((r) => r.value));
-      // max caps the range (a flat series with one spike): values above it are clipped and their peak labelled
-      const top = max ?? Math.max(...all);
-      const yt = yTicks || ticks(min ?? Math.min(0, ...all), top, 4);
-      const tick = tickFormat || format;
-      const lastVal = series[0].values.filter((v) => v != null).at(-1);
-      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), 12))), padB = 26, padR = endLabel ? 10 + measure(s, format(lastVal), 12, 600) : 0;
-      const x = (i) => padL + (i * (w - padL - padR)) / Math.max(1, labels.length - 1);
-      // the peaks clipped by max are labelled in the rows above the plot, where the line leaves it
-      const peaks = [];
-      series.forEach((sr, k) => sr.values.forEach((v, i) => { if (v != null && v > yt.at(-1) && (i === 0 || sr.values[i - 1] == null || sr.values[i - 1] <= yt.at(-1))) { let j = i, peak = v; while (j < sr.values.length && sr.values[j] != null && sr.values[j] > yt.at(-1)) { peak = Math.max(peak, sr.values[j]); j++; } peaks.push({ x: x(i), label: format(peak) + ' at ' + labels[i], colour: colourOf(sr, k) }); } }));
-      const scale = (N) => { const padT = LANE(N.rows); return { padT, y: (v) => padT + (h - padT - padB) * (1 - (v - yt[0]) / (yt.at(-1) - yt[0])) }; };
-      const linesAt = (y) => series.map((sr) => { const out = []; sr.values.forEach((v, i) => { if (v == null) { out.push(null); return; } const p = [x(i), y(Math.min(v, yt.at(-1)))]; const prev = out.at(-1); if (step && prev) out.push([p[0], prev[1]]); out.push(p); }); return out; }).concat([].concat(reference || []).map((r) => [[padL, y(r.value)], [w, y(r.value)]]));
-      let N = prepNotes(s, annotations, x, w, peaks), { padT, y } = scale(N), todayBox = null;
-      // the today label goes inside the plot on whichever side of its line no series crosses; failing that, above
-      if (today != null && todayLabel) {
-        const cut = x(today), tw = measure(s, todayLabel, 11), lines = linesAt(y);
-        const cand = [[cut + 4, h - padB - 6], [cut - 4 - tw, h - padB - 6], [cut + 4, padT + 11], [cut - 4 - tw, padT + 11]].map(([x0, b]) => ({ x0, x1: x0 + tw, y0: b - 9, y1: b + 2, base: b }));
-        todayBox = cand.find((b) => b.x0 >= padL && b.x1 <= w && !hits(b, lines)) || null;
-        if (!todayBox) { N = prepNotes(s, annotations, x, w, [...peaks, { x: cut, leader: cut, drawn: true, label: todayLabel }]); ({ padT, y } = scale(N)); }
-      }
-      const g = svg('g', {}, s);
-      axes(g, el, { w, h, padL, padB, yt, y, labels, x, at: xAt, tick });
-      notesUnder(g, el, N, { padT, h, padB });
-      series.forEach((sr, k) => {
-        const col = colourOf(sr, k);
-        const pts = sr.values.map((v, i) => (v == null ? null : [x(i), y(Math.min(v, yt.at(-1)))]));
-        // step: a balance that only changes on given days holds its value until the next one
-        const d = pts.reduce((acc, p, i) => (p ? acc + (acc && pts[i - 1] ? (step ? `L${p[0].toFixed(1)} ${pts[i - 1][1].toFixed(1)}L` : 'L') : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1) : acc), '');
-        if (fill && k === 0) { const first = pts.find(Boolean), last = [...pts].reverse().find(Boolean); svg('path', { d: `${d}L${last[0]} ${y(yt[0])}L${first[0]} ${y(yt[0])}Z`, fill: col, opacity: 0.12 }, g); }
-        if (today == null) svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
-        else {
-          // a forecast: the line after today is dashed, so a projection never reads as a fact
-          const cut = x(today), id = 'c' + k + Math.random().toString(36).slice(2, 8);
-          const defs = svg('defs', {}, g);
-          const a = svg('clipPath', { id: id + 'a' }, defs); svg('rect', { x: 0, y: 0, width: cut, height: h }, a);
-          const b = svg('clipPath', { id: id + 'b' }, defs); svg('rect', { x: cut, y: 0, width: w, height: h }, b);
-          svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'clip-path': 'url(#' + id + 'a)' }, g);
-          svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-dasharray': '5 4', opacity: 0.8, 'clip-path': 'url(#' + id + 'b)' }, g);
-          if (k === 0) { svg('line', { x1: cut, x2: cut, y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0.4 }, g); if (todayBox) text(g, todayLabel, { x: todayBox.x0, y: todayBox.base, 'font-size': 11, fill: css(el, '--axis-ink', '#6b6b6b') }); }
-        }
-        if (endLabel && k === 0) { const li = sr.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0).at(-1); text(g, format(sr.values[li]), { x: x(li) + 6, y: y(Math.min(sr.values[li], yt.at(-1))) + 4, 'font-size': 12, 'font-weight': 600, fill: css(el, '--ink', '#111') }); }
-      });
-      references(g, el, reference, { y, padL, w, lines: linesAt(y).slice(0, series.length) });
-      notesOver(g, el, N, { padT, h, padB });
-      // hover: a rule, a dot per series and a bare tooltip
-      const tip = tooltip(el), rule = svg('line', { y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0 }, g);
-      const dots = series.map((sr, k) => svg('circle', { r: 3.5, fill: css(el, '--surface', '#fff'), stroke: colourOf(sr, k), 'stroke-width': 2, opacity: 0 }, g));
-      const hit = svg('rect', { x: padL, y: padT, width: w - padL, height: h - padT - padB, fill: 'transparent' }, s);
-      const move = (ev) => { const r = s.getBoundingClientRect(); const px = ((ev.clientX - r.left) / r.width) * w; const i = Math.max(0, Math.min(labels.length - 1, Math.round(((px - padL) / (w - padL - padR)) * (labels.length - 1)))); rule.setAttribute('x1', x(i)); rule.setAttribute('x2', x(i)); rule.setAttribute('opacity', 0.35); series.forEach((sr, k) => { const v = sr.values[i]; dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', v == null ? -99 : y(Math.min(v, yt.at(-1)))); dots[k].setAttribute('opacity', v == null ? 0 : 1); }); tip.innerHTML = `<div style="opacity:.7">${labels[i]}</div>` + series.map((sr) => `<div><b style="font-weight:600">${sr.values[i] == null ? '–' : format(sr.values[i])}</b> ${series.length > 1 ? sr.name : ''}</div>`).join(''); const left = Math.min((x(i) / w) * r.width + 12, r.width - tip.offsetWidth - 4); tip.style.left = `${Math.max(0, left)}px`; tip.style.top = '0px'; tip.style.opacity = 1; };
-      hit.addEventListener('pointermove', move); hit.addEventListener('pointerleave', () => { tip.style.opacity = 0; rule.setAttribute('opacity', 0); dots.forEach((d) => d.setAttribute('opacity', 0)); });
-      const last = series[0].values.filter((v) => v != null).at(-1);
-      s.setAttribute('aria-label', `${series.map((x) => x.name).join(', ')}, ${labels[0]} to ${labels.at(-1)}; latest ${last == null ? 'no data' : format(last)}`);
-    };
-    draw(); watch(el, draw); settle(draw);
-    const lg = series.length > 1 ? legendEl(series.map((sr, k) => ({ label: sr.name, w: 16, draw: (sw) => svg('line', { x1: 0, x2: 16, y1: 6, y2: 6, stroke: colourOf(sr, k), 'stroke-width': 2, 'stroke-dasharray': sr.dash ? '4 3' : null }, sw) })), legend) : null;
-    return { legend: lg };
-  }
-  function bars(el, { labels, values, format = fmt.int, tickFormat = null, height = 200, highlight = null, dim = [], colour, mutedColour, annotations, reference, xAt = null }) {
-    el._fmt = format;
-    const lit = (i) => highlight == null || (Array.isArray(highlight) ? highlight.includes(i) : highlight === i);
-    const draw = () => {
-      const { s, w, h } = frame(el, heightOf(height));
-      const yt = ticks(0, Math.max(...values, ...[].concat(reference || []).map((r) => r.value)), 4), tick = tickFormat || format;
-      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), 12))), padB = 26;
-      const band = (w - padL) / values.length, bw = Math.max(2, band * 0.62);
-      const x = (i) => padL + band * i + band / 2;
-      const N = prepNotes(s, annotations, x, w), padT = LANE(N.rows);
-      const y = (v) => padT + (h - padT - padB) * (1 - v / yt.at(-1));
-      const g = svg('g', {}, s);
-      axes(g, el, { w, h, padL, padB, yt, y, labels, x, band: true, at: xAt, tick });
-      notesUnder(g, el, N, { padT, h, padB });
-      for (const it of N.items) if (it.at != null && values[it.at] != null) it.end = y(values[it.at]) - 4;
-      const main = colour || css(el, '--chart-1', '#2f6fdf'), muted = mutedColour || css(el, '--chart-muted', '#c9c9c9');
-      values.forEach((v, i) => { const r = svg('rect', { x: x(i) - bw / 2, y: y(v), width: bw, height: Math.max(0, y(0) - y(v)), fill: lit(i) ? main : muted, opacity: dim.includes(i) ? 0.45 : null, 'shape-rendering': 'crispEdges' }, g); titled(r, `${labels[i]}: ${format(v)}`, {}); });
-      references(g, el, reference, { y, padL, w, boxes: values.map((v, i) => ({ x0: x(i) - bw / 2, x1: x(i) + bw / 2, y0: y(v), y1: y(0) })) });
-      notesOver(g, el, N, { padT, h, padB });
-      s.setAttribute('aria-label', `${labels.length} barras del ${labels[0]} al ${labels.at(-1)}; la más alta: ${format(Math.max(...values))}`);
-    };
-    draw(); watch(el, draw); settle(draw);
-  }
-  // Two directions on one scale: what went out above the zero line and what came in below it (sold and bought,
-  // income and spend). The axis says which is which, with signed ticks and a caption on each side of zero.
-  // mark: [indices] draws those periods in a second tone with their own legend entry (the nights the car charged).
-  function diverging(el, { labels, up, down, values, above = 'Above', below = 'Below', mark = [], markLabel = null, markSide = 'below', partial = null, format = fmt.int, tickFormat = null, height = 200, annotations, reference, xAt = null, legend = null }) {
-    if (values) { up = values.map((v) => Math.max(0, v || 0)); down = values.map((v) => Math.max(0, -(v || 0))); }
-    up = up || labels.map(() => 0); down = down || labels.map(() => 0);
-    const st = { above: { fill: css(el, '--chart-1', '#2f6fdf') }, below: { fill: css(el, '--chart-muted', '#c9c9c9') }, mark: { fill: css(el, '--chart-mark', css(el, '--ink', '#111')) } };
-    const marked = (i, side) => mark.includes(i) && (markSide === 'both' || markSide === side);
-    const tick = (v) => (v > 0 ? '+' : v < 0 ? MINUS : '') + (tickFormat || format)(Math.abs(v));
-    const draw = () => {
-      const { s, w, h } = frame(el, heightOf(height));
-      const hiUp = Math.max(0, ...up), hiDown = Math.max(0, ...down);
-      const yt = ticks(-hiDown, hiUp || 1, 4); const stp = yt[1] - yt[0]; if (hiDown > 0 && yt[0] >= -hiDown) yt.unshift(+(yt[0] - stp).toFixed(10));
-      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), 12))), padB = 26;
-      const band = (w - padL) / labels.length, bw = Math.max(2, band * 0.62);
-      const x = (i) => padL + band * i + band / 2;
-      // the caption for the upper side opens the label rows above the plot; the lower one sits under the plot, at left
-      const N = prepNotes(s, annotations, x, w, [{ fixed: padL, glyph: 'up', label: above }]), padT = LANE(N.rows);
-      const y = (v) => padT + (h - padT - padB) * (1 - (v - yt[0]) / (yt.at(-1) - yt[0]));
-      const g = svg('g', {}, s), ink = css(el, '--axis-ink', '#6b6b6b');
-      const bwid = measure(s, below, 11) + 9;
-      axes(g, el, { w, h, padL, padB, yt, y, labels, x, band: true, at: xAt, tick, avoid: [padL, padL + bwid] });
-      svg('path', { d: `M${padL} ${h - padB + 11}l3 6l3 -6z`, fill: ink }, g); text(g, below, { x: padL + 9, y: h - padB + 18, 'font-size': 11, fill: ink });
-      notesUnder(g, el, N, { padT, h, padB });
-      for (const it of N.items) if (it.at != null) it.end = y(up[it.at] || 0) - 4;
-      labels.forEach((lab, i) => {
-        const o = partial === i ? 0.5 : null;
-        if (up[i] > 0) { const r = paintRect(g, { ...(marked(i, 'above') ? st.mark : st.above), opacity: o }, x(i) - bw / 2, y(up[i]), bw, Math.max(0, y(0) - y(up[i]) - 1)); titled(r, `${lab}: ${above} ${format(up[i])}`, {}); }
-        if (down[i] > 0) { const r = paintRect(g, { ...(marked(i, 'below') ? st.mark : st.below), opacity: o }, x(i) - bw / 2, y(0) + 1, bw, Math.max(0, y(-down[i]) - y(0) - 1)); titled(r, `${lab}: ${below} ${format(down[i])}`, {}); }
-      });
-      svg('line', { x1: padL, x2: w, y1: y(0), y2: y(0), stroke: ink, 'stroke-width': 1, opacity: 0.8, 'shape-rendering': 'crispEdges' }, g);
-      references(g, el, reference, { y, padL, w, boxes: labels.map((_, i) => ({ x0: x(i) - bw / 2, x1: x(i) + bw / 2, y0: y(up[i]), y1: y(-down[i]) })) });
-      notesOver(g, el, N, { padT, h, padB });
-      s.setAttribute('aria-label', `${above} above the line and ${below} below it, ${labels[0]} to ${labels.at(-1)}`);
-    };
-    draw(); watch(el, draw); settle(draw);
-    const items = [];
-    if (up.some((v) => v > 0)) items.push({ label: above, draw: rectSwatch(st.above) });
-    if (down.some((v) => v > 0)) items.push({ label: below, draw: rectSwatch(st.below) });
-    if (mark.length && markLabel) items.push({ label: markLabel, draw: rectSwatch(st.mark) });
-    return { get svg() { return el.querySelector(':scope > svg'); }, legend: legendEl(items, legend) };
-  }
-  function ring(el, { value, label, sub, size = 132, stroke = 8, colour }) {
-    el.innerHTML = '';
-    const r = (size - stroke) / 2, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, value));
-    const wrap = document.createElement('div'); wrap.style.cssText = `position:relative;width:${size}px;height:${size}px`;
-    const s = svg('svg', { viewBox: `0 0 ${size} ${size}`, width: size, height: size, role: 'img', 'aria-label': `${label}${sub ? ' ' + sub : ''}` }, wrap);
-    svg('circle', { cx: size / 2, cy: size / 2, r, fill: 'none', stroke: css(el, '--grid', '#e8e8e8'), 'stroke-width': stroke }, s);
-    svg('circle', { cx: size / 2, cy: size / 2, r, fill: 'none', stroke: colour || css(el, '--chart-1', '#2f6fdf'), 'stroke-width': stroke, 'stroke-dasharray': `${c * v} ${c}`, transform: `rotate(-90 ${size / 2} ${size / 2})` }, s);
-    const t = document.createElement('div'); t.style.cssText = 'position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-variant-numeric:tabular-nums';
-    t.innerHTML = `<div style="font-size:${Math.round(size / 5.5)}px;font-weight:600;line-height:1">${label}</div>${sub ? `<div style="font-size:12px;opacity:.7;margin-top:4px">${sub}</div>` : ''}`;
-    wrap.appendChild(t); el.appendChild(wrap);
-  }
-  // A ranked list. By default the row's fill is the bar (a one-figure list); thin: true puts a 2px grey bar under each
-  // label instead, ink for the top item, for a ranked list of money in a narrow card.
-  function barList(el, rows, { format = fmt.int, colour, thin = false } = {}) {
-    el.innerHTML = '';
-    const max = Math.max(...rows.map((r) => r.value)) || 1;
-    const list = document.createElement('ol'); list.style.cssText = `list-style:none;margin:0;padding:0;display:grid;gap:${thin ? 10 : 2}px;font-variant-numeric:tabular-nums`;
-    const valueCol = Math.max(...rows.map((r) => String(format(r.value)).length)) + 1;
-    rows.forEach((r, k) => {
-      const li = document.createElement('li'); li.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) ' + valueCol + 'ch;align-items:center;column-gap:12px';
-      const a = document.createElement('span'); a.textContent = r.label; a.style.cssText = 'position:relative;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-      const b = document.createElement('span'); b.textContent = format(r.value); b.style.cssText = 'font-weight:500;text-align:right';
-      if (thin) {
-        const bar = document.createElement('span'); bar.style.cssText = `grid-column:1 / -1;height:2px;margin-top:4px;width:${(r.value / max) * 100}%;background:${k === 0 ? colour || 'var(--ink,#111)' : 'var(--chart-muted,#c9c9c9)'}`;
-        li.append(a, b, bar);
-      } else {
-        const track = document.createElement('span'); track.style.cssText = 'position:relative;padding:10px 12px;border-radius:6px;isolation:isolate;min-width:0';
-        const bar = document.createElement('span'); bar.style.cssText = `position:absolute;inset:0 auto 0 0;width:${(r.value / max) * 100}%;background:${colour || 'var(--bar-fill, color-mix(in srgb, var(--chart-1, #2f6fdf) 12%, transparent))'};border-radius:inherit;z-index:-1`;
-        track.append(bar, a); li.append(track, b);
-      }
-      list.appendChild(li);
-    });
-    el.appendChild(list);
-  }
-  // Planned against spent: the track is the plan, the fill what is spent, a lighter segment what is
-  // already committed (bills to come), and an overrun past the track's end in the negative colour.
-  // One row per category: label and figures on one line, the 8px track under them.
-  function plan(el, rows, { format = fmt.money('EUR', 0), scale = 'row', note = (r) => r.spent > r.planned ? `${format(r.spent - r.planned)} over` : `${format(r.planned - r.spent - (r.committed || 0))} left` } = {}) {
-    el.innerHTML = '';
-    const list = document.createElement('ul'); list.style.cssText = 'list-style:none;margin:0;padding:0;display:grid;gap:14px;font-variant-numeric:tabular-nums';
-    const max = Math.max(...rows.map((r) => Math.max(r.planned, r.spent + (r.committed || 0))));
-    for (const r of rows) {
-      const over = r.spent > r.planned;
-      const li = document.createElement('li');
-      const top = document.createElement('div'); top.style.cssText = 'display:flex;justify-content:space-between;gap:12px;margin-bottom:6px';
-      top.innerHTML = `<span>${r.label}</span><span><b style="font-weight:500">${format(r.spent)}</b> <span style="color:var(--muted,#5f6368)">of ${format(r.planned)} · </span><span style="color:${over ? 'var(--negative,#c4242a)' : 'var(--muted,#5f6368)'}">${note(r)}</span></span>`;
-      // scale 'row': each track is full width and shows the share used (rows in a grid compare); 'plan': as long as its plan
-      const room = over ? 100 / (1 + Math.max(0.06, (r.spent - r.planned) / r.planned)) : 100;
-      const track = document.createElement('div'); track.style.cssText = 'position:relative;height:8px;border-radius:999px;background:var(--rule,#eceeef);overflow:visible;width:' + (scale === 'plan' ? (r.planned / max) * room : room) + '%';
-      const pct = (v) => (v / r.planned) * 100;
-      const spent = Math.min(r.spent, r.planned);
-      track.innerHTML = `<span style="position:absolute;inset:0 auto 0 0;width:${pct(spent)}%;border-radius:999px;background:var(--chart-1,#2f6fdf)"></span>`
-        + (r.committed ? `<span style="position:absolute;top:0;bottom:0;left:${pct(spent)}%;width:${Math.min(pct(r.committed), 100 - pct(spent))}%;background:var(--chart-1,#2f6fdf);opacity:.35"></span>` : '')
-        + (over ? `<span style="position:absolute;top:-3px;bottom:-3px;left:100%;width:1px;background:var(--text,#111)"></span><span style="position:absolute;top:0;bottom:0;left:calc(100% + 2px);width:max(12px, ${pct(r.spent - r.planned)}%);border-radius:0 999px 999px 0;background:var(--negative,#c4242a)"></span>` : '');
-      track.setAttribute('role', 'img'); track.setAttribute('aria-label', `${r.label}: ${format(r.spent)} of ${format(r.planned)}${r.committed ? `, ${format(r.committed)} committed` : ''}${over ? ', over plan' : ''}`);
-      li.append(top, track); list.appendChild(li);
-    }
-    el.appendChild(list);
-  }
-  // Share against a target: one row per part, the current share as a bar and a 1px tick at the target,
-  // so drift reads at a glance (never two stacked bars to compare).
-  function bullet(el, rows, { format = fmt.pct(1), max = Math.max(...rows.map((r) => Math.max(r.value, r.target))) * 1.15 } = {}) {
-    el.innerHTML = '';
-    const list = document.createElement('ul'); list.style.cssText = 'list-style:none;margin:0;padding:0;display:grid;gap:12px;font-variant-numeric:tabular-nums';
-    for (const r of rows) {
-      const drift = r.value - r.target;
-      const li = document.createElement('li'); li.style.cssText = 'display:grid;grid-template-columns:minmax(90px,30%) 1fr auto;align-items:center;gap:12px';
-      li.innerHTML = `<span>${r.label}</span><span style="position:relative;height:10px;background:var(--rule,#eceeef);border-radius:2px"><span style="position:absolute;inset:0 auto 0 0;width:${(r.value / max) * 100}%;background:var(--chart-1,#2f6fdf);border-radius:2px"></span><span style="position:absolute;top:-4px;bottom:-4px;left:${(r.target / max) * 100}%;width:2px;margin-left:-1px;background:var(--text,#111)"></span></span><span><b style="font-weight:500">${format(r.value)}</b> <span style="color:${Math.abs(drift) >= (r.tolerance ?? 0.02) ? 'var(--negative,#c4242a)' : 'var(--muted,#5f6368)'}">${drift >= 0 ? '+' : '−'}${format(Math.abs(drift))} vs ${format(r.target)}</span></span>`;
-      li.setAttribute('aria-label', `${r.label}: ${format(r.value)}, target ${format(r.target)}`);
-      list.appendChild(li);
-    }
-    el.appendChild(list);
-  }
-  // shared by the row charts (timeline, matrix, time strip): a label column with an optional grey subline.
-  // A subline needs a 40-44px row pitch; one-line labels sit on 32px.
-  function rowLabel(g, s, el, r, { y0, pitch, lw }) {
-    const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b');
-    if (r.sub) { text(g, fit(s, r.label, lw - 12, 14), { x: 0, y: y0 + pitch / 2 - 3, 'font-size': 14, fill: ink }); text(g, fit(s, r.sub, lw - 12, 12), { x: 0, y: y0 + pitch / 2 + 13, 'font-size': 12, fill: muted }); }
-    else text(g, fit(s, r.label, lw - 12, 14), { x: 0, y: y0 + pitch / 2 + 5, 'font-size': 14, fill: ink });
-  }
-  const dayText = (d) => (typeof d === 'object' && d ? d.label : String(d));
-  // day headers: the full label when every one fits its column, else the short form ('19'), else every k-th short
-  // label with today always shown and its neighbours left out, so no two headers ever touch
-  function dayHeads(g, s, el, days, { x0, cw, y, today }) {
-    const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b');
-    const full = days.map(dayText), short = days.map((d) => (typeof d === 'object' && d ? d.short || dayText(d) : dayText(d).split(' ').at(-1)));
-    const wide = (labs) => Math.max(...labs.map((t) => measure(s, t, 12))) + 6;
-    const labs = wide(full) <= cw ? full : short, k = Math.max(1, Math.ceil(wide(labs) / cw));
-    labs.forEach((t, i) => {
-      if (i !== today && (i % k || (today != null && k > 1 && Math.abs(i - today) < k))) return;
-      text(g, t, { x: x0 + i * cw + cw / 2, y, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': i === today ? 600 : 400, fill: i === today ? ink : muted });
-    });
-  }
-  // The style of each kind of booking: a pale fill, a 1px diagonal hatch, a darker grey step, an outline, or the one
-  // chart hue for the screen's main data element. tone: 'negative' turns the edge and the label red (it needs a decision).
-  function kindStyle(el, k = {}) {
-    const ink = css(el, '--ink', '#111'), surface = css(el, '--surface', '#fff'), neg = css(el, '--negative', '#c4242a'), hue = k.colour || css(el, '--chart-1', '#2f6fdf');
-    const tone = k.tone === 'negative' ? { stroke: neg, width: 1.5 } : {};
-    const dash = k.dash ? { dash: '3 2' } : {};
-    if (k.mark === 'hatch') return { fill: mix(el, ink, surface, 0.04), hatch: mix(el, ink, surface, 0.32), ...tone, ...dash };
-    if (k.mark === 'step') return { fill: mix(el, ink, surface, 0.24), ...tone, ...dash };
-    if (k.mark === 'outline') return { fill: surface, stroke: mix(el, ink, surface, 0.55), width: 1, ...tone, ...dash };
-    if (k.mark === 'hue') return { fill: mix(el, hue, surface, 0.18), edge: hue, ...tone, ...dash };
-    return { fill: mix(el, ink, surface, 0.12), ...tone, ...dash };
-  }
-  // Who is away when: people (or rooms, vans) down the left, days across, a bar per booking told apart by its kind.
-  //   rows: [{ label: 'Lena Hoffmann', sub: 'Product design · Berlin', bars: [{ from: 3, to: 7, kind: 'holiday', label, note }] }]
-  //         and { group: 'Brand' } rows for a team subheader
-  //   kinds: { holiday: { label: 'Holiday', mark: 'fill' | 'hatch' | 'step' | 'outline' | 'hue', code: 'H', tone, dash } }
-  //   days: ['Mon 19', …] or [{ label: 'Mon 19', short: '19' }]; weekends: [indices]; today: index;
-  //   holidays: [{ day: index, label: 'All Saints’ Day (Lisbon)' }]; onSelect(bar, row) makes the bars buttons.
-  // A label that does not fit its bar becomes the kind's code inside it, then goes after the bar's end (never into the
-  // days before it), and is always in the bar's tooltip.
-  function timeline(el, rows, kinds = {}, { days = [], weekends = [], today = null, holidays = [], labelWidth = null, rowHeight = null, barHeight = 22, onSelect = null, legend = null, extras = true } = {}) {
-    const draw = () => {
-      const pitch = rowHeight || (rows.some((r) => r.sub) ? 44 : 32), head = 30, groupH = 30;
-      const height = head + rows.reduce((a, r) => a + (r.group ? groupH : pitch), 0) + 2;
-      const { s, w, h } = frame(el, height);
-      const lw = labelWidth || Math.round(Math.min(220, Math.max(w < 480 ? 96 : 120, w * 0.2)));
-      const cw = (w - lw) / Math.max(1, days.length), col = (i) => lw + i * cw;
-      const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b'), rule = css(el, '--rule', '#f0f0f0'), raised = css(el, '--raised', '#f4f5f6'), hue = css(el, '--chart-1', '#2f6fdf');
-      const g = svg('g', {}, s);
-      // weekends one tone step darker, faint day lines, the day header (today in ink)
-      for (const i of weekends) svg('rect', { x: col(i), y: head, width: cw, height: h - head, fill: raised }, g);
-      for (let i = 0; i <= days.length; i++) svg('line', { x1: col(i), x2: col(i), y1: head, y2: h, stroke: rule, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
-      dayHeads(g, s, el, days, { x0: lw, cw, y: head - 10, today });
-      for (const hd of holidays) { const c = svg('circle', { cx: col(hd.day) + cw / 2, cy: head - 3, r: 2, fill: muted }, g); titled(c, hd.label, {}); }
-      if (today != null) svg('line', { x1: col(today) + cw / 2, x2: col(today) + cw / 2, y1: head, y2: h, stroke: hue, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
-      let y0 = head;
-      for (const r of rows) {
-        if (r.group) { svg('line', { x1: 0, x2: w, y1: y0 + 0.5, y2: y0 + 0.5, stroke: rule, 'stroke-width': 1 }, g); text(g, r.group, { x: 0, y: y0 + 20, 'font-size': 12, 'font-weight': 500, fill: muted }); y0 += groupH; continue; }
-        rowLabel(g, s, el, r, { y0, pitch, lw });
-        const bs = (r.bars || []).filter((b) => b.to >= 0 && b.from < days.length).sort((a, b) => a.from - b.from);
-        bs.forEach((b, k) => {
-          const kind = kinds[b.kind] || {}, st = kindStyle(el, kind);
-          const x0 = col(Math.max(0, b.from)) + 2, x1 = col(Math.min(days.length - 1, b.to) + 1) - 2, by = y0 + (pitch - barHeight) / 2;
-          const grp = svg('g', onSelect ? { tabindex: 0, role: 'button', style: 'cursor:pointer' } : {}, g);
-          paintRect(grp, st, x0, by, x1 - x0, barHeight, 4);
-          const label = b.label ?? kind.label ?? '', code = b.code ?? kind.code, tw = measure(s, label, 12), labInk = kind.tone === 'negative' ? css(el, '--negative', '#c4242a') : ink;
-          const next = bs[k + 1] ? col(Math.max(0, bs[k + 1].from)) : w;
-          // over a hatch the label keeps a halo of the bar's own fill, so the lines never run through the words
-          const halo = st.hatch ? { stroke: st.fill, 'stroke-width': 4, 'stroke-linejoin': 'round', 'paint-order': 'stroke' } : {};
-          if (label && tw + 16 <= x1 - x0) text(grp, label, { x: x0 + 8 + (st.edge ? 2 : 0), y: by + barHeight / 2 + 4, 'font-size': 12, fill: labInk, ...halo });
-          else if (code && measure(s, code, 12) + 8 <= x1 - x0) text(grp, code, { x: (x0 + x1) / 2, y: by + barHeight / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, fill: labInk, ...halo });
-          else if (label && x1 + 6 + tw <= Math.min(next - 6, w)) text(grp, label, { x: x1 + 6, y: by + barHeight / 2 + 4, 'font-size': 12, fill: kind.tone === 'negative' ? labInk : muted });
-          titled(grp, `${r.label}: ${label}${b.note ? ' \u00b7 ' + b.note : ''}`, {});
-          if (onSelect) { grp.addEventListener('click', () => onSelect(b, r)); grp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(b, r); } }); }
-        });
-        y0 += pitch;
-      }
-      s.setAttribute('aria-label', `${rows.filter((r) => !r.group).length} rows across ${days.length} days, ${dayText(days[0])} to ${dayText(days.at(-1))}`);
-    };
-    draw(); watch(el, draw); settle(draw);
-    const used = new Set(rows.flatMap((r) => (r.bars || []).map((b) => b.kind)));
-    const items = Object.entries(kinds).filter(([id]) => used.has(id)).map(([, k]) => ({ label: k.label, w: 22, draw: (sw) => { const st = kindStyle(el, k); paintRect(sw, st, 0, 0, 22, 12, 3); } }));
-    if (extras && today != null) items.push({ label: 'Today', w: 8, draw: (sw) => svg('line', { x1: 4, x2: 4, y1: 0, y2: 12, stroke: css(el, '--chart-1', '#2f6fdf'), 'stroke-width': 1.5 }, sw) });
-    return { get svg() { return el.querySelector(':scope > svg'); }, legend: legendEl(items, legend) };
-  }
-  // Is there enough cover? A team-by-day grid of slack against the minimum (+2, +1, 0, −1). Cells with room to spare
-  // stay plain, and one hue ramps toward the negative colour as the slack runs out; the headcount is in the tooltip.
-  //   rows: [{ label: 'Product design', sub: 'needs 7 of 10', values: [2, 1, 0, -1, null, …], titles: ['8 in', …] }]
-  //   cols: ['Mon 19', …]; comfort: the slack that needs no attention (2); null is a day with no cover to count (a dash)
-  function matrix(el, rows, { cols = [], comfort = 2, today = null, format = fmt.signed(), labelWidth = null, rowHeight = null, levels = ['Room to spare', 'Tight', 'At the minimum', 'Short'], legend = null } = {}) {
-    const level = (v) => (v >= comfort ? 0 : v > 0 ? 1 : v === 0 ? 2 : 3);
-    const styles = () => { const neg = css(el, '--negative', '#c4242a'), surface = css(el, '--surface', '#fff'), ink = css(el, '--ink', '#111'); return [{ fill: surface, ink: css(el, '--axis-ink', '#6b6b6b'), stroke: css(el, '--grid', '#e5e5e5') }, { fill: mix(el, neg, surface, 0.1), ink }, { fill: mix(el, neg, surface, 0.26), ink }, { fill: neg, ink: surface }]; };
-    const draw = () => {
-      const pitch = rowHeight || (rows.some((r) => r.sub) ? 44 : 32), head = 26;
-      const { s, w, h } = frame(el, head + rows.length * pitch);
-      const lw = labelWidth || Math.round(Math.min(220, Math.max(w < 480 ? 96 : 120, w * 0.22)));
-      const cw = (w - lw) / Math.max(1, cols.length), ST = styles(), muted = css(el, '--axis-ink', '#6b6b6b'), ink = css(el, '--ink', '#111');
-      const g = svg('g', {}, s);
-      dayHeads(g, s, el, cols, { x0: lw, cw, y: head - 10, today });
-      rows.forEach((r, k) => {
-        const y0 = head + k * pitch; rowLabel(g, s, el, r, { y0, pitch, lw });
-        const ch = Math.min(pitch - 6, 28), cy = y0 + (pitch - ch) / 2;
-        r.values.forEach((v, i) => {
-          const cx = lw + i * cw + 1;
-          if (v == null) { svg('rect', { x: cx + cw / 2 - 4, y: cy + ch / 2 - 1, width: 6, height: 2, fill: muted }, g); return; }
-          const st = ST[level(v)], cell = paintRect(g, { fill: st.fill }, cx, cy, cw - 2, ch, 3);
-          text(g, format(v), { x: cx + (cw - 2) / 2, y: cy + ch / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': level(v) === 3 ? 600 : 400, fill: st.ink });
-          titled(cell, `${r.label}, ${dayText(cols[i])}: ${r.titles?.[i] || format(v) + ' against the minimum'}`, {});
-        });
-      });
-      s.setAttribute('aria-label', `Cover against the minimum for ${rows.length} rows across ${cols.length} days`);
-    };
-    draw(); watch(el, draw); settle(draw);
-    const seen = new Set(rows.flatMap((r) => r.values.filter((v) => v != null).map(level)));
-    const ST = styles();
-    const items = [0, 1, 2, 3].filter((l) => seen.has(l)).map((l) => ({ label: levels[l], w: 14, draw: rectSwatch(l === 0 ? { fill: ST[0].fill, stroke: ST[0].stroke } : { fill: ST[l].fill }, 14, 12, 3) }));
-    return { get svg() { return el.querySelector(':scope > svg'); }, legend: legendEl(items, legend) };
-  }
-  // When, within the day: one row per item on a shared open–close axis. A 2px grey track, an ink dot at today's time and
-  // a hollow tick at the comparison day's, so "earlier than last Sunday" is drawn and not only written.
-  //   rows: [{ label: 'White sourdough', sub: 'Headingley', at: '11:20', compare: '12:05', value: '11:20', note: '3 h 40 m before close' }]
-  //   at or compare may be null (it did not sell out); step: minutes between axis labels (60).
-  function timeStrip(el, rows, { open = '08:00', close = '18:00', step = 60, todayLabel = 'Today', compareLabel = null, labelWidth = null, valueWidth = null, rowHeight = null, legend = null } = {}) {
-    const o = minutes(open), c = minutes(close);
-    const st = { today: { r: 4.5 }, compare: { w: 5, h: 12 } };
-    const dot = (parent, cx, cy) => svg('circle', { cx, cy, r: st.today.r, fill: css(el, '--ink', '#111') }, parent);
-    const tick = (parent, cx, cy) => svg('rect', { x: cx - st.compare.w / 2, y: cy - st.compare.h / 2, width: st.compare.w, height: st.compare.h, rx: 2.5, fill: css(el, '--surface', '#fff'), stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1.5 }, parent);
-    const draw = () => {
-      const narrow = (el.clientWidth || 600) < 560, axisH = 24;
-      const pitch = rowHeight || (narrow ? 62 : rows.some((r) => r.sub || r.note) ? 44 : 32);
-      const { s, w, h } = frame(el, rows.length * pitch + axisH);
-      const lw = narrow ? 0 : labelWidth || Math.round(Math.min(200, Math.max(110, w * 0.26)));
-      const vw = narrow ? 0 : valueWidth ?? Math.min(w * 0.32, Math.max(0, ...rows.map((r) => Math.max(r.value ? measure(s, r.value, 13, 500) : 0, r.note ? measure(s, r.note, 12) : 0))) + (rows.some((r) => r.value || r.note) ? 16 : 0));
-      const x0 = narrow ? 18 : lw + 6, x1 = narrow ? w - 18 : w - vw - 6, tx = (m) => x0 + ((m - o) / Math.max(1, c - o)) * (x1 - x0);
-      const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b'), rule = css(el, '--rule', '#f0f0f0');
-      const track = css(el, '--chart-track', mix(el, ink, css(el, '--surface', '#fff'), 0.16));
-      const g = svg('g', {}, s), plotH = rows.length * pitch;
-      // the axis: one step from the opening, the labels thinned by the same rule as the charts
-      const marks = []; for (let m = Math.ceil(o / step) * step; m <= c; m += step) marks.push(m);
-      const picks = xPicks(marks.map(fmt.clock), x1 - x0);
-      for (const i of picks) { const xx = tx(marks[i]); if (!narrow) svg('line', { x1: xx, x2: xx, y1: 0, y2: plotH, stroke: rule, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g); const lab = fmt.clock(marks[i]), tw = measure(s, lab, 12); text(g, lab, { x: Math.max(x0 - 2, Math.min(x1 + 6 - tw, xx - tw / 2)), y: plotH + 17, 'font-size': 12, fill: muted }); }
-      rows.forEach((r, k) => {
-        const y0 = k * pitch, cy = narrow ? y0 + pitch - 12 : y0 + pitch / 2;
-        if (narrow) {
-          const vwid = r.value ? measure(s, r.value, 13, 500) + 12 : 0;
-          text(g, fit(s, r.label, w - vwid, 14), { x: 0, y: y0 + 16, 'font-size': 14, fill: ink });
-          if (r.value) text(g, r.value, { x: w, y: y0 + 16, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink });
-          const second = [r.sub, r.note].filter(Boolean).join(' \u00b7 ');
-          if (second) text(g, fit(s, second, w, 12), { x: 0, y: y0 + 33, 'font-size': 12, fill: muted });
-        } else rowLabel(g, s, el, r, { y0, pitch, lw });
-        svg('line', { x1: x0, x2: x1, y1: cy, y2: cy, stroke: track, 'stroke-width': 2, 'stroke-linecap': 'round' }, g);
-        const cm = minutes(r.compare), am = minutes(r.at);
-        if (cm != null) titled(tick(g, tx(cm), cy), `${compareLabel || 'Comparison'}: ${fmt.clock(cm)}`, {});
-        if (am != null) titled(dot(g, tx(am), cy), `${todayLabel}: ${fmt.clock(am)}`, {});
-        if (narrow) return;
-        if (r.note) { if (r.value) text(g, r.value, { x: w, y: cy - 3, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink }); text(g, fit(s, r.note, vw - 8, 12), { x: w, y: r.value ? cy + 13 : cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: muted }); }
-        else if (r.value) text(g, r.value, { x: w, y: cy + 5, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink });
-      });
-      s.setAttribute('aria-label', `${rows.length} rows between ${fmt.clock(o)} and ${fmt.clock(c)}`);
-    };
-    draw(); watch(el, draw); settle(draw);
-    const items = [];
-    if (rows.some((r) => minutes(r.at) != null)) items.push({ label: todayLabel, w: 10, draw: (sw) => dot(sw, 5, 6) });
-    if (compareLabel && rows.some((r) => minutes(r.compare) != null)) items.push({ label: compareLabel, w: 8, draw: (sw) => tick(sw, 4, 6) });
-    return { get svg() { return el.querySelector(':scope > svg'); }, legend: legendEl(items, legend) };
-  }
-  function watch(el, draw) { if (!('ResizeObserver' in window)) return; let w = el.clientWidth; new ResizeObserver(() => { if (Math.abs(el.clientWidth - w) > 4) { w = el.clientWidth; draw(); } }).observe(el); }
-  window.Charts = { line, bars, diverging, ring, barList, plan, bullet, timeline, matrix, timeStrip, ticks, fmt };
-})();
-
-/* =====================================================================
-   Modo Parche Business · aplicación del panel
-   1. Utilidades          6. Mapa comercial y GPS
-   2. Datos de muestra    7. Cupones y validador
-   3. Persistencia        8. Asistentes y chat
-   4. Navegación          9. Perfil del local
-   5. Resumen y parches  10. Diálogos, avisos e inicio
+   Datos de muestra: cada local trae como máximo 3 parches, 3 cupones,
+   3 códigos, 3 reseñas y 3 asistentes por parche. Todo lo demás
+   (indicadores, actividad, mapa) se calcula a partir de ellos.
 ===================================================================== */
 (() => {
   'use strict';
@@ -646,265 +28,312 @@
   const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const ic = n => `<svg class="ic" aria-hidden="true"><use href="#${n}"/></svg>`;
   const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const rnd = key => (hash(key) % 10000) / 10000;  // 0..1 estable para una clave
   const nf = new Intl.NumberFormat('es-CO');
   const int = n => nf.format(Math.round(n));
-  const money = n => '$' + nf.format(Math.round(n));          // sin espacio después del signo
-  const pct = (n, d = 0) => new Intl.NumberFormat('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n * 100) + ' %';
-  const MINUS = '−';
-  const signed = n => (n > 0 ? '+' : n < 0 ? MINUS : '') + int(Math.abs(n));
+  const money = n => '$' + nf.format(Math.round(n));
+  const dec1 = n => n.toFixed(1).replace('.', ',');
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const REDUCED = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const day0 = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const at = (base, hhmm) => { const [h, m] = hhmm.split(':').map(Number); const d = new Date(base); d.setHours(h, m, 0, 0); return d.getTime(); };
-  const fmtHora = ts => new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }).format(ts).replace(/\s/g, ' ');
-  const fmtDiaCorto = ts => new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short' }).format(ts).replace(/\./g, '');
-  const fmtMesCorto = ts => new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' }).format(ts).replace(/\./g, '');
-  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const hhmm = ts => { const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const fmtHora = ts => new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }).format(ts).replace(/\s/g, ' ');
+  const horaTxt = s => fmtHora(at(NOW(), s));
+  const fmtSem = ts => new Intl.DateTimeFormat('es-CO', { weekday: 'short' }).format(ts).replace(/\./g, '');
+  const fmtMes = ts => new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(ts).replace(/\./g, '');
+  const fmtDiaMes = ts => `${new Date(ts).getDate()} ${fmtMes(ts)}`;
+  const diasDesdeHoy = ts => Math.round((day0(ts) - day0(NOW())) / DAY);
   function fmtDia(ts) {
-    const d = Math.round((day0(ts) - day0(NOW())) / DAY);
+    const d = diasDesdeHoy(ts);
     if (d === 0) return 'Hoy';
     if (d === 1) return 'Mañana';
     if (d === -1) return 'Ayer';
-    return cap(fmtDiaCorto(ts));
+    return cap(`${fmtSem(ts)} ${fmtDiaMes(ts)}`);
   }
   const fmtCuando = ts => `${fmtDia(ts)}, ${fmtHora(ts)}`;
-  const isoDateTime = ts => `${dayKey(ts)} ${pad(new Date(ts).getHours())}:${pad(new Date(ts).getMinutes())}`;
-  const minsLeft = ts => Math.max(0, Math.round((ts - NOW()) / MIN));
+  function fmtRel(ts) {
+    const m = Math.round((NOW() - ts) / MIN);
+    if (m < 1) return 'ahora';
+    if (m < 60) return `hace ${m} min`;
+    return `${fmtDia(ts).toLowerCase()}, ${fmtHora(ts)}`;
+  }
   const fmtDur = m => m >= 60 ? `${Math.floor(m / 60)} h ${pad(m % 60)} min` : `${m} min`;
 
-  // Persona: inicial estable y un tinte pálido propio (los vecinos de lista quedan a 67° de distancia)
   const tint = i => { const h = (i * 67) % 360; return `background:hsl(${h} 70% 92%);color:hsl(${h} 45% 26%)`; };
   const initials = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const avatar = (p) => `<span class="avatar" style="${tint(p.tono)}" aria-hidden="true">${esc(initials(p.nombre))}</span>`;
+  const avatar = p => `<span class="avatar" style="${tint(p.tono)}" aria-hidden="true">${esc(initials(p.nombre))}</span>`;
+  const stars = n => `<span class="stars" role="img" aria-label="${n} de 5 estrellas">${[1, 2, 3, 4, 5].map(i => `<svg class="ic ${i <= n ? '' : 'off'}" aria-hidden="true"><use href="#i-star"/></svg>`).join('')}</span>`;
 
   /* =====================================================================
      2. DATOS DE MUESTRA (Villavicencio, coordenadas reales)
   ===================================================================== */
-  const LUGARES = {
-    capachos: { nombre: 'Discoteca Los Capachos', ref: 'Km 4 Vía Acacías', lat: 4.1165, lng: -73.6508 },
-    primavera: { nombre: 'C.C. Primavera Urbana', ref: 'Calle 15 # 40-01', lat: 4.1348, lng: -73.6206 },
-    fundadores: { nombre: 'Parque Los Fundadores', ref: 'Entrada sur, Av. 40', lat: 4.1242, lng: -73.6395 },
-    piedra: { nombre: 'Mirador La Piedra del Amor', ref: 'Buenavista', lat: 4.1585, lng: -73.6540 },
-    siete: { nombre: 'Parque Siete de Agosto', ref: 'Barrio Siete de Agosto', lat: 4.1462, lng: -73.6335 },
-    viva: { nombre: 'C.C. Viva Villavicencio', ref: 'Av. 40', lat: 4.1290, lng: -73.6225 },
-  };
-  const CATEGORIAS = ['Rumba y Bares', 'Comida y Antojos', 'Planes Chill', 'Conciertos y Toques', 'Gaming y Tecnología', 'Cultura y Talleres'];
   const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const PERFIL_DEF = {
-    nombre: 'Discoteca Los Capachos', categoria: 'Rumba y Bares', tel: '608 670 4521', nit: '900.418.226-1',
-    desc: 'Discoteca a la salida de Villavo por la vía a Acacías. Crossover, reguetón viejo y arpa llanera en vivo los sábados.',
-    lat: LUGARES.capachos.lat, lng: LUGARES.capachos.lng, direccion: LUGARES.capachos.ref,
-    horarios: {
-      0: { abierto: true, open: '18:00', close: '00:00' }, 1: { abierto: true, open: '19:00', close: '00:00' },
-      2: { abierto: true, open: '19:00', close: '00:00' }, 3: { abierto: true, open: '19:00', close: '00:00' },
-      4: { abierto: true, open: '20:00', close: '02:00' }, 5: { abierto: true, open: '21:00', close: '04:00' },
-      6: { abierto: true, open: '21:00', close: '04:00' },
-    },
-    cover: { src: 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=70', zoom: 1, y: 0 },
-    logo: { src: '', zoom: 1 },
+  const REGLAS = {
+    checkin: 'Hace check-in en uno de tus parches',
+    temprano: 'Llega en la primera hora del parche',
+    lleno: 'Su parche llena todos los cupos',
+    cumple: 'Celebra su cumpleaños con 6 o más confirmados',
+    relampago: 'Llega durante un parche relámpago',
   };
+  const TEMAS = { 'Rumba y Bares': 'noche', 'Conciertos y Toques': 'noche', 'Comida y Antojos': 'fuego', 'Planes Chill': 'dia', 'Cultura y Talleres': 'dia' };
+  const horarios = (o, c, extra = {}) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, { abierto: true, open: o, close: c, ...(extra[d] || {}) }]));
 
-  const NOMBRES = ['Laura', 'Santiago', 'Valentina', 'Juan Pablo', 'Daniela', 'Camilo', 'Carolina', 'Andrés', 'Nicolás', 'Sofía', 'Felipe', 'María José', 'Kevin', 'Luisa', 'Sebastián', 'Isabella', 'Mateo', 'Paula', 'Julián', 'Natalia', 'David', 'Manuela', 'Esteban', 'Juliana', 'Diego', 'Mariana', 'Alejandro', 'Valeria', 'Cristian', 'Tomás', 'Gabriela', 'Brayan', 'Ana María', 'Samuel', 'Lorena', 'Óscar', 'Yesica', 'Miguel', 'Karen', 'Jhon'];
-  const APELLIDOS = ['Rojas', 'Gutiérrez', 'Moreno', 'Parra', 'Rincón', 'Baquero', 'Velásquez', 'Herrera', 'Castro', 'Garzón', 'Ortiz', 'Pineda', 'Suárez', 'Cárdenas', 'Mora', 'Ríos', 'Torres', 'Beltrán'];
-  const persona = i => ({ id: 'u' + i, tono: i, nombre: `${NOMBRES[i % NOMBRES.length]} ${APELLIDOS[(i * 7 + 3) % APELLIDOS.length].charAt(0)}.` });
+  function seed() {
+    const t0 = day0(NOW()), h = new Date(NOW()).getHours();
+    const P = o => ({ asistentes: [], chat: [], cancelado: false, promo: '', consumo: 0, dur: 180, tipo: 'oficial', ...o });
+    const A = (nombre, confirmo, llego = null) => ({ id: 'a' + hash(nombre + confirmo).toString(36), nombre, tono: hash(nombre) % 11, confirmo, llego });
+    const C = (codigo, k, persona, parcheId, emitido, canjeado = null) => ({ codigo, cuponId: k.id, cupNombre: k.nombre, cupBen: k.beneficio, persona, parcheId, emitido, vence: emitido + k.vigencia * DAY, canjeado });
+    const past = ts => Math.min(ts, NOW() - 5 * MIN);
 
-  // Programación del local por día de la semana
-  const OFICIAL = {
-    0: { titulo: 'Domingo de música popular', cupos: 80, consumo: 30000 },
-    1: { titulo: 'Lunes de billar y cerveza', cupos: 40, consumo: 25000 },
-    2: { titulo: 'Martes de karaoke llanero', cupos: 60, consumo: 28000 },
-    3: { titulo: 'Miércoles de salsa caleña', cupos: 80, consumo: 30000 },
-    4: { titulo: 'Jueves de crossover', cupos: 120, consumo: 35000 },
-    5: { titulo: 'Viernes de reguetón viejo', cupos: 150, consumo: 45000 },
-    6: { titulo: 'Toque en vivo: arpa y rock', cupos: 180, consumo: 50000 },
-  };
-  const BASE_CHECKINS = [19, 9, 8, 14, 28, 54, 71]; // un día típico, por día de la semana
+    /* ---------- Discoteca Los Capachos: rumba, tarjeta de noche ---------- */
+    const tc = h < 4 ? t0 - DAY : t0; // después de medianoche la rumba sigue siendo "esta noche"
+    const capK = [
+      { id: 'cap-k1', nombre: 'Mesa llena', beneficio: 'Botella de aguardiente para la mesa', regla: 'lleno', vigencia: 7, limite: 20, prefijo: 'LLENA', estado: 'activo' },
+      { id: 'cap-k2', nombre: 'Llegada temprano', beneficio: '2x1 en el primer coctel', regla: 'temprano', vigencia: 3, limite: 50, prefijo: 'TEMPRANO', estado: 'activo' },
+      { id: 'cap-k3', nombre: 'Cumpleañero', beneficio: 'Cover gratis para quien cumple', regla: 'cumple', vigencia: 15, limite: 10, prefijo: 'CUMPLE', estado: 'pausado' },
+    ];
+    const c3i = at(tc - DAY, '21:00');
+    const capP = [
+      P({ id: 'cap-p1', titulo: 'Noche de crossover', organizador: 'Los Capachos', inicio: at(tc, '22:00'), dur: 300, cupos: 8, consumo: 45000, promo: 'Cover con la primera incluida. La mesa se guarda hasta las 11.',
+        asistentes: [A('Laura M.', at(tc - DAY, '19:12')), A('Santiago G.', at(tc - DAY, '20:40')), A('Valentina P.', past(at(tc, '09:05')))] }),
+      P({ id: 'cap-p2', tipo: 'comunidad', titulo: 'Cumple de Juliana B.', organizador: 'Juliana B.', inicio: at(tc + DAY, '21:30'), cupos: 10, consumo: 45000,
+        asistentes: [A('Juliana B.', at(tc - 2 * DAY, '15:30')), A('Camilo R.', at(tc - 2 * DAY, '18:02')), A('Daniela H.', at(tc - DAY, '11:47'))] }),
+      P({ id: 'cap-p3', tipo: 'comunidad', titulo: 'Mesa de la oficina', organizador: 'Mafe P.', inicio: c3i, dur: 240, cupos: 3, consumo: 45000,
+        asistentes: [A('Mafe P.', at(tc - 3 * DAY, '10:20'), c3i + 75 * MIN), A('Andrés F.', at(tc - 3 * DAY, '12:05'), c3i + 20 * MIN), A('Kevin O.', at(tc - 2 * DAY, '18:10'), c3i + 35 * MIN)] }),
+    ];
+    capP[0].chat = [
+      { tipo: 'sys', texto: 'Los Capachos abrió el parche', ts: at(tc - 2 * DAY, '12:00') },
+      { autor: capP[0].asistentes[0], texto: '¿El cover sí incluye la primera?', ts: at(tc - DAY, '19:20') },
+      { autor: 'biz', texto: 'Sí señor, la primera va por la casa. Las mesas se guardan hasta las 11.', ts: at(tc - DAY, '19:31') },
+    ];
+    const capC = [
+      C('LLENA-4821', capK[0], 'Mafe P.', 'cap-p3', at(tc - 2 * DAY, '18:10')),
+      C('TEMPRANO-2290', capK[1], 'Andrés F.', 'cap-p3', c3i + 20 * MIN, at(tc - DAY, '23:40')),
+      C('TEMPRANO-6157', capK[1], 'Kevin O.', 'cap-p3', c3i + 35 * MIN),
+    ];
+    const capR = [
+      { estrellas: 5, autor: 'Andrés F.', texto: 'La mesa de la oficina quedó full y la botella de cortesía fue un detalle.', parche: 'Mesa de la oficina', fecha: past(c3i + 290 * MIN) },
+      { estrellas: 4, autor: 'Kevin O.', texto: 'Buena música. La barra se demoró un poco con los pedidos.', parche: 'Mesa de la oficina', fecha: past(c3i + 300 * MIN) },
+      { estrellas: 5, autor: 'Laura M.', texto: 'El crossover del jueves pasado estuvo brutal. Volvemos seguro.', parche: 'Noche de crossover', fecha: at(tc - 8 * DAY, '23:10') },
+    ];
 
-  let peopleSeq = 0;
-  const nuevaGente = (n, seed) => Array.from({ length: n }, (_, k) => persona((hash(seed + k) % 997) + (peopleSeq++ % 3) * 997));
+    /* ---------- Asadero Mamona y Brasa: comida, tarjeta de fuego ---------- */
+    const asaK = [
+      { id: 'asa-k1', nombre: 'Primera visita', beneficio: 'Jugo de maracuyá de cortesía', regla: 'checkin', vigencia: 7, limite: 100, prefijo: 'PRIMERA', estado: 'activo' },
+      { id: 'asa-k2', nombre: 'Mesa de 6', beneficio: 'Postre llanero para toda la mesa', regla: 'lleno', vigencia: 7, limite: 15, prefijo: 'MESA', estado: 'activo' },
+      { id: 'asa-k3', nombre: 'Cumpleañero', beneficio: 'Postre de cumpleaños con vela', regla: 'cumple', vigencia: 15, limite: 10, prefijo: 'CUMPLE', estado: 'activo' },
+    ];
+    const a3i = at(t0 - 2 * DAY, '13:00');
+    const asaP = [
+      P({ id: 'asa-p1', titulo: 'Almuerzo llanero: mamona al palo', organizador: 'Mamona y Brasa', inicio: at(t0, '12:30'), dur: 180, cupos: 12, consumo: 38000, promo: 'Mamona, papa salada y yuca. El jugo de la casa va incluido.',
+        asistentes: [A('Natalia S.', past(at(t0 - DAY, '17:40'))), A('Juan P.', past(at(t0 - DAY, '20:15'))), A('Sofía C.', past(at(t0, '08:30')))] }),
+      P({ id: 'asa-p2', titulo: 'Noche de arpa y ternera a la llanera', organizador: 'Mamona y Brasa', inicio: at(t0 + DAY, '19:00'), cupos: 20, consumo: 52000, promo: 'Arpa, cuatro y maracas en vivo desde las 8.',
+        asistentes: [A('Miguel A.', past(at(t0 - DAY, '13:10'))), A('Karen L.', past(at(t0 - DAY, '16:45'))), A('Felipe O.', past(at(t0, '07:55')))] }),
+      P({ id: 'asa-p3', tipo: 'comunidad', titulo: 'Almuerzo del equipo de fútbol', organizador: 'Brayan C.', inicio: a3i, cupos: 6, consumo: 38000,
+        asistentes: [A('Brayan C.', at(t0 - 4 * DAY, '19:00'), a3i + 5 * MIN), A('Óscar M.', at(t0 - 4 * DAY, '19:30'), a3i + 12 * MIN), A('Luisa F.', at(t0 - 3 * DAY, '09:00'), a3i + 25 * MIN)] }),
+    ];
+    asaP[0].chat = [
+      { tipo: 'sys', texto: 'Mamona y Brasa abrió el parche', ts: at(t0 - 3 * DAY, '10:00') },
+      { autor: asaP[0].asistentes[1], texto: '¿Tienen opción para niños?', ts: past(at(t0 - DAY, '20:20')) },
+      { autor: 'biz', texto: 'Claro, hay media porción de mamona con jugo a $19.000.', ts: past(at(t0 - DAY, '20:34')) },
+    ];
+    const asaC = [
+      C('PRIMERA-3310', asaK[0], 'Brayan C.', 'asa-p3', a3i + 5 * MIN, a3i + 95 * MIN),
+      C('PRIMERA-5527', asaK[0], 'Óscar M.', 'asa-p3', a3i + 12 * MIN),
+      C('PRIMERA-8840', asaK[0], 'Luisa F.', 'asa-p3', a3i + 25 * MIN, a3i + 110 * MIN),
+    ];
+    const asaR = [
+      { estrellas: 5, autor: 'Brayan C.', texto: 'La mamona en su punto. Nos atendieron rápido a todo el equipo.', parche: 'Almuerzo del equipo de fútbol', fecha: a3i + 4 * HOUR },
+      { estrellas: 4, autor: 'Luisa F.', texto: 'Muy rico todo. El parqueadero se llena al mediodía.', parche: 'Almuerzo del equipo de fútbol', fecha: a3i + 6 * HOUR },
+      { estrellas: 5, autor: 'Óscar M.', texto: 'El jugo de maracuyá de cortesía fue la mejor bienvenida.', parche: 'Almuerzo del equipo de fútbol', fecha: a3i + 26 * HOUR },
+    ];
 
-  function mkParche(o) {
-    const asistentes = o.asistentes || nuevaGente(o.confirmados || 0, o.id).map((p, k) => ({
-      ...p, id: `${o.id}-${k}`, confirmo: Math.min(o.inicio - (2 + (k % 40)) * HOUR, NOW() - (k + 1) * MIN),
-      llego: k < (o.checkins || 0) ? Math.min(o.inicio + Math.round((k / Math.max(1, o.checkins)) * 110 + 4) * MIN, NOW() - (k % 30 + 1) * MIN) : null,
-    }));
+    /* ---------- Café Arrayán: plan chill, tarjeta de día ---------- */
+    const cafK = [
+      { id: 'caf-k1', nombre: 'Madrugador', beneficio: 'Pan de bono gratis con tu café', regla: 'temprano', vigencia: 3, limite: 60, prefijo: 'MADRU', estado: 'activo' },
+      { id: 'caf-k2', nombre: 'Jugador de mesa', beneficio: '2x1 en malteadas', regla: 'relampago', vigencia: 1, limite: 40, prefijo: 'JUEGO', estado: 'activo' },
+      { id: 'caf-k3', nombre: 'Cumpleañero', beneficio: 'Porción de torta con vela', regla: 'cumple', vigencia: 15, limite: 10, prefijo: 'TORTA', estado: 'activo' },
+    ];
+    const f3i = at(t0 - DAY, '18:00');
+    const cafP = [
+      P({ id: 'caf-p1', titulo: 'Tarde de juegos de mesa', organizador: 'Café Arrayán', inicio: at(t0, '16:00'), dur: 240, cupos: 10, consumo: 18000, promo: 'Catán, Dixit y Uno. Trae tu juego si quieres.',
+        asistentes: [A('Paula R.', past(at(t0 - DAY, '21:10'))), A('Tomás R.', past(at(t0, '07:20'))), A('Isabella M.', past(at(t0, '08:05')))] }),
+      P({ id: 'caf-p2', titulo: 'Taller de barismo para principiantes', organizador: 'Café Arrayán', inicio: at(t0 + 3 * DAY, '09:00'), dur: 120, cupos: 8, consumo: 25000, promo: 'Aprende a preparar un V60 y un capuchino. Incluye el café.',
+        asistentes: [A('Mariana B.', past(at(t0 - DAY, '10:00'))), A('Julián S.', past(at(t0 - DAY, '15:45'))), A('Daniela H.', past(at(t0, '06:50')))] }),
+      P({ id: 'caf-p3', tipo: 'comunidad', titulo: 'Club de lectura: García Márquez', organizador: 'Paula R.', inicio: f3i, dur: 150, cupos: 8, consumo: 15000,
+        asistentes: [A('Paula R.', at(t0 - 5 * DAY, '12:00'), f3i + 5 * MIN), A('Sebastián T.', at(t0 - 4 * DAY, '19:00'), f3i + 70 * MIN), A('Valeria G.', at(t0 - 3 * DAY, '08:30'), f3i + 15 * MIN)] }),
+    ];
+    cafP[0].chat = [
+      { tipo: 'sys', texto: 'Café Arrayán abrió el parche', ts: at(t0 - 4 * DAY, '09:00') },
+      { autor: cafP[0].asistentes[0], texto: '¿Puedo llevar mi Catán con la expansión?', ts: past(at(t0 - DAY, '21:15')) },
+      { autor: 'biz', texto: 'De una, Paula. Te guardamos la mesa grande del fondo.', ts: past(at(t0 - DAY, '21:30')) },
+    ];
+    const cafC = [
+      C('MADRU-7781', cafK[0], 'Paula R.', 'caf-p3', f3i + 5 * MIN, f3i + 40 * MIN),
+      C('MADRU-2034', cafK[0], 'Valeria G.', 'caf-p3', f3i + 15 * MIN),
+    ];
+    const cafR = [
+      { estrellas: 5, autor: 'Paula R.', texto: 'El mejor lugar para el club: buena luz, silencio y café de verdad.', parche: 'Club de lectura: García Márquez', fecha: past(f3i + 3 * HOUR) },
+      { estrellas: 5, autor: 'Valeria G.', texto: 'Llegué temprano y el pan de bono gratis me ganó.', parche: 'Club de lectura: García Márquez', fecha: past(f3i + 4 * HOUR) },
+      { estrellas: 4, autor: 'Sebastián T.', texto: 'Muy chévere. Faltan enchufes cerca de las mesas.', parche: 'Club de lectura: García Márquez', fecha: past(f3i + 5 * HOUR) },
+    ];
+
+    const perfil = o => ({ ...o, tema: TEMAS[o.categoria] || 'noche' });
     return {
-      lugar: 'capachos', consumo: 0, promo: '', cancelado: false, chat: [], ...o,
-      lat: o.lat ?? LUGARES[o.lugar || 'capachos'].lat, lng: o.lng ?? LUGARES[o.lugar || 'capachos'].lng,
-      asistentes,
+      v: 2, day: dayKey(t0), actual: 'capachos', sonido: true, solicitudes: [],
+      locales: {
+        capachos: { id: 'capachos', perfil: perfil({ nombre: 'Discoteca Los Capachos', corto: 'LC', categoria: 'Rumba y Bares', tel: '608 670 4521', nit: '900.418.226-1', idMP: 'MP-0421', desde: new Date(2026, 2, 14).getTime(), direccion: 'Km 4', barrio: 'Vía Acacías', lat: 4.1165, lng: -73.6508,
+          desc: 'Discoteca a la salida de Villavo por la vía a Acacías. Crossover, reguetón viejo y arpa llanera en vivo.',
+          horarios: horarios('19:00', '00:00', { 0: { open: '18:00' }, 4: { open: '20:00', close: '02:00' }, 5: { open: '21:00', close: '04:00' }, 6: { open: '21:00', close: '04:00' } }) }),
+          parches: capP, cupones: capK, codigos: capC, resenas: capR },
+        asadero: { id: 'asadero', perfil: perfil({ nombre: 'Asadero Mamona y Brasa', corto: 'MB', categoria: 'Comida y Antojos', tel: '608 662 1180', nit: '901.227.904-3', idMP: 'MP-0587', desde: new Date(2026, 4, 2).getTime(), direccion: 'Calle 40 # 24-15', barrio: 'Los Fundadores', lat: 4.1242, lng: -73.6395,
+          desc: 'Mamona al palo, ternera a la llanera y jugos naturales, a una cuadra del Parque Los Fundadores.',
+          horarios: horarios('11:00', '22:00') }),
+          parches: asaP, cupones: asaK, codigos: asaC, resenas: asaR },
+        cafe: { id: 'cafe', perfil: perfil({ nombre: 'Café Arrayán', corto: 'CA', categoria: 'Planes Chill', tel: '310 482 7731', nit: '1.121.904.552-7', idMP: 'MP-0712', desde: new Date(2026, 6, 20).getTime(), direccion: 'C.C. Primavera Urbana, local 112', barrio: 'Primavera', lat: 4.1348, lng: -73.6206,
+          desc: 'Café de especialidad del Meta, juegos de mesa y talleres. Un plan tranquilo en Primavera Urbana.',
+          horarios: horarios('08:00', '21:00', { 0: { open: '09:00', close: '19:00' } }) }),
+          parches: cafP, cupones: cafK, codigos: cafC, resenas: cafR },
+      },
     };
   }
-
-  function buildSeed() {
-    const t0 = day0(NOW());
-    const parches = [];
-    const serie = []; // { ts, checkins, confirmados } por día, los últimos 60 días sin hoy
-
-    // Día de hora feliz relámpago: el jueves de hace 7 a 13 días, y otro un mes antes
-    const relDays = new Set();
-    for (let d = 7; d <= 13; d++) if (new Date(t0 - d * DAY).getDay() === 4) relDays.add(dayKey(t0 - d * DAY));
-    for (let d = 35; d <= 41; d++) if (new Date(t0 - d * DAY).getDay() === 4) relDays.add(dayKey(t0 - d * DAY));
-
-    for (let d = 60; d >= 1; d--) {
-      const ts = t0 - d * DAY, wd = new Date(ts).getDay(), k = dayKey(ts);
-      const rel = relDays.has(k);
-      const oficial = Math.round(BASE_CHECKINS[wd] * (0.82 + rnd('c' + k) * 0.36));
-      const comunidad = rnd('com' + k) < 0.4 ? 8 + Math.round(rnd('cn' + k) * 6) : 0;
-      const relN = rel ? 38 : 0;
-      const noShow = n => Math.round(n * (0.12 + rnd('ns' + k + n) * 0.1));
-      const conf = [oficial + noShow(oficial), comunidad + noShow(comunidad), relN + noShow(relN)];
-      serie.push({ ts, checkins: oficial + comunidad + relN, confirmados: conf[0] + conf[1] + conf[2], relampago: rel });
-      if (d <= 14) {
-        const h = PERFIL_DEF.horarios[wd];
-        parches.push(mkParche({ id: 'po' + k, tipo: 'oficial', titulo: OFICIAL[wd].titulo, organizador: 'Los Capachos', inicio: at(ts, h.open), dur: 240, cupos: OFICIAL[wd].cupos, consumo: OFICIAL[wd].consumo, confirmados: conf[0], checkins: oficial }));
-        if (comunidad) parches.push(mkParche({ id: 'pc' + k, tipo: 'comunidad', titulo: pick(['Rumba de la oficina', 'Cumple de Juliana B.', 'Reencuentro del colegio', 'Despedida de soltera'], k), organizador: persona(hash(k) % 40).nombre, inicio: at(ts, h.open) + 60 * MIN, dur: 180, cupos: comunidad + 6, confirmados: conf[1], checkins: comunidad }));
-        if (rel) parches.push(mkParche({ id: 'pr' + k, tipo: 'relampago', titulo: 'Hora feliz: 2x1 en cerveza nacional', promo: '2x1 en cerveza nacional', organizador: 'Los Capachos', inicio: at(ts, '21:00'), dur: 60, cupos: 50, consumo: 15000, confirmados: conf[2], checkins: relN }));
-      }
-    }
-
-    // Esta noche
-    const wd = new Date(t0).getDay(), h = PERFIL_DEF.horarios[wd];
-    const llegaron = (conf, inicio) => NOW() > inicio ? Math.round(conf * clamp((NOW() - inicio) / (150 * MIN), 0, 1) * 0.82) : 0;
-    const iOf = at(t0, h.open), iCom = at(t0, h.open) + 60 * MIN;
-    const confOf = Math.round(OFICIAL[wd].cupos * 0.8);
-    parches.push(mkParche({ id: 'hoy-of', tipo: 'oficial', titulo: OFICIAL[wd].titulo, organizador: 'Los Capachos', inicio: iOf, dur: 240, cupos: OFICIAL[wd].cupos, consumo: OFICIAL[wd].consumo, confirmados: confOf, checkins: llegaron(confOf, iOf), promo: 'Cover incluye la primera. Mesa reservada hasta las 11.' }));
-    parches.push(mkParche({ id: 'hoy-com', tipo: 'comunidad', titulo: 'Rumba en Los Capachos', organizador: 'Mafe P.', inicio: iCom, dur: 180, cupos: 12, consumo: 45000, confirmados: 12, checkins: llegaron(12, iCom) }));
-
-    // Próximos días
-    const frac = [0.8, 0.62, 0.5, 0.42, 0.36, 0.3, 0.26];
-    for (let d = 1; d <= 6; d++) {
-      const ts = t0 + d * DAY, w = new Date(ts).getDay(), hh = PERFIL_DEF.horarios[w];
-      parches.push(mkParche({ id: 'f' + d, tipo: 'oficial', titulo: OFICIAL[w].titulo, organizador: 'Los Capachos', inicio: at(ts, hh.open), dur: 240, cupos: OFICIAL[w].cupos, consumo: OFICIAL[w].consumo, confirmados: Math.round(OFICIAL[w].cupos * frac[d]) }));
-      if (d === 2) parches.push(mkParche({ id: 'fc2', tipo: 'comunidad', titulo: 'Cumpleaños de Laura M.', organizador: 'Laura M.', inicio: at(ts, hh.open) + 30 * MIN, dur: 180, cupos: 20, consumo: 45000, confirmados: 14 }));
-      if (d === 4) parches.push(mkParche({ id: 'fc4', tipo: 'comunidad', titulo: 'Despedida de Andrés F.', organizador: 'Andrés F.', inicio: at(ts, hh.open) + 60 * MIN, dur: 180, cupos: 15, consumo: 40000, confirmados: 9 }));
-    }
-
-    // Otros puntos de la ciudad (contexto del mapa)
-    const otros = [
-      { id: 'o1', lugar: 'siete', titulo: 'Micro en el Parque Siete de Agosto', organizador: 'Santi R.', inicio: at(t0, '19:30'), cupos: 10, confirmados: 8 },
-      { id: 'o2', lugar: 'viva', titulo: 'Hora feliz 2x1 en el C.C. Viva', organizador: 'Terraza C.C. Viva', inicio: Math.max(at(t0, '18:00'), NOW() + 40 * MIN), cupos: 20, confirmados: 11 },
-      { id: 'o3', lugar: 'primavera', titulo: 'Cine y arcade en Primavera Urbana', organizador: 'Andrés F.', inicio: at(t0, '18:30'), cupos: 8, confirmados: 3 },
-      { id: 'o4', lugar: 'fundadores', titulo: 'Tarde de frisbee y picnic', organizador: 'Laura M.', inicio: at(t0 + DAY, '16:00'), cupos: 10, confirmados: 5 },
-      { id: 'o5', lugar: 'piedra', titulo: 'Atardecer en la Piedra del Amor', organizador: 'Valen G.', inicio: at(t0 + 2 * DAY, '16:30'), cupos: 15, confirmados: 7 },
-    ].map(o => mkParche({ ...o, tipo: 'otro', dur: 180 }));
-    parches.push(...otros);
-
-    // Chat de muestra en los parches de esta noche
-    const of = parches.find(p => p.id === 'hoy-of'), com = parches.find(p => p.id === 'hoy-com');
-    of.chat = [
-      { tipo: 'sys', texto: 'Los Capachos abrió el parche', ts: of.inicio - 30 * HOUR },
-      { autor: of.asistentes[0], texto: '¿El cover incluye la primera de verdad?', ts: NOW() - 95 * MIN },
-      { autor: 'biz', texto: 'Sí señor, la primera va por la casa. Las mesas se guardan hasta las 11.', ts: NOW() - 90 * MIN },
-      { autor: of.asistentes[3], texto: 'Vamos 6, ¿nos pueden juntar dos mesas?', ts: NOW() - 40 * MIN },
-    ];
-    com.chat = [
-      { tipo: 'sys', texto: 'Mafe P. abrió el parche y eligió Los Capachos', ts: com.inicio - 50 * HOUR },
-      { autor: com.asistentes[1], texto: 'Llegamos en dos carros', ts: NOW() - 70 * MIN },
-      { tipo: 'sys', texto: 'Parche lleno: se desbloqueó la recompensa Mesa llena', ts: NOW() - 30 * MIN },
-    ];
-
-    // Recompensas y códigos
-    const cupones = [
-      { id: 'k1', nombre: 'Mesa llena', regla: 'lleno', beneficio: 'Botella de aguardiente de cortesía para la mesa', prefijo: 'LLENA', activo: true },
-      { id: 'k2', nombre: 'Llegada temprano', regla: 'temprano', beneficio: '2x1 en el primer coctel', prefijo: 'TEMPRANO', activo: true },
-      { id: 'k3', nombre: 'Cumpleañero', regla: 'cumple', beneficio: 'Cover gratis para quien cumple', prefijo: 'CUMPLE', activo: true },
-      { id: 'k4', nombre: 'Relámpago 2x1', regla: 'relampago', beneficio: '2x1 en cerveza nacional', prefijo: 'FLASH', activo: true },
-    ];
-    const codigos = [];
-    const emitir = (k, n, seed, desdeDias, canjeRatio) => {
-      for (let i = 0; i < n; i++) {
-        const dias = 1 + Math.floor(rnd(seed + i) * desdeDias);
-        const emitido = t0 - dias * DAY + Math.round((20 + rnd(seed + 'e' + i) * 3.5) * 60) * MIN;
-        const canj = rnd(seed + 'x' + i) < canjeRatio;
-        codigos.push({ codigo: `${k.prefijo}-${1000 + (hash(seed + i) % 9000)}`, cuponId: k.id, persona: persona(hash(seed + 'p' + i) % 400).nombre, emitido, canjeado: canj ? emitido + Math.round(20 + rnd(seed + 'h' + i) * 130) * MIN : null });
-      }
-    };
-    emitir(cupones[0], 9, 'k1', 45, 0.75);
-    emitir(cupones[1], 58, 'k2', 45, 0.55);
-    emitir(cupones[2], 5, 'k3', 45, 0.7);
-    emitir(cupones[3], 40, 'k4', 40, 0.6);
-    // La rumba de esta noche se llenó: su código Mesa llena está por canjear
-    codigos.push({ codigo: 'LLENA-4821', cuponId: 'k1', persona: 'Mafe P.', emitido: NOW() - 30 * MIN, canjeado: null });
-
-    // Reseñas de clientes que hicieron check-in
-    const R = [
-      [5, 'Laura M.', 'El toque de arpa con rock del sábado fue otra cosa. Volvemos seguro.', 'Toque en vivo: arpa y rock'],
-      [5, 'Santiago G.', 'Nos guardaron la mesa hasta las 11 como decía el parche. Cumplieron.', 'Viernes de reguetón viejo'],
-      [4, 'Valentina P.', 'Muy buena música, la fila para entrar estuvo larga a las 10.', 'Viernes de reguetón viejo'],
-      [5, 'Camilo R.', 'La hora feliz 2x1 valió la pena, llegamos 8 del trabajo.', 'Hora feliz: 2x1 en cerveza nacional'],
-      [4, 'Daniela H.', 'Ambiente sano y seguro. El parqueadero se llena rápido.', 'Jueves de crossover'],
-      [5, 'Andrés F.', 'Celebré el cumple aquí y el cover gratis fue un detalle.', 'Cumple de Juliana B.'],
-      [3, 'Kevin O.', 'Buena rumba pero se demoraron con los pedidos en la barra.', 'Viernes de reguetón viejo'],
-      [5, 'Sofía C.', 'El karaoke llanero de los martes es lo más chévere de Villavo.', 'Martes de karaoke llanero'],
-      [4, 'Mateo T.', 'Llegamos temprano y nos dieron el 2x1 en coctel sin problema.', 'Jueves de crossover'],
-      [5, 'Mariana B.', 'La botella de cortesía por llenar la mesa nos animó a invitar a más gente.', 'Rumba de la oficina'],
-      [4, 'Julián S.', 'Buen sonido. Faltan más opciones sin alcohol.', 'Domingo de música popular'],
-      [2, 'Yesica O.', 'Mucho calor en la pista, el aire no daba abasto.', 'Toque en vivo: arpa y rock'],
-      [5, 'Tomás R.', 'Atención rápida y el DJ puso todo lo que pedimos en el chat.', 'Viernes de reguetón viejo'],
-      [5, 'Isabella M.', 'Primera vez que vengo por Modo Parche y conocí gente muy bacana.', 'Miércoles de salsa caleña'],
-    ];
-    const resenas = R.map(([estrellas, autor, texto, parche], i) => ({ estrellas, autor, texto, parche, fecha: t0 - (2 + i * 3) * DAY + 23 * HOUR }));
-
-    return { day: dayKey(t0), parches, serie, cupones, codigos, resenas, perfil: structuredClone(PERFIL_DEF) };
-  }
-  function pick(arr, key) { return arr[hash(key) % arr.length]; }
 
   /* =====================================================================
-     3. PERSISTENCIA
+     3. ESTADO Y DERIVADOS
   ===================================================================== */
-  const KEY = 'mp_business_v1';
+  const KEY = 'mp_business_v2';
   let S = null;
   function load() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
-    if (saved && saved.day === dayKey(NOW()) && Array.isArray(saved.parches)) { S = saved; return; }
-    S = buildSeed();
-    if (saved) {
-      // Día nuevo: se conservan el perfil, las recompensas y los parches propios que siguen vigentes
-      if (saved.perfil) S.perfil = Object.assign(S.perfil, saved.perfil);
-      if (Array.isArray(saved.cupones)) S.cupones = saved.cupones;
-      const propios = (saved.parches || []).filter(p => p.creado && p.inicio > NOW() - DAY);
-      S.parches.push(...propios);
+    if (saved && saved.v === 2 && saved.day === dayKey(NOW()) && saved.locales) { S = saved; return; }
+    S = seed();
+    if (saved && saved.v === 2 && saved.locales) {
+      // Día nuevo: los datos de muestra se renuevan; lo que el local configuró se conserva
+      S.actual = S.locales[saved.actual] ? saved.actual : S.actual;
+      S.sonido = saved.sonido !== false;
+      S.solicitudes = saved.solicitudes || [];
+      for (const id of Object.keys(S.locales)) {
+        const old = saved.locales[id]; if (!old) continue;
+        if (Array.isArray(old.cupones)) {
+          S.locales[id].cupones = old.cupones;
+          S.locales[id].codigos = S.locales[id].codigos.filter(c => old.cupones.some(k => k.id === c.cuponId));
+        }
+        const propios = (old.parches || []).filter(p => p.creado && p.inicio + (p.dur || 180) * MIN > NOW());
+        S.locales[id].parches.push(...propios);
+      }
     }
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('No se pudo guardar', 'El navegador no tiene espacio para la foto.', true); } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin espacio: el panel sigue funcionando en memoria */ } }
 
-  // Derivados
+  const loc = () => S.locales[S.actual];
+  const allLocales = () => Object.values(S.locales);
   const fin = p => p.inicio + (p.dur || 180) * MIN;
   const confirmados = p => p.asistentes.length;
   const checkins = p => p.asistentes.filter(a => a.llego).length;
-  const enLocal = p => p.lugar === 'capachos' && p.tipo !== 'otro';
   const activo = p => !p.cancelado && fin(p) > NOW();
   const enVivo = p => !p.cancelado && p.inicio <= NOW() && fin(p) > NOW();
   const lleno = p => confirmados(p) >= p.cupos;
-  const hoyLocal = () => S.parches.filter(p => enLocal(p) && !p.cancelado && day0(p.inicio) === day0(NOW())).sort((a, b) => a.inicio - b.inicio);
-  const relampagoActivo = () => S.parches.find(p => p.tipo === 'relampago' && enVivo(p));
-  const cupon = id => S.cupones.find(k => k.id === id);
-  const estadoCodigo = c => c.canjeado ? 'canjeado' : c.emitido < NOW() - 7 * DAY ? 'vencido' : 'pendiente';
+  const findParche = id => { for (const L of allLocales()) { const p = L.parches.find(x => x.id === id); if (p) return p; } return null; };
+  const cupon = id => loc().cupones.find(k => k.id === id);
+  const estadoCodigo = c => c.canjeado ? 'canjeado' : NOW() > c.vence ? 'vencido' : 'pendiente';
+  const entregados = k => loc().codigos.filter(c => c.cuponId === k.id).length;
+  const canjeados = k => loc().codigos.filter(c => c.cuponId === k.id && c.canjeado).length;
+  const agotado = k => entregados(k) >= k.limite;
+  const pendientes = () => loc().codigos.filter(c => estadoCodigo(c) === 'pendiente').sort((a, b) => b.emitido - a.emitido);
+  const relampagoVivo = () => loc().parches.find(p => p.tipo === 'relampago' && enVivo(p));
+  // De hoy para la puerta: los parches del día y el que siga en vivo desde anoche
+  const deHoy = () => loc().parches.filter(p => !p.cancelado && (enVivo(p) || (diasDesdeHoy(p.inicio) === 0 && fin(p) > NOW() - 3 * HOUR))).sort((a, b) => a.inicio - b.inicio);
+  const puedeCheckin = p => !p.cancelado && (enVivo(p) || diasDesdeHoy(p.inicio) === 0);
+  const promedio = L => L.resenas.length ? L.resenas.reduce((s, r) => s + r.estrellas, 0) / L.resenas.length : 0;
 
-  // Serie diaria con hoy incluido: hoy sale de los parches de esta noche (un solo dato)
-  function serieCompleta() {
-    const hoy = hoyLocal();
-    return S.serie.concat([{ ts: day0(NOW()), checkins: hoy.reduce((s, p) => s + checkins(p), 0), confirmados: hoy.reduce((s, p) => s + confirmados(p), 0), hoy: true }]);
-  }
-  function verificar() {
-    // Lo que se muestra dos veces es una sola variable: los días con detalle cuadran con la serie
-    for (const dia of S.serie.slice(-14)) {
-      const del = S.parches.filter(p => enLocal(p) && day0(p.inicio) === day0(dia.ts));
-      console.assert(del.reduce((s, p) => s + checkins(p), 0) === dia.checkins, 'Check-ins del día no cuadran', dayKey(dia.ts));
-      console.assert(del.reduce((s, p) => s + confirmados(p), 0) === dia.confirmados, 'Confirmados del día no cuadran', dayKey(dia.ts));
+  function ventana(P, ts = NOW()) {
+    for (const off of [0, -1]) {
+      const base = day0(ts) + off * DAY, h = P.horarios[new Date(base).getDay()];
+      if (!h || !h.abierto) continue;
+      const a = at(base, h.open); let c = at(base, h.close); if (c <= a) c += DAY;
+      if (ts >= a && ts < c) return { abierto: true, hasta: c };
     }
-    for (const k of S.cupones) {
-      const cs = S.codigos.filter(c => c.cuponId === k.id);
-      console.assert(cs.filter(c => c.canjeado).length + cs.filter(c => !c.canjeado).length === cs.length, 'Códigos de', k.nombre);
+    const h = P.horarios[new Date(ts).getDay()];
+    const a = h && h.abierto ? at(ts, h.open) : null;
+    return { abierto: false, abre: a && a > ts ? a : null };
+  }
+
+  function verificar() {
+    for (const L of allLocales()) {
+      const seedOnly = arr => arr.filter(x => !x.creado && !x.auto && !x.walkin);
+      console.assert(seedOnly(L.parches).length <= 3 && L.cupones.length <= 3 + L.cupones.filter(k => k.creado).length && seedOnly(L.codigos).length <= 3 && L.resenas.length <= 3, 'Más de 3 datos de muestra en', L.id);
+      for (const p of L.parches) console.assert(seedOnly(p.asistentes).length <= 3, 'Más de 3 asistentes de muestra en', p.id);
+      for (const c of L.codigos) console.assert(!c.parcheId || L.parches.some(p => p.id === c.parcheId), 'Código sin parche', c.codigo);
+      for (const p of L.parches) console.assert(checkins(p) <= confirmados(p), 'Más llegadas que confirmados', p.id);
     }
   }
 
   /* =====================================================================
-     4. NAVEGACIÓN
+     4. EFECTOS: confeti, sonido, contadores
   ===================================================================== */
-  const ROUTES = ['resumen', 'parches', 'mapa', 'cupones', 'asistentes', 'perfil'];
+  function burst(x, y, n = 34, colors = ['#ff751f', '#15110e', '#ffd3b6', '#247b50']) {
+    if (REDUCED()) return;
+    const layer = $('#fx');
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('i');
+      el.className = 'fx-p';
+      el.style.background = colors[i % colors.length];
+      if (i % 3 === 0) { el.style.width = '8px'; el.style.height = '8px'; el.style.borderRadius = '50%'; }
+      layer.appendChild(el);
+      const ang = Math.random() * Math.PI * 2, v = 90 + Math.random() * 170;
+      const dx = Math.cos(ang) * v, dy = Math.sin(ang) * v - 90;
+      const r = (Math.random() - 0.5) * 720;
+      el.animate([
+        { transform: `translate(${x}px, ${y}px) rotate(0deg)`, opacity: 1 },
+        { transform: `translate(${x + dx}px, ${y + dy}px) rotate(${r}deg)`, opacity: 1, offset: 0.6 },
+        { transform: `translate(${x + dx * 1.15}px, ${y + dy + 160}px) rotate(${r * 1.5}deg)`, opacity: 0 },
+      ], { duration: 950 + Math.random() * 500, easing: 'cubic-bezier(.2,.75,.35,1)' }).onfinish = () => el.remove();
+    }
+  }
+  const burstFrom = (el, n, colors) => { if (!el) return; const r = el.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, n, colors); };
+
+  let audio = null;
+  function tone(kind) {
+    if (!S.sonido) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime;
+      const notes = kind === 'ok' ? [[880, 0], [1318.5, 0.09]] : kind === 'in' ? [[660, 0], [990, 0.07]] : [[160, 0], [130, 0.12]];
+      for (const [f, d] of notes) {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = kind === 'bad' ? 'square' : 'sine';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + d);
+        g.gain.exponentialRampToValueAtTime(kind === 'bad' ? 0.05 : 0.12, t + d + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.22);
+        o.connect(g).connect(audio.destination);
+        o.start(t + d); o.stop(t + d + 0.25);
+      }
+    } catch (e) { /* sin audio */ }
+  }
+
+  function countUp(root) {
+    for (const el of $$('[data-count]', root)) {
+      const to = Number(el.dataset.count), d = Number(el.dataset.dec || 0);
+      const fmt = v => d ? v.toFixed(d).replace('.', ',') : int(v);
+      if (REDUCED() || !to) { el.textContent = fmt(to); continue; }
+      const t0 = performance.now(), dur = 760;
+      const step = t => { const k = clamp((t - t0) / dur, 0, 1); el.textContent = fmt(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }
+  }
+  function animateBars(root) {
+    if (REDUCED()) return;
+    $$('.track i', root).forEach((el, i) => el.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 700, delay: 120 + i * 40, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }));
+  }
+
+  /* =====================================================================
+     5. NAVEGACIÓN Y MARCO
+  ===================================================================== */
+  const ROUTES = ['resumen', 'parches', 'cupones', 'asistentes', 'mapa', 'perfil'];
   let route = 'resumen';
   function go() {
     const r = (location.hash || '#resumen').slice(1).split('/')[0];
@@ -912,16 +341,21 @@
     $$('.view').forEach(v => { v.hidden = v.id !== 'view-' + route; });
     $$('.nav-item[data-route]').forEach(a => { if (a.dataset.route === route) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     toggleMenu(false);
+    closeMenus();
     window.scrollTo(0, 0);
-    render();
+    const view = $('#view-' + route);
+    $$('[data-anim]', view).forEach((el, i) => el.style.setProperty('--i', i));
+    view.classList.remove('in'); void view.offsetWidth; view.classList.add('in');
+    clearTimeout(go.t); go.t = setTimeout(() => view.classList.remove('in'), 1200);
+    render(true);
   }
-  function render() {
+  function render(entering = false) {
     renderShell();
-    if (route === 'resumen') renderResumen();
+    if (route === 'resumen') renderResumen(entering);
     if (route === 'parches') renderParches();
-    if (route === 'mapa') renderMapa();
     if (route === 'cupones') renderCupones();
     if (route === 'asistentes') renderAsistentes();
+    if (route === 'mapa') renderMapa();
     if (route === 'perfil') renderPerfil();
   }
   function toggleMenu(open) {
@@ -931,92 +365,117 @@
     $('#menu-toggle').setAttribute('aria-expanded', String(o));
   }
 
-  function logoHTML() {
-    const l = S.perfil.logo;
-    if (l.src) return `<img src="${esc(l.src)}" alt="" style="transform:scale(${l.zoom})">`;
-    const ini = initials(S.perfil.nombre.replace(/^(Discoteca|Bar|Restaurante|Café)\s+/i, ''));
-    return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#15110e"/><text x="32" y="41" text-anchor="middle" font-family="Gagalin, 'Bebas Neue', Impact, sans-serif" font-size="26" fill="#ff751f">${esc(ini)}</text></svg>`;
-  }
+  const monoHTML = (L, cls = 'mono-logo') => `<span class="${cls} mono-logo--${L.perfil.tema}" aria-hidden="true">${esc(L.perfil.corto)}</span>`;
+  const prevCounts = { c: null, p: null };
   function renderShell() {
-    $('#biz-name-top').textContent = S.perfil.nombre;
-    $('#biz-logo-top').innerHTML = logoHTML();
-    const pend = S.codigos.filter(c => estadoCodigo(c) === 'pendiente').length;
-    const cc = $('#count-cupones'); cc.hidden = !pend; cc.textContent = pend;
-    cc.setAttribute('aria-label', `${pend} códigos por canjear`);
-    const vivos = S.parches.filter(p => enLocal(p) && enVivo(p)).length;
-    const cp = $('#count-parches'); cp.hidden = !vivos; cp.textContent = vivos;
-    cp.setAttribute('aria-label', `${vivos} parches en vivo`);
+    const L = loc(), P = L.perfil;
+    $('#local-logo-side').className = `local-logo mono-logo--${P.tema}`;
+    $('#local-logo-side').textContent = P.corto;
+    $('#local-name-side').textContent = P.nombre;
+    $('#local-cat-side').textContent = `${P.categoria} · ${P.barrio}`;
+    $('#local-list').innerHTML = allLocales().map(x => `<li><button role="option" aria-selected="${x.id === L.id}" data-action="cambiar-local" data-local="${x.id}">${monoHTML(x, 'local-logo')}<span class="local-txt"><b>${esc(x.perfil.nombre)}</b><small>${esc(x.perfil.categoria)}</small></span>${x.id === L.id ? ic('i-check') : ''}</button></li>`).join('')
+      + '<li class="local-list-note">Cada local tiene su propia tarjeta, cupones y parches.</li>';
+
+    const pend = pendientes().length;
+    const cc = $('#count-cupones'); cc.hidden = !pend; cc.textContent = pend; cc.setAttribute('aria-label', `${pend} cupones por canjear`);
+    if (prevCounts.c !== null && prevCounts.c !== pend) { cc.classList.remove('bump'); void cc.offsetWidth; cc.classList.add('bump'); }
+    prevCounts.c = pend;
+    const vivos = L.parches.filter(enVivo).length;
+    const cp = $('#count-parches'); cp.hidden = !vivos; cp.textContent = vivos; cp.setAttribute('aria-label', `${vivos} parches en vivo`);
+    prevCounts.p = vivos;
+
+    const chip = $('#live-chip'), rel = relampagoVivo(), w = ventana(P);
+    chip.className = 'live-chip' + (rel ? ' is-rel' : w.abierto ? ' is-open' : '');
+    $('#live-text').textContent = rel ? `Relámpago en vivo · quedan ${fmtDur(Math.max(1, Math.ceil((fin(rel) - NOW()) / MIN)))}`
+      : w.abierto ? `Abierto · cierra ${fmtHora(w.hasta)}` : w.abre ? `Cerrado · abre ${fmtHora(w.abre)}` : 'Cerrado hoy';
+    chip.title = $('#live-text').textContent;
+
+    const sb = $('#sound-btn');
+    sb.setAttribute('aria-pressed', String(S.sonido));
+    sb.innerHTML = ic(S.sonido ? 'i-sound' : 'i-mute');
+  }
+
+  function cambiarLocal(id) {
+    if (!S.locales[id] || id === S.actual) { closeMenus(); return; }
+    S.actual = id; save();
+    closeMenus();
+    asisState.id = null; doorState.id = null; listState.q = '';
+    mapDirty = true;
+    render();
+    $$('.lcard').forEach(c => { c.classList.remove('swap-in'); void c.offsetWidth; c.classList.add('swap-in'); });
+    toast(`Ahora ves ${loc().perfil.nombre}`, `${loc().perfil.categoria} · ${loc().perfil.barrio}`);
+  }
+  function closeMenus() {
+    $('#local-list').hidden = true;
+    $('#local-btn').setAttribute('aria-expanded', 'false');
+    $('#row-menu').hidden = true;
   }
 
   /* =====================================================================
-     5. RESUMEN Y PARCHES
+     6. TARJETA DEL LOCAL (cambia según el tipo de local)
   ===================================================================== */
-  const chartState = { metric: 'checkins', range: 30 };
+  const MOTIFS = {
+    noche: '<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="22"/><circle cx="110" cy="110" r="44"/><circle cx="110" cy="110" r="66"/><circle cx="110" cy="110" r="88"/><circle cx="110" cy="110" r="108"/></svg>',
+    fuego: '<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><path d="M10 60c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 95c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 130c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 165c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/></svg>',
+    dia: `<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="34"/>${Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, c = Math.cos(a), s = Math.sin(a); return `<path d="M${(110 + c * 52).toFixed(1)} ${(110 + s * 52).toFixed(1)}L${(110 + c * 100).toFixed(1)} ${(110 + s * 100).toFixed(1)}"/>`; }).join('')}</svg>`,
+  };
+  const siteBase = () => /^https?:/.test(location.protocol) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://modoparche-davzd.vercel.app/';
+  const localURL = L => `${siteBase()}dashboard.html?local=${L.perfil.idMP}`;
 
-  function periodo(offsetMeses) {
-    // Del 1 del mes al mismo día de hoy, desplazado n meses
-    const d = new Date(NOW()); const dia = d.getDate();
-    const ini = new Date(d.getFullYear(), d.getMonth() - offsetMeses, 1).getTime();
-    const finD = new Date(d.getFullYear(), d.getMonth() - offsetMeses, dia, 23, 59).getTime();
-    return [ini, finD];
+  function qrMatrix(text) {
+    if (typeof window.qrcode !== 'function') return null;
+    try { const q = window.qrcode(0, 'M'); q.addData(text); q.make(); return { n: q.getModuleCount(), dark: (r, c) => q.isDark(r, c) }; } catch (e) { return null; }
   }
-  const rangoTxt = ([a, b]) => `1–${new Date(b).getDate()} ${new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(a).replace('.', '')}`;
-
-  function kpisResumen() {
-    const serie = serieCompleta();
-    const sumIn = ([a, b]) => serie.filter(d => d.ts >= a && d.ts <= b).reduce((s, d) => s + d.checkins, 0);
-    const mes = periodo(0), ant = periodo(1);
-    const inMes = sumIn(mes), inAnt = sumIn(ant);
-    const activos = S.parches.filter(p => enLocal(p) && activo(p));
-    const canjes = ([a, b]) => S.codigos.filter(c => c.canjeado && c.canjeado >= a && c.canjeado <= b).length;
-    const cMes = canjes(mes), cAnt = canjes(ant);
-    const prom = S.resenas.reduce((s, r) => s + r.estrellas, 0) / S.resenas.length;
-    const deltaHTML = (now, before, label) => {
-      if (!before) return `<p class="delta">${now ? `${signed(now)} (nuevo)` : '—'} vs ${label}</p>`;
-      const diff = now - before, rel = diff / before;
-      return `<p class="delta"><span class="${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">${signed(diff)} (${rel > 0 ? '+' : rel < 0 ? MINUS : ''}${pct(Math.abs(rel))})</span> vs ${label}</p>`;
-    };
-    return { inMes, inAnt, mes, ant, activos, cMes, cAnt, prom, deltaHTML };
+  function qrSVG(text, color = '#15110e') {
+    const m = qrMatrix(text);
+    if (!m) return `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-qr"/></svg>`;
+    let d = '';
+    for (let r = 0; r < m.n; r++) for (let c = 0; c < m.n; c++) if (m.dark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    return `<svg viewBox="0 0 ${m.n} ${m.n}" shape-rendering="crispEdges" role="img" aria-label="Código QR"><path fill="${color}" d="${d}"/></svg>`;
   }
 
-  function renderResumen() {
-    const k = kpisResumen();
-    const hoy = hoyLocal();
-    const confHoy = hoy.reduce((s, p) => s + confirmados(p), 0), inHoy = hoy.reduce((s, p) => s + checkins(p), 0);
-    const llenos = hoy.filter(lleno);
-    const pendLlena = S.codigos.filter(c => c.cuponId === 'k1' && estadoCodigo(c) === 'pendiente').length;
-    $('#resumen-sub').innerHTML = hoy.length
-      ? `Esta noche hay <b>${int(confHoy)} confirmados</b> en ${hoy.length} ${hoy.length === 1 ? 'parche' : 'parches'} y ${int(inHoy)} ya hicieron check-in.${llenos.length ? ` ${esc(llenos[0].titulo)} se llenó: ${pendLlena === 1 ? 'su cupón Mesa llena está' : `${pendLlena} cupones Mesa llena están`} por canjear.` : ''}`
-      : 'No hay parches esta noche en el local. Un relámpago puede llenar las horas valle.';
-
-    const ofi = k.activos.filter(p => p.tipo !== 'comunidad').length, com = k.activos.filter(p => p.tipo === 'comunidad').length;
-    $('#kpis').innerHTML = `
-      <div class="kpi kpi--lead"><p class="kpi-label">Check-ins este mes</p><p class="kpi-value num">${int(k.inMes)}<small>personas</small></p>${k.deltaHTML(k.inMes, k.inAnt, rangoTxt(k.ant))}</div>
-      <div class="kpi"><p class="kpi-label">Parches activos</p><p class="kpi-value num">${int(k.activos.length)}</p><p class="delta">${ofi} oficiales · ${com} de la comunidad</p></div>
-      <div class="kpi"><p class="kpi-label">Canjes este mes</p><p class="kpi-value num">${int(k.cMes)}</p>${k.deltaHTML(k.cMes, k.cAnt, rangoTxt(k.ant))}</div>
-      <div class="kpi"><p class="kpi-label">Calificación</p><p class="kpi-value num">${k.prom.toFixed(1).replace('.', ',')}<small>/ 5</small></p><p class="delta">${S.resenas.length} reseñas de clientes</p></div>`;
-
-    drawFlujo();
-    renderProximos();
-    renderNoche();
-    renderCanjesRecientes();
+  function cardHTML(L) {
+    const P = L.perfil, prom = promedio(L), w = ventana(P), h = P.horarios[new Date(NOW()).getDay()];
+    const hoyTxt = h && h.abierto ? `Hoy abre de ${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Hoy no abre';
+    return `<button class="lcard lcard--${P.tema}" data-action="flip-card" aria-pressed="false" aria-label="Tarjeta de ${esc(P.nombre)}. Toca para ver el QR del local.">
+      <span class="lface lface--front">
+        ${MOTIFS[P.tema]}
+        <span class="ltop">${monoHTML(L)}<span class="lbadge">${ic('i-shield')}Aliado verificado</span></span>
+        <span class="lname"><b>${esc(P.nombre)}</b><span>${esc(P.categoria)} · ${esc(P.barrio)}</span></span>
+        <span class="lfoot"><span><span class="code">${esc(P.idMP)}</span> · desde ${esc(fmtMes(P.desde))} ${new Date(P.desde).getFullYear()}<br>${w.abierto ? `Abierto hasta ${fmtHora(w.hasta)}` : esc(hoyTxt)}</span>
+          <span class="lrate">${ic('i-star')}${prom ? dec1(prom) : 'Nuevo'}</span></span>
+        <span class="lflip" aria-hidden="true">${ic('i-flip')}</span>
+      </span>
+      <span class="lface lface--back">
+        <span class="lqr">${qrSVG(localURL(L))}</span>
+        <span class="lback-txt"><b>Escanea y parcha</b><p>Quien escanea este QR ve los parches de ${esc(P.nombre)} en Modo Parche.</p><small>${esc(hoyTxt)}</small></span>
+        <span class="lflip" aria-hidden="true">${ic('i-flip')}</span>
+      </span>
+    </button>`;
+  }
+  function mountCard(slot) { slot.innerHTML = cardHTML(loc()); }
+  function bindTilt() {
+    document.addEventListener('pointermove', e => {
+      const card = e.target.closest && e.target.closest('.lcard');
+      if (!card || e.pointerType !== 'mouse' || REDUCED()) return;
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+      card.classList.add('is-tilting');
+      card.style.setProperty('--rx', `${(-y * 10).toFixed(2)}deg`);
+      card.style.setProperty('--ry', `${(x * 14).toFixed(2)}deg`);
+    });
+    document.addEventListener('pointerout', e => {
+      const card = e.target.closest && e.target.closest('.lcard');
+      if (!card || card.contains(e.relatedTarget)) return;
+      card.classList.remove('is-tilting');
+      card.style.setProperty('--rx', '0deg'); card.style.setProperty('--ry', '0deg');
+    });
   }
 
-  function drawFlujo() {
-    const serie = serieCompleta().slice(-chartState.range);
-    const metric = chartState.metric;
-    const values = serie.map(d => d[metric]);
-    const labels = serie.map(d => chartState.range === 7 ? cap(new Intl.DateTimeFormat('es-CO', { weekday: 'short' }).format(d.ts).replace('.', '')) + ' ' + new Date(d.ts).getDate() : fmtMesCorto(d.ts));
-    const annotations = serie.map((d, i) => d.relampago ? { at: i, label: 'Hora feliz relámpago', short: 'Relámpago' } : null).filter(Boolean);
-    const total = values.reduce((s, v) => s + v, 0);
-    const tipico = serie.filter(d => !d.hoy && !d.relampago && new Date(d.ts).getDay() === 5).map(d => d[metric]);
-    const promViernes = tipico.length ? Math.round(tipico.reduce((s, v) => s + v, 0) / tipico.length) : null;
-    $('#flujo-meta').textContent = `${int(total)} ${metric === 'checkins' ? 'check-ins' : 'confirmaciones'} en ${chartState.range} días${promViernes ? ` · un viernes típico: ${int(promViernes)}` : ''} · en naranja, los últimos 7 días; hoy va en curso`;
-    if (!window.Charts) { $('#chart-flujo').innerHTML = '<p class="empty">No se pudo dibujar la gráfica.</p>'; return; }
-    const semana = values.map((_, i) => i).filter(i => i >= values.length - 7);
-    Charts.bars($('#chart-flujo'), { labels, values, height: 210, highlight: chartState.range === 30 ? semana : null, mutedColour: getComputedStyle(document.documentElement).getPropertyValue('--accent-200').trim(), dim: [values.length - 1], annotations, format: v => int(v) });
-  }
-
+  /* =====================================================================
+     7. RESUMEN Y PARCHES
+  ===================================================================== */
+  const tipoTxt = p => ({ oficial: 'Oficial del local', comunidad: `Organiza ${p.organizador}`, relampago: 'Relámpago' }[p.tipo] || '');
   function estadoPill(p) {
     if (p.cancelado) return '<span class="pill">Cancelado</span>';
     if (fin(p) <= NOW()) return '<span class="pill">Terminado</span>';
@@ -1024,187 +483,675 @@
     if (lleno(p)) return '<span class="pill warn">Lleno</span>';
     return '<span class="pill pos">Abierto</span>';
   }
-  const tipoTxt = p => ({ oficial: 'Oficial del local', comunidad: `Organiza ${p.organizador}`, relampago: 'Relámpago', otro: `Organiza ${p.organizador}` }[p.tipo]);
-  const aforoHTML = p => {
+  const trackHTML = p => {
     const c = confirmados(p), inn = checkins(p);
-    return `<span class="aforo-cell"><span class="num"><b>${int(c)}</b> <span class="unit">/ ${int(p.cupos)}</span></span><span class="mini-track" aria-hidden="true"><i style="width:${clamp(inn / p.cupos, 0, 1) * 100}%"></i><i style="width:${clamp((c - inn) / p.cupos, 0, 1) * 100}%"></i></span></span>`;
+    return `<span class="track" role="img" aria-label="${inn} llegaron, ${c - inn} por llegar, ${Math.max(0, p.cupos - c)} cupos libres de ${p.cupos}"><i class="in" style="width:${clamp(inn / p.cupos, 0, 1) * 100}%"></i><i class="pend" style="width:${clamp((c - inn) / p.cupos, 0, 1) * 100}%"></i></span>`;
   };
 
-  function renderProximos() {
-    const list = S.parches.filter(p => enLocal(p) && activo(p)).sort((a, b) => a.inicio - b.inicio);
-    $('#proximos-link').textContent = `Ver todos (${list.length})`;
-    $('#tabla-proximos').innerHTML = `<thead><tr><th>Parche</th><th>Cuándo</th><th class="n">Confirmados</th><th>Estado</th></tr></thead><tbody>${
-      list.slice(0, 5).map(p => `<tr><td><span class="name truncate">${esc(p.titulo)}</span><span class="sub">${esc(tipoTxt(p))}</span></td><td class="num">${esc(fmtCuando(p.inicio))}</td><td class="n">${aforoHTML(p)}</td><td>${estadoPill(p)}</td></tr>`).join('')
-      || '<tr><td colspan="4"><p class="empty">No hay parches programados. Publica uno oficial o lanza un relámpago.</p></td></tr>'
-    }</tbody>`;
+  function renderResumen(entering) {
+    const L = loc(), P = L.perfil, hoy = deHoy();
+    const hr = new Date(NOW()).getHours();
+    const hola = `${hr < 12 && hr >= 5 ? 'Buenos días' : hr < 19 && hr >= 12 ? 'Buenas tardes' : 'Buenas noches'}, equipo de ${esc(P.nombre)}.`;
+    const conf = hoy.reduce((s, p) => s + confirmados(p), 0), inn = hoy.reduce((s, p) => s + checkins(p), 0);
+    const pend = pendientes();
+    $('#resumen-sub').innerHTML = hola + ' ' + (hoy.length
+      ? `Hoy tienes <b>${hoy.length} ${hoy.length === 1 ? 'parche' : 'parches'}</b> con ${int(conf)} confirmados, y ${inn ? `${int(inn)} ya llegaron` : 'nadie ha llegado todavía'}. ${pend.length ? `Hay ${pend.length} ${pend.length === 1 ? 'cupón' : 'cupones'} por canjear.` : ''}`
+      : `Hoy no tienes parches. ${ventana(P).abierto ? 'Estás abierto: un relámpago sale de una en el mapa.' : 'Programa uno para esta semana.'}`);
+
+    const prom = promedio(L), totalCanje = L.codigos.filter(c => c.canjeado).length;
+    $('#kpis').innerHTML = `
+      <div class="kpi kpi--lead"><p class="kpi-label">${ic('i-users')}Confirmados hoy</p><p class="kpi-value"><span data-count="${conf}">${int(conf)}</span></p><p class="delta">${hoy.length ? `En ${hoy.length} ${hoy.length === 1 ? 'parche' : 'parches'} de hoy` : 'Sin parches hoy'}</p></div>
+      <div class="kpi"><p class="kpi-label">${ic('i-door')}Llegaron hoy</p><p class="kpi-value"><span data-count="${inn}">${int(inn)}</span><small>de ${int(conf)}</small></p><p class="delta">${conf ? `${Math.round(inn / conf * 100)} % de los confirmados` : 'Nadie confirmado aún'}</p></div>
+      <div class="kpi"><p class="kpi-label">${ic('i-ticket')}Por canjear</p><p class="kpi-value"><span data-count="${pend.length}">${int(pend.length)}</span></p><p class="delta">${totalCanje} ${totalCanje === 1 ? 'canjeado' : 'canjeados'} en total</p></div>
+      <div class="kpi"><p class="kpi-label">${ic('i-star')}Calificación</p><p class="kpi-value"><span data-count="${prom.toFixed(1)}" data-dec="1">${dec1(prom)}</span><small>/ 5</small></p><p class="delta">${L.resenas.length} ${L.resenas.length === 1 ? 'reseña' : 'reseñas'}</p></div>`;
+    if (entering) countUp($('#kpis'));
+
+    renderSemana();
+    renderFeed();
+    mountCard($('#lcard-resumen'));
+    renderPulse();
+    renderNoche();
+    renderRailCupones();
+    if (entering) animateBars($('#view-resumen'));
+  }
+
+  function renderSemana() {
+    const t0 = day0(NOW()), L = loc();
+    const prox = L.parches.filter(p => !p.cancelado && day0(p.inicio) >= t0 && day0(p.inicio) < t0 + 7 * DAY);
+    $('#semana-meta').textContent = `${prox.length} ${prox.length === 1 ? 'parche' : 'parches'} en los próximos 7 días. Toca un día libre para programar uno.`;
+    $('#week').innerHTML = Array.from({ length: 7 }, (_, i) => {
+      const ts = t0 + i * DAY;
+      const items = prox.filter(p => day0(p.inicio) === ts).sort((a, b) => a.inicio - b.inicio);
+      return `<li class="day ${i === 0 ? 'is-today' : ''}" style="--i:${i}">
+        <div class="day-head"><span>${i === 0 ? 'Hoy' : cap(fmtSem(ts))}</span><b>${new Date(ts).getDate()}</b></div>
+        <div class="day-items">${items.map(p => `<button class="chip-p chip-p--${p.tipo}" data-action="ver-asistentes" data-id="${p.id}"><span class="chip-h">${fmtHora(p.inicio)}</span><b>${esc(p.titulo)}</b><span>${confirmados(p)} de ${p.cupos}</span></button>`).join('')}</div>
+        <button class="day-add" data-action="nuevo-parche" data-fecha="${dayKey(ts)}" aria-label="Programar un parche el ${esc(fmtDia(ts).toLowerCase())}">${ic('i-plus')}${items.length ? 'Otro' : 'Libre'}</button>
+      </li>`;
+    }).join('');
+  }
+
+  function eventos(L = loc()) {
+    const ev = [];
+    for (const p of L.parches) for (const a of p.asistentes) {
+      if (!a.walkin) ev.push({ ts: a.confirmo, ic: 'i-users', cls: '', html: `<b>${esc(a.nombre)}</b> confirmó en ${esc(p.titulo)}` });
+      if (a.llego) ev.push({ ts: a.llego, ic: 'i-door', cls: 'in', html: `<b>${esc(a.nombre)}</b> llegó a ${esc(p.titulo)}` });
+    }
+    for (const c of L.codigos) {
+      ev.push({ ts: c.emitido, ic: 'i-gift', cls: 'code', html: `<b>${esc(c.persona)}</b> ganó el cupón ${esc(c.cupNombre)}` });
+      if (c.canjeado) ev.push({ ts: c.canjeado, ic: 'i-ticket', cls: 'code', html: `Canjeaste <span class="code">${esc(c.codigo)}</span>: ${esc(c.cupBen)}` });
+    }
+    for (const r of L.resenas) ev.push({ ts: r.fecha, ic: 'i-star', cls: 'star', html: `<b>${esc(r.autor)}</b> te calificó con ${r.estrellas} de 5` });
+    for (const p of L.parches) if (p.creado) ev.push({ ts: p.creadoTs || p.inicio, ic: p.tipo === 'relampago' ? 'i-bolt' : 'i-calendar', cls: 'code', html: `Publicaste <b>${esc(p.titulo)}</b>` });
+    return ev.filter(e => e.ts <= NOW()).sort((a, b) => b.ts - a.ts);
+  }
+  function renderFeed() {
+    const ev = eventos().slice(0, 7);
+    $('#feed').innerHTML = ev.length ? ev.map(e => `<li><span class="feed-ic ${e.cls ? 'feed-ic--' + e.cls : ''}" aria-hidden="true">${ic(e.ic)}</span><p>${e.html}</p><time datetime="${new Date(e.ts).toISOString()}">${esc(fmtRel(e.ts))}</time></li>`).join('')
+      : '<li><p class="empty">Todavía no hay actividad. Publica tu primer parche.</p></li>';
+  }
+
+  const RING_C = 2 * Math.PI * 32;
+  function renderPulse() {
+    const L = loc(), P = L.perfil, rel = relampagoVivo(), w = ventana(P), vivo = L.parches.find(p => enVivo(p) && p.tipo !== 'relampago');
+    const box = $('#pulse-slot');
+    if (rel) {
+      const k = rel.cuponId && cupon(rel.cuponId);
+      box.innerHTML = `<div class="pulse pulse--rel">
+        <div class="cd-ring" id="cd-ring" role="timer" aria-label="Tiempo restante del relámpago"><svg viewBox="0 0 76 76" aria-hidden="true"><circle class="trk" cx="38" cy="38" r="32"/><circle class="val" cx="38" cy="38" r="32" stroke-dasharray="${RING_C.toFixed(1)}"/></svg><span></span></div>
+        <div><p class="pulse-tag">${ic('i-bolt')}Relámpago en vivo</p><b>${esc(rel.promo)}</b><p>${confirmados(rel)} de ${rel.cupos} confirmados${k ? ` · gana ${esc(k.nombre)}` : ''}. Termina a las ${fmtHora(fin(rel))}</p>
+        <button class="btn btn--sm" data-action="terminar-rel" data-id="${rel.id}">Terminar ahora</button></div></div>`;
+      tickCountdown();
+    } else if (w.abierto && vivo) {
+      box.innerHTML = `<div class="pulse"><span class="pulse-ic" aria-hidden="true">${ic('i-flame')}</span><div><b>En vivo: ${esc(vivo.titulo)}</b><p>${checkins(vivo)} adentro de ${confirmados(vivo)} confirmados. Abierto hasta ${fmtHora(w.hasta)}</p><button class="btn btn--sm" data-action="modo-puerta" data-id="${vivo.id}">${ic('i-door')}Recibir en la puerta</button></div></div>`;
+    } else if (w.abierto) {
+      const sig = L.parches.filter(p => !p.cancelado && p.inicio > NOW() && diasDesdeHoy(p.inicio) <= 1).sort((a, b) => a.inicio - b.inicio)[0];
+      box.innerHTML = `<div class="pulse"><span class="pulse-ic" aria-hidden="true">${ic('i-bolt')}</span><div><b>Hora valle</b><p>Estás abierto hasta las ${fmtHora(w.hasta)} y no hay nada en vivo.${sig ? ` ${esc(sig.titulo)} arranca ${esc(fmtCuando(sig.inicio).toLowerCase())}` : ''} Un relámpago de una hora llena la espera.</p><button class="btn primary btn--sm" data-action="relampago">${ic('i-bolt')}Lanzar relámpago</button></div></div>`;
+    } else {
+      box.innerHTML = `<div class="pulse"><span class="pulse-ic" aria-hidden="true">${ic('i-moon')}</span><div><b>Cerrado ahora</b><p>${w.abre ? `Hoy abres a las ${fmtHora(w.abre)}` : 'Hoy no abres.'} Los parceros ya pueden confirmar en tus próximos parches.</p></div></div>`;
+    }
+  }
+  function tickCountdown() {
+    const el = $('#cd-ring'), rel = relampagoVivo();
+    if (!el) return;
+    if (!rel) { renderShell(); if (route === 'resumen') renderPulse(); return; }
+    const total = fin(rel) - rel.inicio, left = Math.max(0, fin(rel) - NOW());
+    const s = Math.ceil(left / 1000), m = Math.floor(s / 60);
+    $('span', el).textContent = m >= 60 ? `${Math.floor(m / 60)}:${pad(m % 60)}` : `${m}:${pad(s % 60)}`;
+    $('.val', el).style.strokeDashoffset = (RING_C * (1 - left / total)).toFixed(1);
   }
 
   function renderNoche() {
-    const box = $('#noche');
-    const rel = relampagoActivo();
-    const hoy = hoyLocal().filter(p => fin(p) > NOW() - 6 * HOUR && p !== rel);
-    let html = '';
-    if (rel) {
-      html += `<div class="flash"><div class="flash-top"><b>${esc(rel.titulo)}</b><span class="left">${fmtDur(minsLeft(fin(rel)))}</span></div>
-        <div class="door-nums"><span><b>${int(confirmados(rel))}</b> confirmados de ${int(rel.cupos)}</span><span>Termina a las ${fmtHora(fin(rel))}</span></div>
-        <button class="btn btn--sm" data-action="terminar-rel" data-id="${rel.id}">Terminar ahora</button></div>`;
-    }
-    if (!hoy.length) {
-      box.innerHTML = html + '<p class="empty">No hay parches esta noche en el local.</p>';
-      return;
-    }
-    html += `<div class="door-legend"><span><i style="background:var(--accent)"></i>Llegaron</span><span><i style="background:var(--accent-200)"></i>Por llegar</span><span><i style="background:var(--rule)"></i>Cupos libres</span></div><div class="door">`;
-    for (const p of hoy) {
+    const hoy = deHoy();
+    $('#noche').innerHTML = hoy.length ? `<div class="door-list">${hoy.map(p => {
       const c = confirmados(p), inn = checkins(p), libres = Math.max(0, p.cupos - c);
-      html += `<button class="door-item row--btn" data-action="ver-asistentes" data-id="${p.id}" style="padding-top:8px;padding-bottom:8px">
-        <span class="door-top"><b>${esc(p.titulo)}</b><span>${fmtHora(p.inicio)}</span></span>
-        <span class="door-track" role="img" aria-label="${inn} llegaron, ${c - inn} por llegar, ${libres} cupos libres de ${p.cupos}"><i class="in" style="width:${inn / p.cupos * 100}%"></i><i class="pend" style="width:${(c - inn) / p.cupos * 100}%"></i></span>
-        <span class="door-nums"><span><b>${int(inn)}</b> llegaron · ${int(c - inn)} por llegar</span><span>${libres ? `${int(libres)} cupos libres` : 'Lleno'}</span></span>
+      return `<button class="door-item" data-action="modo-puerta" data-id="${p.id}">
+        <span class="door-top"><b>${esc(p.titulo)}</b><span>${enVivo(p) ? 'En vivo' : fmtHora(p.inicio)}</span></span>
+        ${trackHTML(p)}
+        <span class="door-nums"><span><b>${inn}</b> llegaron · ${c - inn} por llegar</span><span>${libres ? `${libres} cupos libres` : 'Lleno'}</span></span>
       </button>`;
-    }
-    box.innerHTML = html + '</div>';
+    }).join('')}</div>` : '<p class="empty">Hoy no hay parches en tu local.</p>';
   }
 
-  function renderCanjesRecientes() {
-    const list = S.codigos.filter(c => c.canjeado).sort((a, b) => b.canjeado - a.canjeado).slice(0, 5);
-    $('#canjes-recientes').innerHTML = (list.length ? `<ul class="rows">${list.map(c => `<li class="row"><span class="row-main"><b class="code">${esc(c.codigo)}</b><small>${esc(cupon(c.cuponId)?.nombre || '')} · ${esc(c.persona)}</small></span><span class="row-end">${esc(fmtDia(c.canjeado))}<small>${fmtHora(c.canjeado)}</small></span></li>`).join('')}</ul>` : '<p class="empty">Todavía no hay canjes.</p>')
-      + '<div class="panel-foot"><a class="btn btn--sm" href="#cupones">Ver todos los canjes</a></div>';
+  function renderRailCupones() {
+    const L = loc(), act = L.cupones.filter(k => k.estado === 'activo').length;
+    $('#rcupones-meta').textContent = `${act} de ${L.cupones.length} activos`;
+    $('#rcupones').innerHTML = L.cupones.map(k => {
+      const e = entregados(k), cj = canjeados(k);
+      return `<li class="row"><span class="row-main"><b>${esc(k.nombre)}</b><small>${k.estado === 'pausado' ? 'Pausado' : agotado(k) ? 'Agotado' : esc(k.beneficio)}</small></span>
+        <span class="rstock"><span class="num">${e} de ${k.limite}</span><span class="track" aria-hidden="true"><i class="in" style="width:${clamp(cj / k.limite, 0, 1) * 100}%"></i><i class="pend" style="width:${clamp((e - cj) / k.limite, 0, 1) * 100}%"></i></span></span></li>`;
+    }).join('') || '<li><p class="empty">Aún no tienes cupones.</p></li>';
   }
 
-  /* ---------- Lista de parches ---------- */
+  /* ---------- Parches ---------- */
   const listState = { tab: 'proximos', q: '' };
   function renderParches() {
-    const local = S.parches.filter(enLocal);
+    const L = loc();
     const sets = {
-      proximos: local.filter(p => activo(p)).sort((a, b) => a.inicio - b.inicio),
-      relampago: local.filter(p => p.tipo === 'relampago').sort((a, b) => b.inicio - a.inicio),
-      comunidad: local.filter(p => p.tipo === 'comunidad' && activo(p)).sort((a, b) => a.inicio - b.inicio),
-      pasados: local.filter(p => !activo(p)).sort((a, b) => b.inicio - a.inicio),
+      proximos: L.parches.filter(activo).sort((a, b) => a.inicio - b.inicio),
+      relampago: L.parches.filter(p => p.tipo === 'relampago').sort((a, b) => b.inicio - a.inicio),
+      pasados: L.parches.filter(p => !activo(p)).sort((a, b) => b.inicio - a.inicio),
     };
     $$('#parches-tabs [data-tab]').forEach(b => {
       b.setAttribute('aria-selected', String(b.dataset.tab === listState.tab));
-      const n = sets[b.dataset.tab].length;
-      b.innerHTML = `${esc(b.textContent.replace(/\s*\d+$/, ''))}<span class="tab-count">${n}</span>`;
+      const base = { proximos: 'Próximos', relampago: 'Relámpago', pasados: 'Pasados' }[b.dataset.tab];
+      b.innerHTML = `${base}<span class="tab-count">${sets[b.dataset.tab].length}</span>`;
     });
-    const ofi = sets.proximos.filter(p => p.tipo !== 'comunidad').length;
-    $('#parches-sub').textContent = `${sets.proximos.length} próximos: ${ofi} oficiales o relámpago y ${sets.proximos.length - ofi} organizados por la comunidad en tu local.`;
     const q = norm(listState.q);
+    const ofi = sets.proximos.filter(p => p.tipo !== 'comunidad').length;
+    $('#parches-sub').innerHTML = listState.q
+      ? `Resultados para <b>${esc(listState.q)}</b>. <button class="btn ghost btn--sm" data-action="limpiar-busqueda">${ic('i-close')}Quitar filtro</button>`
+      : `${sets.proximos.length} próximos: ${ofi} ${ofi === 1 ? 'es tuyo' : 'son tuyos'} y ${sets.proximos.length - ofi} ${sets.proximos.length - ofi === 1 ? 'lo organiza' : 'los organiza'} la comunidad en tu local.`;
     const rows = sets[listState.tab].filter(p => !q || norm(`${p.titulo} ${p.organizador}`).includes(q));
-    $('#parches-count').textContent = `${rows.length} ${rows.length === 1 ? 'parche' : 'parches'}`;
-    $('#tabla-parches').innerHTML = `<thead><tr><th>Parche</th><th>Fecha</th><th class="n">Confirmados</th><th class="n">Check-ins</th><th class="n">Consumo por persona</th><th>Estado</th><th class="act"><span class="sr-only">Acciones</span></th></tr></thead><tbody>${
-      rows.map(p => `<tr>
-        <td class="c-name"><span class="name truncate">${esc(p.titulo)}</span><span class="sub">${esc(tipoTxt(p))}</span></td>
-        <td class="c-fecha num">${esc(fmtDia(p.inicio))}<span class="sub">${fmtHora(p.inicio)}${p.tipo === 'relampago' ? ` a ${fmtHora(fin(p))}` : ''}</span><span class="sub m-only">${p.inicio > NOW() ? 'Sin check-ins aún' : `${int(checkins(p))} check-ins`}${p.consumo ? ` · ${money(p.consumo)} por persona` : ''}</span></td>
-        <td class="c-aforo n">${aforoHTML(p)}</td>
-        <td class="c-check n">${p.inicio > NOW() ? '<span class="unit">—</span>' : int(checkins(p))}</td>
-        <td class="c-consumo n">${p.consumo ? money(p.consumo) : '<span class="unit">—</span>'}</td>
-        <td class="c-estado">${estadoPill(p)}</td>
-        <td class="act"><button class="icon-btn" data-action="row-menu" data-id="${p.id}" aria-label="Acciones de ${esc(p.titulo)}" aria-haspopup="menu">${ic('i-more')}</button></td>
-      </tr>`).join('') || `<tr><td colspan="7"><p class="empty">${listState.q ? `Ningún parche coincide con "${esc(listState.q)}".` : listState.tab === 'relampago' ? 'Todavía no has lanzado parches relámpago.' : 'No hay parches en esta lista.'}</p></td></tr>`
-    }</tbody>`;
+    $('#pcards').innerHTML = rows.map((p, i) => {
+      const c = confirmados(p), inn = checkins(p);
+      const cls = p.cancelado ? 'pcard--cancel pcard--past' : enVivo(p) ? 'pcard--live' : fin(p) <= NOW() ? 'pcard--past' : p.tipo === 'relampago' ? 'pcard--relampago' : '';
+      return `<li style="--i:${i}"><article class="pcard ${cls}">
+        <div class="pdate" aria-hidden="true"><small>${esc(cap(fmtSem(p.inicio)))}</small><b>${new Date(p.inicio).getDate()}</b><small>${esc(fmtMes(p.inicio))}</small></div>
+        <div class="pbody">
+          <div class="ptop"><div><b>${esc(p.titulo)}</b><small>${esc(tipoTxt(p))} · ${esc(fmtCuando(p.inicio))}${p.tipo === 'relampago' ? ` a ${fmtHora(fin(p))}` : ''}</small></div>${estadoPill(p)}</div>
+          ${p.promo ? `<p class="ppromo">${esc(p.promo)}</p>` : ''}
+          <div class="pstats">${trackHTML(p)}<span class="door-nums"><span><b>${c}</b> de ${p.cupos} confirmados</span><span>${p.inicio > NOW() ? (p.consumo ? `${money(p.consumo)} por persona` : 'Sin consumo mínimo') : `${inn} llegaron`}</span></span></div>
+          <div class="pactions">
+            <button class="btn btn--sm" data-action="ver-asistentes" data-id="${p.id}">${ic('i-users')}Asistentes</button>
+            ${!p.cancelado && activo(p) ? `<button class="btn btn--sm" data-action="afiche" data-id="${p.id}">${ic('i-image')}Afiche</button>` : ''}
+            <button class="icon-btn" data-action="row-menu" data-id="${p.id}" aria-label="Más acciones de ${esc(p.titulo)}" aria-haspopup="menu">${ic('i-more')}</button>
+          </div>
+        </div>
+      </article></li>`;
+    }).join('') || `<li><div class="empty">${listState.q ? `Ningún parche coincide con "${esc(listState.q)}".` : listState.tab === 'relampago' ? 'Todavía no has lanzado relámpagos. Sirven para llenar las horas valle.' : listState.tab === 'pasados' ? 'Aún no hay parches pasados.' : 'No hay parches programados.'}
+      ${listState.tab === 'pasados' ? '' : `<button class="btn primary btn--sm" data-action="${listState.tab === 'relampago' ? 'relampago' : 'nuevo-parche'}">${ic(listState.tab === 'relampago' ? 'i-bolt' : 'i-plus')}${listState.tab === 'relampago' ? 'Lanzar relámpago' : 'Nuevo parche'}</button>`}</div></li>`;
   }
 
-  function openRowMenu(btn, id) {
-    const p = S.parches.find(x => x.id === id);
+  function openRowMenu(btn, html) {
     const menu = $('#row-menu');
-    const editable = p.tipo !== 'comunidad' && activo(p);
-    menu.innerHTML = `<button data-action="ver-asistentes" data-id="${id}" role="menuitem">${ic('i-users')} Asistentes y chat</button>
-      ${editable ? `<button data-action="editar" data-id="${id}" role="menuitem">${ic('i-edit')} Editar parche</button>
-      <button class="danger" data-action="cancelar" data-id="${id}" role="menuitem">${ic('i-trash')} Cancelar parche</button>` : ''}`;
+    menu.innerHTML = html;
     const r = btn.getBoundingClientRect();
     menu.hidden = false;
     const w = menu.offsetWidth, h = menu.offsetHeight;
     menu.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
     menu.style.top = (r.bottom + h + 8 > window.innerHeight ? r.top - h - 4 : r.bottom + 4) + 'px';
-    menu.querySelector('button').focus();
+    const first = menu.querySelector('button'); if (first) first.focus();
   }
-  const closeRowMenu = () => { $('#row-menu').hidden = true; };
+  function parcheMenu(btn, id) {
+    const p = findParche(id);
+    const editable = p.tipo !== 'comunidad' && activo(p);
+    openRowMenu(btn, `<button data-action="ver-asistentes" data-id="${id}" role="menuitem">${ic('i-users')} Asistentes y chat</button>
+      ${activo(p) ? `<button data-action="modo-puerta" data-id="${id}" role="menuitem">${ic('i-door')} Abrir modo puerta</button>` : ''}
+      ${editable ? `<button data-action="editar" data-id="${id}" role="menuitem">${ic('i-edit')} Editar parche</button>` : ''}
+      ${activo(p) ? `<button class="danger" data-action="cancelar" data-id="${id}" role="menuitem">${ic('i-trash')} Cancelar parche</button>` : ''}`);
+  }
+
+  /* ---------- Afiche para redes ---------- */
+  let aficheId = null;
+  const POSTER = {
+    noche: { bg: '#15110e', fg: '#ffffff', ac: '#ff751f', sub: '#b9b0a8', ring: 'rgba(255,117,31,.38)' },
+    fuego: { bg: '#ff751f', fg: '#1a0d04', ac: '#ffffff', sub: '#4a2208', ring: 'rgba(26,13,4,.22)' },
+    dia: { bg: '#fff6f0', fg: '#15110e', ac: '#ff751f', sub: '#5d5753', ring: 'rgba(255,117,31,.3)' },
+  };
+  function wrap(ctx, text, max) {
+    const words = String(text).split(/\s+/), lines = []; let line = '';
+    for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > max && line) { lines.push(line); line = w; } else line = t; }
+    if (line) lines.push(line);
+    return lines;
+  }
+  async function drawAfiche(p) {
+    const L = loc(), P = L.perfil, T = POSTER[P.tema], cv = $('#afiche-canvas'), ctx = cv.getContext('2d');
+    try { await document.fonts.load('80px Gagalin'); } catch (e) { /* usa la fuente de respaldo */ }
+    const W = cv.width, H = cv.height, BR = "'Gagalin', 'Arial Black', Impact, sans-serif", TX = "'Inter', system-ui, sans-serif";
+    ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = T.ring; ctx.lineWidth = 4;
+    for (let r = 90; r <= 560; r += 78) { ctx.beginPath(); ctx.arc(W - 90, 150, r, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = T.ac; ctx.font = `48px ${BR}`; ctx.fillText('MODO PARCHE', 80, 130);
+    ctx.fillStyle = T.sub; ctx.font = `500 30px ${TX}`; ctx.fillText('Villavicencio', 80, 175);
+    ctx.fillStyle = T.ac; ctx.font = `64px ${BR}`; ctx.fillText(cap(fmtSem(p.inicio)).toUpperCase(), 80, 380);
+    ctx.fillStyle = T.fg; ctx.font = `260px ${BR}`; ctx.fillText(String(new Date(p.inicio).getDate()), 64, 610);
+    ctx.font = `64px ${BR}`; ctx.fillText(`${fmtMes(p.inicio).toUpperCase()} · ${fmtHora(p.inicio).toUpperCase()}`, 80, 700);
+    ctx.font = `104px ${BR}`;
+    const tl = wrap(ctx, p.titulo.toUpperCase(), W - 160).slice(0, 3);
+    tl.forEach((l, i) => ctx.fillText(l, 80, 840 + i * 104));
+    let y = 840 + tl.length * 104 + 10;
+    const bajada = p.tipo === 'relampago' ? `Solo por ${fmtDur(p.dur)}, hasta las ${fmtHora(fin(p))}` : p.promo;
+    if (bajada) { ctx.fillStyle = T.sub; ctx.font = `500 34px ${TX}`; wrap(ctx, bajada, W - 160).slice(0, 2).forEach((l, i) => ctx.fillText(l, 80, y + i * 46)); }
+    // pie: local y QR
+    ctx.fillStyle = T.fg; ctx.fillRect(80, 1110, W - 160, 3);
+    ctx.font = `52px ${BR}`; ctx.fillText(P.nombre.toUpperCase().slice(0, 26), 80, 1195);
+    ctx.fillStyle = T.sub; ctx.font = `500 30px ${TX}`; ctx.fillText(`${P.direccion} · ${P.barrio}`, 80, 1242);
+    ctx.fillStyle = T.ac; ctx.font = `600 30px ${TX}`; ctx.fillText(`${p.cupos} cupos · confirma en Modo Parche`, 80, 1290);
+    const m = qrMatrix(localURL(L)), box = 190, bx = W - 80 - box, by = 1135;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, box, box);
+    if (m) { const cell = (box - 24) / m.n; ctx.fillStyle = '#15110e'; for (let r = 0; r < m.n; r++) for (let c = 0; c < m.n; c++) if (m.dark(r, c)) ctx.fillRect(bx + 12 + c * cell, by + 12 + r * cell, Math.ceil(cell), Math.ceil(cell)); }
+  }
+  async function openAfiche(id) {
+    const p = findParche(id); if (!p) return;
+    aficheId = id;
+    closeMenus();
+    $('#dlg-afiche').showModal();
+    await drawAfiche(p);
+  }
+  function descargarAfiche() {
+    const p = findParche(aficheId); if (!p) return;
+    $('#afiche-canvas').toBlob(b => {
+      if (!b) { toast('No se pudo crear la imagen', 'Intenta de nuevo.', { error: true }); return; }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = `afiche-${norm(p.titulo).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Afiche descargado', 'Súbelo a tus historias con el QR del local.');
+    }, 'image/png');
+  }
 
   /* =====================================================================
-     6. MAPA COMERCIAL Y GPS
+     8. CUPONES, VALIDADOR Y ESCÁNER
   ===================================================================== */
-  let map = null, mapLayer = null, meMarker = null, meCircle = null, bizMarker = null, watchId = null, flyMe = false;
-  let userPos = null;
-  const timeState = { mode: 'hoy', date: null };
-  const tiles = () => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
-  const bizIcon = (n = 0, flash = false) => L.divIcon({ className: 'pin-icon', html: `<div class="biz-pin ${flash ? 'mpin--flash' : ''}" title="${esc(S.perfil.nombre)}">${ic('i-store')}${n ? `<span class="biz-count">${n}</span>` : ''}</div>`, iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -18] });
-  const pinIcon = p => {
-    const cls = p.tipo === 'otro' ? 'mpin--other' : p.tipo === 'comunidad' ? 'mpin--com' : 'mpin--own';
-    return L.divIcon({ className: 'pin-icon', html: `<div class="mpin ${cls} ${p.tipo === 'relampago' && enVivo(p) ? 'mpin--flash' : ''}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10] });
-  };
-  const meIcon = () => L.divIcon({ className: 'pin-icon', html: '<div class="mpin mpin--me" title="Tu ubicación"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+  function estadoCuponPill(k) {
+    if (k.estado === 'pausado') return `<span class="pill">${ic('i-pause')}Pausado</span>`;
+    if (agotado(k)) return '<span class="pill warn">Agotado</span>';
+    return '<span class="pill pos"><span class="dot"></span>Activo</span>';
+  }
+  function tkHTML(k, preview = false) {
+    const e = preview ? 0 : entregados(k), cj = preview ? 0 : canjeados(k);
+    return `<article class="tk ${k.estado === 'pausado' ? 'tk--off' : ''}" data-tk="${esc(k.id || '')}">
+      <div class="tk-main">
+        <div class="tk-top"><span class="tk-name">${esc(k.nombre || 'Nombre del cupón')}</span>${preview ? '<span class="pill brand">Vista previa</span>' : estadoCuponPill(k)}</div>
+        <p class="tk-ben">${esc(k.beneficio || 'Qué regalas')}</p>
+        <p class="tk-rule">${ic('i-bolt')}<span>${esc(REGLAS[k.regla] || '')}</span></p>
+        <div class="tk-stock">
+          <span class="track" role="img" aria-label="${e} de ${k.limite} entregados, ${cj} canjeados"><i class="in" style="width:${clamp(cj / (k.limite || 1), 0, 1) * 100}%"></i><i class="pend" style="width:${clamp((e - cj) / (k.limite || 1), 0, 1) * 100}%"></i></span>
+          <span class="door-nums"><span><b>${e}</b> de ${int(k.limite || 0)} entregados</span><span>${cj} ${cj === 1 ? 'canjeado' : 'canjeados'}</span></span>
+        </div>
+        <p class="hint">Vale ${k.vigencia} ${Number(k.vigencia) === 1 ? 'día' : 'días'} desde que lo gana</p>
+      </div>
+      <div class="tk-stub">
+        <span class="tk-pre">${esc((k.prefijo || 'CODIGO').toUpperCase())}-0000</span>
+        ${preview ? '' : `<div class="tk-tools">
+          <input type="checkbox" class="switch" data-cupon="${k.id}" ${k.estado === 'activo' ? 'checked' : ''} aria-label="${k.estado === 'activo' ? 'Pausar' : 'Activar'} ${esc(k.nombre)}">
+          <button class="icon-btn" data-action="cupon-menu" data-id="${k.id}" aria-label="Más acciones de ${esc(k.nombre)}" aria-haspopup="menu">${ic('i-more')}</button>
+        </div>`}
+      </div>
+    </article>`;
+  }
+  const STAGE_HINT = `<div class="stage-hint">${ic('i-ticket')}<p>Pide al parcero su código o escanea su QR. Aquí verás el cupón y si se puede canjear.</p></div>`;
 
+  let lastCanje = null, undoTimer = null;
+  function renderCupones(opts = {}) {
+    const L = loc(), pend = pendientes();
+    $('#pendientes-meta').textContent = pend.length ? `${pend.length} ${pend.length === 1 ? 'código vigente' : 'códigos vigentes'}` : 'Nada pendiente';
+    $('#pendientes').innerHTML = pend.length ? pend.map(c => `<li><button class="row row--btn" data-action="usar-codigo" data-code="${esc(c.codigo)}">
+        <span class="row-main"><b class="code">${esc(c.codigo)}</b><small>${esc(c.cupNombre)} · ${esc(c.persona)}</small></span>
+        <span class="row-end">Vence<small>${esc(fmtDia(c.vence))}</small></span>${ic('i-chev-right').replace('class="ic"', 'class="ic go"')}</button></li>`).join('')
+      : '<li><p class="empty">No hay códigos por canjear.</p></li>';
+
+    const act = L.cupones.filter(k => k.estado === 'activo').length;
+    $('#mis-cupones-meta').textContent = `${L.cupones.length} ${L.cupones.length === 1 ? 'cupón' : 'cupones'}, ${act} ${act === 1 ? 'activo' : 'activos'}. Pausa uno y deja de entregarse al instante.`;
+    $('#tickets').innerHTML = L.cupones.map((k, i) => `<li style="--i:${i}">${tkHTML(k)}</li>`).join('')
+      + `<li style="--i:${L.cupones.length}"><button class="tk-add" data-action="nuevo-cupon">${ic('i-plus')}<span><b>Crear cupón</b></span></button></li>`;
+    if (opts.nuevo) { const el = $(`[data-tk="${opts.nuevo}"]`); if (el) { el.classList.add('is-new'); setTimeout(() => burstFrom(el, 28), 200); } }
+
+    const hist = L.codigos.filter(c => c.canjeado).sort((a, b) => b.canjeado - a.canjeado);
+    $('#historial-meta').textContent = `${hist.length} ${hist.length === 1 ? 'canje' : 'canjes'}`;
+    $('#tabla-canjes').innerHTML = `<thead><tr><th>Código</th><th>Cupón</th><th>Cliente</th><th class="n">Canjeado</th></tr></thead><tbody>${
+      hist.map(c => `<tr class="${lastCanje === c.codigo ? 'is-new' : ''}"><td class="code">${esc(c.codigo)}</td><td>${esc(c.cupNombre)}<span class="hint" style="display:block">${esc(c.cupBen)}</span></td><td>${esc(c.persona)}</td><td class="n">${esc(fmtCuando(c.canjeado))}</td></tr>`).join('')
+      || '<tr><td colspan="4"><p class="empty">Todavía no hay canjes.</p></td></tr>'
+    }</tbody>`;
+    if (!$('#validator-result').children.length) $('#validator-result').innerHTML = STAGE_HINT;
+  }
+
+  function vtHTML(kind, o) {
+    return `<article class="vt vt--${kind}">
+      <div class="vt-main">
+        <p class="vt-status">${ic(kind === 'ok' ? 'i-check' : 'i-alert')}${esc(o.kicker)}</p>
+        <h3>${esc(o.title)}</h3>
+        <p>${o.html}</p>
+        ${o.foot ? `<div class="vt-foot">${o.foot}</div>` : ''}
+      </div>
+      <div class="vt-stub">${kind === 'ok' ? `<span class="stamp-mark"><b>Canjeado</b><small>${esc(o.stub)}</small></span>` : `${ic(o.stubIc)}<span>${esc(o.stub)}</span>`}</div>
+      ${kind === 'ok' ? '<span class="undo-line" aria-hidden="true"></span>' : ''}
+    </article>`;
+  }
+  function validar(raw) {
+    const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    const out = $('#validator-result');
+    clearTimeout(undoTimer);
+    if (!code) { out.innerHTML = STAGE_HINT; $('#code-input').focus(); return; }
+    const L = loc();
+    const c = L.codigos.find(x => x.codigo === code);
+    const bad = (title, html, kicker = 'No se puede canjear') => {
+      out.innerHTML = vtHTML('bad', { kicker, title, html, stubIc: 'i-close', stub: 'Rechazado' });
+      tone('bad');
+      const vt = $('.vt', out); vt.classList.remove('shake'); void vt.offsetWidth; vt.classList.add('shake');
+      $('#code-input').select();
+    };
+    if (!c) {
+      const otro = allLocales().find(x => x.id !== L.id && x.codigos.some(y => y.codigo === code));
+      if (otro) return bad('Este código es de otro local', `<span class="code">${esc(code)}</span> es un cupón de ${esc(otro.perfil.nombre)}. Cada local solo canjea sus propios cupones.`);
+      return bad(`${code} no existe`, 'Revisa que el parcero te muestre el código completo, con el guion. Si tiene QR, escanéalo.');
+    }
+    const st = estadoCodigo(c), k = cupon(c.cuponId);
+    if (st === 'canjeado') return bad('Este código ya se usó', `Lo canjeó ${esc(c.persona)} ${esc(fmtCuando(c.canjeado).toLowerCase())} Beneficio: ${esc(c.cupBen)}.`);
+    if (st === 'vencido') return bad('Este código venció', `Valía hasta ${esc(fmtCuando(c.vence).toLowerCase())} ${esc(c.persona)} puede ganar otro en tu próximo parche.`);
+    if (k && k.estado === 'pausado') return bad('El cupón está pausado', `Actívalo en <b>Tus cupones</b> si quieres aceptar ${esc(c.cupNombre)} hoy.`, 'Pausado por ti');
+
+    c.canjeado = NOW();
+    lastCanje = c.codigo;
+    save();
+    out.innerHTML = vtHTML('ok', {
+      kicker: `Cupón válido · ${c.cupNombre}`, title: c.cupBen,
+      html: `Para <b>${esc(c.persona)}</b> · <span class="code">${esc(c.codigo)}</span>`,
+      foot: `<button class="btn btn--sm" data-action="deshacer-canje" data-code="${esc(c.codigo)}">${ic('i-undo')}Deshacer</button><span class="hint">Puedes deshacerlo durante 8 segundos.</span>`,
+      stubIc: 'i-check', stub: fmtHora(c.canjeado),
+    });
+    $('#code-input').value = '';
+    tone('ok');
+    const vt = $('.vt', out), stamp = $('.stamp-mark', out), line = $('.undo-line', out);
+    if (!REDUCED()) {
+      vt.animate([{ transform: 'translateY(14px) scale(.96)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+      stamp.animate([{ transform: 'rotate(-34deg) scale(2.4)', opacity: 0 }, { transform: 'rotate(-12deg) scale(.92)', opacity: 1, offset: 0.7 }, { transform: 'rotate(-12deg) scale(1)', opacity: 1 }], { duration: 520, delay: 240, easing: 'cubic-bezier(.2,.9,.3,1.2)', fill: 'backwards' });
+      setTimeout(() => burstFrom(stamp, 40), 560);
+    }
+    line.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: 8000, easing: 'linear', fill: 'forwards' });
+    undoTimer = setTimeout(() => { const f = $('.vt-foot', out); if (f) f.innerHTML = '<span class="hint">Listo. Entrégale el beneficio.</span>'; lastCanje = null; }, 8000);
+    renderShell();
+    renderCupones();
+  }
+  function deshacerCanje(code) {
+    const c = loc().codigos.find(x => x.codigo === code);
+    if (!c || !c.canjeado) return;
+    c.canjeado = null; lastCanje = null; clearTimeout(undoTimer);
+    save();
+    $('#validator-result').innerHTML = STAGE_HINT;
+    toast('Canje deshecho', `${c.codigo} vuelve a estar por canjear.`);
+    renderShell(); renderCupones();
+  }
+
+  function nuevoCodigo(prefijo) {
+    const usados = new Set(allLocales().flatMap(L => L.codigos.map(c => c.codigo)));
+    let codigo;
+    do { codigo = `${prefijo}-${1000 + Math.floor(Math.random() * 9000)}`; } while (usados.has(codigo));
+    return codigo;
+  }
+  // Entrega un cupón a un parcero si el local lo tiene activo y le quedan
+  function entregar(k, persona, p) {
+    if (!k) return null;
+    if (k.estado !== 'activo') return { skip: `${k.nombre} está pausado` };
+    if (agotado(k)) return { skip: `${k.nombre} está agotado` };
+    if (loc().codigos.some(c => c.cuponId === k.id && c.persona === persona && c.parcheId === p.id)) return null;
+    const c = { codigo: nuevoCodigo(k.prefijo), cuponId: k.id, cupNombre: k.nombre, cupBen: k.beneficio, persona, parcheId: p.id, emitido: NOW(), vence: NOW() + k.vigencia * DAY, canjeado: null, auto: true };
+    loc().codigos.push(c);
+    return { c };
+  }
+
+  /* ---------- Escáner de QR con la cámara ---------- */
+  let scanStream = null, scanLoop = null;
+  async function openScan() {
+    const dlg = $('#dlg-scan'), hint = $('#scan-hint');
+    if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
+      toast('Este navegador no lee QR', 'Escribe el código a mano. En Chrome para Android sí funciona el escáner.', { error: true });
+      $('#code-input').focus();
+      return;
+    }
+    hint.textContent = 'Apunta la cámara al QR del cupón.';
+    dlg.showModal();
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const v = $('#scan-video'); v.srcObject = scanStream; await v.play();
+      const det = new window.BarcodeDetector({ formats: ['qr_code'] });
+      const tick = async () => {
+        if (!dlg.open) return;
+        try {
+          const r = await det.detect(v);
+          const val = r[0] && r[0].rawValue;
+          if (val) { closeScan(); $('#code-input').value = val.trim().toUpperCase(); validar(val); return; }
+        } catch (e) { /* sigue intentando */ }
+        scanLoop = setTimeout(tick, 220);
+      };
+      tick();
+    } catch (e) {
+      hint.textContent = e.name === 'NotAllowedError' ? 'Sin permiso de cámara. Actívalo en el candado del navegador o escribe el código.' : 'No pudimos abrir la cámara. Escribe el código a mano.';
+    }
+  }
+  function closeScan() {
+    clearTimeout(scanLoop);
+    if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    if ($('#dlg-scan').open) $('#dlg-scan').close();
+  }
+
+  function cuponMenu(btn, id) {
+    openRowMenu(btn, `<button data-action="editar-cupon" data-id="${id}" role="menuitem">${ic('i-edit')} Editar cupón</button>
+      <button data-action="duplicar-cupon" data-id="${id}" role="menuitem">${ic('i-copy')} Duplicar</button>
+      <button class="danger" data-action="eliminar-cupon" data-id="${id}" role="menuitem">${ic('i-trash')} Eliminar</button>`);
+  }
+  function toggleCupon(id, on) {
+    const k = cupon(id); if (!k) return;
+    k.estado = on ? 'activo' : 'pausado';
+    save();
+    const tk = $(`[data-tk="${id}"]`);
+    if (tk) { tk.classList.toggle('tk--off', !on); $('.tk-top .pill', tk).outerHTML = estadoCuponPill(k); }
+    $('#mis-cupones-meta').textContent = `${loc().cupones.length} cupones, ${loc().cupones.filter(x => x.estado === 'activo').length} activos. Pausa uno y deja de entregarse al instante.`;
+    toast(on ? 'Cupón activo' : 'Cupón pausado', on ? `${k.nombre} se vuelve a entregar.` : `${k.nombre} no se entrega ni se canjea hasta que lo actives.`);
+  }
+  async function eliminarCupon(id) {
+    const k = cupon(id); if (!k) return;
+    const pend = loc().codigos.filter(c => c.cuponId === id && estadoCodigo(c) === 'pendiente').length;
+    const ok = await confirmar('Eliminar cupón', `"${k.nombre}" deja de entregarse.${pend ? ` Sus ${pend} ${pend === 1 ? 'código pendiente deja' : 'códigos pendientes dejan'} de servir.` : ''} El historial de canjes se conserva.`, 'Sí, eliminar');
+    if (!ok) return;
+    const L = loc();
+    L.cupones = L.cupones.filter(x => x.id !== id);
+    L.codigos = L.codigos.filter(c => c.cuponId !== id || c.canjeado);
+    save();
+    toast('Cupón eliminado', k.nombre);
+    render();
+  }
+
+  /* =====================================================================
+     9. ASISTENTES, CHAT Y MODO PUERTA
+  ===================================================================== */
+  const asisState = { id: null, tab: 'lista' };
+  function gruposParches() {
+    const local = loc().parches.filter(p => !p.cancelado);
+    const hoy = local.filter(p => enVivo(p) || diasDesdeHoy(p.inicio) === 0).sort((a, b) => a.inicio - b.inicio);
+    const prox = local.filter(p => !hoy.includes(p) && p.inicio > NOW()).sort((a, b) => a.inicio - b.inicio);
+    const pas = local.filter(p => !hoy.includes(p) && !prox.includes(p)).sort((a, b) => b.inicio - a.inicio);
+    return { hoy, prox, pas };
+  }
+  const optionsHTML = (g, sel) => {
+    const opt = p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.titulo)} · ${esc(fmtDia(p.inicio))}</option>`;
+    return (g.hoy.length ? `<optgroup label="Hoy">${g.hoy.map(opt).join('')}</optgroup>` : '')
+      + (g.prox.length ? `<optgroup label="Próximos">${g.prox.map(opt).join('')}</optgroup>` : '')
+      + (g.pas && g.pas.length ? `<optgroup label="Pasados">${g.pas.map(opt).join('')}</optgroup>` : '');
+  };
+  const ringSVG = (v, total, r = 36, cls = 'ring') => {
+    const C = 2 * Math.PI * r, k = total ? clamp(v / total, 0, 1) : 0, s = (r + 6) * 2;
+    return `<svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle class="trk" cx="${s / 2}" cy="${s / 2}" r="${r}"/><circle class="val" cx="${s / 2}" cy="${s / 2}" r="${r}" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - k)).toFixed(1)}"/></svg>`;
+  };
+
+  function renderAsistentes(justIn = null) {
+    const g = gruposParches(), all = [...g.hoy, ...g.prox, ...g.pas];
+    if (!asisState.id || !all.some(p => p.id === asisState.id)) asisState.id = all[0]?.id || null;
+    $('#parche-select').innerHTML = optionsHTML(g, asisState.id);
+    const p = findParche(asisState.id);
+    if (!p) {
+      $('#h-asistentes').textContent = 'Asistentes';
+      $('#asistentes-sub').textContent = 'Todavía no tienes parches.';
+      $('#asis-ring').innerHTML = ''; $('#asis-kpis').innerHTML = '';
+      $('#people').innerHTML = '<li><p class="empty">Publica un parche para ver quién confirma.</p></li>';
+      return;
+    }
+    const c = confirmados(p), inn = checkins(p), ganados = loc().codigos.filter(x => x.parcheId === p.id).length;
+    $('#h-asistentes').textContent = p.titulo;
+    $('#asistentes-sub').textContent = `${fmtCuando(p.inicio)} · ${tipoTxt(p)} · ${p.cupos} cupos`;
+    $('#asis-ring').innerHTML = `<div class="ring">${ringSVG(inn, c)}<span>${inn}</span></div><div><b>${inn ? `${inn} de ${c} adentro` : 'Nadie adentro aún'}</b><small>${enVivo(p) ? `En vivo hasta las ${fmtHora(fin(p))}` : p.inicio > NOW() ? `Arranca ${fmtCuando(p.inicio).toLowerCase()}` : 'El parche terminó'}</small></div>`;
+    $('#asis-kpis').innerHTML = `
+      <div class="kpi"><p class="kpi-label">Confirmados</p><p class="kpi-value">${c}<small>de ${p.cupos}</small></p><p class="delta">${lleno(p) ? 'Parche lleno' : `${p.cupos - c} cupos libres`}</p></div>
+      <div class="kpi"><p class="kpi-label">Por llegar</p><p class="kpi-value">${c - inn}</p><p class="delta">${puedeCheckin(p) ? 'Márcalos en la puerta' : p.inicio > NOW() ? 'El check-in abre ese día' : 'Ya no llegan'}</p></div>
+      <div class="kpi"><p class="kpi-label">Cupones ganados</p><p class="kpi-value">${ganados}</p><p class="delta">En este parche</p></div>`;
+    $$('#asis-tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === asisState.tab)));
+    $('#asis-lista').hidden = asisState.tab !== 'lista';
+    $('#asis-chat').hidden = asisState.tab !== 'chat';
+    if (asisState.tab === 'chat') { renderChat(p); return; }
+    const puede = puedeCheckin(p);
+    const rows = [...p.asistentes].sort((a, b) => (!!b.llego - !!a.llego) || a.confirmo - b.confirmo);
+    $('#people').innerHTML = rows.map(a => `<li class="person ${a.id === justIn ? 'just-in' : ''}">${avatar(a)}
+        <span><b>${esc(a.nombre)}</b><small>${a.walkin ? 'Llegó sin confirmar' : `Confirmó ${esc(fmtCuando(a.confirmo).toLowerCase())}`}</small></span>
+        ${a.llego ? `<span class="pill pos">${ic('i-check')}Llegó ${fmtHora(a.llego)}</span>` : '<span class="pill">Por llegar</span>'}
+        ${puede ? (a.llego ? `<button class="btn ghost btn--sm" data-action="checkout" data-pid="${p.id}" data-uid="${a.id}">Deshacer</button>` : `<button class="btn btn--sm" data-action="checkin" data-pid="${p.id}" data-uid="${a.id}">${ic('i-check')}Marcar llegada</button>`) : '<span></span>'}
+      </li>`).join('') || '<li><p class="empty">Nadie ha confirmado todavía. Comparte el afiche del parche.</p></li>';
+  }
+
+  function renderChat(p, nuevo = false) {
+    const box = $('#chat-msgs'), P = loc().perfil;
+    box.innerHTML = p.chat.length ? p.chat.map((m, i) => {
+      const cls = nuevo && i === p.chat.length - 1 ? ' is-new' : '';
+      if (m.tipo === 'sys') return `<p class="msg msg--sys">${esc(m.texto)} · ${esc(fmtRel(m.ts))}</p>`;
+      if (m.autor === 'biz') return `<div class="msg msg--biz${cls}"><div class="msg-body"><small>${esc(P.nombre)} · ${esc(fmtRel(m.ts))}</small><p>${esc(m.texto)}</p></div>${monoHTML(loc())}</div>`;
+      return `<div class="msg${cls}">${avatar(m.autor)}<div class="msg-body"><small>${esc(m.autor.nombre)} · ${esc(fmtRel(m.ts))}</small><p>${esc(m.texto)}</p></div></div>`;
+    }).join('') : '<p class="msg msg--sys">Todavía no hay mensajes. Saluda al grupo.</p>';
+    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+  }
+
+  // Check-in compartido por la lista y el modo puerta: entrega los cupones que el local configuró
+  function checkIn(p, a) {
+    if (a.llego) return [];
+    a.llego = NOW();
+    const L = loc(), out = [];
+    const reglasQueAplican = L.cupones.filter(k => k.regla === 'checkin' || (k.regla === 'temprano' && NOW() <= p.inicio + HOUR) || (k.regla === 'relampago' && p.tipo === 'relampago'));
+    const extra = p.tipo === 'relampago' && p.cuponId ? L.cupones.find(k => k.id === p.cuponId) : null;
+    if (extra && !reglasQueAplican.includes(extra)) reglasQueAplican.push(extra);
+    for (const k of reglasQueAplican) { const r = entregar(k, a.nombre, p); if (r) out.push(r); }
+    save();
+    return out;
+  }
+  function checkOut(p, a) {
+    a.llego = null;
+    const L = loc();
+    L.codigos = L.codigos.filter(c => !(c.auto && !c.canjeado && c.parcheId === p.id && c.persona === a.nombre && c.emitido >= p.inicio - 2 * HOUR));
+    save();
+  }
+  function avisarCupones(nombre, res) {
+    const dados = res.filter(r => r.c), saltados = res.filter(r => r.skip);
+    if (dados.length) {
+      toast(`${nombre} ganó ${dados.length === 1 ? 'un cupón' : `${dados.length} cupones`}`, dados.map(r => `${r.c.codigo}: ${r.c.cupBen}`).join(' · '));
+      tone('ok');
+    } else tone('in');
+    if (saltados.length) toast('Cupón sin entregar', saltados.map(r => r.skip).join('. ') + '.', { error: true });
+  }
+
+  /* ---------- Modo puerta ---------- */
+  const doorState = { id: null, q: '', justIn: null };
+  function openDoor(id = null) {
+    closeMenus(); toggleMenu(false);
+    const hoy = deHoy();
+    doorState.id = id && hoy.some(p => p.id === id) ? id : (hoy.find(enVivo) || hoy[0])?.id || null;
+    doorState.q = ''; $('#door-search').value = '';
+    const dm = $('#door-mode');
+    dm.hidden = false; dm.classList.remove('is-open'); void dm.offsetWidth; dm.classList.add('is-open');
+    document.body.classList.add('no-scroll');
+    renderDoor();
+    setTimeout(() => $('#door-search').focus(), 60);
+  }
+  function closeDoor() {
+    $('#door-mode').hidden = true;
+    document.body.classList.remove('no-scroll');
+    render();
+  }
+  function renderDoor() {
+    const L = loc(), hoy = deHoy();
+    $('#door-select').innerHTML = hoy.map(p => `<option value="${p.id}" ${p.id === doorState.id ? 'selected' : ''}>${esc(p.titulo)} · ${enVivo(p) ? 'en vivo' : fmtHora(p.inicio)}</option>`).join('') || '<option>Sin parches hoy</option>';
+    $('#door-select').disabled = !hoy.length;
+    const p = findParche(doorState.id);
+    $('#door-sub').textContent = `${L.perfil.nombre}${p ? ` · ${p.titulo}` : ''}`;
+    if (!p) {
+      $('#door-counter').innerHTML = `<div class="ring ring--big">${ringSVG(0, 1, 46)}<span><b>0</b><small>sin parche</small></span></div><p>Hoy no tienes parches. Crea uno o lanza un relámpago para recibir gente con Modo Parche.</p>`;
+      $('#door-people').innerHTML = '<li class="door-empty">Cuando tengas un parche hoy, aquí aparece la lista para marcar llegadas.</li>';
+      return;
+    }
+    const c = confirmados(p), inn = checkins(p);
+    $('#door-counter').innerHTML = `<div class="ring ring--big ${doorState.justIn ? 'bump' : ''}">${ringSVG(inn, Math.max(c, 1), 46)}<span><b>${inn}</b><small>de ${c} confirmados</small></span></div>
+      <p><b>${c - inn}</b> por llegar · <b>${Math.max(0, p.cupos - c)}</b> cupos libres. ${enVivo(p) ? `En vivo hasta las ${fmtHora(fin(p))}` : `Arranca a las ${fmtHora(p.inicio)}`}</p>`;
+    const q = norm(doorState.q);
+    const rows = [...p.asistentes].filter(a => !q || norm(a.nombre).includes(q)).sort((a, b) => (!!a.llego - !!b.llego) || a.nombre.localeCompare(b.nombre));
+    let html = rows.map(a => a.llego
+      ? `<li><div class="door-person is-in ${a.id === doorState.justIn ? 'just-in' : ''}">${avatar(a)}<span><b>${esc(a.nombre)}</b><small>Adentro desde las ${fmtHora(a.llego)}</small></span><button class="door-go" data-action="door-out" data-uid="${a.id}">${ic('i-undo')}Deshacer</button></div></li>`
+      : `<li><button class="door-person" data-action="door-in" data-uid="${a.id}">${avatar(a)}<span><b>${esc(a.nombre)}</b><small>${a.walkin ? 'Registrado en la puerta' : 'Confirmó en la app'}</small></span><span class="door-go">${ic('i-check')}Llegó</span></button></li>`).join('');
+    const exacto = p.asistentes.some(a => norm(a.nombre) === q);
+    if (doorState.q.trim().length >= 3 && !exacto) {
+      html += lleno(p)
+        ? `<li class="door-empty">${esc(doorState.q)} no confirmó y el parche está lleno.</li>`
+        : `<li><button class="door-person" data-action="door-walkin">${avatar({ nombre: doorState.q, tono: hash(doorState.q) % 11 })}<span><b>${esc(doorState.q.trim())}</b><small>No confirmó en la app. Regístralo aquí y cuenta en el aforo.</small></span><span class="door-go">${ic('i-plus')}Registrar</span></button></li>`;
+    }
+    $('#door-people').innerHTML = html || `<li class="door-empty">${p.asistentes.length ? 'Nadie coincide con esa búsqueda.' : 'Nadie confirmó todavía. Escribe el nombre de quien llegue para registrarlo.'}</li>`;
+    doorState.justIn = null;
+  }
+  function doorIn(uid) {
+    const p = findParche(doorState.id), a = p && p.asistentes.find(x => x.id === uid);
+    if (!a) return;
+    const btn = $(`[data-uid="${uid}"]`, $('#door-people'));
+    const res = checkIn(p, a);
+    doorState.justIn = uid; doorState.q = ''; $('#door-search').value = '';
+    if (btn) burstFrom(btn, 24);
+    renderDoor();
+    avisarCupones(a.nombre, res);
+    $('#door-search').focus();
+  }
+  function doorWalkin() {
+    const p = findParche(doorState.id), nombre = doorState.q.trim();
+    if (!p || nombre.length < 3 || lleno(p)) return;
+    const a = { id: 'w' + NOW().toString(36), nombre: cap(nombre), tono: hash(nombre) % 11, confirmo: NOW(), llego: null, walkin: true };
+    p.asistentes.push(a);
+    const res = checkIn(p, a);
+    if (lleno(p)) for (const k of loc().cupones.filter(x => x.regla === 'lleno')) { const r = entregar(k, a.nombre, p); if (r) res.push(r); }
+    save();
+    doorState.justIn = a.id; doorState.q = ''; $('#door-search').value = '';
+    burstFrom($('#door-counter .ring'), 30);
+    renderDoor();
+    avisarCupones(a.nombre, res);
+    $('#door-search').focus();
+  }
+
+  /* =====================================================================
+     10. MAPA COMERCIAL
+  ===================================================================== */
+  let map = null, layer = null, meMarker = null, meCircle = null, watchId = null, flyMe = false, userPos = null, mapDirty = true;
+  const timeState = { mode: 'hoy' };
+  const markers = {};
+  const tiles = () => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
+  const bizIcon = (Lc, n = 0, flash = false, other = false) => L.divIcon({
+    className: 'pin-icon',
+    html: `<div class="biz-pin biz-pin--${Lc.perfil.tema}${other ? ' biz-pin--other' : ''}${flash ? ' biz-pin--flash' : ''}" title="${esc(Lc.perfil.nombre)}">${esc(Lc.perfil.corto)}${n ? `<span class="biz-count">${n}</span>` : ''}</div>`,
+    iconSize: other ? [30, 30] : [38, 38], iconAnchor: other ? [15, 15] : [19, 19], popupAnchor: [0, -18],
+  });
+  const meIcon = () => L.divIcon({ className: 'pin-icon', html: '<div class="mpin mpin--me" title="Tu ubicación"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
   function timeMatch(p) {
-    const d = Math.round((day0(p.inicio) - day0(NOW())) / DAY);
+    const d = diasDesdeHoy(p.inicio);
     if (timeState.mode === 'todos') return true;
-    if (timeState.mode === 'hoy') return d === 0;
     if (timeState.mode === 'manana') return d === 1;
-    return dayKey(p.inicio) === timeState.date;
+    return d === 0 || enVivo(p);
   }
-  function timeLabel() {
-    if (timeState.mode === 'todos') return 'en los próximos días';
-    if (timeState.mode === 'hoy') return 'hoy';
-    if (timeState.mode === 'manana') return 'mañana';
-    return 'el ' + new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date(timeState.date + 'T12:00:00')).replace('.', '');
-  }
-  function buildTimeSelect() {
-    const opts = ['<option value="">En: elegir día</option>'];
-    for (let i = 2; i <= 13; i++) { const ts = day0(NOW()) + i * DAY; opts.push(`<option value="${dayKey(ts)}">En: ${cap(new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }).format(ts).replace('.', ''))}</option>`); }
-    opts.push('<option value="__fecha">En: fecha exacta...</option>');
-    $('#time-select').innerHTML = opts.join('');
-    $('#time-date').min = dayKey(NOW());
-  }
+  const timeLabel = () => ({ hoy: 'hoy', manana: 'mañana', todos: 'en los próximos días' }[timeState.mode]);
 
   function renderMapa() {
-    const list = S.parches.filter(p => activo(p) && timeMatch(p)).sort((a, b) => a.inicio - b.inicio);
-    const enMi = list.filter(enLocal).length;
-    $('#mapa-sub').textContent = `${list.length} ${list.length === 1 ? 'parche' : 'parches'} ${timeLabel()} en Villavicencio, ${enMi} en tu local.`;
+    const own = loc();
+    const items = allLocales().flatMap(Lc => Lc.parches.filter(p => activo(p) && timeMatch(p)).map(p => ({ p, Lc })))
+      .sort((a, b) => (b.Lc.id === own.id) - (a.Lc.id === own.id) || a.p.inicio - b.p.inicio);
+    const mios = items.filter(x => x.Lc.id === own.id).length;
+    $('#mapa-sub').textContent = `${items.length} ${items.length === 1 ? 'parche' : 'parches'} ${timeLabel()} en los locales aliados de Villavicencio; ${mios} ${mios === 1 ? 'es tuyo' : 'son tuyos'}.`;
     $$('#time-filter [data-time]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.time === timeState.mode)));
-    const sel = $('#time-select');
-    sel.value = timeState.mode === 'fecha' && [...sel.options].some(o => o.value === timeState.date) ? timeState.date : timeState.mode === 'fecha' ? '__fecha' : '';
-    $('#time-date').hidden = !(timeState.mode === 'fecha' && sel.value === '__fecha');
-    if (timeState.mode === 'fecha') $('#time-date').value = timeState.date;
+    $('#map-legend').innerHTML = `<span><i class="lg lg--own"></i>${esc(own.perfil.nombre)}</span><span><i class="lg lg--other"></i>Otros locales aliados</span>${userPos ? '<span><i class="lg lg--me"></i>Tu ubicación</span>' : ''}`;
+    $('#maplist-meta').textContent = `${items.length} ${timeLabel()}`;
+    $('#map-list').innerHTML = items.length ? items.map(({ p, Lc }) => `<li><button class="row row--btn" data-action="fly" data-local="${Lc.id}">
+        <span class="lg ${Lc.id === own.id ? 'lg--own' : 'lg--other'}" aria-hidden="true"></span>
+        <span class="row-main"><b>${esc(p.titulo)}</b><small>${esc(Lc.perfil.nombre)} · ${esc(fmtCuando(p.inicio))}</small></span>
+        <span class="row-end num">${confirmados(p)}<small>de ${p.cupos}</small></span></button></li>`).join('')
+      : `<li><p class="empty">No hay parches ${timeLabel()}. Es buen momento para un relámpago.</p></li>`;
 
-    $('#map-legend').innerHTML = `<span><i class="lg lg--own"></i>Tus parches oficiales y relámpago</span><span><i class="lg lg--com"></i>De la comunidad en tu local</span><span><i class="lg lg--other"></i>Otros puntos de la ciudad</span>${userPos ? '<span><i class="lg lg--me"></i>Tu ubicación</span>' : ''}`;
-    $('#maplist-meta').textContent = `${list.length} ${timeLabel()}`;
-    $('#map-list').innerHTML = list.length ? list.map(p => `<li><button class="row row--btn" data-action="fly" data-id="${p.id}">
-        <span class="lg ${p.tipo === 'otro' ? 'lg--other' : p.tipo === 'comunidad' ? 'lg--com' : 'lg--own'}" aria-hidden="true"></span>
-        <span class="row-main"><b>${esc(p.titulo)}</b><small>${esc(LUGARES[p.lugar]?.nombre || '')} · ${esc(fmtCuando(p.inicio))}</small></span>
-        <span class="row-end num">${int(confirmados(p))}<small>de ${int(p.cupos)}</small></span>
-      </button></li>`).join('') : `<li><p class="empty">Nadie ha abierto parche ${timeLabel()}. Es buen momento para un relámpago.</p></li>`;
-
+    if (watchId === null) startGeo(false);
     setTimeout(() => {
       if (typeof L === 'undefined') return;
       if (!map) {
-        map = L.map('map', { zoomControl: true }).setView([S.perfil.lat, S.perfil.lng], 13);
+        map = L.map('map', { zoomControl: true }).setView([own.perfil.lat, own.perfil.lng], 14);
         tiles().addTo(map);
-        mapLayer = L.layerGroup().addTo(map);
-        bizMarker = L.marker([S.perfil.lat, S.perfil.lng], { icon: bizIcon(), zIndexOffset: 800 }).bindPopup(`<div class="pop"><b>${esc(S.perfil.nombre)}</b><span>${esc(S.perfil.direccion)}</span></div>`).addTo(map);
+        layer = L.layerGroup().addTo(map);
       }
       map.invalidateSize();
-      const enPunto = p => Math.abs(p.lat - S.perfil.lat) < 1e-4 && Math.abs(p.lng - S.perfil.lng) < 1e-4;
-      const delLocal = list.filter(enPunto);
-      bizMarker.setLatLng([S.perfil.lat, S.perfil.lng]).setIcon(bizIcon(delLocal.length, delLocal.some(p => p.tipo === 'relampago' && enVivo(p))));
-      bizMarker.setPopupContent(`<div class="pop"><b>${esc(S.perfil.nombre)}</b><span>${esc(S.perfil.direccion)}</span>${delLocal.map(p => `<span>${esc(fmtHora(p.inicio))} · ${esc(p.titulo)} · ${int(confirmados(p))} de ${int(p.cupos)}</span>`).join('') || '<span>Sin parches en este filtro</span>'}</div>`);
-      mapLayer.clearLayers();
-      list.filter(p => !enPunto(p)).forEach(p => {
-        const m = L.marker([p.lat, p.lng], { icon: pinIcon(p), riseOnHover: true })
-          .bindPopup(`<div class="pop"><b>${esc(p.titulo)}</b><span>${esc(LUGARES[p.lugar]?.nombre || '')}</span><span>${esc(fmtCuando(p.inicio))} · ${int(confirmados(p))} de ${int(p.cupos)} confirmados</span>${estadoPill(p)}</div>`);
-        m._pid = p.id;
-        m.addTo(mapLayer);
-      });
+      layer.clearLayers();
+      for (const Lc of allLocales()) {
+        const suyos = items.filter(x => x.Lc.id === Lc.id).map(x => x.p), mine = Lc.id === own.id;
+        const flash = suyos.some(p => p.tipo === 'relampago' && enVivo(p));
+        markers[Lc.id] = L.marker([Lc.perfil.lat, Lc.perfil.lng], { icon: bizIcon(Lc, suyos.length, flash, !mine), zIndexOffset: mine ? 800 : 0, riseOnHover: true })
+          .bindPopup(`<div class="pop"><b>${esc(Lc.perfil.nombre)}</b><span>${esc(Lc.perfil.direccion)} · ${esc(Lc.perfil.categoria)}</span>${suyos.map(p => `<span>${esc(fmtCuando(p.inicio))} · ${esc(p.titulo)} · ${confirmados(p)} de ${p.cupos}</span>`).join('') || `<span>Sin parches ${timeLabel()}</span>`}</div>`)
+          .addTo(layer);
+      }
+      if (mapDirty) { map.fitBounds(L.latLngBounds(allLocales().map(x => [x.perfil.lat, x.perfil.lng])), { padding: [60, 60], maxZoom: 15 }); mapDirty = false; }
       updateMe();
-    }, 30);
+    }, 40);
   }
   function flyTo(id) {
-    const p = S.parches.find(x => x.id === id);
-    if (!p || !map) return;
-    map.flyTo([p.lat, p.lng], 16, { duration: 1 });
-    let found = false;
-    mapLayer.eachLayer(m => { if (m._pid === id) { found = true; map.once('moveend', () => m.openPopup()); } });
-    if (!found && bizMarker) map.once('moveend', () => bizMarker.openPopup());
+    const Lc = S.locales[id], m = markers[id];
+    if (!map || !Lc) return;
+    map.flyTo([Lc.perfil.lat, Lc.perfil.lng], 16, { duration: 0.9 });
+    if (m) map.once('moveend', () => m.openPopup());
   }
-
   function startGeo(fly) {
     if (!('geolocation' in navigator)) { $('#geo-stamp').textContent = 'Este navegador no comparte la ubicación.'; return; }
     flyMe = flyMe || fly;
@@ -1218,7 +1165,7 @@
     };
     const bad = err => {
       $('#geo-stamp').textContent = err.code === 1 ? 'Sin permiso de ubicación. Actívalo en el candado del navegador.' : 'No pudimos leer tu ubicación.';
-      if (flyMe) { flyMe = false; toast('Sin ubicación', $('#geo-stamp').textContent, true); }
+      if (flyMe) { flyMe = false; toast('Sin ubicación', $('#geo-stamp').textContent, { error: true }); }
     };
     navigator.geolocation.getCurrentPosition(ok, bad, o);
     if (watchId === null) watchId = navigator.geolocation.watchPosition(ok, bad, o);
@@ -1227,238 +1174,83 @@
     if (!map || !userPos) return;
     if (!meMarker) {
       meMarker = L.marker(userPos, { icon: meIcon(), zIndexOffset: 900, interactive: false }).addTo(map);
-      meCircle = L.circle(userPos, { radius: acc || 30, color: '#2f6fd6', weight: 1, fillOpacity: .08 }).addTo(map);
+      meCircle = L.circle(userPos, { radius: acc || 30, color: '#2f6fd6', weight: 1, fillOpacity: 0.08 }).addTo(map);
     } else { meMarker.setLatLng(userPos); if (acc) meCircle.setLatLng(userPos).setRadius(acc); }
   }
 
   /* =====================================================================
-     7. CUPONES Y VALIDADOR
+     11. PERFIL DEL LOCAL (solo lectura: lo edita el administrador)
   ===================================================================== */
-  const REGLAS = {
-    lleno: 'El parche llega al 100 % del aforo',
-    mitad: 'El parche llega al 50 % del aforo',
-    temprano: 'Check-in en la primera hora del parche',
-    cumple: 'Cumpleaños con 10 o más confirmados',
-    relampago: 'Durante un parche relámpago',
-  };
-  let canjesShown = 8;
-  function renderCupones() {
-    const mes = periodo(0);
-    const cMes = S.codigos.filter(c => c.canjeado && c.canjeado >= mes[0] && c.canjeado <= mes[1]).length;
-    const pend = S.codigos.filter(c => estadoCodigo(c) === 'pendiente').sort((a, b) => b.emitido - a.emitido);
-    $('#cupones-sub').innerHTML = `<b>${int(cMes)} canjeados</b> este mes y ${int(pend.length)} ${pend.length === 1 ? 'código vigente' : 'códigos vigentes'} por canjear. Los códigos vencen a los 7 días.`;
-
-    $('#pendientes-meta').textContent = `${pend.length} vigentes`;
-    $('#pendientes').innerHTML = pend.length ? pend.slice(0, 6).map(c => `<li><button class="row row--btn" data-action="usar-codigo" data-code="${esc(c.codigo)}">
-      <span class="row-main"><b class="code">${esc(c.codigo)}</b><small>${esc(cupon(c.cuponId)?.nombre || '')} · ${esc(c.persona)}</small></span>
-      <span class="row-end">${esc(fmtDia(c.emitido))}<small>vence ${esc(fmtMesCorto(c.emitido + 7 * DAY))}</small></span></button></li>`).join('')
-      + (pend.length > 6 ? `<li class="row"><span class="hint">Y ${pend.length - 6} más. Búscalos por código en la barra superior.</span></li>` : '')
-      : '<li><p class="empty">No hay códigos por canjear.</p></li>';
-
-    $('#tabla-cupones').innerHTML = `<thead><tr><th>Recompensa</th><th>Qué recibe</th><th class="n">Emitidos</th><th class="n">Canjeados</th><th class="n">Tasa de canje</th><th class="act">Activa</th></tr></thead><tbody>${
-      S.cupones.map(k => {
-        const cs = S.codigos.filter(c => c.cuponId === k.id), canj = cs.filter(c => c.canjeado).length;
-        return `<tr><td><span class="name">${esc(k.nombre)}</span><span class="sub">${esc(REGLAS[k.regla] || k.regla)}</span></td><td>${esc(k.beneficio)}</td>
-          <td class="n">${int(cs.length)}</td><td class="n">${int(canj)}</td><td class="n">${cs.length ? pct(canj / cs.length) : '<span class="unit">—</span>'}</td>
-          <td class="act"><label class="sr-only" for="sw-${k.id}">Activar ${esc(k.nombre)}</label><input type="checkbox" class="switch" id="sw-${k.id}" data-cupon="${k.id}" ${k.activo ? 'checked' : ''}></td></tr>`;
-      }).join('')
-    }</tbody>`;
-
-    const hist = S.codigos.filter(c => c.canjeado).sort((a, b) => b.canjeado - a.canjeado);
-    $('#historial-meta').textContent = `${int(hist.length)} canjes en total`;
-    $('#tabla-canjes').innerHTML = `<thead><tr><th>Código</th><th>Recompensa</th><th>Cliente</th><th class="n">Canjeado</th></tr></thead><tbody>${
-      hist.slice(0, canjesShown).map(c => `<tr><td class="code">${esc(c.codigo)}</td><td>${esc(cupon(c.cuponId)?.nombre || '')}</td><td>${esc(c.persona)}</td><td class="n">${isoDateTime(c.canjeado)}</td></tr>`).join('')
-      || '<tr><td colspan="4"><p class="empty">Todavía no hay canjes.</p></td></tr>'
-    }</tbody>`;
-    $('#canjes-more').hidden = hist.length <= canjesShown;
-  }
-
-  function validar(raw) {
-    const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
-    const out = $('#validator-result');
-    if (!code) { out.innerHTML = ''; return; }
-    const c = S.codigos.find(x => x.codigo === code);
-    const verdict = (ok, title, text) => { out.innerHTML = `<div class="verdict ${ok ? 'ok' : 'bad'}">${ic(ok ? 'i-check' : 'i-alert')}<b>${title}</b><p>${text}</p></div>`; };
-    if (!c) return verdict(false, `${esc(code)} no existe`, 'Revisa que el cliente te muestre el código completo, con el guion.');
-    const k = cupon(c.cuponId);
-    const st = estadoCodigo(c);
-    if (st === 'canjeado') return verdict(false, 'Este código ya se usó', `Se canjeó el ${isoDateTime(c.canjeado)}. ${esc(k?.nombre || '')} para ${esc(c.persona)}.`);
-    if (st === 'vencido') return verdict(false, 'Este código venció', `Se emitió el ${esc(fmtMesCorto(c.emitido))} y valía 7 días.`);
-    if (k && !k.activo) return verdict(false, 'Recompensa pausada', `Activa "${esc(k.nombre)}" para poder canjearla.`);
-    c.canjeado = NOW();
-    save();
-    verdict(true, `Canjeado: ${esc(k?.beneficio || '')}`, `${esc(c.persona)} · ${esc(k?.nombre || '')} · ${esc(c.codigo)}`);
-    toast('Cupón canjeado', `${c.codigo}: ${k?.beneficio || ''}`);
-    $('#code-input').value = '';
-    renderShell();
-    if (route === 'cupones') renderCupones();
-  }
-
-  function emitirCodigo(k, personaNombre) {
-    let codigo;
-    do { codigo = `${k.prefijo}-${1000 + Math.floor(Math.random() * 9000)}`; } while (S.codigos.some(c => c.codigo === codigo));
-    S.codigos.push({ codigo, cuponId: k.id, persona: personaNombre, emitido: NOW(), canjeado: null });
-    return codigo;
-  }
-
-  /* =====================================================================
-     8. ASISTENTES Y CHAT
-  ===================================================================== */
-  const asisState = { id: null, tab: 'lista', filtro: 'todos', q: '', shown: 30 };
-  function parchesParaSelect() {
-    const local = S.parches.filter(p => enLocal(p) && !p.cancelado);
-    const hoy = local.filter(p => day0(p.inicio) === day0(NOW())).sort((a, b) => a.inicio - b.inicio);
-    const prox = local.filter(p => day0(p.inicio) > day0(NOW())).sort((a, b) => a.inicio - b.inicio);
-    const pas = local.filter(p => day0(p.inicio) < day0(NOW())).sort((a, b) => b.inicio - a.inicio).slice(0, 6);
-    return { hoy, prox, pas };
-  }
-  function renderAsistentes() {
-    const g = parchesParaSelect();
-    if (!asisState.id || !S.parches.some(p => p.id === asisState.id)) asisState.id = (g.hoy[0] || g.prox[0] || g.pas[0])?.id || null;
-    const opt = (p) => `<option value="${p.id}" ${p.id === asisState.id ? 'selected' : ''}>${esc(p.titulo)} · ${esc(fmtDia(p.inicio))}</option>`;
-    $('#parche-select').innerHTML = (g.hoy.length ? `<optgroup label="Esta noche">${g.hoy.map(opt).join('')}</optgroup>` : '')
-      + (g.prox.length ? `<optgroup label="Próximos">${g.prox.map(opt).join('')}</optgroup>` : '')
-      + (g.pas.length ? `<optgroup label="Pasados">${g.pas.map(opt).join('')}</optgroup>` : '');
-    const p = S.parches.find(x => x.id === asisState.id);
-    if (!p) { $('#h-asistentes').textContent = 'Asistentes'; $('#people').innerHTML = '<li><p class="empty">No hay parches en el local.</p></li>'; return; }
-    $('#h-asistentes').textContent = p.titulo;
-    const c = confirmados(p), inn = checkins(p);
-    $('#asistentes-sub').textContent = `${fmtCuando(p.inicio)} · ${tipoTxt(p)} · aforo de ${int(p.cupos)}`;
-    $('#asis-kpis').innerHTML = `
-      <div class="kpi"><p class="kpi-label">Confirmados</p><p class="kpi-value num">${int(c)}<small>/ ${int(p.cupos)}</small></p><p class="delta">${lleno(p) ? 'Parche lleno' : `${int(p.cupos - c)} cupos libres`}</p></div>
-      <div class="kpi kpi--lead"><p class="kpi-label">Llegaron</p><p class="kpi-value num">${int(inn)}</p><p class="delta">${c ? pct(inn / c) : '—'} de los confirmados</p></div>
-      <div class="kpi"><p class="kpi-label">Por llegar</p><p class="kpi-value num">${int(c - inn)}</p><p class="delta">${p.inicio > NOW() ? `Arranca ${fmtCuando(p.inicio).toLowerCase()}` : fin(p) > NOW() ? `Termina a las ${fmtHora(fin(p))}` : 'El parche ya terminó'}</p></div>`;
-
-    $$('#asis-tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === asisState.tab)));
-    $('#asis-lista').hidden = asisState.tab !== 'lista';
-    $('#asis-chat').hidden = asisState.tab !== 'chat';
-    $$('[data-asis]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.asis === asisState.filtro)));
-
-    if (asisState.tab === 'lista') {
-      const q = norm(asisState.q);
-      const rows = p.asistentes
-        .filter(a => asisState.filtro === 'todos' || (asisState.filtro === 'llegaron' ? a.llego : !a.llego))
-        .filter(a => !q || norm(a.nombre).includes(q))
-        .sort((a, b) => (b.llego || 0) - (a.llego || 0));
-      $('#asis-count').textContent = `${rows.length} ${rows.length === 1 ? 'persona' : 'personas'}`;
-      const puede = p.inicio - HOUR <= NOW() && fin(p) + 2 * HOUR > NOW();
-      $('#people').innerHTML = rows.slice(0, asisState.shown).map(a => `<li class="person">${avatar(a)}
-        <span><b>${esc(a.nombre)}</b><small>Confirmó ${esc(fmtCuando(a.confirmo).toLowerCase())}</small></span>
-        ${a.llego ? `<span class="pill pos">Llegó ${fmtHora(a.llego)}</span>` : '<span class="pill">Por llegar</span>'}
-        ${puede ? (a.llego ? `<button class="btn ghost btn--sm" data-action="deshacer" data-uid="${a.id}">Deshacer</button>` : `<button class="btn btn--sm" data-action="checkin" data-uid="${a.id}">${ic('i-check')} Marcar llegada</button>`) : '<span></span>'}
-      </li>`).join('') || `<li><p class="empty">${q ? `Nadie se llama "${esc(asisState.q)}" en este parche.` : 'No hay personas en esta lista.'}</p></li>`;
-      $('#people-more').hidden = rows.length <= asisState.shown;
-    } else renderChat(p);
-  }
-
-  function renderChat(p) {
-    const box = $('#chat-msgs');
-    box.innerHTML = p.chat.length ? p.chat.map(m => {
-      if (m.tipo === 'sys') return `<p class="msg msg--sys">${esc(m.texto)} · ${fmtHora(m.ts)}</p>`;
-      if (m.autor === 'biz') return `<div class="msg msg--biz"><div class="msg-body"><small>${esc(S.perfil.nombre)} · ${fmtHora(m.ts)}</small><p>${esc(m.texto)}</p></div><span class="avatar biz-logo" aria-hidden="true">${logoHTML()}</span></div>`;
-      return `<div class="msg">${avatar(m.autor)}<div class="msg-body"><small>${esc(m.autor.nombre)} · ${fmtHora(m.ts)}</small><p>${esc(m.texto)}</p></div></div>`;
-    }).join('') : '<p class="msg msg--sys">Todavía no hay mensajes. Saluda al grupo.</p>';
-    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
-  }
-  const RESPUESTAS = ['De una, gracias', 'Listo, ya vamos para allá', 'Perfecto', 'Melo, nos vemos', '¿Hay parqueadero?'];
-
-  function marcarLlegada(uid, on) {
-    const p = S.parches.find(x => x.id === asisState.id);
-    const a = p && p.asistentes.find(x => x.id === uid);
-    if (!a) return;
-    a.llego = on ? NOW() : null;
-    let extra = '';
-    // Recompensa automática: check-in en la primera hora
-    const k = S.cupones.find(x => x.regla === 'temprano' && x.activo);
-    if (on && k && NOW() <= p.inicio + HOUR) extra = ` Se emitió ${emitirCodigo(k, a.nombre)} (${k.nombre}).`;
-    save();
-    toast(on ? 'Check-in registrado' : 'Check-in deshecho', `${a.nombre}${on ? ' ya está en el local.' : ' vuelve a estar por llegar.'}${extra}`);
-    renderShell();
-    renderAsistentes();
-  }
-
-  /* =====================================================================
-     9. PERFIL DEL LOCAL
-  ===================================================================== */
-  let mapPerfil = null, perfilMarker = null, moviendo = false;
-  function coverStyle(c) { return `transform:translateY(${c.y}%) scale(${c.zoom})`; }
+  let mapPerfil = null, perfilMarker = null;
   function renderPerfil() {
-    const P = S.perfil;
-    $('#b-nombre').value = P.nombre;
-    $('#b-categoria').innerHTML = CATEGORIAS.map(c => `<option ${c === P.categoria ? 'selected' : ''}>${esc(c)}</option>`).join('');
-    $('#b-tel').value = P.tel; $('#b-nit').textContent = P.nit; $('#b-desc').value = P.desc;
-
+    const Lc = loc(), P = Lc.perfil, w = ventana(P), today = new Date(NOW()).getDay();
+    mountCard($('#lcard-perfil'));
+    const facts = [
+      ['Nombre', esc(P.nombre)], ['Categoría', esc(P.categoria)], ['Dirección', `${esc(P.direccion)}, ${esc(P.barrio)}`],
+      ['Teléfono', esc(P.tel)], ['NIT', `<span class="code">${esc(P.nit)}</span>`], ['ID Modo Parche', `<span class="code">${esc(P.idMP)}</span>`],
+      ['Aliado desde', esc(`${new Date(P.desde).getDate()} de ${new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(P.desde)} de ${new Date(P.desde).getFullYear()}`)],
+      ['Descripción', esc(P.desc)],
+    ];
+    $('#facts').innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    $('#horario-hoy').textContent = w.abierto ? `Abierto ahora · cierra ${fmtHora(w.hasta)}` : w.abre ? `Cerrado · abre ${fmtHora(w.abre)}` : 'Cerrado hoy';
     $('#hours').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => {
       const h = P.horarios[d];
-      return `<div class="hour-row"><b>${DIAS[d]}</b>
-        <label class="field--inline"><input type="checkbox" class="switch" data-day="${d}" ${h.abierto ? 'checked' : ''}><span>${h.abierto ? 'Abierto' : 'Cerrado'}</span></label>
-        <span class="hour-times ${h.abierto ? '' : 'is-off'}"><input class="input num" type="time" data-open="${d}" value="${h.open}" aria-label="${DIAS[d]} abre"><span>a</span><input class="input num" type="time" data-close="${d}" value="${h.close}" aria-label="${DIAS[d]} cierra"></span>
-      </div>`;
+      return `<li class="${d === today ? 'is-today' : ''}"><b>${DIAS[d]}${d === today ? ' (hoy)' : ''}</b><span>${h.abierto ? `${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Cerrado'}</span></li>`;
     }).join('');
-
-    $('#img-cover').src = P.cover.src; $('#img-cover').style.cssText = coverStyle(P.cover);
-    $('#cz').value = P.cover.zoom; $('#cy').value = P.cover.y;
-    $('#out-cz').textContent = P.cover.zoom.toFixed(2).replace('.', ',') + 'x'; $('#out-cy').textContent = P.cover.y;
-    $('#frame-logo').innerHTML = logoHTML(); $('#lz').value = P.logo.zoom; $('#out-lz').textContent = P.logo.zoom.toFixed(2).replace('.', ',') + 'x';
-    $('#lz').disabled = !P.logo.src; $('#logo-reset').hidden = !P.logo.src;
-    renderPreview();
-
-    $('#ubic-stamp').textContent = `${P.direccion} · ${P.lat.toFixed(4)}, ${P.lng.toFixed(4)}`;
+    $('#ubic-meta').textContent = `${P.direccion} · ${P.lat.toFixed(4)}, ${P.lng.toFixed(4)}`;
     setTimeout(() => {
       if (typeof L === 'undefined') return;
       if (!mapPerfil) {
         mapPerfil = L.map('map-perfil', { scrollWheelZoom: false }).setView([P.lat, P.lng], 15);
         tiles().addTo(mapPerfil);
-        perfilMarker = L.marker([P.lat, P.lng], { icon: bizIcon(), draggable: false }).addTo(mapPerfil);
-        perfilMarker.on('dragend', () => { $('#ubic-save').disabled = false; const ll = perfilMarker.getLatLng(); $('#ubic-stamp').textContent = `Nuevo punto · ${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}`; });
+        perfilMarker = L.marker([P.lat, P.lng], { icon: bizIcon(Lc), keyboard: false }).addTo(mapPerfil);
       }
       mapPerfil.invalidateSize();
-    }, 30);
-
-    const prom = S.resenas.reduce((s, r) => s + r.estrellas, 0) / S.resenas.length;
-    $('#rating-big').innerHTML = `<b>${prom.toFixed(1).replace('.', ',')}</b><span>de 5, con ${S.resenas.length} reseñas</span>`;
-    const dist = [5, 4, 3, 2, 1].map(n => ({ label: `${n} ${n === 1 ? 'estrella' : 'estrellas'}`, value: S.resenas.filter(r => r.estrellas === n).length }));
-    console.assert(dist.reduce((s, d) => s + d.value, 0) === S.resenas.length, 'La distribución de estrellas no suma');
-    if (window.Charts) Charts.barList($('#rating-dist'), dist, { thin: true, colour: 'var(--accent)', format: v => int(v) });
-    const stars = n => `<span class="stars" aria-label="${n} de 5">${[1, 2, 3, 4, 5].map(i => `<svg class="ic ${i <= n ? '' : 'off'}" aria-hidden="true"><use href="#i-star"/></svg>`).join('')}</span>`;
-    $('#reviews').innerHTML = S.resenas.slice(0, 6).map(r => `<li class="review"><div class="review-top">${stars(r.estrellas)}<b>${esc(r.autor)}</b><small>${esc(fmtMesCorto(r.fecha))}</small></div><p>${esc(r.texto)}</p><p class="on">En ${esc(r.parche)}</p></li>`).join('');
-  }
-  function renderPreview() {
-    const P = S.perfil;
-    $('#preview-card').innerHTML = `<div class="preview-cover"><img src="${esc(P.cover.src)}" alt="" style="${coverStyle(P.cover)}"></div>
-      <div class="preview-body"><span class="biz-logo">${logoHTML()}</span><span><b>${esc(P.nombre)}</b><small>${esc(P.categoria)} · ${esc(P.direccion)}</small></span></div>`;
-  }
-  const stamp = id => { $('#' + id).textContent = `Guardado a las ${fmtHora(NOW())}`; };
-
-  function readImage(file, max = 1200) {
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onerror = rej;
-      r.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.84)); }; im.onerror = rej; im.src = r.result; };
-      r.readAsDataURL(file);
-    });
+      perfilMarker.setLatLng([P.lat, P.lng]).setIcon(bizIcon(Lc));
+      mapPerfil.setView([P.lat, P.lng], 15);
+    }, 40);
+    const prom = promedio(Lc);
+    $('#resenas-meta').textContent = Lc.resenas.length ? `${dec1(prom)} de 5 · ${Lc.resenas.length} ${Lc.resenas.length === 1 ? 'reseña' : 'reseñas'}` : 'Sin reseñas aún';
+    $('#reviews').innerHTML = [...Lc.resenas].sort((a, b) => b.fecha - a.fecha).map(r => `<li class="review"><div class="review-top">${stars(r.estrellas)}<b>${esc(r.autor)}</b><small>${esc(fmtDia(r.fecha))}</small></div><p>${esc(r.texto)}</p><p class="on">En ${esc(r.parche)}</p></li>`).join('')
+      || '<li><p class="empty">Las reseñas aparecen cuando los parceros califican tus parches.</p></li>';
+    const sol = S.solicitudes.filter(s => s.local === Lc.id).sort((a, b) => b.ts - a.ts);
+    $('#solicitudes').innerHTML = sol.length ? sol.map(s => `<li class="row"><span class="row-main"><b>${esc(s.campo)}</b><small>${esc(s.detalle)}</small></span><span class="row-end"><span class="pill warn">En revisión</span><small>${esc(fmtRel(s.ts))}</small></span></li>`).join('')
+      : '<li><p class="empty">No has pedido cambios. Si algo de tu perfil está mal, usa Solicitar un cambio.</p></li>';
   }
 
   /* =====================================================================
-     10. DIÁLOGOS, AVISOS E INICIO
+     12. DIÁLOGOS Y AVISOS
   ===================================================================== */
-  function toast(title, text = '', error = false) {
+  function toast(title, text = '', opts = {}) {
     const el = document.createElement('div');
-    el.className = 'toast' + (error ? ' is-error' : '');
-    el.setAttribute('role', error ? 'alert' : 'status');
-    el.innerHTML = `${ic(error ? 'i-alert' : 'i-check')}<div><b>${esc(title)}</b>${text ? `<p>${esc(text)}</p>` : ''}</div>`;
-    $('#toasts').appendChild(el);
-    while ($('#toasts').children.length > 3) $('#toasts').firstElementChild.remove();
-    setTimeout(() => el.remove(), 4200);
+    el.className = 'toast' + (opts.error ? ' is-error' : '');
+    el.setAttribute('role', opts.error ? 'alert' : 'status');
+    el.innerHTML = `${ic(opts.error ? 'i-alert' : 'i-check')}<div><b>${esc(title)}</b>${text ? `<p>${esc(text)}</p>` : ''}</div>`;
+    const box = $('#toasts');
+    box.appendChild(el);
+    while (box.children.length > 3) box.firstElementChild.remove();
+    setTimeout(() => { el.classList.add('is-out'); setTimeout(() => el.remove(), 220); }, 4600);
   }
-
   function setField(input, msg) {
     const f = input.closest('.field');
+    f.classList.remove('is-error'); void f.offsetWidth;
     f.classList.toggle('is-error', !!msg);
     f.classList.toggle('is-valid', !msg);
     const out = $('.field-msg', f); if (out) out.textContent = msg;
     if (msg) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
     return !msg;
+  }
+  const resetFields = form => $$('.field', form).forEach(f => { f.classList.remove('is-error', 'is-valid'); const m = $('.field-msg', f); if (m) m.textContent = ''; });
+  function confirmar(title, text, okTxt = 'Sí, continuar') {
+    return new Promise(res => {
+      const dlg = $('#dlg-confirm');
+      $('#dlg-confirm-title').textContent = title;
+      $('#confirm-text').textContent = text;
+      $('#confirm-ok').textContent = okTxt;
+      dlg.returnValue = '';
+      dlg.onclose = () => res(dlg.returnValue === 'ok');
+      dlg.showModal();
+    });
   }
 
   /* ---------- Parche oficial: crear y editar ---------- */
@@ -1468,44 +1260,48 @@
     'p-titulo': v => !v.trim() ? 'Ponle un nombre al parche.' : v.trim().length < 5 ? 'Mínimo 5 caracteres.' : '',
     'p-fecha': v => !v ? 'Elige la fecha.' : v < dayKey(NOW()) ? 'Esa fecha ya pasó.' : '',
     'p-hora': v => { if (!v) return 'Elige la hora.'; const f = $('#p-fecha').value; return f === dayKey(NOW()) && at(new Date(f + 'T12:00:00').getTime(), v) < NOW() ? 'Esa hora ya pasó.' : ''; },
-    'p-cupos': v => { const n = Number(v); if (!Number.isInteger(n) || n < 2) return 'Mínimo 2 personas.'; if (n > 500) return 'Máximo 500.'; const p = editId && S.parches.find(x => x.id === editId); return p && n < confirmados(p) ? `Ya hay ${confirmados(p)} confirmados.` : ''; },
+    'p-cupos': v => { const n = Number(v); if (!Number.isInteger(n) || n < 2) return 'Mínimo 2 cupos.'; if (n > 500) return 'Máximo 500.'; const p = editId && findParche(editId); return p && n < confirmados(p) ? `Ya hay ${confirmados(p)} confirmados.` : ''; },
     'p-consumo': v => v === '' || Number(v) < 0 ? 'Usa 0 si no hay consumo mínimo.' : '',
     'p-promo': v => v.trim().length < 10 ? 'Cuenta qué pasa ese día (mínimo 10 caracteres).' : '',
   };
-  function openParche(id = null) {
+  function openParche(id = null, fecha = null) {
+    closeMenus();
     editId = id;
-    const p = id ? S.parches.find(x => x.id === id) : null;
+    const p = id ? findParche(id) : null, P = loc().perfil;
     $('#dlg-parche-title').textContent = p ? 'Editar parche' : 'Nuevo parche oficial';
     $('#p-submit').textContent = p ? 'Guardar cambios' : 'Publicar parche';
-    $$('#form-parche .field').forEach(f => { f.classList.remove('is-error', 'is-valid'); const m = $('.field-msg', f); if (m) m.textContent = ''; });
-    const d = p ? new Date(p.inicio) : new Date(day0(NOW()) + DAY);
+    resetFields($('#form-parche'));
+    const base = p ? p.inicio : fecha ? new Date(fecha + 'T12:00:00').getTime() : day0(NOW()) + DAY;
+    const h = P.horarios[new Date(base).getDay()];
     $('#p-titulo').value = p ? p.titulo : '';
-    $('#p-fecha').value = dayKey(d); $('#p-fecha').min = dayKey(NOW());
-    $('#p-hora').value = p ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : (S.perfil.horarios[d.getDay()].open || '21:00');
-    $('#p-cupos').value = p ? p.cupos : 80;
-    $('#p-consumo').value = p ? p.consumo : 35000;
+    $('#p-fecha').value = dayKey(base); $('#p-fecha').min = dayKey(NOW());
+    $('#p-hora').value = p ? hhmm(p.inicio) : (h && h.abierto ? h.open : '19:00');
+    if (!p && fecha === dayKey(NOW()) && at(NOW(), $('#p-hora').value) < NOW()) $('#p-hora').value = hhmm(Math.ceil((NOW() + 30 * MIN) / (30 * MIN)) * 30 * MIN);
+    $('#p-cupos').value = p ? p.cupos : 20;
+    $('#p-consumo').value = p ? p.consumo : 30000;
     $('#p-promo').value = p ? p.promo : '';
-    dlgPos.lat = p ? p.lat : S.perfil.lat; dlgPos.lng = p ? p.lng : S.perfil.lng;
+    dlgPos.lat = p ? p.lat ?? P.lat : P.lat; dlgPos.lng = p ? p.lng ?? P.lng : P.lng;
     $('#dlg-parche').showModal();
     setTimeout(() => {
-      if (typeof L === 'undefined') return;
+      if (typeof L === 'undefined') { $('#pmap-coords').textContent = 'El mapa no cargó; el parche queda en tu local.'; return; }
       if (!mapDlg) {
         mapDlg = L.map('map-parche').setView([dlgPos.lat, dlgPos.lng], 15);
         tiles().addTo(mapDlg);
-        dlgMarker = L.marker([dlgPos.lat, dlgPos.lng], { icon: bizIcon(), draggable: true }).addTo(mapDlg);
+        dlgMarker = L.marker([dlgPos.lat, dlgPos.lng], { icon: bizIcon(loc()), draggable: true }).addTo(mapDlg);
         const set = ll => { dlgPos.lat = +ll.lat.toFixed(6); dlgPos.lng = +ll.lng.toFixed(6); dlgMarker.setLatLng(ll); coords(); };
         mapDlg.on('click', e => set(e.latlng));
         dlgMarker.on('dragend', () => set(dlgMarker.getLatLng()));
       }
       mapDlg.invalidateSize();
-      dlgMarker.setLatLng([dlgPos.lat, dlgPos.lng]);
+      dlgMarker.setIcon(bizIcon(loc())).setLatLng([dlgPos.lat, dlgPos.lng]);
       mapDlg.setView([dlgPos.lat, dlgPos.lng], 15);
       coords();
     }, 60);
   }
   function coords() {
+    const P = loc().perfil;
     const dist = (a, b) => { const R = 6371, r = x => x * Math.PI / 180; const dl = r(b[0] - a[0]), dg = r(b[1] - a[1]); const s = Math.sin(dl / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dg / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); };
-    const km = dist([dlgPos.lat, dlgPos.lng], [S.perfil.lat, S.perfil.lng]);
+    const km = dist([dlgPos.lat, dlgPos.lng], [P.lat, P.lng]);
     $('#pmap-coords').textContent = `${dlgPos.lat.toFixed(5)}, ${dlgPos.lng.toFixed(5)} · ${km < 0.05 ? 'en tu local' : `a ${km.toFixed(1).replace('.', ',')} km de tu local`}. Toca el mapa o arrastra el pin para moverlo.`;
   }
   function submitParche(e) {
@@ -1515,14 +1311,15 @@
     const inicio = at(new Date($('#p-fecha').value + 'T12:00:00').getTime(), $('#p-hora').value);
     const datos = { titulo: $('#p-titulo').value.trim(), inicio, cupos: Number($('#p-cupos').value), consumo: Number($('#p-consumo').value), promo: $('#p-promo').value.trim(), lat: dlgPos.lat, lng: dlgPos.lng };
     if (editId) {
-      const p = S.parches.find(x => x.id === editId);
+      const p = findParche(editId);
       Object.assign(p, datos);
       p.chat.push({ tipo: 'sys', texto: 'El local actualizó los datos del parche', ts: NOW() });
       toast('Parche actualizado', 'Los confirmados ya ven los cambios.');
     } else {
-      S.parches.push(mkParche({ id: 'n' + NOW().toString(36), tipo: 'oficial', organizador: 'Los Capachos', dur: 240, creado: true, asistentes: [], chat: [{ tipo: 'sys', texto: 'Publicaste el parche', ts: NOW() }], lugar: 'capachos', ...datos }));
+      loc().parches.push({ id: 'n' + NOW().toString(36), tipo: 'oficial', organizador: loc().perfil.nombre, dur: 240, creado: true, creadoTs: NOW(), asistentes: [], cancelado: false, chat: [{ tipo: 'sys', texto: 'Publicaste el parche', ts: NOW() }], ...datos });
       toast('Parche publicado', `${datos.titulo} ya está en el mapa de Modo Parche.`);
       listState.tab = 'proximos';
+      burstFrom($('#p-submit'), 30);
     }
     save();
     $('#dlg-parche').close();
@@ -1530,253 +1327,270 @@
   }
 
   /* ---------- Relámpago ---------- */
-  let relDur = 60, relTimer = null;
+  let relDur = 60;
   function openRelampago() {
-    const wd = new Date(NOW()).getDay(), h = S.perfil.horarios[wd];
-    const abre = at(NOW(), h.open);
-    let cierra = at(NOW(), h.close); if (cierra <= abre) cierra += DAY;
-    const dentro = h.abierto && NOW() >= abre && NOW() < cierra;
-    $('#rel-note').textContent = relampagoActivo()
+    closeMenus();
+    const P = loc().perfil, w = ventana(P);
+    $('#rel-note').textContent = relampagoVivo()
       ? 'Ya tienes un relámpago en vivo. Si lanzas otro, el actual termina ahora.'
-      : dentro ? `Sale de inmediato en el mapa de Modo Parche con un anillo naranja. Hoy abres hasta las ${h.close}.`
-        : `Ojo: hoy abres de ${h.open} a ${h.close}. Si lo lanzas ahora, la gente llegará con el local cerrado.`;
-    $('#r-promo').value = ''; $('#r-cupos').value = 40;
-    $$('#form-relampago .field').forEach(f => { f.classList.remove('is-error', 'is-valid'); const m = $('.field-msg', f); if (m) m.textContent = ''; });
+      : w.abierto ? `Sale de una en el mapa de Modo Parche con un anillo naranja. Hoy estás abierto hasta las ${fmtHora(w.hasta)}`
+        : `Ojo: ahora estás cerrado${w.abre ? ` y abres a las ${fmtHora(w.abre)}` : ''}. Si lo lanzas, la gente llegará con el local cerrado.`;
+    $('#r-promo').value = ''; $('#r-cupos').value = 20;
+    const act = loc().cupones.filter(k => k.estado === 'activo' && !agotado(k));
+    const def = act.find(k => k.regla === 'relampago');
+    $('#r-cupon').innerHTML = '<option value="">Sin cupón</option>' + act.map(k => `<option value="${k.id}" ${def && def.id === k.id ? 'selected' : ''}>${esc(k.nombre)}: ${esc(k.beneficio)}</option>`).join('');
+    resetFields($('#form-relampago'));
     updRelSummary();
     $('#dlg-relampago').showModal();
   }
   function updRelSummary() {
     $$('#r-dur button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.min) === relDur)));
-    $('#rel-summary').textContent = `Arranca ya y termina a las ${fmtHora(NOW() + relDur * MIN)}; mientras dure, quien llegue recibe la recompensa Relámpago 2x1`;
+    const k = $('#r-cupon').value && cupon($('#r-cupon').value);
+    $('#rel-summary').textContent = `Arranca ya y termina a las ${fmtHora(NOW() + relDur * MIN)} ${k ? `Quien llegue gana ${k.nombre}.` : 'Sin cupón: solo la promoción.'}`;
   }
   function submitRelampago(e) {
     e.preventDefault();
     const ok1 = setField($('#r-promo'), $('#r-promo').value.trim().length < 4 ? 'Escribe la promoción (mínimo 4 caracteres).' : '');
     const n = Number($('#r-cupos').value);
-    const ok2 = setField($('#r-cupos'), !Number.isInteger(n) || n < 5 ? 'Mínimo 5 cupos.' : n > 300 ? 'Máximo 300.' : '');
+    const ok2 = setField($('#r-cupos'), !Number.isInteger(n) || n < 2 ? 'Mínimo 2 cupos.' : n > 300 ? 'Máximo 300.' : '');
     if (!ok1 || !ok2) return;
-    const prev = relampagoActivo();
+    const prev = relampagoVivo();
     if (prev) prev.dur = Math.max(1, Math.round((NOW() - prev.inicio) / MIN));
-    const promo = $('#r-promo').value.trim();
-    const p = mkParche({ id: 'r' + NOW().toString(36), tipo: 'relampago', titulo: `Hora feliz: ${promo}`, promo, organizador: 'Los Capachos', inicio: NOW(), dur: relDur, cupos: n, consumo: 15000, creado: true, asistentes: [], chat: [{ tipo: 'sys', texto: 'Lanzaste un parche relámpago', ts: NOW() }] });
-    S.parches.push(p);
+    const P = loc().perfil, promo = $('#r-promo').value.trim();
+    const p = { id: 'r' + NOW().toString(36), tipo: 'relampago', titulo: `Relámpago: ${promo}`, promo, organizador: P.nombre, inicio: NOW(), dur: relDur, cupos: n, consumo: 0, cuponId: $('#r-cupon').value || null, creado: true, creadoTs: NOW(), asistentes: [], cancelado: false, lat: P.lat, lng: P.lng, chat: [{ tipo: 'sys', texto: 'Lanzaste un parche relámpago', ts: NOW() }] };
+    loc().parches.push(p);
     save();
     $('#dlg-relampago').close();
-    toast('Relámpago en vivo', `${p.promo} ya se ve en el mapa con un anillo naranja, hasta las ${fmtHora(fin(p))}`);
-    simularLlegadas(p.id);
+    toast('Relámpago en vivo', `${promo} ya se ve en el mapa con un anillo naranja hasta las ${fmtHora(fin(p))}`);
+    burst(window.innerWidth / 2, window.innerHeight / 3, 46, ['#ff751f', '#ffd3b6', '#15110e']);
+    tone('ok');
     render();
   }
-  // Mientras dure el relámpago, la gente se va sumando (en la versión conectada llega en tiempo real)
-  function simularLlegadas(id) {
-    clearInterval(relTimer);
-    relTimer = setInterval(() => {
-      const p = S.parches.find(x => x.id === id);
-      if (!p || !enVivo(p) || lleno(p)) { clearInterval(relTimer); render(); return; }
-      const nuevos = nuevaGente(1 + Math.floor(Math.random() * 3), id + NOW()).map(x => ({ ...x, confirmo: NOW(), llego: null }));
-      p.asistentes.push(...nuevos.slice(0, p.cupos - confirmados(p)));
-      save();
-      if (route === 'resumen') { renderNoche(); renderShell(); }
-      if (route === 'mapa') renderMapa();
-    }, 7000);
-  }
 
-  /* ---------- Recompensa nueva ---------- */
-  function openCupon() {
-    $('#k-regla').innerHTML = Object.entries(REGLAS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
-    ['k-nombre', 'k-beneficio', 'k-prefijo'].forEach(id => { $('#' + id).value = ''; const f = $('#' + id).closest('.field'); f.classList.remove('is-error', 'is-valid'); $('.field-msg', f).textContent = ''; });
+  /* ---------- Cupón: crear, editar y duplicar ---------- */
+  let cuponEdit = null;
+  function openCupon(id = null, duplicar = false) {
+    closeMenus();
+    const k = id ? cupon(id) : null;
+    cuponEdit = k && !duplicar ? k.id : null;
+    $('#dlg-cupon-title').textContent = cuponEdit ? 'Editar cupón' : duplicar ? 'Duplicar cupón' : 'Crear cupón';
+    $('#k-submit').textContent = cuponEdit ? 'Guardar cambios' : 'Crear cupón';
+    $('#k-regla').innerHTML = Object.entries(REGLAS).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('');
+    resetFields($('#form-cupon'));
+    $('#k-nombre').value = k ? (duplicar ? `${k.nombre} 2`.slice(0, 28) : k.nombre) : '';
+    $('#k-beneficio').value = k ? k.beneficio : '';
+    $('#k-regla').value = k ? k.regla : 'checkin';
+    $('#k-vigencia').value = String(k ? k.vigencia : 7);
+    $('#k-limite').value = k ? k.limite : 50;
+    $('#k-prefijo').value = cuponEdit ? k.prefijo : '';
+    const bloqueado = !!(cuponEdit && entregados(k));
+    $('#k-prefijo').disabled = bloqueado;
+    $('#k-prefijo').title = bloqueado ? 'Ya hay códigos entregados con este prefijo' : '';
+    updPreview();
     $('#dlg-cupon').showModal();
   }
+  function cuponDelForm() {
+    return { id: cuponEdit, nombre: $('#k-nombre').value.trim(), beneficio: $('#k-beneficio').value.trim(), regla: $('#k-regla').value, vigencia: Number($('#k-vigencia').value), limite: Number($('#k-limite').value) || 0, prefijo: $('#k-prefijo').value.trim().toUpperCase(), estado: 'activo' };
+  }
+  function updPreview() { $('#ticket-preview').innerHTML = tkHTML(cuponDelForm(), true); }
   function submitCupon(e) {
     e.preventDefault();
-    const nombre = $('#k-nombre').value.trim(), ben = $('#k-beneficio').value.trim(), pre = $('#k-prefijo').value.trim().toUpperCase();
+    const d = cuponDelForm(), L = loc(), prev = cuponEdit && cupon(cuponEdit);
+    const otros = L.cupones.filter(k => k.id !== cuponEdit);
     const ok = [
-      setField($('#k-nombre'), nombre.length < 3 ? 'Mínimo 3 caracteres.' : S.cupones.some(k => norm(k.nombre) === norm(nombre)) ? 'Ya tienes una recompensa con ese nombre.' : ''),
-      setField($('#k-beneficio'), ben.length < 5 ? 'Di qué recibe el cliente.' : ''),
-      setField($('#k-prefijo'), !/^[A-Z]{3,8}$/.test(pre) ? 'Entre 3 y 8 letras, sin espacios.' : S.cupones.some(k => k.prefijo === pre) ? 'Ese prefijo ya existe.' : ''),
+      setField($('#k-nombre'), d.nombre.length < 3 ? 'Mínimo 3 caracteres.' : otros.some(k => norm(k.nombre) === norm(d.nombre)) ? 'Ya tienes un cupón con ese nombre.' : ''),
+      setField($('#k-beneficio'), d.beneficio.length < 5 ? 'Di qué recibe el parcero.' : ''),
+      setField($('#k-limite'), !Number.isInteger(d.limite) || d.limite < 1 ? 'Mínimo 1.' : d.limite > 999 ? 'Máximo 999.' : prev && d.limite < entregados(prev) ? `Ya entregaste ${entregados(prev)}.` : ''),
+      $('#k-prefijo').disabled ? true : setField($('#k-prefijo'), !/^[A-Z]{3,8}$/.test(d.prefijo) ? 'Entre 3 y 8 letras, sin tildes ni espacios.' : otros.some(k => k.prefijo === d.prefijo) ? 'Ese prefijo ya existe.' : ''),
     ].every(Boolean);
     if (!ok) return;
-    S.cupones.push({ id: 'k' + NOW().toString(36), nombre, regla: $('#k-regla').value, beneficio: ben, prefijo: pre, activo: true });
+    let nuevo = null;
+    if (prev) {
+      Object.assign(prev, { nombre: d.nombre, beneficio: d.beneficio, regla: d.regla, vigencia: d.vigencia, limite: d.limite, prefijo: $('#k-prefijo').disabled ? prev.prefijo : d.prefijo });
+      toast('Cupón actualizado', 'Los códigos que ya entregaste conservan su beneficio.');
+    } else {
+      nuevo = 'k' + NOW().toString(36);
+      L.cupones.push({ ...d, id: nuevo, creado: true });
+      toast('Cupón creado', `${d.nombre}: ${REGLAS[d.regla].toLowerCase()}.`);
+    }
     save();
     $('#dlg-cupon').close();
-    toast('Recompensa creada', `${nombre}: ${REGLAS[$('#k-regla').value]}.`);
-    renderCupones();
+    renderShell();
+    if (route !== 'cupones') location.hash = '#cupones';
+    else renderCupones({ nuevo });
   }
 
-  /* ---------- Cancelar ---------- */
-  function askCancel(id) {
-    const p = S.parches.find(x => x.id === id);
-    $('#confirm-text').textContent = `"${p.titulo}" (${fmtCuando(p.inicio)}) sale del mapa y avisamos a ${confirmados(p)} ${confirmados(p) === 1 ? 'confirmado' : 'confirmados'} por el chat del grupo.`;
-    const dlg = $('#dlg-confirm');
-    dlg.returnValue = '';
-    dlg.onclose = () => {
-      if (dlg.returnValue !== 'ok') return;
-      p.cancelado = true;
-      p.chat.push({ tipo: 'sys', texto: 'El local canceló el parche', ts: NOW() });
-      save();
-      toast('Parche cancelado', `Avisamos a los ${confirmados(p)} confirmados.`);
-      render();
-    };
-    dlg.showModal();
+  /* ---------- Cancelar parche y solicitud de cambio ---------- */
+  async function askCancel(id) {
+    closeMenus();
+    const p = findParche(id);
+    const ok = await confirmar('Cancelar parche', `"${p.titulo}" (${fmtCuando(p.inicio)}) sale del mapa y avisamos a ${confirmados(p)} ${confirmados(p) === 1 ? 'confirmado' : 'confirmados'} por el chat del grupo.`, 'Sí, cancelar');
+    if (!ok) return;
+    p.cancelado = true;
+    p.chat.push({ tipo: 'sys', texto: 'El local canceló el parche', ts: NOW() });
+    save();
+    toast('Parche cancelado', `Avisamos a ${confirmados(p)} ${confirmados(p) === 1 ? 'persona' : 'personas'}.`);
+    render();
+  }
+  function submitSolicitud(e) {
+    e.preventDefault();
+    const det = $('#s-detalle').value.trim();
+    if (!setField($('#s-detalle'), det.length < 10 ? 'Cuéntanos el cambio (mínimo 10 caracteres).' : '')) return;
+    S.solicitudes.push({ id: 's' + NOW().toString(36), local: S.actual, campo: $('#s-campo').value, detalle: det, ts: NOW(), estado: 'revision' });
+    save();
+    $('#dlg-solicitud').close();
+    toast('Solicitud enviada', 'El equipo de Modo Parche la revisa y te avisa cuando quede.');
+    renderPerfil();
   }
 
-  /* ---------- Eventos ---------- */
+  /* =====================================================================
+     13. EVENTOS E INICIO
+  ===================================================================== */
+  const typing = el => el && (el.closest('input, textarea, select, [contenteditable]') || el.closest('dialog[open]'));
   function bind() {
     window.addEventListener('hashchange', go);
     $('#menu-toggle').addEventListener('click', () => toggleMenu(true));
     $('#menu-close').addEventListener('click', () => toggleMenu(false));
+    $('#local-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      const list = $('#local-list'), open = list.hidden;
+      list.hidden = !open; $('#local-btn').setAttribute('aria-expanded', String(open));
+      if (open) { const sel = $('[aria-selected="true"]', list); if (sel) sel.focus(); }
+    });
+    $('#sound-btn').addEventListener('click', () => { S.sonido = !S.sonido; save(); renderShell(); if (S.sonido) tone('in'); toast(S.sonido ? 'Sonido activado' : 'Sonido apagado', S.sonido ? 'Suena al validar cupones y marcar llegadas.' : 'El panel valida en silencio.'); });
 
     document.addEventListener('click', e => {
       const a = e.target.closest('[data-action]');
-      if (!e.target.closest('#row-menu') && !e.target.closest('[data-action="row-menu"]')) closeRowMenu();
+      if (!e.target.closest('#row-menu') && !e.target.closest('[data-action="row-menu"], [data-action="cupon-menu"]')) $('#row-menu').hidden = true;
+      if (!e.target.closest('.local-switch')) { $('#local-list').hidden = true; $('#local-btn').setAttribute('aria-expanded', 'false'); }
       if (!a) return;
       const id = a.dataset.id;
       switch (a.dataset.action) {
+        case 'cambiar-local': cambiarLocal(a.dataset.local); break;
         case 'relampago': openRelampago(); break;
-        case 'nuevo-parche': openParche(); break;
+        case 'nuevo-parche': openParche(null, a.dataset.fecha || null); break;
+        case 'editar': openParche(id); break;
+        case 'cancelar': askCancel(id); break;
+        case 'afiche': openAfiche(id); break;
+        case 'cerrar-afiche': $('#dlg-afiche').close(); break;
+        case 'descargar-afiche': descargarAfiche(); break;
+        case 'row-menu': e.stopPropagation(); if ($('#row-menu').hidden) parcheMenu(a, id); else $('#row-menu').hidden = true; break;
+        case 'cupon-menu': e.stopPropagation(); if ($('#row-menu').hidden) cuponMenu(a, id); else $('#row-menu').hidden = true; break;
+        case 'ver-asistentes': closeMenus(); asisState.id = id; asisState.tab = 'lista'; if (route === 'asistentes') render(); else location.hash = '#asistentes'; break;
+        case 'limpiar-busqueda': listState.q = ''; $('#search').value = ''; renderParches(); break;
+        case 'fly': flyTo(a.dataset.local); break;
+        case 'checkin': { const p = findParche(a.dataset.pid), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { const r = checkIn(p, u); burstFrom(a, 20); renderShell(); renderAsistentes(u.id); avisarCupones(u.nombre, r); } break; }
+        case 'checkout': { const p = findParche(a.dataset.pid), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { checkOut(p, u); renderShell(); renderAsistentes(); toast('Llegada deshecha', `${u.nombre} vuelve a estar por llegar.`); } break; }
+        case 'usar-codigo': $('#code-input').value = a.dataset.code; $('#code-input').focus(); $('#validar').scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'center' }); break;
+        case 'ir-validar': irValidar(); break;
+        case 'escanear': openScan(); break;
+        case 'cerrar-scan': closeScan(); break;
+        case 'deshacer-canje': deshacerCanje(a.dataset.code); break;
         case 'nuevo-cupon': openCupon(); break;
-        case 'editar': closeRowMenu(); openParche(id); break;
-        case 'cancelar': closeRowMenu(); askCancel(id); break;
-        case 'row-menu': e.stopPropagation(); if ($('#row-menu').hidden) openRowMenu(a, id); else closeRowMenu(); break;
-        case 'ver-asistentes': closeRowMenu(); asisState.id = id; asisState.tab = 'lista'; asisState.shown = 30; if (route === 'asistentes') render(); else location.hash = '#asistentes'; break;
-        case 'fly': flyTo(id); break;
-        case 'checkin': marcarLlegada(a.dataset.uid, true); break;
-        case 'deshacer': marcarLlegada(a.dataset.uid, false); break;
-        case 'usar-codigo': $('#code-input').value = a.dataset.code; $('#code-input').focus(); break;
-        case 'validar-rapido': if (route !== 'cupones') location.hash = '#cupones'; setTimeout(() => $('#code-input').focus(), 80); break;
-        case 'terminar-rel': { const p = S.parches.find(x => x.id === id); if (p) { p.dur = Math.max(1, Math.round((NOW() - p.inicio) / MIN)); clearInterval(relTimer); save(); toast('Relámpago terminado', `${p.titulo} salió del mapa.`); render(); } break; }
+        case 'editar-cupon': openCupon(id); break;
+        case 'duplicar-cupon': openCupon(id, true); break;
+        case 'eliminar-cupon': closeMenus(); eliminarCupon(id); break;
+        case 'terminar-rel': { const p = findParche(id); if (p) { p.dur = Math.max(1, Math.round((NOW() - p.inicio) / MIN)); save(); toast('Relámpago terminado', `${p.promo} salió del mapa.`); render(); } break; }
+        case 'modo-puerta': openDoor(id || null); break;
+        case 'cerrar-puerta': closeDoor(); break;
+        case 'door-in': doorIn(a.dataset.uid); break;
+        case 'door-out': { const p = findParche(doorState.id), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { checkOut(p, u); renderDoor(); toast('Llegada deshecha', u.nombre); } break; }
+        case 'door-walkin': doorWalkin(); break;
+        case 'flip-card': { a.classList.toggle('is-flipped'); a.setAttribute('aria-pressed', String(a.classList.contains('is-flipped'))); break; }
+        case 'solicitar': resetFields($('#form-solicitud')); $('#s-detalle').value = ''; $('#dlg-solicitud').showModal(); break;
       }
     });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeRowMenu(); toggleMenu(false); } });
 
-    // Resumen
-    $$('[data-metric]').forEach(b => b.addEventListener('click', () => { chartState.metric = b.dataset.metric; $$('[data-metric]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawFlujo(); }));
-    $$('[data-range]').forEach(b => b.addEventListener('click', () => { chartState.range = Number(b.dataset.range); $$('[data-range]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawFlujo(); }));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (!$('#door-mode').hidden && !document.querySelector('dialog[open]')) { closeDoor(); return; }
+        closeMenus(); toggleMenu(false); return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target) || !$('#door-mode').hidden) return;
+      const k = e.key.toLowerCase();
+      if (e.key === '/') { e.preventDefault(); if (window.innerWidth <= 860) toggleMenu(false); $('#search').focus(); }
+      else if (k === 'v') { e.preventDefault(); irValidar(); }
+      else if (k === 'n') { e.preventDefault(); openParche(); }
+      else if (k === 'r') { e.preventDefault(); openRelampago(); }
+      else if (k === 'p') { e.preventDefault(); openDoor(); }
+    });
 
-    // Búsqueda global: un código va al validador; lo demás, a la lista de parches
+    // Búsqueda: un código va al validador; lo demás filtra los parches
     $('#search').addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
       const q = e.target.value.trim();
       if (!q) return;
-      if (/^[a-z]{3,8}-\d{4}$/i.test(q)) { location.hash = '#cupones'; setTimeout(() => { $('#code-input').value = q.toUpperCase(); validar(q); }, 60); return; }
-      listState.q = q; listState.tab = 'proximos'; $('#parches-search').value = q;
-      const hit = S.parches.filter(enLocal).find(p => norm(p.titulo + p.organizador).includes(norm(q)) && !activo(p));
-      if (hit && !S.parches.filter(enLocal).some(p => activo(p) && norm(p.titulo + p.organizador).includes(norm(q)))) listState.tab = 'pasados';
+      if (/^[a-z]{3,8}-\d{4}$/i.test(q)) { e.target.value = ''; irValidar(); setTimeout(() => { $('#code-input').value = q.toUpperCase(); validar(q); }, 80); return; }
+      listState.q = q;
+      const L = loc(), hit = p => norm(`${p.titulo} ${p.organizador}`).includes(norm(q));
+      listState.tab = L.parches.some(p => activo(p) && hit(p)) ? 'proximos' : L.parches.some(hit) ? 'pasados' : 'proximos';
       if (route !== 'parches') location.hash = '#parches'; else renderParches();
     });
 
-    // Parches
     $$('#parches-tabs [data-tab]').forEach(b => b.addEventListener('click', () => { listState.tab = b.dataset.tab; renderParches(); }));
-    $('#parches-search').addEventListener('input', e => { listState.q = e.target.value; renderParches(); });
-
-    // Mapa
-    $$('#time-filter [data-time]').forEach(b => b.addEventListener('click', () => { timeState.mode = b.dataset.time; timeState.date = null; renderMapa(); }));
-    $('#time-select').addEventListener('change', e => {
-      const v = e.target.value;
-      if (v === '__fecha') { $('#time-date').hidden = false; $('#time-date').focus(); return; }
-      if (v) { timeState.mode = 'fecha'; timeState.date = v; renderMapa(); }
-    });
-    $('#time-date').addEventListener('change', e => { if (e.target.value) { timeState.mode = 'fecha'; timeState.date = e.target.value; renderMapa(); } });
+    $$('#time-filter [data-time]').forEach(b => b.addEventListener('click', () => { timeState.mode = b.dataset.time; renderMapa(); }));
     $('#btn-locate').addEventListener('click', () => startGeo(true));
 
     // Cupones
     $('#validator').addEventListener('submit', e => { e.preventDefault(); validar($('#code-input').value); });
-    $('#canjes-more').addEventListener('click', () => { canjesShown += 12; renderCupones(); });
-    document.addEventListener('change', e => {
-      const sw = e.target.closest('[data-cupon]');
-      if (sw) { const k = cupon(sw.dataset.cupon); k.activo = sw.checked; save(); toast(k.activo ? 'Recompensa activa' : 'Recompensa pausada', k.nombre); }
-      const day = e.target.closest('[data-day]');
-      if (day) { const t = day.closest('.hour-row'); $('.hour-times', t).classList.toggle('is-off', !day.checked); day.nextElementSibling.textContent = day.checked ? 'Abierto' : 'Cerrado'; }
-    });
+    document.addEventListener('change', e => { const sw = e.target.closest('[data-cupon]'); if (sw) toggleCupon(sw.dataset.cupon, sw.checked); });
+    ['k-nombre', 'k-beneficio', 'k-regla', 'k-vigencia', 'k-limite', 'k-prefijo'].forEach(id => $('#' + id).addEventListener('input', updPreview));
 
     // Asistentes
-    $('#parche-select').addEventListener('change', e => { asisState.id = e.target.value; asisState.shown = 30; renderAsistentes(); });
+    $('#parche-select').addEventListener('change', e => { asisState.id = e.target.value; renderAsistentes(); });
     $$('#asis-tabs [data-tab]').forEach(b => b.addEventListener('click', () => { asisState.tab = b.dataset.tab; renderAsistentes(); }));
-    $$('[data-asis]').forEach(b => b.addEventListener('click', () => { asisState.filtro = b.dataset.asis; asisState.shown = 30; renderAsistentes(); }));
-    $('#asis-search').addEventListener('input', e => { asisState.q = e.target.value; renderAsistentes(); });
-    $('#people-more').addEventListener('click', () => { asisState.shown += 30; renderAsistentes(); });
     $('#chat-form').addEventListener('submit', e => {
       e.preventDefault();
-      const inp = $('#chat-input'), txt = inp.value.trim();
-      const p = S.parches.find(x => x.id === asisState.id);
+      const inp = $('#chat-input'), txt = inp.value.trim(), p = findParche(asisState.id);
       if (!txt || !p) return;
       p.chat.push({ autor: 'biz', texto: txt.slice(0, 400), ts: NOW() });
-      inp.value = ''; save(); renderChat(p);
-      if (p.asistentes.length) setTimeout(() => {
-        const who = p.asistentes[Math.floor(Math.random() * p.asistentes.length)];
-        p.chat.push({ autor: who, texto: RESPUESTAS[Math.floor(Math.random() * RESPUESTAS.length)], ts: NOW() });
-        save(); if (route === 'asistentes' && asisState.id === p.id && asisState.tab === 'chat') renderChat(p);
-      }, 2200);
+      inp.value = ''; save(); renderChat(p, true);
     });
 
-    // Perfil: datos
-    $('#form-datos').addEventListener('submit', e => {
+    // Modo puerta
+    $('#door-select').addEventListener('change', e => { doorState.id = e.target.value; doorState.q = ''; $('#door-search').value = ''; renderDoor(); });
+    $('#door-search').addEventListener('input', e => { doorState.q = e.target.value; renderDoor(); });
+    $('#door-search').addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
       e.preventDefault();
-      const ok = [
-        setField($('#b-nombre'), $('#b-nombre').value.trim().length < 3 ? 'Mínimo 3 caracteres.' : ''),
-        setField($('#b-tel'), !/^\d{7,10}$/.test($('#b-tel').value.replace(/\s/g, '')) ? 'Entre 7 y 10 dígitos.' : ''),
-        setField($('#b-desc'), $('#b-desc').value.trim().length < 20 ? 'Cuenta un poco más (mínimo 20 caracteres).' : ''),
-      ].every(Boolean);
-      if (!ok) return;
-      Object.assign(S.perfil, { nombre: $('#b-nombre').value.trim(), categoria: $('#b-categoria').value, tel: $('#b-tel').value.trim(), desc: $('#b-desc').value.trim() });
-      save(); stamp('datos-stamp'); renderShell(); renderPreview();
-      toast('Datos guardados', 'Ya salen en tus parches oficiales.');
-    });
-    $('#form-horarios').addEventListener('submit', e => {
-      e.preventDefault();
-      for (let d = 0; d < 7; d++) {
-        S.perfil.horarios[d] = { abierto: $(`[data-day="${d}"]`).checked, open: $(`[data-open="${d}"]`).value || '19:00', close: $(`[data-close="${d}"]`).value || '00:00' };
-      }
-      save(); stamp('horarios-stamp'); toast('Horarios guardados', 'Los relámpagos usan este horario.');
-    });
-
-    // Perfil: fotos con encuadre
-    const upd = () => { $('#img-cover').style.cssText = coverStyle(S.perfil.cover); $('#out-cz').textContent = S.perfil.cover.zoom.toFixed(2).replace('.', ',') + 'x'; $('#out-cy').textContent = S.perfil.cover.y; $('#frame-logo').innerHTML = logoHTML(); $('#out-lz').textContent = S.perfil.logo.zoom.toFixed(2).replace('.', ',') + 'x'; renderPreview(); };
-    $('#cz').addEventListener('input', e => { S.perfil.cover.zoom = Number(e.target.value); upd(); });
-    $('#cy').addEventListener('input', e => { S.perfil.cover.y = Number(e.target.value); upd(); });
-    $('#lz').addEventListener('input', e => { S.perfil.logo.zoom = Number(e.target.value); upd(); });
-    $('#file-cover').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; try { S.perfil.cover = { src: await readImage(f), zoom: 1, y: 0 }; renderPerfil(); } catch (err) { toast('No pudimos leer la imagen', 'Prueba con un JPG o PNG.', true); } e.target.value = ''; });
-    $('#file-logo').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; try { S.perfil.logo = { src: await readImage(f, 400), zoom: 1 }; renderPerfil(); renderShell(); } catch (err) { toast('No pudimos leer la imagen', 'Prueba con un JPG o PNG.', true); } e.target.value = ''; });
-    $('#logo-reset').addEventListener('click', () => { S.perfil.logo = { src: '', zoom: 1 }; renderPerfil(); renderShell(); });
-    $('#save-fotos').addEventListener('click', () => { save(); stamp('fotos-stamp'); renderShell(); toast('Fotos guardadas', 'Así te ven en el mapa.'); });
-
-    // Perfil: ubicación fija
-    $('#ubic-edit').addEventListener('click', () => {
-      moviendo = !moviendo;
-      if (!perfilMarker) return;
-      if (moviendo) perfilMarker.dragging.enable(); else { perfilMarker.dragging.disable(); perfilMarker.setLatLng([S.perfil.lat, S.perfil.lng]); $('#ubic-save').disabled = true; renderPerfil(); }
-      $('#ubic-edit').textContent = moviendo ? 'Descartar' : 'Mover el pin';
-      if (moviendo) toast('Arrastra el pin', 'Ponlo en la entrada del local y guarda.');
-    });
-    $('#ubic-save').addEventListener('click', () => {
-      const ll = perfilMarker.getLatLng();
-      S.perfil.lat = +ll.lat.toFixed(6); S.perfil.lng = +ll.lng.toFixed(6);
-      S.parches.filter(p => p.lugar === 'capachos' && p.tipo !== 'otro' && activo(p) && !p.creado).forEach(p => { p.lat = S.perfil.lat; p.lng = S.perfil.lng; });
-      moviendo = false; perfilMarker.dragging.disable();
-      $('#ubic-edit').textContent = 'Mover el pin'; $('#ubic-save').disabled = true;
-      save(); renderPerfil(); toast('Ubicación guardada', 'Tus parches oficiales usan el nuevo punto.');
+      const p = findParche(doorState.id); if (!p) return;
+      const q = norm(doorState.q); if (!q) return;
+      const match = p.asistentes.filter(a => !a.llego && norm(a.nombre).includes(q));
+      if (match.length === 1) doorIn(match[0].id);
+      else if (!match.length && !p.asistentes.some(a => norm(a.nombre) === q)) doorWalkin();
     });
 
     // Diálogos
     $('#form-parche').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitParche(e); });
-    $('#form-parche').addEventListener('focusout', e => { const id = e.target.id; if (RULES_P[id]) setField(e.target, RULES_P[id](e.target.value)); });
+    $('#form-parche').addEventListener('focusout', e => { const id = e.target.id; if (RULES_P[id] && e.target.value) setField(e.target, RULES_P[id](e.target.value)); });
     $('#form-relampago').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitRelampago(e); });
     $$('#r-dur button').forEach(b => b.addEventListener('click', () => { relDur = Number(b.dataset.min); updRelSummary(); }));
+    $('#r-cupon').addEventListener('change', updRelSummary);
     $('#form-cupon').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitCupon(e); });
+    $('#form-solicitud').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitSolicitud(e); });
+    $('#dlg-scan').addEventListener('close', closeScan);
 
-    // El reloj corre: estados "en vivo" y la cuenta regresiva del relámpago
-    setInterval(() => { if (route === 'resumen') { renderNoche(); renderShell(); } }, 30000);
+    bindTilt();
+
+    // El reloj corre: cuenta regresiva del relámpago cada segundo y estados cada 30 s
+    setInterval(tickCountdown, 1000);
+    setInterval(() => {
+      renderShell();
+      if (route === 'resumen' && !document.querySelector('dialog[open]')) { renderPulse(); renderNoche(); renderFeed(); }
+      if (!$('#door-mode').hidden) renderDoor();
+    }, 30000);
     window.addEventListener('resize', () => { map && map.invalidateSize(); });
+  }
+  function irValidar() {
+    if (route !== 'cupones') location.hash = '#cupones';
+    setTimeout(() => { $('#code-input').focus(); $('#validar').scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'center' }); }, 90);
   }
 
   function init() {
     load();
     verificar();
-    buildTimeSelect();
     bind();
     go();
-    startGeo(false); // pide permiso de ubicación al iniciar
-    const rel = relampagoActivo();
-    if (rel) simularLlegadas(rel.id);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
