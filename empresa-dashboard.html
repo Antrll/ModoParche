@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f9f9f9">
+<title>Modo Parche Business · Panel del comercio</title>
+<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="empresa-dashboard.css">
+</head>
+<body>
+
+<!-- Íconos de contorno (sin emojis) -->
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-rock" viewBox="0 0 24 24"><path d="M7.5 12.5V4.2a1.6 1.6 0 0 1 3.2 0V11"/><path d="M15.3 11V4.2a1.6 1.6 0 0 1 3.2 0V14c0 4.1-2.9 7-6.6 7h-.8C7.6 21 5.5 18.6 5.5 15.4v-1.6c0-1 .8-1.6 2-1.3"/><path d="M10.7 11v-.4a1.15 1.15 0 0 1 2.3 0v.4M13 11v-.4a1.15 1.15 0 0 1 2.3 0"/><path d="M7.5 13.6h5.4a1.4 1.4 0 0 1 0 2.8h-2.4"/></symbol>
+    <symbol id="i-overview" viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M21 19H3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3.5 6.2v13.3L9 17.3l6 2.4 5.5-2.2V4.2L15 6.4z"/><path d="M9 4v13.3M15 6.4v13.3"/></symbol>
+    <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5h17v3a1.8 1.8 0 0 0 0 3.6v3h-17v-3a1.8 1.8 0 0 0 0-3.6z"/><path d="M14 8v1.5M14 11.3v1.4M14 14.5V16"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M15.8 5.4a3.2 3.2 0 0 1 0 6.2M17.8 14.3c1.9.7 3.2 2.5 3.2 5.2"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 12.5V20h13v-7.5M10 20v-4.5h4V20"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10.5 21 19 10.5h-6z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+    <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"/></symbol>
+    <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9.5 6.5 5.5 5.5-5.5 5.5"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><path d="M12 6h.01M12 12h.01M12 18h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 20.5s-6.5-5.8-6.5-10.3a6.5 6.5 0 0 1 13 0c0 4.5-6.5 10.3-6.5 10.3z"/><circle cx="12" cy="10.2" r="2.3"/></symbol>
+    <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 11.5 20 4l-7.5 16-2-6.5z"/><path d="m10.5 13.5 9.5-9.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-9l-4.5 3.5v-3.5H4.5z"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4.5 19.5h4l10-10-4-4-10 10z"/><path d="m13 7 4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3.5l1.7-2.5h5.6L16.5 8H20v11H4z"/><circle cx="12" cy="13.2" r="3.2"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 19V8.5M7.5 13 12 8.5l4.5 4.5M5 4.5h14"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 11a7.5 7.5 0 0 0-13.3-4.2L4.5 8.5M4.5 4.5v4h4M4.5 13a7.5 7.5 0 0 0 13.3 4.2l1.7-1.7M19.5 19.5v-4h-4"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h15"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 3 19.5h18z"/><path d="M12 10v4.5M12 17h.01"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14.5 4.5h4v15h-4M10 8.5 6.5 12l3.5 3.5M6.5 12h9"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 5 6.2v5.6c0 4.2 3 7.4 7 8.7 4-1.3 7-4.5 7-8.7V6.2z"/><path d="m9 12 2.2 2.2 4-4.4"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V4.5h3.5M16.5 4.5H20V8M20 16v3.5h-3.5M7.5 19.5H4V16M7 12h10"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- =====================================================================
+       BARRA LATERAL (marca + navegación)
+  ===================================================================== -->
+  <aside class="sidebar" id="sidebar" aria-label="Navegación del panel">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg class="ic"><use href="#i-rock"/></svg></span>
+      <span class="brand-name"><b>Modo Parche</b><small>Business</small></span>
+      <button class="icon-btn menu-close" id="menu-close" aria-label="Cerrar menú"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+
+    <nav class="nav" aria-label="Secciones">
+      <a class="nav-item" href="#resumen" data-route="resumen"><svg class="ic"><use href="#i-overview"/></svg>Resumen</a>
+      <a class="nav-item" href="#parches" data-route="parches"><svg class="ic"><use href="#i-calendar"/></svg>Parches<span class="nav-count" id="count-parches" hidden></span></a>
+      <a class="nav-item" href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-map"/></svg>Mapa comercial</a>
+      <a class="nav-item" href="#cupones" data-route="cupones"><svg class="ic"><use href="#i-ticket"/></svg>Cupones<span class="nav-count" id="count-cupones" hidden></span></a>
+      <a class="nav-item" href="#asistentes" data-route="asistentes"><svg class="ic"><use href="#i-users"/></svg>Asistentes y chat</a>
+      <p class="group-label">Tu negocio</p>
+      <a class="nav-item" href="#perfil" data-route="perfil"><svg class="ic"><use href="#i-store"/></svg>Perfil del local</a>
+    </nav>
+
+    <div class="side-bottom">
+      <a class="nav-item" href="index.html"><svg class="ic"><use href="#i-logout"/></svg>Salir al sitio</a>
+    </div>
+  </aside>
+
+  <!-- =====================================================================
+       BARRA SUPERIOR + LIENZO
+  ===================================================================== -->
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <label class="search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <span class="sr-only">Buscar parches, asistentes o códigos</span>
+        <input type="search" id="search" placeholder="Buscar parches, asistentes o códigos" autocomplete="off">
+      </label>
+      <div class="topbar-right">
+        <button class="btn" data-action="validar-rapido"><svg class="ic"><use href="#i-scan"/></svg><span>Validar cupón</span></button>
+        <div class="switcher" id="switcher" title="Comercio activo">
+          <span class="biz-logo" id="biz-logo-top" aria-hidden="true"></span>
+          <span class="switcher-text"><b id="biz-name-top">Discoteca Los Capachos</b><small>Comercio verificado</small></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="canvas" id="canvas">
+
+      <!-- ============================ RESUMEN ============================ -->
+      <section class="view" id="view-resumen" aria-labelledby="h-resumen">
+        <div class="title-row">
+          <div>
+            <h1 id="h-resumen">Resumen</h1>
+            <p class="sub" id="resumen-sub"></p>
+          </div>
+          <button class="btn primary" data-action="relampago"><svg class="ic"><use href="#i-bolt"/></svg>Lanzar parche relámpago</button>
+        </div>
+
+        <div class="overview">
+          <div class="col-main">
+            <div class="kpis" id="kpis"></div>
+
+            <section class="panel" aria-labelledby="h-flujo">
+              <header>
+                <div>
+                  <h2 id="h-flujo">Flujo de clientes</h2>
+                  <p class="meta" id="flujo-meta"></p>
+                </div>
+                <div class="panel-controls">
+                  <div class="segmented" role="group" aria-label="Métrica">
+                    <button aria-pressed="true" data-metric="checkins">Check-ins</button>
+                    <button aria-pressed="false" data-metric="confirmados">Confirmaciones</button>
+                  </div>
+                  <div class="segmented" role="group" aria-label="Periodo">
+                    <button aria-pressed="false" data-range="7">7 días</button>
+                    <button aria-pressed="true" data-range="30">30 días</button>
+                  </div>
+                </div>
+              </header>
+              <div class="chart" id="chart-flujo"></div>
+            </section>
+
+            <section class="panel" aria-labelledby="h-proximos">
+              <header>
+                <h2 id="h-proximos">Próximos parches en el local</h2>
+                <a class="card-link" href="#parches" id="proximos-link">Ver todos</a>
+              </header>
+              <div class="table-wrap"><table class="table" id="tabla-proximos"></table></div>
+            </section>
+          </div>
+
+          <aside class="col-rail" aria-label="Esta noche y canjes">
+            <h2 class="rail-title">Esta noche en la puerta</h2>
+            <section class="panel" id="noche"></section>
+
+            <h2 class="rail-title">Últimos canjes</h2>
+            <section class="panel" id="canjes-recientes"></section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ PARCHES ============================ -->
+      <section class="view" id="view-parches" aria-labelledby="h-parches" hidden>
+        <div class="title-row">
+          <div>
+            <h1 id="h-parches">Parches</h1>
+            <p class="sub" id="parches-sub"></p>
+          </div>
+          <div class="title-actions">
+            <button class="btn" data-action="relampago"><svg class="ic"><use href="#i-bolt"/></svg>Lanzar relámpago</button>
+            <button class="btn primary" data-action="nuevo-parche"><svg class="ic"><use href="#i-plus"/></svg>Nuevo parche oficial</button>
+          </div>
+        </div>
+        <div class="tabs" role="tablist" id="parches-tabs">
+          <button role="tab" data-tab="proximos" aria-selected="true">Próximos</button>
+          <button role="tab" data-tab="relampago" aria-selected="false">Relámpago</button>
+          <button role="tab" data-tab="comunidad" aria-selected="false">De la comunidad</button>
+          <button role="tab" data-tab="pasados" aria-selected="false">Pasados</button>
+        </div>
+        <div class="toolbar">
+          <label class="search search--inline">
+            <svg class="ic"><use href="#i-search"/></svg>
+            <span class="sr-only">Buscar en parches</span>
+            <input type="search" id="parches-search" placeholder="Buscar por nombre u organizador">
+          </label>
+          <span class="toolbar-count" id="parches-count"></span>
+        </div>
+        <div class="table-wrap"><table class="table table--list" id="tabla-parches"></table></div>
+      </section>
+
+      <!-- ============================ MAPA ============================ -->
+      <section class="view" id="view-mapa" aria-labelledby="h-mapa" hidden>
+        <div class="title-row">
+          <div>
+            <h1 id="h-mapa">Mapa comercial</h1>
+            <p class="sub" id="mapa-sub"></p>
+          </div>
+          <button class="btn" id="btn-locate"><svg class="ic"><use href="#i-locate"/></svg>Mi ubicación</button>
+        </div>
+        <div class="filters" id="time-filter" role="toolbar" aria-label="Filtrar por día">
+          <div class="segmented" role="group" aria-label="Día">
+            <button aria-pressed="true" data-time="hoy">Hoy</button>
+            <button aria-pressed="false" data-time="manana">Mañana</button>
+            <button aria-pressed="false" data-time="todos">Todos</button>
+          </div>
+          <label class="select-wrap">
+            <span class="sr-only">En un día</span>
+            <select class="input input--sm" id="time-select"></select>
+          </label>
+          <input type="date" class="input input--sm" id="time-date" aria-label="Fecha exacta" hidden>
+          <span class="spacer"></span>
+          <span class="stamp" id="geo-stamp"></span>
+        </div>
+        <div class="map-layout">
+          <section class="panel panel--flush" aria-label="Mapa">
+            <div id="map" class="map"></div>
+            <div class="map-legend" id="map-legend"></div>
+          </section>
+          <aside class="panel" aria-labelledby="h-maplist">
+            <header><h2 id="h-maplist">Parches en el mapa</h2><span class="meta" id="maplist-meta"></span></header>
+            <ul class="rows" id="map-list"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ CUPONES ============================ -->
+      <section class="view" id="view-cupones" aria-labelledby="h-cupones" hidden>
+        <div class="title-row">
+          <div>
+            <h1 id="h-cupones">Cupones</h1>
+            <p class="sub" id="cupones-sub"></p>
+          </div>
+          <button class="btn primary" data-action="nuevo-cupon"><svg class="ic"><use href="#i-plus"/></svg>Nueva recompensa</button>
+        </div>
+
+        <div class="split">
+          <section class="panel" aria-labelledby="h-validar">
+            <header><h2 id="h-validar">Validar en caja</h2><span class="meta">Escribe el código que muestra el cliente</span></header>
+            <form class="validator" id="validator" autocomplete="off">
+              <label class="sr-only" for="code-input">Código del cupón</label>
+              <input class="input input--code" id="code-input" maxlength="16" placeholder="Ej. LLENA-4821" spellcheck="false" autocapitalize="characters">
+              <button class="btn primary" type="submit"><svg class="ic"><use href="#i-check"/></svg>Validar</button>
+            </form>
+            <div class="validator-result" id="validator-result" aria-live="polite"></div>
+          </section>
+          <section class="panel" aria-labelledby="h-pendientes">
+            <header><h2 id="h-pendientes">Códigos por canjear</h2><span class="meta" id="pendientes-meta"></span></header>
+            <ul class="rows" id="pendientes"></ul>
+          </section>
+        </div>
+
+        <section class="panel" aria-labelledby="h-recompensas">
+          <header><h2 id="h-recompensas">Recompensas desbloqueables</h2><span class="meta">Se entregan solas cuando se cumple la regla</span></header>
+          <div class="table-wrap"><table class="table" id="tabla-cupones"></table></div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-historial">
+          <header><h2 id="h-historial">Historial de canjes</h2><span class="meta" id="historial-meta"></span></header>
+          <div class="table-wrap"><table class="table" id="tabla-canjes"></table></div>
+          <button class="btn btn--more" id="canjes-more" hidden>Ver más canjes</button>
+        </section>
+      </section>
+
+      <!-- ============================ ASISTENTES ============================ -->
+      <section class="view" id="view-asistentes" aria-labelledby="h-asistentes" hidden>
+        <div class="title-row">
+          <div>
+            <nav class="crumbs" aria-label="Ruta"><a href="#parches">Parches</a><svg class="ic"><use href="#i-chev-right"/></svg></nav>
+            <h1 id="h-asistentes">Asistentes</h1>
+            <p class="sub" id="asistentes-sub"></p>
+          </div>
+          <label class="field field--inline">
+            <span>Parche</span>
+            <select class="input input--sm" id="parche-select"></select>
+          </label>
+        </div>
+
+        <div class="kpis kpis--3" id="asis-kpis"></div>
+
+        <div class="tabs" role="tablist" id="asis-tabs">
+          <button role="tab" data-tab="lista" aria-selected="true">Lista de asistentes</button>
+          <button role="tab" data-tab="chat" aria-selected="false">Chat del grupo</button>
+        </div>
+
+        <div id="asis-lista">
+          <div class="toolbar">
+            <label class="search search--inline">
+              <svg class="ic"><use href="#i-search"/></svg>
+              <span class="sr-only">Buscar asistente</span>
+              <input type="search" id="asis-search" placeholder="Buscar por nombre">
+            </label>
+            <div class="segmented" role="group" aria-label="Filtrar">
+              <button aria-pressed="true" data-asis="todos">Todos</button>
+              <button aria-pressed="false" data-asis="faltan">Por llegar</button>
+              <button aria-pressed="false" data-asis="llegaron">Llegaron</button>
+            </div>
+            <span class="toolbar-count" id="asis-count"></span>
+          </div>
+          <ul class="people" id="people"></ul>
+          <button class="btn btn--more" id="people-more" hidden>Mostrar más</button>
+        </div>
+
+        <section class="panel chat" id="asis-chat" hidden aria-label="Chat del grupo">
+          <div class="chat-msgs" id="chat-msgs"></div>
+          <form class="chat-form" id="chat-form" autocomplete="off">
+            <label class="sr-only" for="chat-input">Mensaje al grupo</label>
+            <input class="input" id="chat-input" maxlength="400" placeholder="Escríbele al grupo como el local">
+            <button class="btn primary" type="submit"><svg class="ic"><use href="#i-send"/></svg>Enviar</button>
+          </form>
+        </section>
+      </section>
+
+      <!-- ============================ PERFIL ============================ -->
+      <section class="view" id="view-perfil" aria-labelledby="h-perfil" hidden>
+        <div class="title-row">
+          <div>
+            <h1 id="h-perfil">Perfil del local</h1>
+            <p class="sub">Así te ven los parceros en el mapa y en cada parche que haces.</p>
+          </div>
+        </div>
+
+        <div class="settings">
+          <!-- Datos -->
+          <div class="setting">
+            <div class="setting-label"><h2>Datos del negocio</h2><p>Nombre, categoría y contacto que salen en tus parches oficiales.</p></div>
+            <form class="setting-panel" id="form-datos" novalidate>
+              <div class="form-grid">
+                <div class="field"><label for="b-nombre">Nombre comercial</label><input class="input" id="b-nombre" maxlength="60"><p class="field-msg"></p></div>
+                <div class="field"><label for="b-categoria">Categoría</label><select class="input" id="b-categoria"></select></div>
+                <div class="field"><label for="b-tel">Teléfono del local</label><input class="input num" id="b-tel" inputmode="tel" maxlength="14"><p class="field-msg"></p></div>
+                <div class="field"><label>NIT</label><p class="readonly num" id="b-nit"></p></div>
+              </div>
+              <div class="field"><label for="b-desc">Descripción corta</label><textarea class="input" id="b-desc" rows="3" maxlength="200"></textarea><p class="field-msg"></p></div>
+              <div class="setting-foot"><span class="stamp" id="datos-stamp"></span><button class="btn primary" type="submit">Guardar datos</button></div>
+            </form>
+          </div>
+
+          <!-- Horarios -->
+          <div class="setting">
+            <div class="setting-label"><h2>Horarios</h2><p>Los parches relámpago solo se pueden lanzar dentro de este horario.</p></div>
+            <form class="setting-panel" id="form-horarios" novalidate>
+              <div class="hours" id="hours"></div>
+              <div class="setting-foot"><span class="stamp" id="horarios-stamp"></span><button class="btn primary" type="submit">Guardar horarios</button></div>
+            </form>
+          </div>
+
+          <!-- Fotos -->
+          <div class="setting">
+            <div class="setting-label">
+              <h2>Logo y portada</h2>
+              <p>Ajusta el encuadre para que nada se vea cortado ni estirado.</p>
+              <div class="preview-card" id="preview-card" aria-label="Vista previa en el mapa"></div>
+            </div>
+            <div class="setting-panel">
+              <div class="media-edit">
+                <div class="media-block">
+                  <p class="mini-title">Portada</p>
+                  <div class="frame frame--cover" id="frame-cover"><img id="img-cover" alt="Portada del local"></div>
+                  <div class="media-controls">
+                    <label class="btn"><svg class="ic"><use href="#i-upload"/></svg>Cambiar portada<input type="file" accept="image/*" id="file-cover" hidden></label>
+                    <label class="slider"><span>Zoom <b class="num" id="out-cz"></b></span><input type="range" min="1" max="2.5" step="0.01" id="cz"></label>
+                    <label class="slider"><span>Posición vertical <b class="num" id="out-cy"></b></span><input type="range" min="-30" max="30" step="1" id="cy"></label>
+                  </div>
+                </div>
+                <div class="media-block">
+                  <p class="mini-title">Logo</p>
+                  <div class="frame frame--logo" id="frame-logo"></div>
+                  <div class="media-controls">
+                    <label class="btn"><svg class="ic"><use href="#i-upload"/></svg>Subir logo<input type="file" accept="image/*" id="file-logo" hidden></label>
+                    <label class="slider"><span>Zoom <b class="num" id="out-lz"></b></span><input type="range" min="1" max="2.5" step="0.01" id="lz"></label>
+                    <button class="btn ghost" type="button" id="logo-reset">Usar monograma</button>
+                  </div>
+                </div>
+              </div>
+              <div class="setting-foot"><span class="stamp" id="fotos-stamp"></span><button class="btn primary" type="button" id="save-fotos">Guardar fotos</button></div>
+            </div>
+          </div>
+
+          <!-- Ubicación -->
+          <div class="setting">
+            <div class="setting-label"><h2>Ubicación fija</h2><p>El punto donde se ven tus parches oficiales y donde la comunidad te elige como punto de encuentro.</p></div>
+            <div class="setting-panel">
+              <div id="map-perfil" class="map map--small"></div>
+              <div class="setting-foot">
+                <span class="stamp num" id="ubic-stamp"></span>
+                <div class="title-actions">
+                  <button class="btn" type="button" id="ubic-edit">Mover el pin</button>
+                  <button class="btn primary" type="button" id="ubic-save" disabled>Guardar ubicación</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reseñas -->
+          <div class="setting">
+            <div class="setting-label"><h2>Reseñas de clientes</h2><p>Las dejan los parceros después de hacer check-in en tu local.</p><div class="rating-big" id="rating-big"></div></div>
+            <div class="setting-panel">
+              <div class="rating-dist" id="rating-dist"></div>
+              <ul class="reviews" id="reviews"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- =====================================================================
+     DIÁLOGOS
+===================================================================== -->
+<dialog class="dialog dialog--wide" id="dlg-parche" aria-labelledby="dlg-parche-title">
+  <form method="dialog" class="dialog-body" id="form-parche" novalidate>
+    <header class="dialog-head">
+      <h2 id="dlg-parche-title">Nuevo parche oficial</h2>
+      <button class="icon-btn" value="cancel" formnovalidate aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="dialog-grid">
+      <div>
+        <div class="field"><label for="p-titulo">Nombre del parche</label><input class="input" id="p-titulo" name="titulo" maxlength="60" placeholder="Ej. Toque en vivo: arpa y rock"><p class="field-msg"></p></div>
+        <div class="form-grid">
+          <div class="field"><label for="p-fecha">Fecha</label><input class="input num" type="date" id="p-fecha" name="fecha"><p class="field-msg"></p></div>
+          <div class="field"><label for="p-hora">Hora de inicio</label><input class="input num" type="time" id="p-hora" name="hora"><p class="field-msg"></p></div>
+          <div class="field"><label for="p-cupos">Aforo máximo</label><input class="input num" type="number" id="p-cupos" name="cupos" min="2" max="500" inputmode="numeric"><p class="field-msg"></p></div>
+          <div class="field"><label for="p-consumo">Consumo por persona (COP)</label><input class="input num" type="number" id="p-consumo" name="consumo" min="0" step="1000" inputmode="numeric"><p class="field-msg"></p></div>
+        </div>
+        <div class="field"><label for="p-promo">Promoción o descripción</label><textarea class="input" id="p-promo" name="promo" rows="3" maxlength="200" placeholder="Qué pasa ese día y qué gana quien llegue"></textarea><p class="field-msg"></p></div>
+      </div>
+      <div>
+        <div class="field field--map" id="field-pmap">
+          <label>Ubicación del evento</label>
+          <div id="map-parche" class="map map--dialog"></div>
+          <p class="hint num" id="pmap-coords"></p>
+          <p class="field-msg"></p>
+        </div>
+      </div>
+    </div>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button class="btn primary" type="submit" id="p-submit">Publicar parche</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="dlg-relampago" aria-labelledby="dlg-rel-title">
+  <form method="dialog" class="dialog-body" id="form-relampago" novalidate>
+    <header class="dialog-head">
+      <h2 id="dlg-rel-title">Lanzar parche relámpago</h2>
+      <button class="icon-btn" value="cancel" formnovalidate aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <p class="dialog-note" id="rel-note"></p>
+    <div class="field"><label for="r-promo">Promoción</label><input class="input" id="r-promo" maxlength="60" placeholder="Ej. 2x1 en cerveza nacional"><p class="field-msg"></p></div>
+    <div class="field">
+      <label>Duración</label>
+      <div class="segmented" role="group" aria-label="Duración" id="r-dur">
+        <button type="button" aria-pressed="false" data-min="30">30 min</button>
+        <button type="button" aria-pressed="true" data-min="60">1 hora</button>
+        <button type="button" aria-pressed="false" data-min="90">1 h 30</button>
+        <button type="button" aria-pressed="false" data-min="120">2 horas</button>
+      </div>
+    </div>
+    <div class="field"><label for="r-cupos">Cupos</label><input class="input num" type="number" id="r-cupos" min="5" max="300" value="40" inputmode="numeric"><p class="field-msg"></p></div>
+    <p class="hint" id="rel-summary"></p>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button class="btn primary" type="submit"><svg class="ic"><use href="#i-bolt"/></svg>Lanzar ahora</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="dlg-cupon" aria-labelledby="dlg-cupon-title">
+  <form method="dialog" class="dialog-body" id="form-cupon" novalidate>
+    <header class="dialog-head">
+      <h2 id="dlg-cupon-title">Nueva recompensa</h2>
+      <button class="icon-btn" value="cancel" formnovalidate aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="field"><label for="k-nombre">Nombre</label><input class="input" id="k-nombre" maxlength="40" placeholder="Ej. Mesa llena"><p class="field-msg"></p></div>
+    <div class="field"><label for="k-regla">Se desbloquea cuando</label><select class="input" id="k-regla"></select></div>
+    <div class="field"><label for="k-beneficio">Qué recibe el cliente</label><input class="input" id="k-beneficio" maxlength="70" placeholder="Ej. Botella de aguardiente de cortesía"><p class="field-msg"></p></div>
+    <div class="field"><label for="k-prefijo">Prefijo del código</label><input class="input input--code" id="k-prefijo" maxlength="8" placeholder="Ej. LLENA"><p class="field-msg"></p></div>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button class="btn primary" type="submit">Crear recompensa</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog dialog--sm" id="dlg-confirm" aria-labelledby="dlg-confirm-title">
+  <form method="dialog" class="dialog-body">
+    <h2 id="dlg-confirm-title">Cancelar parche</h2>
+    <p class="dialog-note" id="confirm-text"></p>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel">Volver</button>
+      <button class="btn danger" value="ok" id="confirm-ok">Cancelar el parche</button>
+    </footer>
+  </form>
+</dialog>
+
+<div class="menu-pop" id="row-menu" role="menu" hidden></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="empresa-dashboard.js"></script>
+</body>
+</html>
