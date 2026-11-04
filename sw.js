@@ -6,7 +6,7 @@
    - Supabase, mapas y otros sitios nunca pasan por aquí.
    - Muestra las notificaciones push (función enviar-push).
 ===================================================================== */
-const VERSION = 'mp-v1';
+const VERSION = 'mp-v2';
 const BASICO = [
   '/dashboard', '/dashboard.css', '/dashboard.js', '/mp-mapa.js', '/mp-mapa.css', '/supabase-client.js',
   '/src/assets/web/isotipo-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2',
@@ -34,7 +34,8 @@ self.addEventListener('fetch', e => {
     return;
   }
   // Red primero; sin conexión, lo guardado (y el panel para cualquier página)
-  e.respondWith(fetch(req).then(res => {
+  // cache: 'no-cache' = siempre preguntar al servidor si hay versión nueva
+  e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
     if (res.ok && (req.mode === 'navigate' || /\.(js|css)$/i.test(url.pathname))) { const copia = res.clone(); caches.open(VERSION).then(c => c.put(req, copia)); }
     return res;
   }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || (req.mode === 'navigate' ? caches.match('/dashboard') : Response.error()))));

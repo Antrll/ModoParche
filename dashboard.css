@@ -137,6 +137,8 @@ p { text-wrap: pretty; }
 .btn--sm { min-height: 42px; padding: 0 18px; font-size: .9rem; }
 .btn--xs { min-height: 34px; padding: 0 14px; font-size: .8125rem; }
 .btn--block { width: 100%; }
+/* Los botones de ancho completo pueden partir el texto en celular (no estiran la pantalla) */
+.btn--block { white-space: normal; text-align: center; line-height: 1.25; padding-top: 10px; padding-bottom: 10px; }
 .btn[disabled] { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn.is-loading { color: transparent !important; pointer-events: none; }
 .btn.is-loading .ic { opacity: 0; }
@@ -659,6 +661,7 @@ select.input {
    8. PERFIL
 ===================================================================== */
 .profile { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+.profile > * { min-width: 0; }
 .pcard {
   padding: clamp(20px, 2.6vw, 28px);
   background: var(--paper); border-radius: var(--r-lg); box-shadow: var(--shadow-soft);
