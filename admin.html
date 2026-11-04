@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="robots" content="noindex, nofollow">
+<title>Centro de control · ModoParche</title>
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="mp-mapa.css">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body data-sin-aviso-cookies>
+<a class="skip" href="#canvas">Saltar al contenido</a>
+
+<!-- Íconos de contorno -->
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-overview" viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M21 19H3"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c0-3.9 3.1-6.3 7-6.3s7 2.4 7 6.3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M15.8 5.4a3.2 3.2 0 0 1 0 6.2M17.8 14.3c1.9.7 3.2 2.5 3.2 5.2"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 12.5V20h13v-7.5M10 20v-4.5h4V20"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3.5 6.2v13.3L9 17.3l6 2.4 5.5-2.2V4.2L15 6.4z"/><path d="M9 4v13.3M15 6.4v13.3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-9l-4.5 3.5v-3.5H4.5z"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M4 10v4h3l8 4.5v-13L7 10z"/><path d="M7 14l1.5 5.5h2.5L10 15M18.5 9.5a3.5 3.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="1"/><circle cx="4.8" cy="12" r="1"/><circle cx="4.8" cy="17.5" r="1"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14.5 4.5h4v15h-4M10 8.5 6.5 12l3.5 3.5M6.5 12h9"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9.5 6.5 5.5 5.5-5.5 5.5"/></symbol>
+    <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 3 19.5h18z"/><path d="M12 10v4.5M12 17h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 5 6.2v5.6c0 4.2 3 7.4 7 8.7 4-1.3 7-4.5 7-8.7V6.2z"/><path d="m9 12 2.2 2.2 4-4.4"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m6.4 6.4 11.2 11.2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 20.5s-6.5-5.8-6.5-10.3a6.5 6.5 0 0 1 13 0c0 4.5-6.5 10.3-6.5 10.3z"/><circle cx="12" cy="10.2" r="2.3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4.5V15M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="1.5"/><path d="M15.5 8.5V4.5h-11v11h4"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 11.5 20 4l-7.5 16-2-6.5z"/><path d="m10.5 13.5 9.5-9.5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10.5 21 19 10.5h-6z"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-3.3 2.3-5.4 3.6-7.8.4 1.6 1.2 2.7 2.4 3.3C11.8 7.4 13 5 15.6 3c-.3 2.8.6 4.7 1.9 6.6 1 1.4 1 3 1 4.4C18.5 18.2 16 21 12 21z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="m4 6.5 8 6.5 8-6.5"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4.5-2 1.5a10 10 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h15"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 15.5 12 10.5l5 5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 9.5l5 5 5-5"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M4 17.5 3 7.5l5 4 4-6 4 6 5-4-1 10z"/><path d="M4.5 20.5h15"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6h4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14.5 8.5l2 2"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4M5.5 4.5h11l-2 4 2 4h-11"/></symbol>
+    <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5h17v3a1.8 1.8 0 0 0 0 3.6v3h-17v-3a1.8 1.8 0 0 0 0-3.6z"/><path d="M14 8v1.5M14 11.3v1.4M14 14.5V16"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-cmd" viewBox="0 0 24 24"><path d="M9 6.5a2.5 2.5 0 1 0-2.5 2.5H17.5A2.5 2.5 0 1 0 15 6.5v11a2.5 2.5 0 1 0 2.5-2.5h-11A2.5 2.5 0 1 0 9 17.5z"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- ============================ BARRA LATERAL ============================ -->
+  <aside class="sidebar" id="sidebar" aria-label="Navegación del panel">
+    <div class="brand">
+      <a class="brand-link" href="#resumen" aria-label="Ir al resumen">
+        <img class="brand-iso" src="src/assets/web/isotipo-negro-96.png" alt="" width="40" height="40">
+        <span class="brand-name"><b>Modo<i>Parche</i></b><small><svg class="ic"><use href="#i-shield"/></svg>Admin</small></span>
+      </a>
+      <button class="icon-btn menu-close" id="menu-close" aria-label="Cerrar menú"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+
+    <nav class="nav" aria-label="Secciones">
+      <p class="group-label">Plataforma</p>
+      <a class="nav-item" href="#resumen" data-route="resumen"><svg class="ic"><use href="#i-overview"/></svg><span>Resumen</span><kbd>1</kbd></a>
+      <a class="nav-item" href="#personas" data-route="personas"><svg class="ic"><use href="#i-users"/></svg><span>Personas</span><b class="nav-count" id="count-personas"></b><kbd>2</kbd></a>
+      <a class="nav-item" href="#negocios" data-route="negocios"><svg class="ic"><use href="#i-store"/></svg><span>Negocios</span><b class="nav-count" id="count-negocios"></b><kbd>3</kbd></a>
+      <a class="nav-item" href="#parches" data-route="parches"><svg class="ic"><use href="#i-calendar"/></svg><span>Parches</span><b class="nav-count" id="count-parches"></b><kbd>4</kbd></a>
+      <a class="nav-item" href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-map"/></svg><span>Mapa en vivo</span><kbd>5</kbd></a>
+      <p class="group-label">Cuidado de la comunidad</p>
+      <a class="nav-item" href="#reportes" data-route="reportes"><svg class="ic"><use href="#i-flag"/></svg><span>Reportes</span><b class="nav-count nav-count--hot" id="count-rep"></b><kbd>6</kbd></a>
+      <a class="nav-item" href="#moderacion" data-route="moderacion"><svg class="ic"><use href="#i-chat"/></svg><span>Moderación</span><b class="nav-count nav-count--hot" id="count-mod"></b><kbd>7</kbd></a>
+      <a class="nav-item" href="#reputacion" data-route="reputacion"><svg class="ic"><use href="#i-star"/></svg><span>Reputación</span><b class="nav-count" id="count-rep2"></b><kbd>8</kbd></a>
+      <a class="nav-item" href="#anuncios" data-route="anuncios" data-solo-admin><svg class="ic"><use href="#i-megaphone"/></svg><span>Anuncios</span><kbd>9</kbd></a>
+      <p class="group-label">Equipo</p>
+      <a class="nav-item" href="#registro" data-route="registro"><svg class="ic"><use href="#i-list"/></svg><span>Bitácora</span></a>
+      <a class="nav-item" href="#equipo" data-route="equipo"><svg class="ic"><use href="#i-shield"/></svg><span>Equipo y roles</span></a>
+    </nav>
+
+    <div class="side-bottom">
+      <div class="side-live" id="side-live">
+        <span class="side-live-dot" aria-hidden="true"></span>
+        <span><b id="side-live-n">0</b> eventos en vivo<small id="side-live-t">Conectando…</small></span>
+      </div>
+      <div class="me-card">
+        <span class="me-ava" id="me-ava" aria-hidden="true">A</span>
+        <span class="me-txt"><b id="me-name">Admin</b><small id="me-mail"></small></span>
+        <button class="icon-btn" data-action="logout" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="ic"><use href="#i-logout"/></svg></button>
+      </div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- ============================ LIENZO ============================ -->
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <div class="search" id="search-wrap">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <label class="sr-only" for="search">Buscar personas, negocios o parches</label>
+        <input type="search" id="search" placeholder="Busca personas, negocios o parches" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-pop">
+        <kbd class="kbd" aria-hidden="true">/</kbd>
+        <div class="search-pop" id="search-pop" role="listbox" hidden></div>
+      </div>
+      <div class="topbar-right">
+        <a class="demo-chip" id="demo-chip" href="login.html" hidden><span>Datos de ejemplo</span><b>Entrar de verdad</b></a>
+        <span class="live-chip" id="live-chip" title="Conexión en tiempo real"><span class="live-dot" aria-hidden="true"></span><span id="live-text">Conectando</span></span>
+        <button class="btn btn--icon-sm" data-action="refrescar" id="refresh-btn" title="Actualizar datos"><svg class="ic"><use href="#i-refresh"/></svg><span id="refresh-txt">Actualizar</span></button>
+        <button class="btn primary" data-action="ir-anuncio" data-solo-admin><svg class="ic"><use href="#i-megaphone"/></svg><span>Nuevo anuncio</span></button>
+      </div>
+    </header>
+
+    <main class="canvas" id="canvas">
+
+      <!-- ============================ RESUMEN ============================ -->
+      <section class="view" id="view-resumen" aria-labelledby="h-resumen">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="hero-kicker"><span class="hero-dot" aria-hidden="true"></span><span id="hero-kicker">Centro de control</span></p>
+            <h1 id="h-resumen" class="hero-title"><span class="ln"><span id="hero-hola">Hola,</span></span> <span class="ln"><span>Centro de</span></span> <span class="ln"><span class="hl">control</span></span></h1>
+            <p class="hero-sub" id="hero-sub">Cargando lo que pasa en ModoParche…</p>
+            <div class="hero-actions">
+              <button class="btn primary" data-action="ir-anuncio" data-solo-admin><svg class="ic"><use href="#i-megaphone"/></svg>Enviar anuncio</button>
+              <a class="btn hero-ghost" href="#moderacion"><svg class="ic"><use href="#i-shield"/></svg>Revisar moderación</a>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="hero-seal">
+              <svg class="hero-ring" viewBox="0 0 200 200">
+                <defs><path id="sealPathAdm" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0"/></defs>
+                <text><textPath href="#sealPathAdm" textLength="512">Centro de control · ModoParche · Meta ·</textPath></text>
+              </svg>
+              <img class="hero-iso" src="src/assets/web/logo-isotipo-negro.webp" alt="" width="397" height="476">
+            </div>
+          </div>
+          <div class="hero-ticker" id="hero-ticker" aria-hidden="true"></div>
+        </div>
+
+        <div class="kpis" id="kpis"></div>
+        <div class="strip" id="strip"></div>
+
+        <div class="range-bar">
+          <div class="segmented" id="range-seg" role="group" aria-label="Rango de fechas">
+            <button data-rango="7" aria-pressed="false">7 días</button>
+            <button data-rango="30" aria-pressed="true">30 días</button>
+            <button data-rango="90" aria-pressed="false">90 días</button>
+            <button data-rango="365" aria-pressed="false">12 meses</button>
+            <button data-rango="custom" aria-pressed="false">Elegir fechas</button>
+          </div>
+          <form class="range-custom" id="range-custom" hidden>
+            <label><span class="sr-only">Desde</span><input class="input input--sm" type="date" id="r-desde" required></label>
+            <span aria-hidden="true">→</span>
+            <label><span class="sr-only">Hasta</span><input class="input input--sm" type="date" id="r-hasta" required></label>
+            <button class="btn btn--sm dark" type="submit">Aplicar</button>
+          </form>
+          <span class="spacer"></span>
+          <button class="btn" data-action="informe"><svg class="ic"><use href="#i-download"/></svg>Informe PDF</button>
+        </div>
+        <div class="periodo" id="periodo"></div>
+
+        <div class="grid-main">
+          <section class="panel panel--chart" aria-labelledby="h-trend">
+            <header>
+              <div><h2 id="h-trend">Últimos 30 días</h2><p class="meta" id="trend-meta"></p></div>
+              <div class="segmented" id="trend-seg" role="group" aria-label="Qué ver en la gráfica">
+                <button data-serie="registros" aria-pressed="true">Registros</button>
+                <button data-serie="parches" aria-pressed="false">Parches</button>
+                <button data-serie="uniones" aria-pressed="false">Uniones</button>
+                <button data-serie="mensajes" aria-pressed="false">Mensajes</button>
+              </div>
+            </header>
+            <div class="trend-head" id="trend-head"></div>
+            <div class="chart" id="trend-chart"></div>
+          </section>
+
+          <section class="panel panel--alerts" aria-labelledby="h-alertas">
+            <header><div><h2 id="h-alertas">Para revisar</h2><p class="meta">Lo que necesita tu ojo hoy</p></div></header>
+            <ul class="alerts" id="alerts"></ul>
+          </section>
+        </div>
+
+        <div class="grid-3">
+          <section class="panel" aria-labelledby="h-embudo">
+            <header><div><h2 id="h-embudo">Embudo</h2><p class="meta">De registrarse a calificar un parche</p></div></header>
+            <ol class="funnel" id="funnel"></ol>
+          </section>
+          <section class="panel" aria-labelledby="h-cats">
+            <header><div><h2 id="h-cats">Categorías</h2><p class="meta">Parches creados y personas que se unieron</p></div></header>
+            <ul class="bars" id="cats"></ul>
+          </section>
+          <section class="panel panel--feed" aria-labelledby="h-vivo">
+            <header><div><h2 id="h-vivo">En vivo</h2><p class="meta" id="vivo-meta">Lo último en la plataforma</p></div><span class="pill live" id="vivo-pill"><span class="dot"></span>Escuchando</span></header>
+            <ol class="feed" id="feed"></ol>
+          </section>
+        </div>
+
+        <div class="grid-2">
+          <section class="panel" aria-labelledby="h-calor">
+            <header>
+              <div><h2 id="h-calor">Cuándo se parcha Villavo</h2><p class="meta">Hora de inicio de los parches por día. Más oscuro, más parches.</p></div>
+            </header>
+            <div class="heat" id="heat"></div>
+          </section>
+          <section class="panel" aria-labelledby="h-proximos">
+            <header><div><h2 id="h-proximos">Próximos parches</h2><p class="meta">Ocupación en tiempo real</p></div><a class="card-link" href="#parches">Ver todos</a></header>
+            <ul class="up-list" id="proximos"></ul>
+          </section>
+        </div>
+
+        <section class="panel ret-panel" aria-labelledby="h-ret">
+          <header><div><h2 id="h-ret">Retención por semana</h2><p class="meta">De quienes se registraron cada semana, qué parte volvió a hacer algo (entrar, unirse, escribir, crear o calificar) en las semanas siguientes.</p></div><span class="meta" id="ret-meta"></span></header>
+          <div class="table-wrap"><table class="ret" id="ret"></table></div>
+        </section>
+
+        <div class="grid-3">
+          <section class="panel" aria-labelledby="h-ciudades">
+            <header><div><h2 id="h-ciudades">Ciudades</h2><p class="meta">Personas y negocios por ciudad</p></div></header>
+            <ul class="bars" id="ciudades"></ul>
+          </section>
+          <section class="panel" aria-labelledby="h-intereses">
+            <header><div><h2 id="h-intereses">Gustos</h2><p class="meta">Lo que marcan las personas al registrarse</p></div></header>
+            <ul class="bars" id="intereses"></ul>
+          </section>
+          <section class="panel" aria-labelledby="h-topneg">
+            <header><div><h2 id="h-topneg">Negocios top</h2><p class="meta">Por parches publicados</p></div><a class="card-link" href="#negocios">Todos</a></header>
+            <ol class="rank" id="topneg"></ol>
+          </section>
+        </div>
+        <p class="stamp" id="stamp-resumen"></p>
+      </section>
+
+      <!-- ============================ PERSONAS ============================ -->
+      <section class="view" id="view-personas" aria-labelledby="h-personas" hidden>
+        <div class="title-row">
+          <div><h1 id="h-personas" class="display">Personas</h1><p class="sub" id="personas-sub"></p></div>
+          <div class="title-actions"><button class="btn" data-solo-admin data-action="exportar" data-what="personas"><svg class="ic"><use href="#i-download"/></svg>Exportar CSV</button></div>
+        </div>
+        <div class="mini-kpis" id="personas-kpis"></div>
+        <div class="filters">
+          <div class="tabs" role="tablist" id="personas-tabs"></div>
+          <span class="spacer"></span>
+          <label class="search search--inline"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Filtrar personas</span><input type="search" id="personas-q" placeholder="Nombre, correo, barrio o cédula" autocomplete="off"></label>
+          <label class="sel"><span class="sr-only">Ordenar</span>
+            <select class="input input--sm" id="personas-sort">
+              <option value="recientes">Más recientes</option>
+              <option value="activos">Último ingreso</option>
+              <option value="parches">Más parches</option>
+              <option value="rating">Peor calificación</option>
+              <option value="nombre">Nombre A-Z</option>
+            </select>
+          </label>
+        </div>
+        <div class="panel panel--flush">
+          <div class="table-wrap">
+            <table class="table" id="personas-table">
+              <thead><tr><th>Persona</th><th>Ciudad</th><th>Gustos</th><th class="num">Parches</th><th class="num">Reputación</th><th>Último ingreso</th><th>Estado</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-foot" id="personas-foot"></div>
+        </div>
+      </section>
+
+      <!-- ============================ NEGOCIOS ============================ -->
+      <section class="view" id="view-negocios" aria-labelledby="h-negocios" hidden>
+        <div class="title-row">
+          <div><h1 id="h-negocios" class="display">Negocios</h1><p class="sub" id="negocios-sub"></p></div>
+          <div class="title-actions"><button class="btn" data-solo-admin data-action="exportar" data-what="negocios"><svg class="ic"><use href="#i-download"/></svg>Exportar CSV</button></div>
+        </div>
+        <div class="plans" id="plans"></div>
+        <div class="filters">
+          <div class="tabs" role="tablist" id="negocios-tabs"></div>
+          <span class="spacer"></span>
+          <label class="search search--inline"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Filtrar negocios</span><input type="search" id="negocios-q" placeholder="Nombre, tipo, barrio o NIT" autocomplete="off"></label>
+        </div>
+        <div class="bcards" id="bcards"></div>
+      </section>
+
+      <!-- ============================ PARCHES ============================ -->
+      <section class="view" id="view-parches" aria-labelledby="h-parches" hidden>
+        <div class="title-row">
+          <div><h1 id="h-parches" class="display">Parches</h1><p class="sub" id="parches-sub"></p></div>
+          <div class="title-actions"><button class="btn" data-solo-admin data-action="exportar" data-what="parches"><svg class="ic"><use href="#i-download"/></svg>Exportar CSV</button></div>
+        </div>
+        <div class="filters">
+          <div class="tabs" role="tablist" id="parches-tabs"></div>
+          <span class="spacer"></span>
+          <label class="search search--inline"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Filtrar parches</span><input type="search" id="parches-q" placeholder="Título, lugar o quién lo armó" autocomplete="off"></label>
+        </div>
+        <div class="chips" id="parches-cats" role="group" aria-label="Filtrar por categoría"></div>
+        <div class="pcards" id="pcards"></div>
+      </section>
+
+      <!-- ============================ MAPA ============================ -->
+      <section class="view" id="view-mapa" aria-labelledby="h-mapa" hidden>
+        <div class="title-row">
+          <div><h1 id="h-mapa" class="display">Mapa en vivo</h1><p class="sub" id="mapa-sub"></p></div>
+          <div class="segmented" id="mapa-seg" role="group" aria-label="Qué mostrar en el mapa">
+            <button data-capa="todo" aria-pressed="true">Todo</button>
+            <button data-capa="parches" aria-pressed="false">Parches</button>
+            <button data-capa="negocios" aria-pressed="false">Negocios</button>
+          </div>
+        </div>
+        <div class="map-layout">
+          <div class="map-box"><div id="map" class="map" role="region" aria-label="Mapa de Villavicencio con parches y negocios"></div>
+            <div class="map-legend"><span><i class="lg lg--p"></i>Parche próximo</span><span><i class="lg lg--live"></i>En curso</span><span><i class="lg lg--n"></i>Negocio aliado</span></div>
+          </div>
+          <aside class="panel map-side" aria-labelledby="h-mapa-lista">
+            <header><h2 id="h-mapa-lista">En el mapa</h2><span class="meta" id="mapa-count"></span></header>
+            <ul class="map-list" id="map-list"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ MODERACIÓN ============================ -->
+      <section class="view" id="view-moderacion" aria-labelledby="h-moderacion" hidden>
+        <div class="title-row">
+          <div><h1 id="h-moderacion" class="display">Moderación</h1><p class="sub" id="mod-sub"></p></div>
+        </div>
+        <div class="notice"><svg class="ic"><use href="#i-shield"/></svg><p>Marcamos solos los mensajes con <b>groserías, números de teléfono, enlaces o pedidos de plata</b> (Nequi, Daviplata, transferencias). Revisa el contexto antes de borrar: borrar queda en la bitácora.</p></div>
+        <div class="filters">
+          <div class="tabs" role="tablist" id="mod-tabs"></div>
+          <span class="spacer"></span>
+          <label class="search search--inline"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Buscar en los chats</span><input type="search" id="mod-q" placeholder="Busca una palabra o un parche" autocomplete="off"></label>
+        </div>
+        <ul class="msgs" id="msgs"></ul>
+      </section>
+
+      <!-- ============================ REPORTES ============================ -->
+      <section class="view" id="view-reportes" aria-labelledby="h-reportes" hidden>
+        <div class="title-row">
+          <div><h1 id="h-reportes" class="display">Reportes</h1><p class="sub" id="rep-sub"></p></div>
+        </div>
+        <div class="mini-kpis" id="rep-kpis"></div>
+        <div class="filters">
+          <div class="tabs" role="tablist" id="rep-tabs"></div>
+          <span class="spacer"></span>
+          <label class="search search--inline"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Buscar reportes</span><input type="search" id="rep-q" placeholder="Persona, parche o texto" autocomplete="off"></label>
+        </div>
+        <div class="chips" id="rep-motivos" role="group" aria-label="Filtrar por motivo"></div>
+        <ul class="reps" id="reps"></ul>
+      </section>
+
+      <!-- ============================ REPUTACIÓN ============================ -->
+      <section class="view" id="view-reputacion" aria-labelledby="h-reputacion" hidden>
+        <div class="title-row">
+          <div><h1 id="h-reputacion" class="display">Reputación</h1><p class="sub" id="cal-sub"></p></div>
+        </div>
+        <div class="mini-kpis" id="cal-kpis"></div>
+        <div class="cal-layout">
+          <div>
+            <div class="filters"><div class="tabs" role="tablist" id="cal-tabs"></div></div>
+            <ul class="cals" id="cals"></ul>
+          </div>
+          <aside class="panel" aria-labelledby="h-baja">
+            <header><div><h2 id="h-baja">Reputación más baja</h2><p class="meta">Personas con 3 o más reseñas</p></div></header>
+            <ol class="rank" id="baja"></ol>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ ANUNCIOS ============================ -->
+      <section class="view" id="view-anuncios" aria-labelledby="h-anuncios" hidden>
+        <div class="title-row">
+          <div><h1 id="h-anuncios" class="display">Anuncios</h1><p class="sub">Llega como notificación <b>solo a quienes aceptaron recibir anuncios</b>; cada cuenta se puede dar de baja desde su perfil. Si la persona tiene el panel abierto, le aparece al instante.</p></div>
+        </div>
+        <div class="compose-layout">
+          <form class="panel compose" id="form-anuncio" novalidate>
+            <header><h2>Escribe el anuncio</h2></header>
+            <div class="field">
+              <label for="an-texto">Mensaje</label>
+              <textarea class="input" id="an-texto" rows="4" maxlength="240" placeholder="Ej: Este puente festivo hay parches relámpago en todo Villavo. ¡Abre el radar!" required></textarea>
+              <div class="field-row"><span class="field-msg" id="an-msg"></span><span class="counter" id="an-count">0 / 240</span></div>
+            </div>
+            <div class="field">
+              <span>Para quién</span>
+              <div class="segmented segmented--full" id="an-publico" role="group" aria-label="Para quién">
+                <button type="button" data-v="todos" aria-pressed="true">Todas las cuentas</button>
+                <button type="button" data-v="personas" aria-pressed="false">Personas</button>
+                <button type="button" data-v="negocios" aria-pressed="false">Negocios</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="an-ciudad">Ciudad</label>
+              <select class="input" id="an-ciudad">
+                <option value="">Todas las ciudades</option>
+                <option>Villavicencio</option><option>Acacías</option><option>Restrepo</option>
+              </select>
+            </div>
+            <div class="compose-plantillas">
+              <span class="mini-title">Plantillas</span>
+              <div class="chips" id="an-plantillas"></div>
+            </div>
+            <footer class="compose-foot">
+              <p class="reach"><b id="an-reach">0</b> cuentas aceptaron recibirlo</p>
+              <button class="btn primary" type="submit" id="an-send"><svg class="ic"><use href="#i-send"/></svg>Enviar anuncio</button>
+            </footer>
+          </form>
+          <div class="compose-side">
+            <div class="phone" aria-label="Vista previa">
+              <div class="phone-notch" aria-hidden="true"></div>
+              <p class="phone-time" id="phone-time">9:41</p>
+              <div class="phone-toast" id="phone-toast">
+                <span class="phone-toast-ic"><svg class="ic"><use href="#i-info"/></svg></span>
+                <div><b>Mensaje de ModoParche</b><p id="an-preview">Tu mensaje aparece aquí.</p></div>
+              </div>
+              <img class="phone-stk" src="src/assets/web/stk/parceros.webp" alt="" width="300" height="200" loading="lazy">
+            </div>
+            <section class="panel" aria-labelledby="h-an-hist">
+              <header><h2 id="h-an-hist">Enviados</h2></header>
+              <ol class="hist" id="an-hist"></ol>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ BITÁCORA ============================ -->
+      <section class="view" id="view-registro" aria-labelledby="h-registro" hidden>
+        <div class="title-row">
+          <div><h1 id="h-registro" class="display">Bitácora</h1><p class="sub">Todo lo que hace el equipo admin queda aquí, con quién y cuándo. No se puede borrar desde la app.</p></div>
+        </div>
+        <div class="filters"><div class="tabs" role="tablist" id="log-tabs"></div></div>
+        <ol class="timeline" id="timeline"></ol>
+      </section>
+
+      <!-- ============================ EQUIPO ============================ -->
+      <section class="view" id="view-equipo" aria-labelledby="h-equipo" hidden>
+        <div class="title-row">
+          <div><h1 id="h-equipo" class="display">Equipo y roles</h1><p class="sub">Quiénes manejan ModoParche y qué puede hacer cada rol. Los roles solo se dan o se quitan desde la base de datos.</p></div>
+        </div>
+        <div class="team" id="team"></div>
+        <div class="grid-2">
+          <section class="panel" aria-labelledby="h-permisos">
+            <header><h2 id="h-permisos">Qué puede hacer cada rol</h2></header>
+            <div class="table-wrap"><table class="perm" id="perm"></table></div>
+          </section>
+          <section class="panel" aria-labelledby="h-sql">
+            <header><div><h2 id="h-sql">Agregar a alguien</h2><p class="meta">Pega esto en Supabase → SQL Editor y cambia los datos</p></div></header>
+            <div class="sql-box" id="sql-box"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ============================ PANEL LATERAL DE DETALLE ============================ -->
+<aside class="drawer" id="drawer" aria-labelledby="drawer-title" aria-modal="true" role="dialog" hidden>
+  <div class="drawer-scrim" data-action="cerrar-drawer"></div>
+  <div class="drawer-sheet" id="drawer-sheet">
+    <button class="icon-btn drawer-x" data-action="cerrar-drawer" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    <div id="drawer-body"></div>
+  </div>
+</aside>
+
+<!-- ============================ DIÁLOGO DE CONFIRMACIÓN ============================ -->
+<dialog class="dialog" id="dlg-confirm" aria-labelledby="dlg-c-title">
+  <form method="dialog" class="dialog-body" id="dlg-c-form">
+    <header class="dialog-head" id="dlg-c-head">
+      <h2 id="dlg-c-title">¿Seguro?</h2>
+    </header>
+    <p class="dlg-text" id="dlg-c-text"></p>
+    <div class="field" id="dlg-c-field" hidden>
+      <label for="dlg-c-motivo" id="dlg-c-label">Motivo</label>
+      <textarea class="input" id="dlg-c-motivo" rows="2" maxlength="200"></textarea>
+      <span class="hint" id="dlg-c-hint"></span>
+    </div>
+    <div class="dlg-choices" id="dlg-c-choices" hidden></div>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel" type="submit">Cancelar</button>
+      <button class="btn danger" value="ok" type="submit" id="dlg-c-ok">Confirmar</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- ============================ EDITAR PARCHE ============================ -->
+<dialog class="dialog dialog--wide" id="dlg-edit" aria-labelledby="dlg-e-title">
+  <form class="dialog-body" id="form-edit" novalidate>
+    <header class="dialog-head is-ok"><h2 id="dlg-e-title">Editar parche</h2></header>
+    <p class="dlg-text">En el chat del parche aparece un aviso de que el equipo ajustó los datos.</p>
+    <div class="field"><label for="e-titulo">Título</label><input class="input" id="e-titulo" minlength="5" maxlength="60" required></div>
+    <div class="form-grid">
+      <div class="field"><label for="e-fecha">Fecha</label><input class="input" type="date" id="e-fecha" required></div>
+      <div class="field"><label for="e-hora">Hora</label><input class="input" type="time" id="e-hora" required></div>
+      <div class="field"><label for="e-lugar">Lugar</label><input class="input" id="e-lugar" minlength="3" maxlength="80" required></div>
+      <div class="field"><label for="e-barrio">Barrio</label><input class="input" id="e-barrio" maxlength="40"></div>
+      <div class="field"><label for="e-cupos">Cupos</label><input class="input" type="number" id="e-cupos" min="2" max="60" required><span class="hint" id="e-cupos-hint"></span></div>
+      <div class="field"><label for="e-costo">Costo por persona</label><input class="input" type="number" id="e-costo" min="0" step="1000" required></div>
+    </div>
+    <div class="field"><label for="e-cat">Categoría</label><select class="input" id="e-cat"></select></div>
+    <div class="field"><label for="e-desc">Descripción</label><textarea class="input" id="e-desc" rows="3" maxlength="400"></textarea></div>
+    <p class="field-msg" id="e-msg"></p>
+    <footer class="dialog-foot">
+      <button class="btn" type="button" data-action="cerrar-edit">Cancelar</button>
+      <button class="btn primary" type="submit" id="e-ok"><svg class="ic"><use href="#i-check"/></svg>Guardar cambios</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog dialog--wide" id="dlg-oficial" aria-labelledby="dlg-o-title">
+  <form class="dialog-body" id="form-oficial" novalidate>
+    <header class="dialog-head is-ok"><h2 id="dlg-o-title">Nuevo parche oficial</h2></header>
+    <p class="dlg-text">Sale arriba en el inicio de todos, en grande. Los botones de entrada y palco abren la boletería oficial: ModoParche no vende boletas. Si aún no hay enlace, se ve "Pronto a la venta".</p>
+    <div class="form-grid">
+      <div class="field"><label for="o-titulo">Título del parche</label><input class="input" id="o-titulo" minlength="5" maxlength="60" required placeholder="Andrés Cepeda en Villavo"></div>
+      <div class="field"><label for="o-artista">Artista o festival</label><input class="input" id="o-artista" maxlength="60" placeholder="Andrés Cepeda"></div>
+      <div class="field"><label for="o-fecha">Fecha</label><input class="input" type="date" id="o-fecha" required></div>
+      <div class="field"><label for="o-hora">Hora</label><input class="input" type="time" id="o-hora" required></div>
+      <div class="field"><label for="o-mes">Mes del parche oficial</label><input class="input" id="o-mes" maxlength="20" placeholder="Noviembre"></div>
+      <div class="field"><label for="o-cupos">Cupos del parche</label><input class="input" type="number" id="o-cupos" min="2" max="20000" required></div>
+      <div class="field"><label for="o-lugar">Sitio</label><input class="input" id="o-lugar" minlength="3" maxlength="80" required placeholder="Por confirmar"><span class="hint">Con "Por confirmar" no sale en el mapa.</span></div>
+      <div class="field"><label for="o-barrio">Barrio o referencia</label><input class="input" id="o-barrio" maxlength="40"></div>
+      <div class="field"><label for="o-lat">Latitud</label><input class="input" type="number" id="o-lat" step="any" min="-90" max="90" placeholder="4.1420"></div>
+      <div class="field"><label for="o-lng">Longitud</label><input class="input" type="number" id="o-lng" step="any" min="-180" max="180" placeholder="-73.6266"><span class="hint">Google Maps: clic derecho en el sitio y copia los números.</span></div>
+    </div>
+    <div class="field"><label for="o-desc">Descripción</label><textarea class="input" id="o-desc" rows="3" maxlength="400"></textarea></div>
+    <h3 class="dlg-sub">Boletería oficial</h3>
+    <div class="form-grid">
+      <div class="field"><label for="o-ent-precio">Entrada: precio desde (COP)</label><input class="input" type="number" id="o-ent-precio" min="0" step="1000" placeholder="Por confirmar"></div>
+      <div class="field"><label for="o-ent-url">Entrada: enlace de compra</label><input class="input" type="url" id="o-ent-url" maxlength="490" placeholder="https://"></div>
+      <div class="field"><label for="o-pal-precio">Palco: precio (COP)</label><input class="input" type="number" id="o-pal-precio" min="0" step="1000" placeholder="Por confirmar"></div>
+      <div class="field"><label for="o-pal-url">Palco: enlace de compra</label><input class="input" type="url" id="o-pal-url" maxlength="490" placeholder="https://"></div>
+      <div class="field"><label for="o-pal-personas">Palco: personas por palco</label><input class="input" type="number" id="o-pal-personas" min="1" max="50" placeholder="Opcional"></div>
+      <div class="field"><label for="o-pal-hasta">Palco: precio más alto (COP)</label><input class="input" type="number" id="o-pal-hasta" min="0" step="1000" placeholder="Opcional"></div>
+      <div class="field"><label for="o-boleteria">Boletería</label><input class="input" id="o-boleteria" maxlength="40" placeholder="La Tiquetera"></div>
+      <div class="field"><label for="o-edad">Edad mínima</label><input class="input" type="number" id="o-edad" min="0" max="21" placeholder="Opcional"></div>
+    </div>
+    <div class="field"><label for="o-horario">Horario</label><input class="input" id="o-horario" maxlength="80" placeholder="Puertas 7:00 p. m. · Artista 10:00 p. m."></div>
+    <div class="field"><label for="o-locs">Localidades (una por línea: nombre - precio)</label><textarea class="input" id="o-locs" rows="3" placeholder="General - 100000&#10;VIP - 160000"></textarea></div>
+    <p class="field-msg" id="o-msg"></p>
+    <footer class="dialog-foot">
+      <button class="btn" type="button" data-action="cerrar-oficial">Cancelar</button>
+      <button class="btn primary" type="submit" id="o-ok"><svg class="ic"><use href="#i-check"/></svg>Guardar parche oficial</button>
+    </footer>
+  </form>
+</dialog>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- ============================ CARGA ============================ -->
+<div class="boot" id="boot" role="status" aria-live="polite">
+  <div class="boot-card">
+    <span class="boot-ring" aria-hidden="true"></span>
+    <img class="boot-stk" src="src/assets/web/logo-isotipo-negro.webp" alt="" width="397" height="476">
+    <p class="boot-msg" id="boot-msg">Encendiendo el centro de control…</p>
+    <div class="boot-actions" id="boot-actions" hidden></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<script src="mp-mapa.js"></script>
+<script src="admin.js"></script>
+<script src="legal.js" defer></script>
+</body>
+</html>

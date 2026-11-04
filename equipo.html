@@ -5,11 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equipo y contacto - ModoParche</title>
 <meta name="description" content="Conoce al equipo llanero detrás de ModoParche en Villavicencio. Misión, visión, manifiesto y contacto directo.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ModoParche">
+<meta property="og:title" content="Equipo y contacto - ModoParche">
+<meta property="og:description" content="Conoce al equipo llanero detrás de ModoParche en Villavicencio. Misión, visión, manifiesto y contacto directo.">
+<meta property="og:url" content="https://modoparche-hazel.vercel.app/equipo">
+<meta property="og:image" content="https://modoparche-hazel.vercel.app/src/assets/web/banner.jpg">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
-<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="src/assets/Branding/favicon-192.png">
-<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
@@ -17,6 +26,7 @@
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="equipo.css">
 <script>document.documentElement.classList.add('mp-js');</script>
+<link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-team">
 
@@ -25,16 +35,18 @@
 <header class="nav">
   <div class="wrap nav-row">
     <a href="index.html" class="logo" aria-label="ModoParche, inicio">
-      <img src="src/assets/web/isotipo-96.png" alt="" width="44" height="44">Modo<b>Parche</b>
+      <span class="logo-mark"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b>
     </a>
     <nav class="nav-links" aria-label="Principal">
       <a href="index.html">Inicio</a>
-      <a href="equipo.html" aria-current="page">Equipo y contacto</a>
       <a href="comercio.html">Para negocios</a>
+      <a href="preguntas.html">Preguntas</a>
+      <a href="marca.html">La marca</a>
+      <a href="equipo.html" aria-current="page">Equipo</a>
     </nav>
     <div class="nav-right">
       <a href="login.html" class="nav-login">Iniciar sesión</a>
-      <a href="index.html#feed" class="btn btn--sm"><span class="pulse" aria-hidden="true"></span>Abrir un parche</a>
+      <a href="login.html#crear" class="btn btn--sm nav-cta"><span class="pulse" aria-hidden="true"></span>Crear cuenta</a>
       <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
     </div>
   </div>
@@ -43,12 +55,15 @@
 <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
   <nav aria-label="Menú móvil">
     <a href="index.html">Inicio</a>
-    <a href="equipo.html" aria-current="page">Equipo</a>
     <a href="comercio.html">Negocios</a>
-    <a href="login.html">Entrar</a>
+    <a href="preguntas.html">Preguntas</a>
+    <a href="marca.html">La marca</a>
+    <a href="equipo.html" aria-current="page">Equipo</a>
+    <a href="login.html">Iniciar sesión</a>
   </nav>
   <div class="mobile-menu-foot">
-    <a href="#contacto" class="btn btn--block">Escribir al equipo</a>
+    <a href="login.html#crear" class="btn btn--block">Crear mi cuenta</a>
+    <a href="#contacto" class="btn btn--block btn--ghost">Escribir al equipo</a>
     <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
 </div>
@@ -140,7 +155,7 @@
       <!-- Estado vacío con intención: silla disponible en el equipo -->
       <article class="member member--open" data-reveal>
         <div class="member-top">
-          <div class="empty-mark"><img src="src/assets/web/isotipo-light.png" alt="" width="44" height="44"></div>
+          <div class="empty-mark"><img src="src/assets/web/isotipo-negro.png" alt="" width="44" height="44"></div>
         </div>
         <div class="member-body">
           <h3>Falta tu silla</h3>
@@ -264,7 +279,7 @@
     <div class="foot-grid">
       <div class="foot-intro">
         <p>Planes en grupo para Villavicencio. Hecho en el Meta por gente que sale a parchar.</p>
-        <a href="login.html" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
       </div>
       <div class="foot-col">
         <h2>Esta página</h2>
@@ -277,7 +292,8 @@
         <h2>ModoParche</h2>
         <a href="index.html">Inicio</a>
         <a href="comercio.html">Para negocios</a>
-        <a href="login.html">Iniciar sesión</a>
+        <a href="preguntas.html">Preguntas</a>
+        <a href="marca.html">La marca</a>
       </div>
       <div class="foot-col foot-contact">
         <h2>Escríbenos</h2>
@@ -288,10 +304,9 @@
     </div>
     <div class="foot-bottom">
       <p>© <span data-year>2026</span> ModoParche · Hecho en Villavo</p>
-      <button type="button" class="foot-top" data-to-top>Volver arriba
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
-      </button>
+      <nav class="foot-legal" aria-label="Documentos legales"><a href="terminos.html">Términos</a><a href="privacidad.html">Privacidad</a><a href="cookies.html">Cookies</a><a href="pagos.html">Pagos y devoluciones</a><a href="legal.html">Información legal</a></nav>
     </div>
+    <p class="foot-entity">Responsable: <span data-legal="responsable"></span> · <span data-legal="documento"></span> · <span data-legal="direccion"></span>, <span data-legal="ciudad"></span>. El logo, las ilustraciones, las piezas de campaña y parte de los textos se hicieron con ayuda de inteligencia artificial: <a href="legal.html#ia">ver aviso</a>.</p>
   </div>
 </footer>
 
@@ -323,5 +338,6 @@
   });
 })();
 </script>
+<script src="legal.js" defer></script>
 </body>
 </html>

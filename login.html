@@ -3,122 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Iniciar sesión - ModoParche</title>
+<title>Iniciar sesión o crear cuenta - ModoParche</title>
 <meta name="description" content="Inicia sesión o crea tu cuenta en ModoParche para ver los planes en grupo abiertos hoy en Villavicencio.">
-<meta name="theme-color" content="#111111">
-<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="src/assets/Branding/favicon-192.png">
-<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ModoParche">
+<meta property="og:title" content="Iniciar sesión o crear cuenta - ModoParche">
+<meta property="og:description" content="Inicia sesión o crea tu cuenta en ModoParche para ver los planes en grupo abiertos hoy en Villavicencio.">
+<meta property="og:url" content="https://modoparche-hazel.vercel.app/login">
+<meta property="og:image" content="https://modoparche-hazel.vercel.app/src/assets/web/banner.jpg">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FF5A1F">
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
 <link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="login.css">
-<script>document.documentElement.classList.add('mp-js');</script>
+<script>
+  document.documentElement.classList.add('mp-js');
+  // Abre directo el registro si el enlace trae #crear (sin parpadeo)
+  if (/^#crear/.test(location.hash)) document.documentElement.classList.add('auth-start-signup');
+</script>
+<link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-auth">
 
 <a class="skip-link" href="#main">Saltar al formulario</a>
 
-<header class="nav">
+<header class="nav auth-nav">
   <div class="wrap nav-row">
     <a href="index.html" class="logo" aria-label="ModoParche, inicio">
-      <img src="src/assets/web/isotipo-96.png" alt="" width="44" height="44">Modo<b>Parche</b>
+      <span class="logo-mark"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b>
     </a>
-    <nav class="nav-links" aria-label="Principal">
-      <a href="index.html">Inicio</a>
-      <a href="equipo.html">Equipo y contacto</a>
-      <a href="comercio.html">Para negocios</a>
-    </nav>
-    <div class="nav-right">
-      <a href="index.html" class="nav-login">Volver al inicio</a>
-      <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
-    </div>
+    <a href="index.html" class="auth-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver al inicio
+    </a>
   </div>
 </header>
 
-<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
-  <nav aria-label="Menú móvil">
-    <a href="index.html">Inicio</a>
-    <a href="equipo.html">Equipo</a>
-    <a href="comercio.html">Negocios</a>
-    <a href="login.html" aria-current="page">Entrar</a>
-  </nav>
-  <div class="mobile-menu-foot">
-    <a href="index.html" class="btn btn--block">Volver al inicio</a>
-    <p>Villavicencio, Meta · @modoparcheoficial</p>
-  </div>
-</div>
-
 <main id="main" class="auth-shell">
 
-  <!-- ============================================================
-       COLUMNA IZQUIERDA - Escaparate de Villavicencio
-  ============================================================ -->
-  <section class="brand-panel" aria-labelledby="auth-hero-title">
-    <div class="brand-top" data-reveal-group="90">
-      <h1 id="auth-hero-title" data-reveal-lines>
-        <span class="line-mask"><span>Entra al radar</span></span>
-        <span class="line-mask"><span class="accent">de Villavo</span></span>
-      </h1>
-      <p class="brand-lede" data-reveal>Mira qué parches están abiertos hoy, cuántos cupos quedan y quiénes salen con tu misma vibra.</p>
+  <!-- Panel visual (solo escritorio) -->
+  <aside class="brand-panel" aria-hidden="true">
+    <div class="brand-copy">
+      <p class="brand-kicker">Villavicencio · Meta</p>
+      <p class="brand-title" data-reveal-lines>
+        <span class="line-mask"><span>Entra al</span></span>
+        <span class="line-mask"><span class="accent">parche</span></span>
+      </p>
+      <p class="brand-lede">Planes en grupo hoy, cerca de ti y a tu medida.</p>
     </div>
-
-    <!-- Muestra en vivo de parches -->
-    <div class="mini-feed" data-ui data-reveal>
-      <div class="mini-head">
-        <span>Parches abiertos hoy</span>
-        <span class="radar-live"><span class="pulse" aria-hidden="true"></span>Villavicencio</span>
-      </div>
-      <div class="mini-card">
-        <div>
-          <div class="t">Cata de café, Los Centauros</div>
-          <div class="m">Hoy · 5:00 p. m. · Quedan 3 cupos</div>
-        </div>
-        <span class="mini-badge">92% match</span>
-      </div>
-      <div class="mini-card">
-        <div>
-          <div class="t">Caminata en Kirpas Ecoparque</div>
-          <div class="m">Sáb · 6:00 a. m. · Gratis</div>
-        </div>
-        <span class="mini-badge">87% match</span>
-      </div>
+    <div class="brand-collage">
+      <img class="bc bc--mark stk--float" src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476" style="--float:8s">
+      <img class="bc bc--fire" src="src/assets/web/fuego.png" alt="" width="520" height="638">
     </div>
+  </aside>
 
-    <!-- Tira fotográfica de la campaña en la calle -->
-    <div class="brand-strip" data-reveal-group="80">
-      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/restaurante.jpg" alt="Tablero de ModoParche en restaurante" width="1000" height="1500" loading="lazy"></figure>
-      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/discoteca.jpg" alt="Afiche de ModoParche en discoteca" width="1000" height="1500" loading="lazy"></figure>
-      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/deportivo.jpg" alt="Afiche deportivo de ModoParche" width="1000" height="1500" loading="lazy"></figure>
-      <figure class="media" data-reveal="scale" data-error=""><img src="src/assets/web/paradero.jpg" alt="Afiche de ModoParche en paradero" width="1000" height="1500" loading="lazy"></figure>
-    </div>
-  </section>
-
-  <!-- ============================================================
-       COLUMNA DERECHA - Iniciar sesión / Crear cuenta
-  ============================================================ -->
+  <!-- Iniciar sesión / Crear cuenta -->
   <section class="auth-panel" aria-label="Acceso a tu cuenta">
-    <div class="auth-box" data-reveal-group="70">
+    <div class="auth-box">
 
-      <div class="auth-tabs" role="tablist" aria-label="Acceso o registro" data-reveal>
-        <button type="button" role="tab" id="tab-login" aria-controls="view-login" aria-selected="true" class="auth-tab active" onclick="switchAuth('login', this)">Iniciar sesión</button>
-        <button type="button" role="tab" id="tab-signup" aria-controls="view-signup" aria-selected="false" class="auth-tab" onclick="switchAuth('signup', this)">Crear cuenta</button>
+      <div class="auth-tabs" role="tablist" aria-label="Iniciar sesión o crear cuenta">
+        <span class="auth-tabs-pill" aria-hidden="true"></span>
+        <button type="button" role="tab" id="tab-login" aria-controls="view-login" aria-selected="true" class="auth-tab active" data-auth="login">Iniciar sesión</button>
+        <button type="button" role="tab" id="tab-signup" aria-controls="view-signup" aria-selected="false" class="auth-tab" data-auth="signup">Crear cuenta</button>
       </div>
 
       <!-- ========================================================
            VISTA 1: INICIAR SESIÓN
       ======================================================== -->
-      <div class="auth-view active" id="view-login" role="tabpanel" aria-labelledby="tab-login" data-reveal>
-        <h2>Qué bueno verte</h2>
-        <p class="sub">Entra para ver los parches abiertos en Villavo ahora mismo.</p>
+      <div class="auth-view active" id="view-login" role="tabpanel" aria-labelledby="tab-login">
+        <h1>Qué bueno verte</h1>
+        <p class="sub">Entra con tu correo y tu contraseña.</p>
 
         <form action="#" method="POST" id="form-login" data-validate>
           <div class="field">
             <label for="login-cred">Correo</label>
-            <input type="email" id="login-cred" name="credencial" required autocomplete="username" placeholder="tu@correo.com" data-error="Escribe el correo con el que te registraste.">
+            <input type="email" id="login-cred" name="credencial" required autocomplete="username" inputmode="email" placeholder="tu@correo.com" data-error="Escribe el correo con el que te registraste.">
           </div>
 
           <div class="field">
@@ -133,35 +101,41 @@
           </div>
 
           <div class="form-foot">
-            <label class="check"><input type="checkbox" name="remember"><span>Recordarme</span></label>
             <button type="button" class="text-link btn-link" id="forgotToggle" aria-expanded="false" aria-controls="forgotBox">¿Olvidaste tu contraseña?</button>
           </div>
 
           <div class="forgot-box" id="forgotBox" hidden>
-            <p>Escríbenos desde tu correo registrado a <a href="mailto:modoparcheoficial@gmail.com?subject=Recuperar%20acceso%20ModoParche" class="text-link">modoparcheoficial@gmail.com</a> y restablecemos tu clave hoy mismo.</p>
+            <p>Te enviamos un enlace a tu correo para crear una contraseña nueva.</p>
+            <div class="forgot-row">
+              <label class="sr-only" for="forgot-email">Correo de tu cuenta</label>
+              <input type="email" id="forgot-email" class="input" placeholder="tu@correo.com" autocomplete="email" inputmode="email">
+              <button type="button" class="btn btn--sm btn--ink" id="forgot-send">Enviar enlace</button>
+            </div>
+            <p class="forgot-msg" id="forgot-msg" role="status" aria-live="polite"></p>
           </div>
 
           <div class="status" id="login-status" role="alert" tabindex="-1">
             <span class="status-icon" aria-hidden="true">!</span>
             <div class="status-text"></div>
           </div>
+          <button type="button" class="text-link btn-link resend-link" id="resend-confirm" hidden>Reenviar el correo de confirmación</button>
 
-          <button type="submit" class="btn btn--block" id="login-submit">Entrar a mi radar
+          <button type="submit" class="btn btn--block" id="login-submit">Entrar
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
         </form>
 
-        <p class="auth-switch">¿Aún no tienes cuenta? <button type="button" class="text-link btn-link" onclick="switchAuth('signup', document.getElementById('tab-signup'))">Créala en tres pasos</button></p>
+        <p class="auth-switch">¿No tienes cuenta? <button type="button" class="text-link btn-link" data-auth="signup">Créala gratis</button></p>
       </div>
 
       <!-- ========================================================
-           VISTA 2: CREAR CUENTA (WIZARD DE 3 PASOS)
+           VISTA 2: CREAR CUENTA (3 PASOS)
       ======================================================== -->
       <div class="auth-view" id="view-signup" role="tabpanel" aria-labelledby="tab-signup" hidden>
 
         <ol class="wizard-progress" aria-label="Progreso del registro">
           <li class="wz-dot active" data-dot="1"><span>Tus datos</span></li>
-          <li class="wz-dot" data-dot="2"><span>Tu perfil</span></li>
+          <li class="wz-dot" data-dot="2"><span>Tu ciudad</span></li>
           <li class="wz-dot" data-dot="3"><span>Tus gustos</span></li>
         </ol>
 
@@ -169,8 +143,8 @@
 
           <!-- PASO 1: Datos de acceso -->
           <div class="wz-step active" id="wz-step-1">
-            <h2>Crea tu cuenta</h2>
-            <p class="sub">Empecemos por tus datos para entrar.</p>
+            <h1>Crea tu cuenta</h1>
+            <p class="sub">Es gratis y toma menos de un minuto.</p>
 
             <div class="field">
               <label for="reg-nombre">Nombre completo</label>
@@ -179,18 +153,20 @@
 
             <div class="field-row">
               <div class="field">
-                <label for="reg-cedula">Cédula</label>
-                <input type="text" id="reg-cedula" name="cedula" required inputmode="numeric" pattern="[0-9]{5,15}" placeholder="Tu documento" data-error="Ingresa solo números (5 a 15 dígitos).">
+                <label for="reg-cedula">Cédula <span class="field-hint">(opcional)</span></label>
+                <input type="text" id="reg-cedula" name="cedula" inputmode="numeric" pattern="[0-9]{5,15}" placeholder="Tu documento" aria-describedby="hint-cedula" data-error="Ingresa solo números (5 a 15 dígitos).">
+                <small class="field-note" id="hint-cedula">Solo la usamos para verificar tu identidad si hay un reporte grave. Nadie más la ve.</small>
               </div>
               <div class="field">
-                <label for="reg-tel">Teléfono</label>
-                <input type="text" id="reg-tel" name="telefono" required inputmode="numeric" pattern="[0-9 +()-]{7,15}" placeholder="300 000 0000" data-error="Ingresa tu número de celular.">
+                <label for="reg-tel">Celular <span class="field-hint">(opcional)</span></label>
+                <input type="tel" id="reg-tel" name="telefono" inputmode="numeric" autocomplete="tel" pattern="[0-9 +()-]{7,15}" placeholder="300 000 0000" aria-describedby="hint-tel" data-error="Revisa tu número de celular.">
+                <small class="field-note" id="hint-tel">Para avisarte si hay un problema con tu cuenta. No se muestra a otros.</small>
               </div>
             </div>
 
             <div class="field">
               <label for="reg-email">Correo electrónico</label>
-              <input type="email" id="reg-email" name="email" required autocomplete="email" placeholder="tu@correo.com" data-error="Escribe un correo válido (ej. nombre@correo.com).">
+              <input type="email" id="reg-email" name="email" required autocomplete="email" inputmode="email" placeholder="tu@correo.com" data-error="Escribe un correo válido (ej. nombre@correo.com).">
             </div>
 
             <div class="field">
@@ -208,22 +184,22 @@
               </div>
               <ul class="pass-rules" id="passRules" aria-live="polite">
                 <li data-rule="len">8 caracteres o más</li>
-                <li data-rule="upper">Al menos 1 letra mayúscula</li>
+                <li data-rule="upper">1 letra mayúscula</li>
               </ul>
             </div>
 
             <div class="wz-actions">
               <span></span>
-              <button type="button" class="btn" onclick="wzNext(1)">Continuar
+              <button type="button" class="btn" data-wz-next="1">Continuar
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
           </div>
 
-          <!-- PASO 2: Perfil -->
+          <!-- PASO 2: Ciudad -->
           <div class="wz-step" id="wz-step-2">
-            <h2>Tu perfil en el Meta</h2>
-            <p class="sub">Esto nos ayuda a mostrarte parches cerca de donde estás.</p>
+            <h1>¿Dónde parchas?</h1>
+            <p class="sub">Así te mostramos planes cerca de ti.</p>
 
             <div class="field">
               <label for="reg-ciudad">Ciudad</label>
@@ -236,8 +212,9 @@
             </div>
 
             <div class="field">
-              <label for="reg-fecha">Fecha de nacimiento <span class="field-hint">(opcional)</span></label>
-              <input type="date" id="reg-fecha" name="fecha_nacimiento">
+              <label for="reg-fecha">Fecha de nacimiento</label>
+              <input type="date" id="reg-fecha" name="fecha_nacimiento" required autocomplete="bday" aria-describedby="hint-fecha" data-error="ModoParche es solo para mayores de 18 años.">
+              <small class="field-note" id="hint-fecha">ModoParche es solo para mayores de 18. No mostramos tu fecha a nadie.</small>
             </div>
 
             <div class="field">
@@ -246,17 +223,17 @@
             </div>
 
             <div class="wz-actions">
-              <button type="button" class="btn btn--paper" onclick="wzPrev(2)">Atrás</button>
-              <button type="button" class="btn" onclick="wzNext(2)">Continuar
+              <button type="button" class="btn btn--paper" data-wz-prev="2">Atrás</button>
+              <button type="button" class="btn" data-wz-next="2">Continuar
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
           </div>
 
-          <!-- PASO 3: Intereses (IDs de la BD: 1=Rumba, 2=Comida, 3=Aventura, 4=Deporte, 5=Cultura, 6=Gaming) -->
+          <!-- PASO 3: Intereses (IDs: 1=Rumba, 2=Comida, 3=Aventura, 4=Deporte, 5=Cultura, 6=Gaming) -->
           <div class="wz-step" id="wz-step-3">
-            <h2>¿Qué te gusta parchar?</h2>
-            <p class="sub">Elige mínimo una categoría. Podrás cambiarlas cuando quieras.</p>
+            <h1>¿Qué te gusta parchar?</h1>
+            <p class="sub">Elige mínimo una. Puedes cambiarlas cuando quieras.</p>
 
             <div class="field">
               <div class="pill-group" id="catGroup">
@@ -269,16 +246,28 @@
               </div>
             </div>
 
-            <!-- Estado vacío / resumen de selección de categorías -->
-            <div class="cat-empty" id="catEmpty">
-              <div class="empty-mark"><img src="src/assets/web/isotipo-light.png" alt="" width="40" height="40"></div>
-              <p id="catSummary">Elige al menos una categoría para encender tu radar personal.</p>
-            </div>
+            <p class="cat-summary" id="catSummary" aria-live="polite">Elige al menos una para encender tu radar.</p>
 
             <div class="status status--error" id="wz-error" role="alert">
               <span class="status-icon" aria-hidden="true">!</span>
-              <div class="status-text">Selecciona al menos una categoría de interés.</div>
+              <div class="status-text">Selecciona al menos una categoría.</div>
             </div>
+
+            <fieldset class="consent" id="consent">
+              <legend class="sr-only">Autorizaciones</legend>
+              <label class="check terms">
+                <input type="checkbox" name="acepto_terminos" id="reg-terminos" required data-error="Debes aceptar los términos para crear tu cuenta.">
+                <span>Leí y acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos de uso</a>.</span>
+              </label>
+              <label class="check terms">
+                <input type="checkbox" name="autorizo_datos" id="reg-datos" required data-error="Necesitamos tu autorización para crear la cuenta.">
+                <span>Autorizo el tratamiento de mis datos personales según la <a href="privacidad.html" target="_blank" rel="noopener">Política de privacidad</a> (Ley 1581 de 2012).</span>
+              </label>
+              <label class="check terms">
+                <input type="checkbox" name="recibe_anuncios" id="reg-anuncios">
+                <span>Quiero recibir anuncios y novedades de ModoParche. <small>Opcional. Te puedes dar de baja cuando quieras.</small></span>
+              </label>
+            </fieldset>
 
             <div class="status" id="reg-status" role="alert" tabindex="-1">
               <span class="status-icon" aria-hidden="true">!</span>
@@ -286,7 +275,7 @@
             </div>
 
             <div class="wz-actions">
-              <button type="button" class="btn btn--paper" onclick="wzPrev(3)">Atrás</button>
+              <button type="button" class="btn btn--paper" data-wz-prev="3">Atrás</button>
               <button type="submit" class="btn" id="wz-submit">Crear mi cuenta
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
@@ -294,8 +283,44 @@
           </div>
 
         </form>
+
+        <p class="auth-switch">¿Ya tienes cuenta? <button type="button" class="text-link btn-link" data-auth="login">Inicia sesión</button></p>
       </div>
 
+      <!-- ========================================================
+           VISTA 3: NUEVA CONTRASEÑA (llega desde el enlace del correo)
+      ======================================================== -->
+      <div class="auth-view" id="view-recover" hidden>
+        <h1>Nueva contraseña</h1>
+        <p class="sub">Escríbela dos veces y vuelves a entrar de una.</p>
+        <form action="#" id="form-recover" data-validate>
+          <div class="field">
+            <label for="rec-pass">Contraseña nueva</label>
+            <div class="pass-wrap">
+              <input type="password" id="rec-pass" required autocomplete="new-password" pattern="(?=.*[A-Z]).{8,}" placeholder="Mínimo 8 caracteres y 1 mayúscula" data-error="Usa mínimo 8 caracteres e incluye una letra mayúscula.">
+              <button type="button" class="pass-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="i-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0112 19c-6.4 0-10-7-10-7a18.5 18.5 0 015.1-5.9M9.9 4.2A10.5 10.5 0 0112 4c6.4 0 10 7 10 7a18.5 18.5 0 01-2.2 3.2M1 1l22 22"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rec-pass2">Repítela</label>
+            <input type="password" id="rec-pass2" required autocomplete="new-password" placeholder="La misma contraseña" data-error="Repite la misma contraseña.">
+          </div>
+          <div class="status" id="rec-status" role="alert" tabindex="-1">
+            <span class="status-icon" aria-hidden="true">!</span>
+            <div class="status-text"></div>
+          </div>
+          <button type="submit" class="btn btn--block" id="rec-submit">Guardar y entrar</button>
+        </form>
+      </div>
+
+      <a class="biz-link" href="empresa.html">
+        <span class="tag-olive">Negocios</span>
+        <span>¿Tienes un local? Crea tu cuenta de negocio</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
     </div>
   </section>
 
@@ -305,5 +330,6 @@
 <script src="supabase-client.js" defer></script>
 <script src="mp-base.js" defer></script>
 <script src="login.js" defer></script>
+<script src="legal.js" defer></script>
 </body>
 </html>

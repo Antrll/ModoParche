@@ -370,139 +370,76 @@
 }
 
 /* =====================================================================
-   4. SOLICITUD DE ALIANZA + VISTA PREVIA EN VIVO
+   4. CREA TU CUENTA DE NEGOCIO (registro propio, sin intermediarios)
 ===================================================================== */
-.biz-signup {
+.biz-join {
+  position: relative;
   background: var(--paper);
   color: var(--ink);
   padding: var(--gap-section) 0;
+  overflow: hidden;
 }
-
-.biz-signup-grid {
+.biz-join-card {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: clamp(32px, 4.5vw, 64px);
-  align-items: start;
-}
-
-.biz-signup-left {
-  grid-column: 1 / 6;
-  display: grid;
-  gap: 20px;
-}
-.biz-signup-lede {
-  color: var(--ink);
-  max-width: 44ch;
-}
-
-/* Vista previa (data-ui) */
-.biz-preview {
-  margin-top: 8px;
-  background: var(--soft);
-  border: 2px solid var(--ink);
-  padding: 22px;
-  display: grid;
-  gap: 16px;
-}
-.biz-preview-bar {
-  display: flex;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  gap: clamp(28px, 4vw, 56px);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: var(--t-sm);
-  font-weight: 700;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--ink);
-}
-
-.biz-preview-empty {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 16px;
-  align-items: start;
-  padding: 8px 0;
-}
-.biz-preview-empty[hidden] { display: none; }
-.biz-preview-empty h3 {
-  font-size: var(--t-lg);
-  margin-bottom: 4px;
-}
-.biz-preview-empty p {
-  font-size: var(--t-sm);
-  color: var(--ink);
-  margin-bottom: 12px;
-}
-
-.biz-preview-card {
-  display: grid;
-  grid-template-columns: 76px 1fr;
-  gap: 16px;
-  align-items: center;
-  padding: 16px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-}
-.biz-preview-card[hidden] { display: none; }
-
-.biz-preview-card .plan-match {
-  width: 72px;
-  height: 72px;
-  background: var(--orange);
-  color: var(--ink);
-  clip-path: var(--burst);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-.biz-preview-card .plan-match b {
-  font-family: var(--font-display);
-  font-size: var(--t-lg);
-}
-.biz-preview-card .plan-match span {
-  font-size: var(--t-sm);
-  font-weight: 700;
-}
-.biz-preview-card .plan-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-}
-.biz-preview-card .plan-cat {
-  padding: 2px 9px;
+  padding: clamp(28px, 5vw, 64px);
   background: var(--ink);
   color: var(--paper);
-  font-size: var(--t-sm);
-  font-weight: 700;
+  border-radius: var(--r-lg);
+  overflow: hidden;
 }
-.biz-preview-card .plan-spots {
-  font-size: var(--t-sm);
-  font-weight: 700;
-  color: var(--orange-deep);
+.biz-join-copy { position: relative; z-index: 2; display: grid; gap: 18px; justify-items: start; }
+.biz-join-copy h2 { font-size: var(--t-xl); line-height: .9; }
+.biz-join-copy > p { color: rgba(255,255,255,.86); max-width: 44ch; }
+.biz-join-steps { display: grid; gap: 10px; width: 100%; counter-reset: paso; }
+.biz-join-steps li {
+  counter-increment: paso;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #1c1c1f;
+  border-radius: var(--r);
 }
-.biz-preview-card .plan-title {
-  font-family: var(--font-body);
-  font-size: var(--t-body);
-  font-weight: 800;
-  text-transform: none;
-  letter-spacing: 0;
-  line-height: 1.3;
-}
-.biz-preview-card .plan-meta {
-  font-size: var(--t-sm);
+.biz-join-steps li::before {
+  content: counter(paso);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  background: var(--orange);
   color: var(--ink);
-  margin-top: 4px;
+  border-radius: 50%;
 }
+.biz-join-steps b { display: block; }
+.biz-join-steps span { font-size: var(--t-sm); color: rgba(255,255,255,.78); }
+.biz-join-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 6px; }
+.biz-join-actions .link { color: var(--paper); }
 
-/* Formulario */
-.biz-form {
-  grid-column: 6 / 13;
-  background: var(--soft);
-  padding: clamp(26px, 4vw, 48px);
+.biz-join-art { position: relative; display: grid; place-items: center; min-height: 360px; }
+.biz-join-art::before {
+  content: "";
+  position: absolute;
+  width: 78%;
+  aspect-ratio: 1;
+  background: var(--olive);
+  clip-path: var(--burst);
+  animation: mp-spin 50s linear infinite;
 }
+.biz-join-art img { position: relative; height: auto; filter: drop-shadow(0 20px 26px rgba(0,0,0,.5)); }
+.biz-join-art .ja-1 { width: 54%; rotate: -6deg; }
+.biz-join-art .ja-2 { position: absolute; width: 34%; right: 0; top: 4%; rotate: 12deg; }
+.biz-join-art .ja-3 { position: absolute; width: 30%; left: 0; bottom: 6%; rotate: -10deg; }
+
+/* Bordes suaves para toda la página */
+.biz-hero-photo, .biz-how-photos figure, .biz-banner, .plan-main, .plan-tier, .biz-step { border-radius: var(--r-lg); overflow: hidden; }
+.biz-step { transition: transform .35s var(--ease-out); }
 
 /* =====================================================================
    5. RESPONSIVE
@@ -511,14 +448,15 @@
   .biz-how-grid,
   .biz-plans-head,
   .plans-board,
-  .biz-signup-grid { grid-template-columns: 1fr; }
+  .biz-join-card { grid-template-columns: 1fr; }
   .biz-how-head { grid-column: 1 / -1; position: static; }
   .biz-how-side { display: none; }
   .biz-steps { grid-column: 1 / -1; }
   .biz-plans-head h2, .biz-plans-head p { grid-column: 1 / -1; }
   .plan-main { grid-column: 1 / -1; }
   .plan-side { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-  .biz-signup-left, .biz-form { grid-column: 1 / -1; }
+  .biz-join-card { grid-template-columns: 1fr; }
+  .biz-join-art { min-height: 280px; }
 }
 
 @media (max-width: 900px) {
@@ -531,5 +469,5 @@
 @media (max-width: 620px) {
   .biz-facts { grid-template-columns: 1fr; }
   .plan-side { grid-template-columns: 1fr; }
-  .biz-preview-empty { grid-template-columns: 1fr; }
+  .biz-join-art { display: none; }
 }

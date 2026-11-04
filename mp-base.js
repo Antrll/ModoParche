@@ -47,7 +47,7 @@
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && menu.classList.contains('is-open')) { setOpen(false); burger.focus(); }
     });
-    window.addEventListener('resize', () => { if (window.innerWidth > 920) setOpen(false); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 1140) setOpen(false); });
   }
 
   /* ---------- Entradas al hacer scroll ---------- */
@@ -107,7 +107,7 @@
     $$('[data-to-top]').forEach(b => b.addEventListener('click', go));
     if (!btn) return;
     let ticking = false;
-    const update = () => { btn.classList.toggle('is-visible', window.scrollY > 900); ticking = false; };
+    const update = () => { btn.classList.toggle('is-visible', window.scrollY > 700); ticking = false; };
     window.addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } }, { passive: true });
     btn.addEventListener('click', go);
     update();

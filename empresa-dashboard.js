@@ -35,6 +35,19 @@
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   const REDUCED = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Cuenta real (Supabase) o panel de ejemplo (?demo=1). Cada cuenta ve solo su negocio.
+  const DEMO = new URLSearchParams(location.search).has('demo');
+  const SB = () => window.mpSupabase || null;
+  let ME = null;
+  const REMOTE = () => !DEMO && !!ME;
+  const CENTRO = { lat: 4.1420, lng: -73.6266 };
+  const PLANES = {
+    basico: { nombre: 'Parche básico', precio: 'Gratis', limite: 2, puntos: ['2 parches al mes', 'Perfil de negocio en el radar', 'Conteo de cupos llenados'] },
+    villavo: { nombre: 'Parche Villavo', precio: '$89.000 / mes', limite: Infinity, puntos: ['Parches ilimitados con foto', 'Promos relámpago destacadas', 'Prioridad en tu categoría', 'Métricas de quién llega'] },
+    sedes: { nombre: 'Varias sedes', precio: 'A la medida', limite: Infinity, puntos: ['Todo lo de Parche Villavo', 'Una cuenta por sede', 'Acompañamiento del equipo'] },
+  };
+  const CAT_NEG = { comida: 'Comida y Antojos', rumba: 'Rumba y Bares', chill: 'Planes Chill', conciertos: 'Conciertos y Toques', cultura: 'Cultura y Talleres', deportes: 'Deporte y Bienestar', pueblear: 'Turismo y Aventura', gaming: 'Gaming', rio: 'Planes Chill', pet: 'Planes Chill' };
+
   const day0 = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const at = (base, hhmm) => { const [h, m] = hhmm.split(':').map(Number); const d = new Date(base); d.setHours(h, m, 0, 0); return d.getTime(); };
@@ -77,7 +90,7 @@
     cumple: 'Celebra su cumpleaños con 6 o más confirmados',
     relampago: 'Llega durante un parche relámpago',
   };
-  const TEMAS = { 'Rumba y Bares': 'noche', 'Conciertos y Toques': 'noche', 'Comida y Antojos': 'fuego', 'Planes Chill': 'dia', 'Cultura y Talleres': 'dia' };
+  const TEMAS = { 'Rumba y Bares': 'noche', 'Conciertos y Toques': 'noche', 'Gaming': 'noche', 'Comida y Antojos': 'fuego', 'Deporte y Bienestar': 'fuego', 'Planes Chill': 'dia', 'Cultura y Talleres': 'dia', 'Turismo y Aventura': 'dia' };
   const horarios = (o, c, extra = {}) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, { abierto: true, open: o, close: c, ...(extra[d] || {}) }]));
 
   function seed() {
@@ -119,83 +132,20 @@
       { estrellas: 5, autor: 'Laura M.', texto: 'El crossover del jueves pasado estuvo brutal. Volvemos seguro.', parche: 'Noche de crossover', fecha: at(tc - 8 * DAY, '23:10') },
     ];
 
-    /* ---------- Asadero Mamona y Brasa: comida, tarjeta de fuego ---------- */
-    const asaK = [
-      { id: 'asa-k1', nombre: 'Primera visita', beneficio: 'Jugo de maracuyá de cortesía', regla: 'checkin', vigencia: 7, limite: 100, prefijo: 'PRIMERA', estado: 'activo' },
-      { id: 'asa-k2', nombre: 'Mesa de 6', beneficio: 'Postre llanero para toda la mesa', regla: 'lleno', vigencia: 7, limite: 15, prefijo: 'MESA', estado: 'activo' },
-      { id: 'asa-k3', nombre: 'Cumpleañero', beneficio: 'Postre de cumpleaños con vela', regla: 'cumple', vigencia: 15, limite: 10, prefijo: 'CUMPLE', estado: 'activo' },
-    ];
-    const a3i = at(t0 - 2 * DAY, '13:00');
-    const asaP = [
-      P({ id: 'asa-p1', titulo: 'Almuerzo llanero: mamona al palo', organizador: 'Mamona y Brasa', inicio: at(t0, '12:30'), dur: 180, cupos: 12, consumo: 38000, promo: 'Mamona, papa salada y yuca. El jugo de la casa va incluido.',
-        asistentes: [A('Natalia S.', past(at(t0 - DAY, '17:40'))), A('Juan P.', past(at(t0 - DAY, '20:15'))), A('Sofía C.', past(at(t0, '08:30')))] }),
-      P({ id: 'asa-p2', titulo: 'Noche de arpa y ternera a la llanera', organizador: 'Mamona y Brasa', inicio: at(t0 + DAY, '19:00'), cupos: 20, consumo: 52000, promo: 'Arpa, cuatro y maracas en vivo desde las 8.',
-        asistentes: [A('Miguel A.', past(at(t0 - DAY, '13:10'))), A('Karen L.', past(at(t0 - DAY, '16:45'))), A('Felipe O.', past(at(t0, '07:55')))] }),
-      P({ id: 'asa-p3', tipo: 'comunidad', titulo: 'Almuerzo del equipo de fútbol', organizador: 'Brayan C.', inicio: a3i, cupos: 6, consumo: 38000,
-        asistentes: [A('Brayan C.', at(t0 - 4 * DAY, '19:00'), a3i + 5 * MIN), A('Óscar M.', at(t0 - 4 * DAY, '19:30'), a3i + 12 * MIN), A('Luisa F.', at(t0 - 3 * DAY, '09:00'), a3i + 25 * MIN)] }),
-    ];
-    asaP[0].chat = [
-      { tipo: 'sys', texto: 'Mamona y Brasa abrió el parche', ts: at(t0 - 3 * DAY, '10:00') },
-      { autor: asaP[0].asistentes[1], texto: '¿Tienen opción para niños?', ts: past(at(t0 - DAY, '20:20')) },
-      { autor: 'biz', texto: 'Claro, hay media porción de mamona con jugo a $19.000.', ts: past(at(t0 - DAY, '20:34')) },
-    ];
-    const asaC = [
-      C('PRIMERA-3310', asaK[0], 'Brayan C.', 'asa-p3', a3i + 5 * MIN, a3i + 95 * MIN),
-      C('PRIMERA-5527', asaK[0], 'Óscar M.', 'asa-p3', a3i + 12 * MIN),
-      C('PRIMERA-8840', asaK[0], 'Luisa F.', 'asa-p3', a3i + 25 * MIN, a3i + 110 * MIN),
-    ];
-    const asaR = [
-      { estrellas: 5, autor: 'Brayan C.', texto: 'La mamona en su punto. Nos atendieron rápido a todo el equipo.', parche: 'Almuerzo del equipo de fútbol', fecha: a3i + 4 * HOUR },
-      { estrellas: 4, autor: 'Luisa F.', texto: 'Muy rico todo. El parqueadero se llena al mediodía.', parche: 'Almuerzo del equipo de fútbol', fecha: a3i + 6 * HOUR },
-      { estrellas: 5, autor: 'Óscar M.', texto: 'El jugo de maracuyá de cortesía fue la mejor bienvenida.', parche: 'Almuerzo del equipo de fútbol', fecha: a3i + 26 * HOUR },
-    ];
-
-    /* ---------- Café Arrayán: plan chill, tarjeta de día ---------- */
-    const cafK = [
-      { id: 'caf-k1', nombre: 'Madrugador', beneficio: 'Pan de bono gratis con tu café', regla: 'temprano', vigencia: 3, limite: 60, prefijo: 'MADRU', estado: 'activo' },
-      { id: 'caf-k2', nombre: 'Jugador de mesa', beneficio: '2x1 en malteadas', regla: 'relampago', vigencia: 1, limite: 40, prefijo: 'JUEGO', estado: 'activo' },
-      { id: 'caf-k3', nombre: 'Cumpleañero', beneficio: 'Porción de torta con vela', regla: 'cumple', vigencia: 15, limite: 10, prefijo: 'TORTA', estado: 'activo' },
-    ];
-    const f3i = at(t0 - DAY, '18:00');
-    const cafP = [
-      P({ id: 'caf-p1', titulo: 'Tarde de juegos de mesa', organizador: 'Café Arrayán', inicio: at(t0, '16:00'), dur: 240, cupos: 10, consumo: 18000, promo: 'Catán, Dixit y Uno. Trae tu juego si quieres.',
-        asistentes: [A('Paula R.', past(at(t0 - DAY, '21:10'))), A('Tomás R.', past(at(t0, '07:20'))), A('Isabella M.', past(at(t0, '08:05')))] }),
-      P({ id: 'caf-p2', titulo: 'Taller de barismo para principiantes', organizador: 'Café Arrayán', inicio: at(t0 + 3 * DAY, '09:00'), dur: 120, cupos: 8, consumo: 25000, promo: 'Aprende a preparar un V60 y un capuchino. Incluye el café.',
-        asistentes: [A('Mariana B.', past(at(t0 - DAY, '10:00'))), A('Julián S.', past(at(t0 - DAY, '15:45'))), A('Daniela H.', past(at(t0, '06:50')))] }),
-      P({ id: 'caf-p3', tipo: 'comunidad', titulo: 'Club de lectura: García Márquez', organizador: 'Paula R.', inicio: f3i, dur: 150, cupos: 8, consumo: 15000,
-        asistentes: [A('Paula R.', at(t0 - 5 * DAY, '12:00'), f3i + 5 * MIN), A('Sebastián T.', at(t0 - 4 * DAY, '19:00'), f3i + 70 * MIN), A('Valeria G.', at(t0 - 3 * DAY, '08:30'), f3i + 15 * MIN)] }),
-    ];
-    cafP[0].chat = [
-      { tipo: 'sys', texto: 'Café Arrayán abrió el parche', ts: at(t0 - 4 * DAY, '09:00') },
-      { autor: cafP[0].asistentes[0], texto: '¿Puedo llevar mi Catán con la expansión?', ts: past(at(t0 - DAY, '21:15')) },
-      { autor: 'biz', texto: 'De una, Paula. Te guardamos la mesa grande del fondo.', ts: past(at(t0 - DAY, '21:30')) },
-    ];
-    const cafC = [
-      C('MADRU-7781', cafK[0], 'Paula R.', 'caf-p3', f3i + 5 * MIN, f3i + 40 * MIN),
-      C('MADRU-2034', cafK[0], 'Valeria G.', 'caf-p3', f3i + 15 * MIN),
-    ];
-    const cafR = [
-      { estrellas: 5, autor: 'Paula R.', texto: 'El mejor lugar para el club: buena luz, silencio y café de verdad.', parche: 'Club de lectura: García Márquez', fecha: past(f3i + 3 * HOUR) },
-      { estrellas: 5, autor: 'Valeria G.', texto: 'Llegué temprano y el pan de bono gratis me ganó.', parche: 'Club de lectura: García Márquez', fecha: past(f3i + 4 * HOUR) },
-      { estrellas: 4, autor: 'Sebastián T.', texto: 'Muy chévere. Faltan enchufes cerca de las mesas.', parche: 'Club de lectura: García Márquez', fecha: past(f3i + 5 * HOUR) },
-    ];
-
     const perfil = o => ({ ...o, tema: TEMAS[o.categoria] || 'noche' });
     return {
-      v: 2, day: dayKey(t0), actual: 'capachos', sonido: true, solicitudes: [],
+      v: 3, day: dayKey(t0), actual: 'capachos', sonido: true, solicitudes: [],
       locales: {
-        capachos: { id: 'capachos', perfil: perfil({ nombre: 'Discoteca Los Capachos', corto: 'LC', categoria: 'Rumba y Bares', tel: '608 670 4521', nit: '900.418.226-1', idMP: 'MP-0421', desde: new Date(2026, 2, 14).getTime(), direccion: 'Km 4', barrio: 'Vía Acacías', lat: 4.1165, lng: -73.6508,
+        capachos: { id: 'capachos', perfil: perfil({ nombre: 'Discoteca Los Capachos', corto: 'LC', categoria: 'Rumba y Bares', cat: 'rumba', plan: 'villavo', tel: '608 670 4521', nit: '900.418.226-1', idMP: 'MP-0421', desde: new Date(2026, 2, 14).getTime(), direccion: 'Km 4', barrio: 'Vía Acacías', lat: 4.1165, lng: -73.6508,
           desc: 'Discoteca a la salida de Villavo por la vía a Acacías. Crossover, reguetón viejo y arpa llanera en vivo.',
           horarios: horarios('19:00', '00:00', { 0: { open: '18:00' }, 4: { open: '20:00', close: '02:00' }, 5: { open: '21:00', close: '04:00' }, 6: { open: '21:00', close: '04:00' } }) }),
-          parches: capP, cupones: capK, codigos: capC, resenas: capR },
-        asadero: { id: 'asadero', perfil: perfil({ nombre: 'Asadero Mamona y Brasa', corto: 'MB', categoria: 'Comida y Antojos', tel: '608 662 1180', nit: '901.227.904-3', idMP: 'MP-0587', desde: new Date(2026, 4, 2).getTime(), direccion: 'Calle 40 # 24-15', barrio: 'Los Fundadores', lat: 4.1242, lng: -73.6395,
-          desc: 'Mamona al palo, ternera a la llanera y jugos naturales, a una cuadra del Parque Los Fundadores.',
-          horarios: horarios('11:00', '22:00') }),
-          parches: asaP, cupones: asaK, codigos: asaC, resenas: asaR },
-        cafe: { id: 'cafe', perfil: perfil({ nombre: 'Café Arrayán', corto: 'CA', categoria: 'Planes Chill', tel: '310 482 7731', nit: '1.121.904.552-7', idMP: 'MP-0712', desde: new Date(2026, 6, 20).getTime(), direccion: 'C.C. Primavera Urbana, local 112', barrio: 'Primavera', lat: 4.1348, lng: -73.6206,
-          desc: 'Café de especialidad del Meta, juegos de mesa y talleres. Un plan tranquilo en Primavera Urbana.',
-          horarios: horarios('08:00', '21:00', { 0: { open: '09:00', close: '19:00' } }) }),
-          parches: cafP, cupones: cafK, codigos: cafC, resenas: cafR },
+          parches: capP, cupones: capK, codigos: capC, resenas: capR,
+          // Modo Mesa de ejemplo: una promo y dos reservas
+          mesas: [{ id: 'cap-m1', titulo: 'Mesa de 6: botella de la casa', beneficio: 'Botella de aguardiente de cortesía si llegan 6 o más', descripcion: 'Mesa guardada 20 minutos.', min: 6, max: 12, dias: [4, 5, 6], desde: '20:00', hasta: '02:00', cupos: 6, activa: true, vence: '' }],
+          reservas: [
+            { id: 'cap-r1', promoId: 'cap-m1', persona: A('Sara V.', at(tc, '10:12')), personas: 7, llegada: at(tc, '22:30'), nota: 'Es un cumpleaños', estado: 'pendiente', codigo: 'MESA-7KQ2D', creado: past(at(tc, '10:12')) },
+            { id: 'cap-r2', promoId: 'cap-m1', persona: A('Julián T.', at(tc, '09:40')), personas: 6, llegada: at(tc + DAY, '21:00'), nota: '', estado: 'confirmada', codigo: 'MESA-3PZ8W', creado: past(at(tc, '09:40')) },
+          ] },
       },
     };
   }
@@ -203,14 +153,18 @@
   /* =====================================================================
      3. ESTADO Y DERIVADOS
   ===================================================================== */
-  const KEY = 'mp_business_v2';
+  // Panel de ejemplo: todo vive en este navegador.
+  // Cuenta real: el negocio y sus parches vienen de Supabase; cupones, llegadas
+  // y horarios se guardan aparte para cada cuenta (nunca se mezclan).
+  let KEY = 'mp_business_demo_v3';
   let S = null;
   function load() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
-    if (saved && saved.v === 2 && saved.day === dayKey(NOW()) && saved.locales) { S = saved; return; }
+    const asegurar = () => { for (const L of Object.values(S.locales)) { L.mesas = L.mesas || []; L.reservas = L.reservas || []; } };
+    if (saved && saved.v === 3 && saved.day === dayKey(NOW()) && saved.locales) { S = saved; asegurar(); return; }
     S = seed();
-    if (saved && saved.v === 2 && saved.locales) {
+    if (saved && saved.v === 3 && saved.locales) {
       // Día nuevo: los datos de muestra se renuevan; lo que el local configuró se conserva
       S.actual = S.locales[saved.actual] ? saved.actual : S.actual;
       S.sonido = saved.sonido !== false;
@@ -223,10 +177,279 @@
         }
         const propios = (old.parches || []).filter(p => p.creado && p.inicio + (p.dur || 180) * MIN > NOW());
         S.locales[id].parches.push(...propios);
+        if (Array.isArray(old.mesas)) S.locales[id].mesas = old.mesas;
+        if (old.perfil && old.perfil.horarios) S.locales[id].perfil.horarios = old.perfil.horarios;
       }
     }
+    asegurar();
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin espacio: el panel sigue funcionando en memoria */ } }
+  // Horarios y cupones van a la base (negocios.horarios y negocios.cupones) para
+  // que no se pierdan al cambiar de celular o de navegador
+  let syncT = null, ultimoSync = null;
+  function syncNegocio() {
+    if (!REMOTE()) return;
+    clearTimeout(syncT);
+    syncT = setTimeout(async () => {
+      const L = loc(), campos = { horarios: L.perfil.horarios || null, cupones: L.cupones };
+      const firma = JSON.stringify(campos);
+      if (firma === ultimoSync) return;
+      const { error } = await SB().from('negocios').update(campos).eq('id', ME.id);
+      if (error) { console.warn('[negocio]', error.message); if (!/horarios|cupones/.test(error.message)) toast('No se guardó en la nube', 'Tus cambios quedan en este navegador. Revisa tu conexión.', { error: true }); return; }
+      ultimoSync = firma;
+    }, 700);
+  }
+  function save() {
+    try {
+      if (!REMOTE()) { localStorage.setItem(KEY, JSON.stringify(S)); return; }
+      syncNegocio();
+      const L = loc(), rem = L.parches.filter(p => p.remoto);
+      localStorage.setItem(KEY, JSON.stringify({
+        v: 3, sonido: S.sonido, cupones: L.cupones, codigos: L.codigos, horarios: L.perfil.horarios,
+        llegadas: Object.fromEntries(rem.map(p => [p.id, Object.fromEntries(p.asistentes.filter(a => a.llego).map(a => [a.id, a.llego]))])),
+        walkins: Object.fromEntries(rem.map(p => [p.id, p.asistentes.filter(a => a.walkin)])),
+        durs: Object.fromEntries(rem.map(p => [p.id, p.dur])),
+        cupRel: Object.fromEntries(rem.filter(p => p.cuponId).map(p => [p.id, p.cuponId])),
+      }));
+    } catch (e) { /* sin espacio: el panel sigue funcionando en memoria */ }
+  }
+  const meta = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null') || {}; } catch (e) { return {}; } };
+
+  /* ---------- Cuenta real: negocio desde Supabase ---------- */
+  const initialsOf = n => String(n || 'MP').split(/\s+/).filter(w => w.length > 2 || /^[A-Z]/.test(w)).slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'MP';
+  const fmtTel = t => String(t || '').replace(/^(\d{3})(\d{3})(\d+)$/, '$1 $2 $3');
+  function perfilDeNegocio(n, prev = {}) {
+    const categoria = CAT_NEG[n.categoria] || 'Comida y Antojos';
+    return {
+      nombre: n.nombre, corto: initialsOf(n.nombre), categoria, cat: n.categoria, tema: TEMAS[categoria] || 'fuego',
+      plan: n.plan, sedes: n.sedes, responsable: n.responsable, tipoNegocio: n.tipo,
+      tel: fmtTel(n.telefono), telRaw: n.telefono || '', nit: n.nit || 'Sin NIT', idMP: 'MP-' + String(n.id).slice(0, 4).toUpperCase(),
+      desde: Date.parse(n.creado_en) || NOW(), direccion: n.direccion || 'Sin dirección', barrio: n.barrio || n.ciudad || 'Villavicencio',
+      lat: typeof n.lat === 'number' ? n.lat : CENTRO.lat, lng: typeof n.lng === 'number' ? n.lng : CENTRO.lng,
+      desc: n.descripcion || 'Cuenta a los parceros qué ofreces desde Editar perfil.',
+      // Los horarios los pone el dueño. null = todavía no los ha configurado.
+      horarios: horariosValidos(n.horarios) || horariosValidos(prev.horarios) || null,
+      planVence: n.plan_vence ? Date.parse(n.plan_vence) : null,
+      planPendiente: n.plan_pendiente || null,
+      sinUbicacion: typeof n.lat !== 'number' || typeof n.lng !== 'number',
+      ciudad: n.ciudad || 'Villavicencio',
+    };
+  }
+  // { "0": {abierto, open, close}, ... "6": {...} } con horas HH:MM
+  function horariosValidos(h) {
+    if (!h || typeof h !== 'object') return null;
+    const ok = [0, 1, 2, 3, 4, 5, 6].every(d => { const x = h[d]; return x && typeof x.abierto === 'boolean' && /^\d{2}:\d{2}$/.test(x.open) && /^\d{2}:\d{2}$/.test(x.close); });
+    return ok ? Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, { abierto: h[d].abierto, open: h[d].open, close: h[d].close }])) : null;
+  }
+  // Una cuenta nueva arranca SIN cupones: los crea el dueño cuando quiera
+  function cuentaNueva(n) {
+    const m = meta();
+    return {
+      v: 3, day: dayKey(NOW()), actual: n.id, sonido: m.sonido !== false, solicitudes: [],
+      locales: {
+        [n.id]: {
+          id: n.id, perfil: perfilDeNegocio(n, m),
+          parches: [],
+          cupones: Array.isArray(n.cupones) && n.cupones.length ? n.cupones
+            : Array.isArray(m.cupones) ? m.cupones.filter(k => k.id !== 'k-bienvenida' || k.creado) : [],
+          codigos: Array.isArray(m.codigos) ? m.codigos : [],
+          resenas: [],
+          mesas: [], reservas: [],
+        },
+      },
+    };
+  }
+
+  const nameCache = new Map();
+  async function cacheNombres(ids) {
+    const faltan = [...new Set(ids.filter(id => id && id !== ME.id && !nameCache.has(id)))];
+    if (!faltan.length) return;
+    const { data } = await SB().from('perfiles').select('id, nombre').in('id', faltan);
+    (data || []).forEach(r => { const [a, b] = String(r.nombre || 'Parcero').split(/\s+/); nameCache.set(r.id, b ? `${a} ${b[0]}.` : a); });
+  }
+  const persona = id => ({ id, nombre: nameCache.get(id) || 'Parcero', tono: hash(id) % 11 });
+
+  function parcheDeFila(r, miembros, m) {
+    const llegadas = (m.llegadas && m.llegadas[r.id]) || {};
+    const relampago = !!r.relampago;
+    return {
+      id: r.id, remoto: true, creado: true, creadoTs: Date.parse(r.creado_en) || NOW(),
+      tipo: relampago ? 'relampago' : 'oficial', titulo: r.titulo, organizador: loc().perfil.nombre,
+      inicio: Date.parse(r.inicio), dur: (m.durs && m.durs[r.id]) || (relampago ? 60 : 240),
+      cupos: r.cupos_max, consumo: r.costo || 0, promo: r.promo || r.descripcion || '', categoria: r.categoria,
+      lat: r.lat, lng: r.lng, imagen: r.imagen || '', cuponId: (m.cupRel && m.cupRel[r.id]) || null, cancelado: false,
+      // La llegada viene de la base (QR, GPS o marcada en la puerta)
+      asistentes: miembros.filter(x => x.usuario_id !== ME.id).map(x => ({
+        ...persona(x.usuario_id), confirmo: Date.parse(x.creado_en) || NOW(),
+        llego: x.checkin ? (Date.parse(x.checkin_en) || llegadas[x.usuario_id] || NOW()) : (llegadas[x.usuario_id] || null),
+        metodo: x.checkin_metodo || null,
+      })).concat((m.walkins && m.walkins[r.id]) || []),
+      chat: [], chatCargado: false,
+    };
+  }
+
+  async function cargarParchesRemotos() {
+    const since = new Date(NOW() - 45 * DAY).toISOString();
+    const { data: rows, error } = await SB().from('parches').select('*').eq('creador_id', ME.id).gte('inicio', since).order('inicio');
+    if (error) throw error;
+    let miembros = [];
+    if (rows.length) {
+      const mm = await SB().from('parche_miembros').select('*').in('parche_id', rows.map(r => r.id));
+      if (mm.error) throw mm.error;
+      miembros = mm.data;
+    }
+    await cacheNombres(miembros.map(x => x.usuario_id));
+    const m = meta(), L = loc(), prev = new Map(L.parches.map(p => [p.id, p]));
+    L.parches = rows.map(r => {
+      const p = parcheDeFila(r, miembros.filter(x => x.parche_id === r.id), m);
+      const old = prev.get(r.id);
+      if (old) { p.chat = old.chat; p.chatCargado = old.chatCargado; p.asistentes.forEach(a => { const o = old.asistentes.find(x => x.id === a.id); if (o && o.llego && !a.llego && !esUuid(a.id)) a.llego = o.llego; }); }
+      return p;
+    });
+  }
+
+  let recargaT = null;
+  function recargarPronto() {
+    clearTimeout(recargaT);
+    recargaT = setTimeout(async () => {
+      try { await cargarParchesRemotos(); render(); } catch (e) { console.warn('[parches]', e.message); }
+    }, 300);
+  }
+
+  function setBoot(msg, actions = '') {
+    const b = $('#boot');
+    if (!b) return;
+    b.hidden = false; b.classList.remove('is-out');
+    $('#boot-msg').innerHTML = msg;
+    const box = $('#boot-actions');
+    box.hidden = !actions; box.innerHTML = actions;
+  }
+  function hideBoot() {
+    const b = $('#boot');
+    if (!b) return;
+    b.classList.add('is-out');
+    setTimeout(() => { b.hidden = true; }, 380);
+  }
+
+  async function bootRemoto() {
+    const sb = SB();
+    if (!sb) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" onclick="location.reload()">Reintentar</button><a class="btn" href="empresa-dashboard.html?demo=1">Ver el panel de ejemplo</a>'); return false; }
+    let session = null;
+    try { session = (await sb.auth.getSession()).data.session; } catch (e) { /* sin sesión */ }
+    if (!session) { location.replace('empresa.html#entrar'); return false; }
+    ME = session.user;
+    try { const { data: esAdmin } = await sb.rpc('soy_admin'); if (esAdmin === true) { location.replace('admin.html'); return false; } } catch (e) { /* cuenta normal */ }
+    if (!ME.user_metadata || ME.user_metadata.tipo !== 'empresa') {
+      setBoot('<b>Esta es una cuenta personal.</b><br>El panel de negocios es para cuentas de negocio. Crea una aparte con el correo de tu local.',
+        '<a class="btn primary" href="dashboard.html">Ir a mi radar</a><a class="btn" href="empresa.html">Crear cuenta de negocio</a>');
+      ME = null; return false;
+    }
+    KEY = 'mp_business_v3_' + ME.id;
+    setBoot('Cargando tu negocio…');
+    const { data: n, error } = await sb.from('negocios').select('*').eq('id', ME.id).maybeSingle();
+    if (error) {
+      const sql = /PGRST205|42P01|Could not find the table/i.test(`${error.code} ${error.message}`);
+      setBoot(sql ? 'Falta activar las cuentas de negocio en la base de datos. Corre la migración <code>20261027120000_cuentas_negocio.sql</code> en Supabase y recarga.' : `No pudimos cargar tu negocio. ${esc(error.message)}`,
+        '<button class="btn primary" onclick="location.reload()">Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+      return false;
+    }
+    if (!n) {
+      setBoot('<b>Tu cuenta no tiene un negocio registrado.</b><br>Puede que la creaste antes de activar las cuentas de negocio. Escríbenos y lo resolvemos hoy.',
+        '<a class="btn primary" href="mailto:modoparcheoficial@gmail.com?subject=Mi%20cuenta%20de%20negocio">Escribir al equipo</a><button class="btn" data-action="logout">Cerrar sesión</button>');
+      return false;
+    }
+    S = cuentaNueva(n);
+    ultimoSync = JSON.stringify({ horarios: S.locales[n.id].perfil.horarios || null, cupones: S.locales[n.id].cupones });
+    if (!horariosValidos(n.horarios) && S.locales[n.id].perfil.horarios) ultimoSync = null; // horarios viejos del navegador: se suben a la base
+    try { await cargarParchesRemotos(); }
+    catch (err) { setBoot(`No pudimos cargar tus parches. ${esc(err.message || '')}`, '<button class="btn primary" onclick="location.reload()">Reintentar</button>'); return false; }
+    try { await cargarMesas(); } catch (e) { /* Modo Mesa todavía no activo */ }
+
+    sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.replace('empresa.html#entrar'); });
+    // En vivo: cuando alguien confirma o se sale de uno de tus parches
+    sb.channel('mp-negocio-' + ME.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'parche_miembros' }, pl => {
+        const pid = (pl.new && pl.new.parche_id) || (pl.old && pl.old.parche_id);
+        const p = pid && findParche(pid);
+        if (!p) return;
+        if (pl.eventType === 'INSERT' && pl.new.usuario_id !== ME.id) {
+          cacheNombres([pl.new.usuario_id]).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
+          tone('in');
+        }
+        recargarPronto();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, async ({ new: r }) => {
+        const p = findParche(r.parche_id);
+        if (!p || !p.chatCargado || p.chat.some(x => x.id === r.id)) return;
+        if (r.autor_id === ME.id) { const mine = p.chat.find(x => x.autor === 'biz' && !x.id && x.texto === r.texto); if (mine) { mine.id = r.id; return; } }
+        await cacheNombres([r.autor_id]);
+        p.chat.push(msgDeFila(r));
+        if (route === 'asistentes' && asisState.id === p.id && asisState.tab === 'chat') renderChat(p, true);
+      })
+      // Modo Mesa: reservas nuevas y cancelaciones en vivo
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mesa_reservas', filter: `negocio_id=eq.${ME.id}` }, async pl => {
+        const r = pl.new;
+        if (!r || !r.id) return;
+        await cacheNombres([r.usuario_id]);
+        const L = loc(), fila = reservaDeFila(r), i = (L.reservas || []).findIndex(x => x.id === r.id);
+        const antes = i >= 0 ? L.reservas[i].estado : null;
+        if (i >= 0) L.reservas[i] = fila; else L.reservas = (L.reservas || []).concat([fila]);
+        if (pl.eventType === 'INSERT') { toast('Nueva mesa reservada', `${fila.persona.nombre} llega con ${fila.personas} personas ${fmtCuando(fila.llegada).toLowerCase()}.`); tone('in'); }
+        else if (fila.estado === 'cancelada' && antes !== 'cancelada') toast('Cancelaron una mesa', `${fila.persona.nombre} (${fila.codigo}) ya no va.`, { error: true });
+        renderShell();
+        if (route === 'mesa') renderMesa();
+      })
+      // Pagos: el plan sube apenas Wompi confirma
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pagos', filter: `negocio_id=eq.${ME.id}` }, async ({ new: g }) => {
+        if (!g || g.estado !== 'APPROVED') return;
+        await recargarNegocio();
+        toast('Pago aprobado', 'Ya tienes Parche Villavo por 30 días.');
+        render();
+      })
+      .subscribe();
+    return true;
+  }
+
+  const msgDeFila = r => r.tipo !== 'user'
+    ? { id: r.id, tipo: 'sys', texto: r.texto, ts: Date.parse(r.creado_en) }
+    : { id: r.id, autor: r.autor_id === ME.id ? 'biz' : persona(r.autor_id), texto: r.texto, ts: Date.parse(r.creado_en) };
+  async function cargarChat(p) {
+    const { data, error } = await SB().from('mensajes').select('*').eq('parche_id', p.id).order('creado_en').limit(200);
+    if (error) { toast('No cargó el chat', error.message, { error: true }); return; }
+    await cacheNombres(data.map(r => r.autor_id));
+    p.chat = data.map(msgDeFila);
+    p.chatCargado = true;
+    if (route === 'asistentes' && asisState.id === p.id) renderChat(p);
+  }
+
+  // Foto del parche: se reduce en el navegador antes de subirla
+  async function prepararFoto(file, max = 1400) {
+    let src;
+    try { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+    catch (e) { src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); }); }
+    const k = Math.min(1, max / Math.max(src.width, src.height));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(src.width * k); cv.height = Math.round(src.height * k);
+    cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.84));
+    return { blob, dataUrl: cv.toDataURL('image/jpeg', DEMO ? 0.72 : 0.84) };
+  }
+  async function subirFoto(blob) {
+    const path = `${ME.id}/parche-${Date.now()}.jpg`;
+    const { error } = await SB().storage.from('fotos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+    return SB().storage.from('fotos').getPublicUrl(path).data.publicUrl;
+  }
+  function errorDB(err) {
+    const m = String((err && (err.message || err.hint)) || '');
+    if (/LIMITE_PLAN/.test(m)) return ['Llegaste al límite de tu plan', 'Parche básico incluye 2 parches al mes. Cambia a Parche Villavo en Perfil y plan.'];
+    if (/fetch|network/i.test(m)) return ['Sin conexión', 'Revisa tu internet e intenta de nuevo.'];
+    if (/titulo/i.test(m)) return ['Revisa el nombre', 'El nombre debe tener entre 5 y 60 caracteres.'];
+    if (/cupos/i.test(m)) return ['Revisa los cupos', 'En el radar los parches van de 2 a 60 cupos.'];
+    return ['No se guardó', m || 'Intenta de nuevo en unos segundos.'];
+  }
+  const parchesDelMes = () => loc().parches.filter(p => p.creado && p.creadoTs >= new Date(new Date(NOW()).getFullYear(), new Date(NOW()).getMonth(), 1).getTime()).length;
+  // Un plan pago vencido cuenta como básico (igual que en la base)
+  const limitePlan = () => { const P = loc().perfil; return P.plan === 'villavo' && P.planVence && P.planVence < NOW() ? PLANES.basico.limite : (PLANES[P.plan] || PLANES.villavo).limite; };
 
   const loc = () => S.locales[S.actual];
   const allLocales = () => Object.values(S.locales);
@@ -249,14 +472,17 @@
   const puedeCheckin = p => !p.cancelado && (enVivo(p) || diasDesdeHoy(p.inicio) === 0);
   const promedio = L => L.resenas.length ? L.resenas.reduce((s, r) => s + r.estrellas, 0) / L.resenas.length : 0;
 
+  // Horario de un día (null si el dueño todavía no puso horarios)
+  const hDia = (P, d) => (P.horarios ? P.horarios[d] : null);
   function ventana(P, ts = NOW()) {
+    if (!P.horarios) return { abierto: false, abre: null, sinHorario: true };
     for (const off of [0, -1]) {
-      const base = day0(ts) + off * DAY, h = P.horarios[new Date(base).getDay()];
+      const base = day0(ts) + off * DAY, h = hDia(P, new Date(base).getDay());
       if (!h || !h.abierto) continue;
       const a = at(base, h.open); let c = at(base, h.close); if (c <= a) c += DAY;
       if (ts >= a && ts < c) return { abierto: true, hasta: c };
     }
-    const h = P.horarios[new Date(ts).getDay()];
+    const h = hDia(P, new Date(ts).getDay());
     const a = h && h.abierto ? at(ts, h.open) : null;
     return { abierto: false, abre: a && a > ts ? a : null };
   }
@@ -333,7 +559,7 @@
   /* =====================================================================
      5. NAVEGACIÓN Y MARCO
   ===================================================================== */
-  const ROUTES = ['resumen', 'parches', 'cupones', 'asistentes', 'mapa', 'perfil'];
+  const ROUTES = ['resumen', 'parches', 'cupones', 'mesa', 'asistentes', 'mapa', 'perfil'];
   let route = 'resumen';
   function go() {
     const r = (location.hash || '#resumen').slice(1).split('/')[0];
@@ -354,6 +580,7 @@
     if (route === 'resumen') renderResumen(entering);
     if (route === 'parches') renderParches();
     if (route === 'cupones') renderCupones();
+    if (route === 'mesa') renderMesa();
     if (route === 'asistentes') renderAsistentes();
     if (route === 'mapa') renderMapa();
     if (route === 'perfil') renderPerfil();
@@ -373,8 +600,10 @@
     $('#local-logo-side').textContent = P.corto;
     $('#local-name-side').textContent = P.nombre;
     $('#local-cat-side').textContent = `${P.categoria} · ${P.barrio}`;
-    $('#local-list').innerHTML = allLocales().map(x => `<li><button role="option" aria-selected="${x.id === L.id}" data-action="cambiar-local" data-local="${x.id}">${monoHTML(x, 'local-logo')}<span class="local-txt"><b>${esc(x.perfil.nombre)}</b><small>${esc(x.perfil.categoria)}</small></span>${x.id === L.id ? ic('i-check') : ''}</button></li>`).join('')
-      + '<li class="local-list-note">Cada local tiene su propia tarjeta, cupones y parches.</li>';
+    const plan = PLANES[P.plan] || PLANES.villavo;
+    $('#plan-badge').textContent = plan.nombre.replace('Parche ', '');
+    $('#plan-badge').className = 'plan-badge plan-badge--' + (P.plan || 'villavo');
+    $('#demo-chip').hidden = !DEMO;
 
     const pend = pendientes().length;
     const cc = $('#count-cupones'); cc.hidden = !pend; cc.textContent = pend; cc.setAttribute('aria-label', `${pend} cupones por canjear`);
@@ -387,7 +616,9 @@
     const chip = $('#live-chip'), rel = relampagoVivo(), w = ventana(P);
     chip.className = 'live-chip' + (rel ? ' is-rel' : w.abierto ? ' is-open' : '');
     $('#live-text').textContent = rel ? `Relámpago en vivo · quedan ${fmtDur(Math.max(1, Math.ceil((fin(rel) - NOW()) / MIN)))}`
-      : w.abierto ? `Abierto · cierra ${fmtHora(w.hasta)}` : w.abre ? `Cerrado · abre ${fmtHora(w.abre)}` : 'Cerrado hoy';
+      : w.sinHorario ? 'Pon tus horarios' : w.abierto ? `Abierto · cierra ${fmtHora(w.hasta)}` : w.abre ? `Cerrado · abre ${fmtHora(w.abre)}` : 'Cerrado hoy';
+    const cm = $('#count-mesa');
+    if (cm) { const pm = (L.reservas || []).filter(r => r.estado === 'pendiente' && r.llegada > NOW()).length; cm.hidden = !pm; cm.textContent = pm; cm.setAttribute('aria-label', `${pm} mesas por confirmar`); }
     chip.title = $('#live-text').textContent;
 
     const sb = $('#sound-btn');
@@ -395,19 +626,7 @@
     sb.innerHTML = ic(S.sonido ? 'i-sound' : 'i-mute');
   }
 
-  function cambiarLocal(id) {
-    if (!S.locales[id] || id === S.actual) { closeMenus(); return; }
-    S.actual = id; save();
-    closeMenus();
-    asisState.id = null; doorState.id = null; listState.q = '';
-    mapDirty = true;
-    render();
-    $$('.lcard').forEach(c => { c.classList.remove('swap-in'); void c.offsetWidth; c.classList.add('swap-in'); });
-    toast(`Ahora ves ${loc().perfil.nombre}`, `${loc().perfil.categoria} · ${loc().perfil.barrio}`);
-  }
   function closeMenus() {
-    $('#local-list').hidden = true;
-    $('#local-btn').setAttribute('aria-expanded', 'false');
     $('#row-menu').hidden = true;
   }
 
@@ -419,7 +638,7 @@
     fuego: '<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><path d="M10 60c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 95c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 130c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 165c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/></svg>',
     dia: `<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="34"/>${Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, c = Math.cos(a), s = Math.sin(a); return `<path d="M${(110 + c * 52).toFixed(1)} ${(110 + s * 52).toFixed(1)}L${(110 + c * 100).toFixed(1)} ${(110 + s * 100).toFixed(1)}"/>`; }).join('')}</svg>`,
   };
-  const siteBase = () => /^https?:/.test(location.protocol) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://modoparche-davzd.vercel.app/';
+  const siteBase = () => /^https?:/.test(location.protocol) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://modoparche-hazel.vercel.app/';
   const localURL = L => `${siteBase()}dashboard.html?local=${L.perfil.idMP}`;
 
   function qrMatrix(text) {
@@ -435,8 +654,8 @@
   }
 
   function cardHTML(L) {
-    const P = L.perfil, prom = promedio(L), w = ventana(P), h = P.horarios[new Date(NOW()).getDay()];
-    const hoyTxt = h && h.abierto ? `Hoy abre de ${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Hoy no abre';
+    const P = L.perfil, prom = promedio(L), w = ventana(P), h = hDia(P, new Date(NOW()).getDay());
+    const hoyTxt = !P.horarios ? 'Horario por definir' : h && h.abierto ? `Hoy abre de ${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Hoy no abre';
     return `<button class="lcard lcard--${P.tema}" data-action="flip-card" aria-pressed="false" aria-label="Tarjeta de ${esc(P.nombre)}. Toca para ver el QR del local.">
       <span class="lface lface--front">
         ${MOTIFS[P.tema]}
@@ -491,10 +710,15 @@
   function renderResumen(entering) {
     const L = loc(), P = L.perfil, hoy = deHoy();
     const hr = new Date(NOW()).getHours();
-    const hola = `${hr < 12 && hr >= 5 ? 'Buenos días' : hr < 19 && hr >= 12 ? 'Buenas tardes' : 'Buenas noches'}, equipo de ${esc(P.nombre)}.`;
+    const saludo = hr < 12 && hr >= 5 ? 'Buenos días' : hr < 19 && hr >= 12 ? 'Buenas tardes' : 'Buenas noches';
+    const fechaHoy = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(NOW()));
+    $('#hello-kicker').textContent = `${saludo} · ${fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1)}`;
+    $('#hello-local').textContent = P.nombre;
+    renderSetup();
+    const hola = '';
     const conf = hoy.reduce((s, p) => s + confirmados(p), 0), inn = hoy.reduce((s, p) => s + checkins(p), 0);
     const pend = pendientes();
-    $('#resumen-sub').innerHTML = hola + ' ' + (hoy.length
+    $('#resumen-sub').innerHTML = hola + (hoy.length
       ? `Hoy tienes <b>${hoy.length} ${hoy.length === 1 ? 'parche' : 'parches'}</b> con ${int(conf)} confirmados, y ${inn ? `${int(inn)} ya llegaron` : 'nadie ha llegado todavía'}. ${pend.length ? `Hay ${pend.length} ${pend.length === 1 ? 'cupón' : 'cupones'} por canjear.` : ''}`
       : `Hoy no tienes parches. ${ventana(P).abierto ? 'Estás abierto: un relámpago sale de una en el mapa.' : 'Programa uno para esta semana.'}`);
 
@@ -628,6 +852,7 @@
       return `<li style="--i:${i}"><article class="pcard ${cls}">
         <div class="pdate" aria-hidden="true"><small>${esc(cap(fmtSem(p.inicio)))}</small><b>${new Date(p.inicio).getDate()}</b><small>${esc(fmtMes(p.inicio))}</small></div>
         <div class="pbody">
+          ${p.imagen ? `<div class="pcover"><img src="${esc(p.imagen)}" alt="Foto de ${esc(p.titulo)}" loading="lazy"><span>Se ve en el radar</span></div>` : ''}
           <div class="ptop"><div><b>${esc(p.titulo)}</b><small>${esc(tipoTxt(p))} · ${esc(fmtCuando(p.inicio))}${p.tipo === 'relampago' ? ` a ${fmtHora(fin(p))}` : ''}</small></div>${estadoPill(p)}</div>
           ${p.promo ? `<p class="ppromo">${esc(p.promo)}</p>` : ''}
           <div class="pstats">${trackHTML(p)}<span class="door-nums"><span><b>${c}</b> de ${p.cupos} confirmados</span><span>${p.inicio > NOW() ? (p.consumo ? `${money(p.consumo)} por persona` : 'Sin consumo mínimo') : `${inn} llegaron`}</span></span></div>
@@ -657,6 +882,7 @@
     const editable = p.tipo !== 'comunidad' && activo(p);
     openRowMenu(btn, `<button data-action="ver-asistentes" data-id="${id}" role="menuitem">${ic('i-users')} Asistentes y chat</button>
       ${activo(p) ? `<button data-action="modo-puerta" data-id="${id}" role="menuitem">${ic('i-door')} Abrir modo puerta</button>` : ''}
+      ${activo(p) && p.tipo !== 'comunidad' ? `<button data-action="qr-parche" data-id="${id}" role="menuitem">${ic('i-qr')} QR de llegada</button>` : ''}
       ${editable ? `<button data-action="editar" data-id="${id}" role="menuitem">${ic('i-edit')} Editar parche</button>` : ''}
       ${activo(p) ? `<button class="danger" data-action="cancelar" data-id="${id}" role="menuitem">${ic('i-trash')} Cancelar parche</button>` : ''}`);
   }
@@ -981,6 +1207,11 @@
 
   function renderChat(p, nuevo = false) {
     const box = $('#chat-msgs'), P = loc().perfil;
+    if (p.remoto && !p.chatCargado) {
+      box.innerHTML = '<p class="msg msg--sys">Cargando el chat del grupo…</p>';
+      if (!p.chatCargando) { p.chatCargando = true; cargarChat(p).finally(() => { p.chatCargando = false; }); }
+      return;
+    }
     box.innerHTML = p.chat.length ? p.chat.map((m, i) => {
       const cls = nuevo && i === p.chat.length - 1 ? ' is-new' : '';
       if (m.tipo === 'sys') return `<p class="msg msg--sys">${esc(m.texto)} · ${esc(fmtRel(m.ts))}</p>`;
@@ -994,6 +1225,7 @@
   function checkIn(p, a) {
     if (a.llego) return [];
     a.llego = NOW();
+    marcarEnBase(p, a, true);
     const L = loc(), out = [];
     const reglasQueAplican = L.cupones.filter(k => k.regla === 'checkin' || (k.regla === 'temprano' && NOW() <= p.inicio + HOUR) || (k.regla === 'relampago' && p.tipo === 'relampago'));
     const extra = p.tipo === 'relampago' && p.cuponId ? L.cupones.find(k => k.id === p.cuponId) : null;
@@ -1004,6 +1236,7 @@
   }
   function checkOut(p, a) {
     a.llego = null;
+    marcarEnBase(p, a, false);
     const L = loc();
     L.codigos = L.codigos.filter(c => !(c.auto && !c.canjeado && c.parcheId === p.id && c.persona === a.nombre && c.emitido >= p.inicio - 2 * HOUR));
     save();
@@ -1114,10 +1347,9 @@
     const own = loc();
     const items = allLocales().flatMap(Lc => Lc.parches.filter(p => activo(p) && timeMatch(p)).map(p => ({ p, Lc })))
       .sort((a, b) => (b.Lc.id === own.id) - (a.Lc.id === own.id) || a.p.inicio - b.p.inicio);
-    const mios = items.filter(x => x.Lc.id === own.id).length;
-    $('#mapa-sub').textContent = `${items.length} ${items.length === 1 ? 'parche' : 'parches'} ${timeLabel()} en los locales aliados de Villavicencio; ${mios} ${mios === 1 ? 'es tuyo' : 'son tuyos'}.`;
+    $('#mapa-sub').textContent = `${items.length} ${items.length === 1 ? 'parche tuyo' : 'parches tuyos'} ${timeLabel()} en el mapa. Así los ven los parceros cerca de tu local.`;
     $$('#time-filter [data-time]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.time === timeState.mode)));
-    $('#map-legend').innerHTML = `<span><i class="lg lg--own"></i>${esc(own.perfil.nombre)}</span><span><i class="lg lg--other"></i>Otros locales aliados</span>${userPos ? '<span><i class="lg lg--me"></i>Tu ubicación</span>' : ''}`;
+    $('#map-legend').innerHTML = `<span><i class="lg lg--own"></i>${esc(own.perfil.nombre)}</span>${userPos ? '<span><i class="lg lg--me"></i>Tu ubicación</span>' : ''}`;
     $('#maplist-meta').textContent = `${items.length} ${timeLabel()}`;
     $('#map-list').innerHTML = items.length ? items.map(({ p, Lc }) => `<li><button class="row row--btn" data-action="fly" data-local="${Lc.id}">
         <span class="lg ${Lc.id === own.id ? 'lg--own' : 'lg--other'}" aria-hidden="true"></span>
@@ -1132,6 +1364,7 @@
         map = L.map('map', { zoomControl: true }).setView([own.perfil.lat, own.perfil.lng], 14);
         tiles().addTo(map);
         layer = L.layerGroup().addTo(map);
+        if (window.MPMapa) window.MPMapa.buscador(map, { placeholder: 'Busca un lugar o dirección', posicion: 'topright' });
       }
       map.invalidateSize();
       layer.clearLayers();
@@ -1187,16 +1420,19 @@
     mountCard($('#lcard-perfil'));
     const facts = [
       ['Nombre', esc(P.nombre)], ['Categoría', esc(P.categoria)], ['Dirección', `${esc(P.direccion)}, ${esc(P.barrio)}`],
-      ['Teléfono', esc(P.tel)], ['NIT', `<span class="code">${esc(P.nit)}</span>`], ['ID Modo Parche', `<span class="code">${esc(P.idMP)}</span>`],
+      ['WhatsApp', esc(P.tel || 'Sin número')], ['NIT', `<span class="code">${esc(P.nit)}</span>`], ['ID Modo Parche', `<span class="code">${esc(P.idMP)}</span>`],
+      ...(P.responsable ? [['Responsable', esc(P.responsable)]] : []),
       ['Aliado desde', esc(`${new Date(P.desde).getDate()} de ${new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(P.desde)} de ${new Date(P.desde).getFullYear()}`)],
       ['Descripción', esc(P.desc)],
     ];
     $('#facts').innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    $('#horario-hoy').textContent = w.abierto ? `Abierto ahora · cierra ${fmtHora(w.hasta)}` : w.abre ? `Cerrado · abre ${fmtHora(w.abre)}` : 'Cerrado hoy';
-    $('#hours').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => {
-      const h = P.horarios[d];
-      return `<li class="${d === today ? 'is-today' : ''}"><b>${DIAS[d]}${d === today ? ' (hoy)' : ''}</b><span>${h.abierto ? `${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Cerrado'}</span></li>`;
-    }).join('');
+    $('#horario-hoy').textContent = w.sinHorario ? 'Todavía no los pones' : w.abierto ? `Abierto ahora · cierra ${fmtHora(w.hasta)}` : w.abre ? `Cerrado · abre ${fmtHora(w.abre)}` : 'Cerrado hoy';
+    $('#hours').innerHTML = !P.horarios
+      ? `<li class="hours-empty"><p class="empty">Pon los días y horas en que abres. Así los parceros saben cuándo caer y el panel te avisa si lanzas algo con el local cerrado.<button class="btn primary btn--sm" data-action="editar-horarios">${ic('i-clock')}Poner mis horarios</button></p></li>`
+      : [1, 2, 3, 4, 5, 6, 0].map(d => {
+        const h = hDia(P, d);
+        return `<li class="${d === today ? 'is-today' : ''}"><b>${DIAS[d]}${d === today ? ' (hoy)' : ''}</b><span>${h.abierto ? `${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Cerrado'}</span></li>`;
+      }).join('');
     $('#ubic-meta').textContent = `${P.direccion} · ${P.lat.toFixed(4)}, ${P.lng.toFixed(4)}`;
     setTimeout(() => {
       if (typeof L === 'undefined') return;
@@ -1204,6 +1440,12 @@
         mapPerfil = L.map('map-perfil', { scrollWheelZoom: false }).setView([P.lat, P.lng], 15);
         tiles().addTo(mapPerfil);
         perfilMarker = L.marker([P.lat, P.lng], { icon: bizIcon(Lc), keyboard: false }).addTo(mapPerfil);
+        // Tocar el mapa (o buscar la dirección) mueve el pin del local
+        mapPerfil.on('click', e => moverLocal(+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)));
+        if (window.MPMapa) window.MPMapa.buscador(mapPerfil, {
+          placeholder: 'Busca la dirección de tu local',
+          onElegir: r => moverLocal(+(+r.lat).toFixed(6), +(+r.lng).toFixed(6)),
+        });
       }
       mapPerfil.invalidateSize();
       perfilMarker.setLatLng([P.lat, P.lng]).setIcon(bizIcon(Lc));
@@ -1213,9 +1455,116 @@
     $('#resenas-meta').textContent = Lc.resenas.length ? `${dec1(prom)} de 5 · ${Lc.resenas.length} ${Lc.resenas.length === 1 ? 'reseña' : 'reseñas'}` : 'Sin reseñas aún';
     $('#reviews').innerHTML = [...Lc.resenas].sort((a, b) => b.fecha - a.fecha).map(r => `<li class="review"><div class="review-top">${stars(r.estrellas)}<b>${esc(r.autor)}</b><small>${esc(fmtDia(r.fecha))}</small></div><p>${esc(r.texto)}</p><p class="on">En ${esc(r.parche)}</p></li>`).join('')
       || '<li><p class="empty">Las reseñas aparecen cuando los parceros califican tus parches.</p></li>';
-    const sol = S.solicitudes.filter(s => s.local === Lc.id).sort((a, b) => b.ts - a.ts);
-    $('#solicitudes').innerHTML = sol.length ? sol.map(s => `<li class="row"><span class="row-main"><b>${esc(s.campo)}</b><small>${esc(s.detalle)}</small></span><span class="row-end"><span class="pill warn">En revisión</span><small>${esc(fmtRel(s.ts))}</small></span></li>`).join('')
-      : '<li><p class="empty">No has pedido cambios. Si algo de tu perfil está mal, usa Solicitar un cambio.</p></li>';
+    renderPlan();
+  }
+
+  function renderPlan() {
+    const P = loc().perfil, cur = P.plan || 'villavo', lim = limitePlan(), usados = parchesDelMes();
+    const vence = P.planVence && cur === 'villavo' ? P.planVence : null;
+    const quedan = vence ? Math.ceil((vence - NOW()) / DAY) : null;
+    $('#plan-meta').textContent = lim === Infinity ? 'Parches sin límite' : `${usados} de ${lim} parches este mes`;
+    $('#plan-box').innerHTML = `<div class="plan-now plan-now--${cur}">
+        <span class="plan-now-k">Plan actual</span>
+        <b>${esc(PLANES[cur].nombre)}</b><span class="plan-now-p">${esc(PLANES[cur].precio)}${cur === 'sedes' && P.sedes > 1 ? ` · ${P.sedes} sedes` : ''}</span>
+        ${vence ? `<span class="plan-vence ${quedan <= 5 ? 'is-soon' : ''}">${ic('i-clock')}${quedan > 0 ? `Pagado hasta el ${esc(fmtDiaMes(vence))} (${quedan} ${quedan === 1 ? 'día' : 'días'})` : 'Venció: renuévalo para seguir sin límite'}</span>` : ''}
+        ${lim !== Infinity ? `<span class="track" role="img" aria-label="${usados} de ${lim} parches usados"><i class="in" style="width:${clamp(usados / lim, 0, 1) * 100}%"></i></span>` : ''}
+        <ul>${PLANES[cur].puntos.map(t => `<li>${ic('i-check')}${esc(t)}</li>`).join('')}</ul>
+      </div>
+      ${cur === 'villavo' && vence ? `<button class="btn primary btn--block" data-action="pagar-plan">${ic('i-card')}Renovar 30 días más</button>` : ''}
+      <p class="mini-title">Cambiar de plan</p>
+      <div class="plan-switch" role="group" aria-label="Cambiar de plan">${Object.entries(PLANES).map(([k, v]) => `<button class="plan-opt-b ${k === cur ? 'is-on' : ''}" data-action="cambiar-plan" data-plan="${k}" aria-pressed="${k === cur}"><b>${esc(v.nombre)}</b><small>${esc(k === 'villavo' && cur !== 'villavo' ? 'Pagar ' + v.precio : v.precio)}</small></button>`).join('')}</div>
+      <p class="hint">Parche Villavo se paga en línea con Wompi (tarjeta, PSE, Nequi o Bancolombia), se activa apenas el pago queda aprobado y <b>no se renueva solo</b>: cada pago cubre 30 días. Como ModoParche es un prototipo académico, el pago es <b>de prueba</b> y no se cobra dinero real. Varias sedes lo ajustamos contigo.</p>
+      ${vence ? `<button class="btn ghost btn--sm plan-retracto" data-action="retracto">${ic('i-undo')}Me arrepiento de la compra</button>` : ''}`;
+  }
+
+  async function guardarNegocio(campos) {
+    if (!REMOTE()) return true;
+    const { error } = await SB().from('negocios').update(campos).eq('id', ME.id);
+    if (error) { const [t, d] = errorDB(error); toast(t, d, { error: true }); return false; }
+    return true;
+  }
+  // El plan ya no se cambia directo en la base: subir es pagando, bajar es con cambiar_a_basico()
+  async function cambiarPlan(plan) {
+    const P = loc().perfil;
+    if (!PLANES[plan] || plan === P.plan) return;
+    if (plan === 'villavo') { abrirPago(); return; }
+    if (plan === 'sedes') {
+      const ok = await confirmar('Varias sedes', 'Este plan lo ajustamos según cuántos locales tengas. Te llevamos a escribirle al equipo con los datos de tu negocio.', 'Escribir al equipo');
+      if (ok) location.href = `mailto:modoparcheoficial@gmail.com?subject=${encodeURIComponent('Plan Varias sedes · ' + P.nombre)}&body=${encodeURIComponent(`Hola, quiero el plan Varias sedes.\nNegocio: ${P.nombre}\nNIT: ${P.nit}\nWhatsApp: ${P.telRaw || ''}\nNúmero de sedes: `)}`;
+      return;
+    }
+    // Plan pagado y vigente: no se cobra solo, así que no hay nada que cancelar.
+    // Conserva los días que ya pagó (como dice pagos.html).
+    if (P.plan === 'villavo' && P.planVence && P.planVence > NOW()) {
+      await confirmar('No tienes que cancelar nada', `Parche Villavo no se renueva solo. Lo conservas hasta el ${fmtDiaMes(P.planVence)} y ese día pasas solo a Parche básico, sin cobros. Si pagaste hace menos de 5 días hábiles, puedes pedir la devolución con "Me arrepiento de la compra".`, 'Entendido');
+      return;
+    }
+    const ok = await confirmar('Cambiar a Parche básico', 'Con Parche básico puedes publicar 2 parches al mes. Lo que ya publicaste se queda.', 'Sí, cambiar');
+    if (!ok) return;
+    if (REMOTE()) {
+      const { error } = await SB().rpc('cambiar_a_basico');
+      if (error) { const [t, d] = errorDB(error); toast(t, d, { error: true }); return; }
+    }
+    P.plan = 'basico'; P.planVence = null; P.planPendiente = null; save();
+    renderShell(); renderPlan();
+    toast('Plan actualizado', 'Ahora tienes Parche básico.');
+  }
+  async function moverLocal(lat, lng) {
+    const P = loc().perfil;
+    if (!(await guardarNegocio({ lat, lng }))) return;
+    P.lat = lat; P.lng = lng; P.sinUbicacion = false; save();
+    if (perfilMarker) perfilMarker.setLatLng([lat, lng]);
+    $('#ubic-meta').textContent = `${P.direccion} · ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    mostrarDireccionPin(lat, lng);
+    mapDirty = true;
+    toast('Ubicación guardada', 'Tus parches nuevos salen en este punto del mapa.');
+    renderSetup();
+  }
+
+  function openPerfil() {
+    const P = loc().perfil;
+    resetFields($('#form-perfil'));
+    $('#e-nombre').value = P.nombre;
+    $('#e-cat').value = P.cat || 'comida';
+    $('#e-tel').value = P.telRaw || String(P.tel || '').replace(/\D/g, '');
+    $('#e-barrio').value = P.barrio;
+    $('#e-dir').value = P.direccion;
+    $('#e-desc').value = P.desc;
+    $('#dlg-perfil').showModal();
+  }
+  async function submitPerfil(e) {
+    e.preventDefault();
+    const v = id => $('#' + id).value.trim();
+    const tel = v('e-tel').replace(/\D/g, '');
+    const ok = [
+      setField($('#e-nombre'), v('e-nombre').length < 2 ? 'Escribe el nombre del negocio.' : ''),
+      setField($('#e-tel'), tel && !/^\d{7,15}$/.test(tel) ? 'Entre 7 y 15 números.' : ''),
+      setField($('#e-barrio'), v('e-barrio').length < 2 ? 'Escribe el barrio.' : ''),
+      setField($('#e-dir'), v('e-dir').length < 4 ? 'Escribe la dirección.' : ''),
+    ].every(Boolean);
+    if (!ok) return;
+    const campos = { nombre: v('e-nombre'), categoria: $('#e-cat').value, telefono: tel, barrio: v('e-barrio'), direccion: v('e-dir'), descripcion: v('e-desc') };
+    const btn = $('#e-submit'); btn.disabled = true;
+    const saved = await guardarNegocio(campos);
+    btn.disabled = false;
+    if (!saved) return;
+    const P = loc().perfil, categoria = CAT_NEG[campos.categoria] || P.categoria;
+    const cambioDir = campos.direccion !== P.direccion || campos.barrio !== P.barrio;
+    if (cambioDir && window.MPMapa) {
+      // Nueva dirección: buscamos el punto exacto y ofrecemos mover el pin
+      window.MPMapa.geocodificarDireccion({ direccion: campos.direccion, barrio: campos.barrio, ciudad: P.ciudad, nombre: campos.nombre }).then(async r => {
+        if (!r || (r.precision !== 'direccion' && r.precision !== 'lugar')) return;
+        if (window.MPMapa.distancia(r, { lat: P.lat, lng: P.lng }) < 40) return;
+        const mover = await confirmar('¿Movemos el pin del local?', `Encontramos "${campos.direccion}" en el mapa a ${(window.MPMapa.distancia(r, { lat: P.lat, lng: P.lng }) / 1000).toFixed(1).replace('.', ',')} km de donde está tu pin.`, 'Sí, moverlo');
+        if (mover) moverLocal(r.lat, r.lng);
+      });
+    }
+    Object.assign(P, { nombre: campos.nombre, corto: initialsOf(campos.nombre), cat: campos.categoria, categoria, tema: TEMAS[categoria] || P.tema, telRaw: tel, tel: fmtTel(tel), barrio: campos.barrio, direccion: campos.direccion, desc: campos.descripcion || P.desc });
+    loc().parches.forEach(p => { if (p.tipo !== 'comunidad') p.organizador = P.nombre; });
+    save();
+    $('#dlg-perfil').close();
+    toast('Perfil actualizado', 'Así te ven ahora los parceros.');
+    render();
   }
 
   /* =====================================================================
@@ -1241,6 +1590,40 @@
     return !msg;
   }
   const resetFields = form => $$('.field', form).forEach(f => { f.classList.remove('is-error', 'is-valid'); const m = $('.field-msg', f); if (m) m.textContent = ''; });
+  /* ---------- Derechos sobre los datos (Ley 1581 de 2012) ---------- */
+  async function descargarMisDatos(btn) {
+    let datos;
+    if (!REMOTE()) datos = { aviso: 'Panel de ejemplo: estos datos solo existen en este navegador.', negocio: loc().perfil };
+    else {
+      btn.disabled = true;
+      const { data, error } = await SB().rpc('mis_datos');
+      btn.disabled = false;
+      if (error) { toast('No pudimos preparar el archivo', error.message, { error: true }); return; }
+      datos = data;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' }));
+    a.download = 'datos-negocio-modoparche-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('Archivo descargado', 'Ahí está todo lo que tenemos de tu negocio.');
+  }
+  async function borrarCuenta(btn) {
+    const ok = await confirmar('¿Borrar la cuenta del negocio?', 'Se borran el negocio, sus parches, cupones y datos. A las personas que estaban en tus parches les desaparecen de la lista. No se puede deshacer.', 'Sí, borrar todo');
+    if (!ok) return;
+    if (!REMOTE()) { try { localStorage.clear(); } catch (e) { /* nada */ } location.replace('index.html'); return; }
+    btn.disabled = true;
+    try {
+      const { data: files } = await SB().storage.from('fotos').list(ME.id, { limit: 1000 });
+      if (files && files.length) await SB().storage.from('fotos').remove(files.map(f => ME.id + '/' + f.name));
+    } catch (e) { /* seguimos con la cuenta */ }
+    const { error } = await SB().rpc('borrar_mi_cuenta');
+    btn.disabled = false;
+    if (error) { toast('No se pudo borrar', error.message, { error: true }); return; }
+    try { await SB().auth.signOut(); } catch (e) { /* la sesión ya no existe */ }
+    try { localStorage.clear(); } catch (e) { /* nada */ }
+    location.replace('index.html?cuenta=borrada');
+  }
+
   function confirmar(title, text, okTxt = 'Sí, continuar') {
     return new Promise(res => {
       const dlg = $('#dlg-confirm');
@@ -1260,7 +1643,7 @@
     'p-titulo': v => !v.trim() ? 'Ponle un nombre al parche.' : v.trim().length < 5 ? 'Mínimo 5 caracteres.' : '',
     'p-fecha': v => !v ? 'Elige la fecha.' : v < dayKey(NOW()) ? 'Esa fecha ya pasó.' : '',
     'p-hora': v => { if (!v) return 'Elige la hora.'; const f = $('#p-fecha').value; return f === dayKey(NOW()) && at(new Date(f + 'T12:00:00').getTime(), v) < NOW() ? 'Esa hora ya pasó.' : ''; },
-    'p-cupos': v => { const n = Number(v); if (!Number.isInteger(n) || n < 2) return 'Mínimo 2 cupos.'; if (n > 500) return 'Máximo 500.'; const p = editId && findParche(editId); return p && n < confirmados(p) ? `Ya hay ${confirmados(p)} confirmados.` : ''; },
+    'p-cupos': v => { const n = Number(v); if (!Number.isInteger(n) || n < 2) return 'Mínimo 2 cupos.'; if (n > 60) return 'Máximo 60 por parche.'; const p = editId && findParche(editId); return p && n < confirmados(p) ? `Ya hay ${confirmados(p)} confirmados.` : ''; },
     'p-consumo': v => v === '' || Number(v) < 0 ? 'Usa 0 si no hay consumo mínimo.' : '',
     'p-promo': v => v.trim().length < 10 ? 'Cuenta qué pasa ese día (mínimo 10 caracteres).' : '',
   };
@@ -1272,7 +1655,7 @@
     $('#p-submit').textContent = p ? 'Guardar cambios' : 'Publicar parche';
     resetFields($('#form-parche'));
     const base = p ? p.inicio : fecha ? new Date(fecha + 'T12:00:00').getTime() : day0(NOW()) + DAY;
-    const h = P.horarios[new Date(base).getDay()];
+    const h = hDia(P, new Date(base).getDay());
     $('#p-titulo').value = p ? p.titulo : '';
     $('#p-fecha').value = dayKey(base); $('#p-fecha').min = dayKey(NOW());
     $('#p-hora').value = p ? hhmm(p.inicio) : (h && h.abierto ? h.open : '19:00');
@@ -1280,7 +1663,15 @@
     $('#p-cupos').value = p ? p.cupos : 20;
     $('#p-consumo').value = p ? p.consumo : 30000;
     $('#p-promo').value = p ? p.promo : '';
+    $('#p-cat').value = (p && p.categoria) || P.cat || 'comida';
+    setFoto(p && p.imagen ? { url: p.imagen } : null);
+    $('#p-foto').value = '';
     dlgPos.lat = p ? p.lat ?? P.lat : P.lat; dlgPos.lng = p ? p.lng ?? P.lng : P.lng;
+    if (!p && parchesDelMes() >= limitePlan()) {
+      toast('Llegaste al límite de tu plan', `Parche básico incluye ${limitePlan()} parches al mes. Cámbialo en Perfil y plan.`, { error: true });
+      location.hash = '#perfil';
+      return;
+    }
     $('#dlg-parche').showModal();
     setTimeout(() => {
       if (typeof L === 'undefined') { $('#pmap-coords').textContent = 'El mapa no cargó; el parche queda en tu local.'; return; }
@@ -1288,9 +1679,10 @@
         mapDlg = L.map('map-parche').setView([dlgPos.lat, dlgPos.lng], 15);
         tiles().addTo(mapDlg);
         dlgMarker = L.marker([dlgPos.lat, dlgPos.lng], { icon: bizIcon(loc()), draggable: true }).addTo(mapDlg);
-        const set = ll => { dlgPos.lat = +ll.lat.toFixed(6); dlgPos.lng = +ll.lng.toFixed(6); dlgMarker.setLatLng(ll); coords(); };
+        const set = ll => { dlgPos.lat = +(+ll.lat).toFixed(6); dlgPos.lng = +(+ll.lng).toFixed(6); dlgMarker.setLatLng([dlgPos.lat, dlgPos.lng]); coords(); };
         mapDlg.on('click', e => set(e.latlng));
         dlgMarker.on('dragend', () => set(dlgMarker.getLatLng()));
+        if (window.MPMapa) window.MPMapa.buscador(mapDlg, { placeholder: 'Busca dónde es', onElegir: r => set({ lat: r.lat, lng: r.lng }) });
       }
       mapDlg.invalidateSize();
       dlgMarker.setIcon(bizIcon(loc())).setLatLng([dlgPos.lat, dlgPos.lng]);
@@ -1304,12 +1696,63 @@
     const km = dist([dlgPos.lat, dlgPos.lng], [P.lat, P.lng]);
     $('#pmap-coords').textContent = `${dlgPos.lat.toFixed(5)}, ${dlgPos.lng.toFixed(5)} · ${km < 0.05 ? 'en tu local' : `a ${km.toFixed(1).replace('.', ',')} km de tu local`}. Toca el mapa o arrastra el pin para moverlo.`;
   }
-  function submitParche(e) {
+  /* Foto del parche: { url } ya publicada o { file, blob, dataUrl } nueva */
+  let foto = null;
+  function setFoto(f) {
+    foto = f;
+    const prev = $('#photo-prev'), src = f ? (f.dataUrl || f.url) : '';
+    prev.hidden = !src;
+    if (src) { prev.src = src; prev.classList.remove('is-in'); void prev.offsetWidth; prev.classList.add('is-in'); } else prev.removeAttribute('src');
+    $('#photo-drop').classList.toggle('has-photo', !!src);
+    $('#photo-actions').hidden = !src;
+  }
+  async function elegirFoto(file) {
+    const msg = $('#photo-drop').closest('.field').querySelector('.field-msg');
+    msg.textContent = '';
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { msg.textContent = 'Sube una imagen JPG, PNG o WebP.'; return; }
+    if (file.size > 12 * 1024 * 1024) { msg.textContent = 'La foto pesa más de 12 MB. Prueba con otra.'; return; }
+    $('#photo-drop').classList.add('is-loading');
+    try { const r = await prepararFoto(file, DEMO ? 900 : 1400); setFoto({ file, ...r }); }
+    catch (e) { msg.textContent = 'No pudimos leer esa foto. Prueba con otra.'; }
+    $('#photo-drop').classList.remove('is-loading');
+  }
+
+  async function submitParche(e) {
     e.preventDefault();
     const bad = Object.keys(RULES_P).filter(id => !setField($('#' + id), RULES_P[id]($('#' + id).value)));
     if (bad.length) { $('#' + bad[0]).focus(); return; }
     const inicio = at(new Date($('#p-fecha').value + 'T12:00:00').getTime(), $('#p-hora').value);
-    const datos = { titulo: $('#p-titulo').value.trim(), inicio, cupos: Number($('#p-cupos').value), consumo: Number($('#p-consumo').value), promo: $('#p-promo').value.trim(), lat: dlgPos.lat, lng: dlgPos.lng };
+    const datos = { titulo: $('#p-titulo').value.trim(), inicio, cupos: Number($('#p-cupos').value), consumo: Number($('#p-consumo').value), promo: $('#p-promo').value.trim(), lat: dlgPos.lat, lng: dlgPos.lng, categoria: $('#p-cat').value };
+    if (REMOTE()) {
+      const btn = $('#p-submit');
+      btn.disabled = true; btn.classList.add('is-busy');
+      try {
+        let imagen = foto && foto.url ? foto.url : '';
+        if (foto && foto.blob) imagen = await subirFoto(foto.blob);
+        const P = loc().perfil;
+        const row = {
+          titulo: datos.titulo.slice(0, 60), categoria: datos.categoria, descripcion: datos.promo.slice(0, 400), inicio: new Date(inicio).toISOString(),
+          lugar: P.nombre.length >= 3 ? P.nombre.slice(0, 80) : `Local ${P.nombre}`, barrio: String(P.barrio || '').slice(0, 40), lat: datos.lat, lng: datos.lng,
+          costo: datos.consumo, presupuesto: datos.consumo, cupos_max: datos.cupos, imagen, promo: datos.promo.slice(0, 200),
+        };
+        const res = editId
+          ? await SB().from('parches').update(row).eq('id', editId).select('id').single()
+          : await SB().from('parches').insert(row).select('id').single();
+        if (res.error) throw res.error;
+        await cargarParchesRemotos();
+        toast(editId ? 'Parche actualizado' : 'Parche publicado', editId ? 'Los confirmados ya ven los cambios.' : `${datos.titulo} ya está en el radar${imagen ? ' con su foto' : ''}.`);
+        if (!editId) { listState.tab = 'proximos'; burstFrom(btn, 30); }
+        $('#dlg-parche').close();
+        if (route !== 'parches') location.hash = '#parches'; else render();
+      } catch (err) {
+        const [t, d] = errorDB(err);
+        toast(t, d, { error: true });
+      }
+      btn.disabled = false; btn.classList.remove('is-busy');
+      return;
+    }
+    datos.imagen = foto ? (foto.dataUrl || foto.url || '') : '';
     if (editId) {
       const p = findParche(editId);
       Object.assign(p, datos);
@@ -1333,6 +1776,7 @@
     const P = loc().perfil, w = ventana(P);
     $('#rel-note').textContent = relampagoVivo()
       ? 'Ya tienes un relámpago en vivo. Si lanzas otro, el actual termina ahora.'
+      : w.sinHorario ? 'Sale de una en el mapa de Modo Parche con un anillo naranja. Pon tus horarios en Perfil y plan para que te avisemos si estás cerrado.'
       : w.abierto ? `Sale de una en el mapa de Modo Parche con un anillo naranja. Hoy estás abierto hasta las ${fmtHora(w.hasta)}`
         : `Ojo: ahora estás cerrado${w.abre ? ` y abres a las ${fmtHora(w.abre)}` : ''}. Si lo lanzas, la gente llegará con el local cerrado.`;
     $('#r-promo').value = ''; $('#r-cupos').value = 20;
@@ -1348,7 +1792,7 @@
     const k = $('#r-cupon').value && cupon($('#r-cupon').value);
     $('#rel-summary').textContent = `Arranca ya y termina a las ${fmtHora(NOW() + relDur * MIN)} ${k ? `Quien llegue gana ${k.nombre}.` : 'Sin cupón: solo la promoción.'}`;
   }
-  function submitRelampago(e) {
+  async function submitRelampago(e) {
     e.preventDefault();
     const ok1 = setField($('#r-promo'), $('#r-promo').value.trim().length < 4 ? 'Escribe la promoción (mínimo 4 caracteres).' : '');
     const n = Number($('#r-cupos').value);
@@ -1357,7 +1801,18 @@
     const prev = relampagoVivo();
     if (prev) prev.dur = Math.max(1, Math.round((NOW() - prev.inicio) / MIN));
     const P = loc().perfil, promo = $('#r-promo').value.trim();
-    const p = { id: 'r' + NOW().toString(36), tipo: 'relampago', titulo: `Relámpago: ${promo}`, promo, organizador: P.nombre, inicio: NOW(), dur: relDur, cupos: n, consumo: 0, cuponId: $('#r-cupon').value || null, creado: true, creadoTs: NOW(), asistentes: [], cancelado: false, lat: P.lat, lng: P.lng, chat: [{ tipo: 'sys', texto: 'Lanzaste un parche relámpago', ts: NOW() }] };
+    const p = { id: 'r' + NOW().toString(36), tipo: 'relampago', titulo: `Relámpago: ${promo}`.slice(0, 60), promo, organizador: P.nombre, inicio: NOW(), dur: relDur, cupos: n, consumo: 0, cuponId: $('#r-cupon').value || null, creado: true, creadoTs: NOW(), asistentes: [], cancelado: false, lat: P.lat, lng: P.lng, chat: [{ tipo: 'sys', texto: 'Lanzaste un parche relámpago', ts: NOW() }] };
+    if (REMOTE()) {
+      if (parchesDelMes() >= limitePlan()) { toast('Llegaste al límite de tu plan', 'Cambia a Parche Villavo para lanzar relámpagos sin límite.', { error: true }); return; }
+      const { data, error } = await SB().from('parches').insert({
+        titulo: p.titulo, categoria: P.cat || 'comida', descripcion: `Parche relámpago: ${promo}`, inicio: new Date(p.inicio).toISOString(),
+        lugar: P.nombre.slice(0, 80), barrio: String(P.barrio || '').slice(0, 40), lat: P.lat, lng: P.lng,
+        costo: 0, presupuesto: 0, cupos_max: Math.min(60, n), relampago: true, promo,
+      }).select('id').single();
+      if (error) { const [t, d] = errorDB(error); toast(t, d, { error: true }); return; }
+      p.id = data.id; p.remoto = true; p.cupos = Math.min(60, n);
+      if (prev && prev.remoto) prev.dur = Math.max(1, Math.round((NOW() - prev.inicio) / MIN));
+    }
     loc().parches.push(p);
     save();
     $('#dlg-relampago').close();
@@ -1420,27 +1875,453 @@
     else renderCupones({ nuevo });
   }
 
+  /* =====================================================================
+     14. CONFIGURACIÓN INICIAL, HORARIOS, MODO MESA, PAGOS Y LLEGADAS
+  ===================================================================== */
+
+  /* ---------- Lo que le falta a una cuenta nueva ---------- */
+  function renderSetup() {
+    const slot = $('#setup-slot');
+    if (!slot) return;
+    const L = loc(), P = L.perfil;
+    const pasos = [
+      { ok: !!P.horarios, txt: 'Pon tus horarios', sub: 'Tú decides qué días y a qué horas abres.', act: 'editar-horarios', ic: 'i-clock' },
+      { ok: !P.sinUbicacion, txt: 'Confirma dónde queda tu local', sub: 'Busca tu dirección o toca el mapa en Perfil y plan.', act: 'ir-ubicacion', ic: 'i-pin' },
+      { ok: L.cupones.length > 0, txt: 'Crea tu primer cupón', sub: 'Tú eliges el regalo, la regla y cuántos entregas.', act: 'nuevo-cupon', ic: 'i-ticket' },
+      { ok: (L.mesas || []).length > 0, txt: 'Lanza una promo de Modo Mesa', sub: 'Para los grupos que ya vienen juntos.', act: 'nueva-mesa', ic: 'i-table' },
+    ];
+    if (P.planPendiente === 'villavo' && P.plan === 'basico') pasos.unshift({ ok: false, txt: 'Activa Parche Villavo', sub: 'Lo elegiste al registrarte. Paga en línea y se activa de una.', act: 'pagar-plan', ic: 'i-card' });
+    const listos = pasos.filter(p => p.ok).length;
+    if (listos === pasos.length) { slot.innerHTML = ''; return; }
+    slot.innerHTML = `<section class="setup" aria-labelledby="h-setup">
+        <header><div><h2 id="h-setup">Arma tu local en ModoParche</h2><p class="meta">${listos} de ${pasos.length} listos</p></div>
+          <span class="track" role="img" aria-label="${listos} de ${pasos.length} pasos listos"><i class="in" style="width:${listos / pasos.length * 100}%"></i></span></header>
+        <ul class="setup-list">${pasos.map(p => `<li class="${p.ok ? 'is-done' : ''}"><span class="setup-ic">${ic(p.ok ? 'i-check' : p.ic)}</span>
+          <span class="setup-txt"><b>${esc(p.txt)}</b><small>${esc(p.sub)}</small></span>
+          ${p.ok ? '<span class="pill pos">Listo</span>' : `<button class="btn btn--sm" data-action="${p.act}">Hacerlo</button>`}</li>`).join('')}</ul>
+      </section>`;
+  }
+
+  /* ---------- Horarios: los pone el dueño ---------- */
+  function openHorarios() {
+    closeMenus();
+    const P = loc().perfil;
+    const base = P.horarios || horarios('10:00', '22:00'); // solo una sugerencia: no se guarda hasta confirmar
+    $('#hours-edit').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => {
+      const h = base[d];
+      return `<div class="he-row" data-dia="${d}">
+        <label class="he-day"><input type="checkbox" class="switch" data-he="abierto" ${h.abierto ? 'checked' : ''}><b>${DIAS[d]}</b></label>
+        <input class="input num" type="time" data-he="open" value="${h.open}" aria-label="${DIAS[d]}: abre a las">
+        <span class="he-sep">a</span>
+        <input class="input num" type="time" data-he="close" value="${h.close}" aria-label="${DIAS[d]}: cierra a las">
+        <small class="he-note"></small>
+      </div>`;
+    }).join('');
+    $('#horarios-msg').textContent = '';
+    $('#horarios-msg').className = 'hint';
+    if (!P.horarios) $('#horarios-msg').textContent = 'Te dejamos de 10:00 a. m. a 10:00 p. m. como punto de partida. Cámbialo a tu horario real.';
+    $$('#hours-edit .he-row').forEach(notaHorario);
+    $('#dlg-horarios').showModal();
+  }
+  function notaHorario(row) {
+    const ab = $('[data-he="abierto"]', row).checked, o = $('[data-he="open"]', row).value, c = $('[data-he="close"]', row).value;
+    $$('input[type="time"]', row).forEach(i => { i.disabled = !ab; });
+    row.classList.toggle('is-off', !ab);
+    $('.he-note', row).textContent = !ab ? 'Cerrado' : o && c && c < o ? 'Cierra al día siguiente' : '';
+  }
+  function leerHorarios() {
+    const out = {};
+    for (const row of $$('#hours-edit .he-row')) {
+      const d = Number(row.dataset.dia), ab = $('[data-he="abierto"]', row).checked;
+      const o = $('[data-he="open"]', row).value, c = $('[data-he="close"]', row).value;
+      if (ab && (!o || !c)) return { error: `Pon la hora en que abres y cierras el ${DIAS[d].toLowerCase()}.` };
+      if (ab && o === c) return { error: `El ${DIAS[d].toLowerCase()} abre y cierra a la misma hora.` };
+      out[d] = { abierto: ab, open: o || '10:00', close: c || '22:00' };
+    }
+    if (!Object.values(out).some(h => h.abierto)) return { error: 'Marca al menos un día en que abras.' };
+    return { horarios: out };
+  }
+  async function submitHorarios(e) {
+    e.preventDefault();
+    const r = leerHorarios();
+    if (r.error) { $('#horarios-msg').textContent = r.error; $('#horarios-msg').className = 'field-msg'; return; }
+    const btn = $('#h-submit');
+    btn.disabled = true;
+    const ok = await guardarNegocio({ horarios: r.horarios });
+    btn.disabled = false;
+    if (!ok) return;
+    loc().perfil.horarios = r.horarios;
+    ultimoSync = null; save();
+    $('#dlg-horarios').close();
+    toast('Horarios guardados', 'Ya salen en tu tarjeta y el panel sabe cuándo estás abierto.');
+    render();
+  }
+  function copiarLunes() {
+    const lunes = $('#hours-edit .he-row[data-dia="1"]');
+    if (!lunes) return;
+    const ab = $('[data-he="abierto"]', lunes).checked, o = $('[data-he="open"]', lunes).value, c = $('[data-he="close"]', lunes).value;
+    $$('#hours-edit .he-row').forEach(row => {
+      $('[data-he="abierto"]', row).checked = ab;
+      $('[data-he="open"]', row).value = o; $('[data-he="close"]', row).value = c;
+      notaHorario(row);
+    });
+  }
+
+  /* ---------- Modo Mesa (lado del negocio) ---------- */
+  const mesaUI = { tab: 'proximas', editId: null };
+  const ESTADOS_MESA = { pendiente: ['Por confirmar', 'warn'], confirmada: ['Confirmada', 'pos'], rechazada: ['Rechazada', ''], cancelada: ['La cancelaron', ''], llego: ['Llegaron', 'pos'], no_llego: ['No llegaron', 'neg'] };
+  const diasMesaTxt = dias => { const d = [...(dias || [])].sort(); if (d.length === 7) return 'Todos los días'; if (d.join() === '1,2,3,4,5') return 'Lunes a viernes'; return d.map(x => DIAS[x].slice(0, 3)).join(', '); };
+  const mesaDeFila = r => ({ id: r.id, titulo: r.titulo, beneficio: r.beneficio, descripcion: r.descripcion || '', min: r.min_personas, max: r.max_personas, dias: r.dias || [], desde: String(r.hora_desde).slice(0, 5), hasta: String(r.hora_hasta).slice(0, 5), cupos: r.mesas_por_dia, activa: r.activa, vence: r.vence || '' });
+  const reservaDeFila = r => ({ id: r.id, promoId: r.promo_id, persona: persona(r.usuario_id), personas: r.personas, llegada: Date.parse(r.llegada), nota: r.nota || '', estado: r.estado, codigo: r.codigo, creado: Date.parse(r.creado_en) || NOW() });
+
+  async function cargarMesas() {
+    if (!REMOTE()) return;
+    const L = loc();
+    const [a, b] = await Promise.all([
+      SB().from('mesa_promos').select('*').eq('negocio_id', ME.id).order('creado_en', { ascending: false }),
+      SB().from('mesa_reservas').select('*').eq('negocio_id', ME.id).gte('llegada', new Date(NOW() - 30 * DAY).toISOString()).order('llegada'),
+    ]);
+    if (a.error || b.error) { L.mesasError = true; return; } // la migración de Modo Mesa todavía no está corrida
+    L.mesasError = false;
+    await cacheNombres((b.data || []).map(r => r.usuario_id));
+    L.mesas = (a.data || []).map(mesaDeFila);
+    L.reservas = (b.data || []).map(reservaDeFila);
+  }
+
+  function renderMesa() {
+    const L = loc(), promos = L.mesas || [], res = L.reservas || [];
+    $$('#mesa-tabs [data-mtab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mtab === mesaUI.tab)));
+    const viva = r => r.llegada > NOW() - 3 * HOUR && ['pendiente', 'confirmada', 'llego'].includes(r.estado);
+    const lista = mesaUI.tab === 'proximas'
+      ? res.filter(viva).sort((a, b) => (a.estado === 'pendiente' ? -1 : 0) - (b.estado === 'pendiente' ? -1 : 0) || a.llegada - b.llegada)
+      : res.filter(r => !viva(r)).sort((a, b) => b.llegada - a.llegada);
+    const promo = id => promos.find(m => m.id === id);
+    $('#mesa-reservas').innerHTML = lista.map(r => {
+      const [txt, cls] = ESTADOS_MESA[r.estado] || ESTADOS_MESA.pendiente, m = promo(r.promoId);
+      const hoyOPasada = r.llegada < NOW() + 6 * HOUR;
+      const acciones = r.estado === 'pendiente'
+        ? `<button class="btn primary btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="confirmada">${ic('i-check')}Confirmar</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="rechazada">No puedo</button>`
+        : r.estado === 'confirmada' && hoyOPasada
+          ? `<button class="btn btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="llego">${ic('i-door')}Llegaron</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="no_llego">No llegaron</button>`
+          : '';
+      return `<li class="row mesa-row">${avatar(r.persona)}
+        <span class="row-main"><b>${esc(r.persona.nombre)} · ${r.personas} personas</b><small>${esc(m ? m.titulo : 'Promo de mesa')} · ${esc(fmtCuando(r.llegada))} · <span class="code">${esc(r.codigo)}</span>${r.nota ? ` · ${esc(r.nota)}` : ''}</small></span>
+        <span class="pill ${cls}">${esc(txt)}</span>
+        <span class="mesa-acts">${acciones}</span></li>`;
+    }).join('') || `<li><p class="empty">${L.mesasError ? 'Modo Mesa todavía no está activo en la base de datos. Corre la migración 20261101130000_negocios_mesa_checkin_pagos.sql.' : promos.length ? (mesaUI.tab === 'proximas' ? 'Todavía no hay reservas. Comparte tu promo en redes: la gente la encuentra en el inicio de la app.' : 'Aquí quedan las reservas que ya pasaron.') : 'Lanza tu primera promo de mesa para empezar a recibir grupos.'}</p></li>`;
+
+    const act = promos.filter(m => m.activa).length;
+    $('#mesa-promos-meta').textContent = promos.length ? `${act} de ${promos.length} ${promos.length === 1 ? 'activa' : 'activas'}` : '';
+    $('#mesa-promos').innerHTML = promos.map(m => `<li class="mesa-promo ${m.activa ? '' : 'is-off'}">
+        <div class="mesa-promo-top"><b>${esc(m.titulo)}</b><input type="checkbox" class="switch" data-mesa-switch="${m.id}" ${m.activa ? 'checked' : ''} aria-label="${m.activa ? 'Pausar' : 'Activar'} ${esc(m.titulo)}"></div>
+        <p class="mesa-promo-ben">${ic('i-gift')}${esc(m.beneficio)}</p>
+        <p class="hint">${m.min} a ${m.max} personas · ${esc(diasMesaTxt(m.dias))} · ${esc(horaTxt(m.desde))} a ${esc(horaTxt(m.hasta))} · ${m.cupos} ${m.cupos === 1 ? 'mesa' : 'mesas'} por día${m.vence ? ` · hasta el ${esc(fmtDiaMes(new Date(m.vence + 'T12:00:00').getTime()))}` : ''}</p>
+        <div class="mesa-promo-acts"><button class="btn btn--sm" data-action="editar-mesa" data-id="${m.id}">${ic('i-edit')}Editar</button><button class="btn ghost btn--sm danger" data-action="borrar-mesa" data-id="${m.id}">${ic('i-trash')}Borrar</button></div>
+      </li>`).join('') || `<li><div class="empty">Una promo de mesa es para grupos que ya vienen juntos: una botella de cortesía, un combo o una experiencia.<button class="btn primary btn--sm" data-action="nueva-mesa">${ic('i-plus')}Nueva promo de mesa</button></div></li>`;
+  }
+
+  function openMesaPromo(id = null) {
+    closeMenus();
+    const L = loc(), P = L.perfil, m = id ? (L.mesas || []).find(x => x.id === id) : null;
+    mesaUI.editId = m ? m.id : null;
+    $('#dlg-mesa-title').textContent = m ? 'Editar promo de mesa' : 'Nueva promo de mesa';
+    $('#m-submit').textContent = m ? 'Guardar cambios' : 'Publicar promo';
+    resetFields($('#form-mesa'));
+    const hoy = hDia(P, new Date(NOW()).getDay());
+    $('#m-titulo').value = m ? m.titulo : '';
+    $('#m-beneficio').value = m ? m.beneficio : '';
+    $('#m-desc').value = m ? m.descripcion : '';
+    $('#m-min').value = m ? m.min : 4;
+    $('#m-max').value = m ? m.max : 10;
+    $('#m-desde').value = m ? m.desde : (hoy && hoy.abierto ? hoy.open : '18:00');
+    $('#m-hasta').value = m ? m.hasta : (hoy && hoy.abierto ? hoy.close : '23:00');
+    $('#m-cupos').value = m ? m.cupos : 5;
+    $('#m-vence').value = m ? m.vence : '';
+    $('#m-vence').min = dayKey(NOW());
+    // Por defecto, los días en que el local abre
+    const abiertos = P.horarios ? [0, 1, 2, 3, 4, 5, 6].filter(d => P.horarios[d].abierto) : [0, 1, 2, 3, 4, 5, 6];
+    const dias = m ? m.dias : abiertos;
+    $('#m-dias').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => `<label class="day-chip"><input type="checkbox" value="${d}" ${dias.includes(d) ? 'checked' : ''}><span>${DIAS[d].slice(0, 3)}</span></label>`).join('');
+    $('#m-dias-msg').textContent = '';
+    $('#dlg-mesa').showModal();
+  }
+  async function submitMesaPromo(e) {
+    e.preventDefault();
+    const v = id => $('#' + id).value.trim();
+    const min = Number(v('m-min')), max = Number(v('m-max')), cupos = Number(v('m-cupos'));
+    const dias = $$('#m-dias input:checked').map(i => Number(i.value));
+    const ok = [
+      setField($('#m-titulo'), v('m-titulo').length < 4 ? 'Mínimo 4 caracteres.' : ''),
+      setField($('#m-beneficio'), v('m-beneficio').length < 4 ? 'Di qué gana el grupo.' : ''),
+      setField($('#m-min'), !Number.isInteger(min) || min < 2 ? 'Mínimo 2 personas.' : min > 30 ? 'Máximo 30.' : ''),
+      setField($('#m-max'), !Number.isInteger(max) || max < 2 ? 'Mínimo 2.' : max > 30 ? 'Máximo 30.' : max < min ? 'Debe ser mayor o igual al mínimo.' : ''),
+      setField($('#m-desde'), !v('m-desde') ? 'Elige la hora.' : ''),
+      setField($('#m-hasta'), !v('m-hasta') ? 'Elige la hora.' : v('m-hasta') === v('m-desde') ? 'Debe ser distinta a la de inicio.' : ''),
+      setField($('#m-cupos'), !Number.isInteger(cupos) || cupos < 1 ? 'Mínimo 1.' : cupos > 100 ? 'Máximo 100.' : ''),
+    ].every(Boolean);
+    $('#m-dias-msg').textContent = dias.length ? '' : 'Marca al menos un día.';
+    if (!ok || !dias.length) return;
+    const datos = { titulo: v('m-titulo'), beneficio: v('m-beneficio'), descripcion: v('m-desc'), min, max, dias, desde: v('m-desde'), hasta: v('m-hasta'), cupos, vence: v('m-vence') };
+    const L = loc(), editId = mesaUI.editId;
+    if (REMOTE()) {
+      const row = { titulo: datos.titulo, beneficio: datos.beneficio, descripcion: datos.descripcion, min_personas: min, max_personas: max, dias, hora_desde: datos.desde, hora_hasta: datos.hasta, mesas_por_dia: cupos, vence: datos.vence || null };
+      const btn = $('#m-submit'); btn.disabled = true;
+      const res = editId
+        ? await SB().from('mesa_promos').update(row).eq('id', editId).select('*').single()
+        : await SB().from('mesa_promos').insert(row).select('*').single();
+      btn.disabled = false;
+      if (res.error) { toast('No se guardó la promo', res.error.hint || res.error.message, { error: true }); return; }
+      const fila = mesaDeFila(res.data);
+      L.mesas = editId ? L.mesas.map(x => x.id === editId ? fila : x) : [fila].concat(L.mesas || []);
+    } else {
+      if (editId) Object.assign(L.mesas.find(x => x.id === editId), datos);
+      else L.mesas = [{ id: 'm' + NOW().toString(36), activa: true, ...datos }].concat(L.mesas || []);
+      save();
+    }
+    $('#dlg-mesa').close();
+    toast(editId ? 'Promo actualizada' : 'Promo de mesa publicada', editId ? 'Las reservas que ya tienes no cambian.' : 'Ya sale en el inicio de la app para que los grupos reserven.');
+    if (route !== 'mesa') location.hash = '#mesa'; else render();
+  }
+  async function toggleMesa(id, on) {
+    const m = (loc().mesas || []).find(x => x.id === id);
+    if (!m) return;
+    if (REMOTE()) {
+      const { error } = await SB().from('mesa_promos').update({ activa: on }).eq('id', id);
+      if (error) { toast('No se cambió', error.message, { error: true }); renderMesa(); return; }
+    }
+    m.activa = on; save();
+    toast(on ? 'Promo activa' : 'Promo pausada', on ? `${m.titulo} vuelve a salir en la app.` : `${m.titulo} deja de salir. Las reservas que ya tienes siguen.`);
+    renderMesa();
+  }
+  async function borrarMesa(id) {
+    const L = loc(), m = (L.mesas || []).find(x => x.id === id);
+    if (!m) return;
+    const vivas = (L.reservas || []).filter(r => r.promoId === id && r.llegada > NOW() && ['pendiente', 'confirmada'].includes(r.estado)).length;
+    const ok = await confirmar('Borrar promo de mesa', `"${m.titulo}" deja de salir en la app.${vivas ? ` Ojo: tienes ${vivas} ${vivas === 1 ? 'reserva próxima que también se borra' : 'reservas próximas que también se borran'}. Mejor páusala si quieres conservarlas.` : ''}`, 'Sí, borrar');
+    if (!ok) return;
+    if (REMOTE()) {
+      const { error } = await SB().from('mesa_promos').delete().eq('id', id);
+      if (error) { toast('No se borró', error.message, { error: true }); return; }
+    }
+    L.mesas = L.mesas.filter(x => x.id !== id);
+    L.reservas = (L.reservas || []).filter(r => r.promoId !== id);
+    save();
+    toast('Promo borrada', m.titulo);
+    render();
+  }
+  async function estadoReserva(id, estado) {
+    const r = (loc().reservas || []).find(x => x.id === id);
+    if (!r) return;
+    if (REMOTE()) {
+      const { error } = await SB().rpc('negocio_mesa_estado', { p_id: id, p_estado: estado });
+      if (error) { toast('No se pudo cambiar', error.hint || error.message, { error: true }); return; }
+    }
+    r.estado = estado; save();
+    const txt = { confirmada: ['Mesa confirmada', `Le avisamos a ${r.persona.nombre}.`], rechazada: ['Reserva rechazada', `Le avisamos a ${r.persona.nombre} que pruebe otra hora.`], llego: ['Llegaron', `${r.persona.nombre} y su grupo están adentro.`], no_llego: ['Marcada como no llegaron', r.codigo] }[estado];
+    toast(txt[0], txt[1]);
+    tone(estado === 'llego' || estado === 'confirmada' ? 'ok' : 'in');
+    renderShell(); renderMesa();
+  }
+
+  /* ---------- Pago de planes con Wompi ----------
+     1. La Edge Function wompi-checkout crea la referencia y la firma de
+        integridad (el secreto nunca llega al navegador).
+     2. Se abre el widget oficial de Wompi (tarjeta, PSE, Nequi, Bancolombia).
+     3. El plan sube solo cuando Wompi confirma el pago (webhook), y el panel
+        lo sigue en vivo. */
+  const WOMPI_WIDGET = 'https://checkout.wompi.co/widget.js';
+  function cargarWompi() {
+    if (window.WidgetCheckout) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = WOMPI_WIDGET;
+      s.onload = () => (window.WidgetCheckout ? res() : rej(new Error('Wompi no cargó.')));
+      s.onerror = () => rej(new Error('No pudimos abrir Wompi. Revisa tu conexión.'));
+      document.head.appendChild(s);
+    });
+  }
+  function pagoEstado(tipo, titulo, texto = '') {
+    const b = $('#pago-status');
+    if (!tipo) { b.hidden = true; b.innerHTML = ''; return; }
+    b.hidden = false;
+    b.className = 'pay-status is-' + tipo;
+    b.innerHTML = `${tipo === 'cargando' ? '<span class="pay-spin" aria-hidden="true"></span>' : ic(tipo === 'ok' ? 'i-check' : tipo === 'error' ? 'i-alert' : 'i-clock')}<div><b>${esc(titulo)}</b>${texto ? `<small>${esc(texto)}</small>` : ''}</div>`;
+  }
+  function abrirPago() {
+    closeMenus();
+    pagoEstado(null);
+    $('#pago-btn').disabled = false;
+    $('#pago-precio').textContent = PLANES.villavo.precio.replace(' / mes', '');
+    if (!$('#dlg-pago').open) $('#dlg-pago').showModal();
+  }
+  async function pagar() {
+    const btn = $('#pago-btn');
+    if (!REMOTE()) { pagoEstado('info', 'Panel de ejemplo', 'En tu cuenta real aquí se abre Wompi para pagar con tarjeta, PSE, Nequi o Bancolombia. En el ejemplo no se cobra nada.'); return; }
+    btn.disabled = true;
+    pagoEstado('cargando', 'Preparando el pago seguro...');
+    let datos;
+    try {
+      const { data, error } = await SB().functions.invoke('wompi-checkout', { body: { plan: 'villavo' } });
+      if (error) {
+        let detalle = '';
+        try { detalle = (await error.context.json()).error || ''; } catch (e2) { /* sin cuerpo */ }
+        throw new Error(detalle || error.message);
+      }
+      if (!data || data.error) throw new Error((data && data.error) || 'SIN_RESPUESTA');
+      datos = data;
+      await cargarWompi();
+    } catch (e) {
+      btn.disabled = false;
+      const m = String((e && e.message) || e);
+      if (/PAGOS_SIN_CONFIGURAR|Failed to send|FunctionsFetchError|404|not found/i.test(m)) pagoEstado('error', 'Los pagos en línea aún no están activos', 'Estamos terminando de conectar Wompi. Escríbenos a modoparcheoficial@gmail.com y activamos tu plan.');
+      else if (/COBROS_REALES_DESACTIVADOS/.test(m)) pagoEstado('error', 'Cobros reales desactivados', 'ModoParche es un prototipo académico: los pagos solo funcionan en modo de pruebas.');
+      else if (/NO_ES_NEGOCIO/.test(m)) pagoEstado('error', 'Esta cuenta no es de negocio', 'Entra con la cuenta de tu local.');
+      else if (/DEMASIADOS/.test(m)) pagoEstado('error', 'Muchos intentos seguidos', 'Espera unos minutos e intenta de nuevo.');
+      else pagoEstado('error', 'No pudimos abrir el pago', m);
+      return;
+    }
+    const c = datos.customer || {}, cliente = {};
+    if (c.email) cliente.email = c.email;
+    if (c.fullName) cliente.fullName = c.fullName;
+    if (/^3\d{9}$/.test(c.phoneNumber || '')) { cliente.phoneNumber = c.phoneNumber; cliente.phoneNumberPrefix = '+57'; }
+    if (c.legalId) { cliente.legalId = c.legalId; cliente.legalIdType = c.legalIdType || 'NIT'; }
+    const checkout = new window.WidgetCheckout({
+      currency: datos.currency, amountInCents: datos.amountInCents, reference: datos.reference, publicKey: datos.publicKey,
+      signature: { integrity: datos.signature },
+      redirectUrl: new URL('empresa-dashboard.html?pago=' + encodeURIComponent(datos.reference) + '#perfil', location.href).href,
+      customerData: cliente,
+    });
+    pagoEstado('cargando', 'Completa el pago en la ventana de Wompi', 'No cierres esta página.');
+    checkout.open(result => {
+      btn.disabled = false;
+      const tx = result && result.transaction;
+      if (!tx) { pagoEstado(null); return; }
+      seguirPago(datos.reference, tx.id, tx.status);
+    });
+  }
+  async function recargarNegocio() {
+    const { data: n } = await SB().from('negocios').select('*').eq('id', ME.id).maybeSingle();
+    if (!n) return;
+    const P = loc().perfil;
+    P.plan = n.plan; P.planVence = n.plan_vence ? Date.parse(n.plan_vence) : null; P.planPendiente = n.plan_pendiente || null;
+  }
+  let siguiendoPago = null;
+  async function seguirPago(referencia, txId, estadoInicial) {
+    if (['DECLINED', 'ERROR', 'VOIDED'].includes(estadoInicial)) { pagoEstado('error', 'El pago no pasó', 'No se hizo ningún cobro. Intenta con otro medio de pago.'); return; }
+    const turno = siguiendoPago = {};
+    pagoEstado('cargando', 'Confirmando el pago con Wompi...', 'Con PSE o Nequi puede tardar un par de minutos.');
+    for (let i = 0; i < 26 && siguiendoPago === turno; i++) {
+      // Pide al servidor que le pregunte a Wompi (por si el aviso automático tarda)
+      if (txId && i % 2 === 0) { try { await SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: txId } }); } catch (e) { /* el webhook lo confirma igual */ } }
+      const { data } = await SB().from('pagos').select('estado').eq('referencia', referencia).maybeSingle();
+      const est = data && data.estado;
+      if (est === 'APPROVED') {
+        await recargarNegocio();
+        pagoEstado('ok', '¡Pago aprobado!', 'Ya tienes Parche Villavo por 30 días: parches sin límite.');
+        burstFrom($('#pago-btn'), 30); tone('ok');
+        render();
+        return;
+      }
+      if (['DECLINED', 'VOIDED', 'ERROR'].includes(est)) { pagoEstado('error', 'El pago no pasó', 'No se hizo ningún cobro. Intenta con otro medio de pago.'); return; }
+      await new Promise(r => setTimeout(r, i < 6 ? 2500 : 5000));
+    }
+    if (siguiendoPago === turno) pagoEstado('info', 'Tu pago sigue en proceso', 'Te avisamos apenas Wompi lo apruebe. Ya puedes cerrar esta ventana.');
+  }
+
+  /* ---------- Derecho de retracto (Ley 1480, art. 47) ----------
+     Abre el correo ya escrito con la referencia del último pago aprobado. */
+  async function pedirRetracto() {
+    const P = loc().perfil;
+    let ref = '';
+    if (REMOTE()) {
+      const { data } = await SB().from('pagos').select('referencia, creado_en').eq('negocio_id', ME.id).eq('estado', 'APPROVED').order('creado_en', { ascending: false }).limit(1).maybeSingle();
+      if (data) ref = data.referencia;
+    }
+    const ok = await confirmar('Me arrepiento de la compra', 'Tienes 5 días hábiles desde el pago para arrepentirte sin dar explicaciones. Te devolvemos el 100 % por el mismo medio de pago en máximo 30 días y tu cuenta vuelve al plan gratis. Te abrimos el correo ya escrito.', 'Abrir el correo');
+    if (!ok) return;
+    const cuerpo = `Hola, quiero ejercer el derecho de retracto.\nNegocio: ${P.nombre}\nCorreo de la cuenta: ${(ME && ME.email) || ''}\nReferencia del pago: ${ref || '(no la encontré)'}\n`;
+    location.href = `mailto:modoparcheoficial@gmail.com?subject=${encodeURIComponent('Retracto · ' + P.nombre)}&body=${encodeURIComponent(cuerpo)}`;
+  }
+
+  /* ---------- Anuncios: darse de baja ---------- */
+  async function cambiarAnunciosNegocio(on, input) {
+    if (!REMOTE()) { toast(on ? 'Anuncios activados' : 'Te diste de baja', 'En el panel de ejemplo no se guarda.'); return; }
+    const { error } = await SB().rpc('cambiar_anuncios', { p_recibir: on });
+    if (error) { input.checked = !on; toast('No se pudo guardar', error.message, { error: true }); return; }
+    toast(on ? 'Anuncios activados' : 'Te diste de baja de los anuncios', on ? 'Te contamos novedades para negocios.' : 'Ya no te llegan anuncios. Los avisos de tus parches, mesas y pagos siguen igual.');
+  }
+
+  /* ---------- Ubicación exacta del local ----------
+     Si el negocio no tiene punto en el mapa, lo buscamos con su dirección. */
+  async function ubicarLocalAuto() {
+    const P = loc().perfil;
+    if (!REMOTE() || !P.sinUbicacion || !window.MPMapa) return;
+    const r = await window.MPMapa.geocodificarDireccion({ direccion: P.direccion === 'Sin dirección' ? '' : P.direccion, barrio: P.barrio, ciudad: P.ciudad, nombre: P.nombre });
+    if (!r || !(await guardarNegocio({ lat: r.lat, lng: r.lng }))) return;
+    P.lat = r.lat; P.lng = r.lng; P.sinUbicacion = r.precision !== 'direccion' && r.precision !== 'lugar';
+    mapDirty = true; save();
+    toast('Ubicamos tu local en el mapa', r.precision === 'direccion' || r.precision === 'lugar'
+      ? 'Lo encontramos con tu dirección. Revisa el pin en Perfil y plan.'
+      : `Quedó ${r.precision === 'barrio' ? 'en tu barrio' : 'en el centro de la ciudad'}. Busca tu dirección o toca el mapa en Perfil y plan para dejarlo exacto.`);
+    render();
+  }
+  // Al soltar el pin, mostramos la dirección real de ese punto
+  function mostrarDireccionPin(lat, lng) {
+    if (!window.MPMapa) return;
+    window.MPMapa.inverso(lat, lng).then(r => { if (r && r.texto) $('#ubic-meta').textContent = `${r.texto} · ${lat.toFixed(4)}, ${lng.toFixed(4)}`; });
+  }
+
+  /* ---------- QR de llegada para la puerta ---------- */
+  let detenerBizQR = null;
+  async function abrirQRLlegada(id) {
+    closeMenus();
+    const p = findParche(id || doorState.id);
+    if (!p) { toast('Elige un parche', 'El QR de llegada es de un parche de hoy.', { error: true }); return; }
+    if (!window.MPCheckin) return;
+    $('#qr-note').innerHTML = `Quien llega a <b>${esc(p.titulo)}</b> abre el chat del parche en su app, toca <b>Escanear QR</b> y apunta aquí. El código cambia cada 30 segundos.`;
+    $('#biz-qr-box').innerHTML = '<span class="qr-wait" aria-label="Generando el QR"></span>';
+    $('#dlg-qr').showModal();
+    let clave;
+    if (p.remoto) {
+      const { data, error } = await SB().rpc('mi_clave_checkin', { p_parche: p.id });
+      if (error) { $('#biz-qr-box').innerHTML = `<p class="qr-err">${esc(error.hint || error.message)}</p>`; return; }
+      clave = data;
+    } else clave = { secreto: 'demo-' + p.id, ahora: NOW() };
+    if (detenerBizQR) detenerBizQR();
+    try { detenerBizQR = await window.MPCheckin.mostrarQR({ clave, parcheId: p.id, qr: $('#biz-qr-box'), cuenta: $('#biz-qr-count'), codigo: $('#biz-qr-code'), barra: $('#biz-qr-bar') }); }
+    catch (e) { $('#biz-qr-box').innerHTML = `<p class="qr-err">${esc(e.message)}</p>`; }
+  }
+  function pararQRLlegada() { if (detenerBizQR) { detenerBizQR(); detenerBizQR = null; } }
+
+  // Las llegadas que marca el local también quedan en la base (organizador_checkin)
+  const esUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || ''));
+  function marcarEnBase(p, a, llego) {
+    if (!REMOTE() || !p.remoto || !esUuid(a.id)) return;
+    SB().rpc('organizador_checkin', { p_parche: p.id, p_usuario: a.id, p_llego: llego }).then(({ error }) => {
+      if (error) toast(llego ? 'La llegada quedó solo en este panel' : 'No se deshizo en la base', error.hint || error.message, { error: true });
+    });
+  }
+
   /* ---------- Cancelar parche y solicitud de cambio ---------- */
   async function askCancel(id) {
     closeMenus();
     const p = findParche(id);
     const ok = await confirmar('Cancelar parche', `"${p.titulo}" (${fmtCuando(p.inicio)}) sale del mapa y avisamos a ${confirmados(p)} ${confirmados(p) === 1 ? 'confirmado' : 'confirmados'} por el chat del grupo.`, 'Sí, cancelar');
     if (!ok) return;
+    if (p.remoto) {
+      const { error } = await SB().from('parches').delete().eq('id', p.id);
+      if (error) { const [t, d] = errorDB(error); toast(t, d, { error: true }); return; }
+    }
     p.cancelado = true;
     p.chat.push({ tipo: 'sys', texto: 'El local canceló el parche', ts: NOW() });
     save();
     toast('Parche cancelado', `Avisamos a ${confirmados(p)} ${confirmados(p) === 1 ? 'persona' : 'personas'}.`);
     render();
   }
-  function submitSolicitud(e) {
-    e.preventDefault();
-    const det = $('#s-detalle').value.trim();
-    if (!setField($('#s-detalle'), det.length < 10 ? 'Cuéntanos el cambio (mínimo 10 caracteres).' : '')) return;
-    S.solicitudes.push({ id: 's' + NOW().toString(36), local: S.actual, campo: $('#s-campo').value, detalle: det, ts: NOW(), estado: 'revision' });
-    save();
-    $('#dlg-solicitud').close();
-    toast('Solicitud enviada', 'El equipo de Modo Parche la revisa y te avisa cuando quede.');
-    renderPerfil();
+  async function logout() {
+    if (DEMO || !SB()) { location.href = 'empresa.html'; return; }
+    try { await SB().auth.signOut(); } catch (e) { /* salimos igual */ }
+    location.replace('empresa.html#entrar');
   }
 
   /* =====================================================================
@@ -1451,22 +2332,33 @@
     window.addEventListener('hashchange', go);
     $('#menu-toggle').addEventListener('click', () => toggleMenu(true));
     $('#menu-close').addEventListener('click', () => toggleMenu(false));
-    $('#local-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      const list = $('#local-list'), open = list.hidden;
-      list.hidden = !open; $('#local-btn').setAttribute('aria-expanded', String(open));
-      if (open) { const sel = $('[aria-selected="true"]', list); if (sel) sel.focus(); }
-    });
     $('#sound-btn').addEventListener('click', () => { S.sonido = !S.sonido; save(); renderShell(); if (S.sonido) tone('in'); toast(S.sonido ? 'Sonido activado' : 'Sonido apagado', S.sonido ? 'Suena al validar cupones y marcar llegadas.' : 'El panel valida en silencio.'); });
 
     document.addEventListener('click', e => {
       const a = e.target.closest('[data-action]');
       if (!e.target.closest('#row-menu') && !e.target.closest('[data-action="row-menu"], [data-action="cupon-menu"]')) $('#row-menu').hidden = true;
-      if (!e.target.closest('.local-switch')) { $('#local-list').hidden = true; $('#local-btn').setAttribute('aria-expanded', 'false'); }
       if (!a) return;
       const id = a.dataset.id;
       switch (a.dataset.action) {
-        case 'cambiar-local': cambiarLocal(a.dataset.local); break;
+        case 'logout': logout(); break;
+        case 'editar-perfil': openPerfil(); break;
+        case 'cambiar-plan': cambiarPlan(a.dataset.plan); break;
+        case 'pagar-plan': abrirPago(); break;
+        case 'retracto': pedirRetracto(); break;
+        case 'pagar': pagar(); break;
+        case 'cerrar-pago': siguiendoPago = null; $('#dlg-pago').close(); break;
+        case 'editar-horarios': openHorarios(); break;
+        case 'horario-copiar': copiarLunes(); break;
+        case 'ir-ubicacion': if (route !== 'perfil') location.hash = '#perfil'; setTimeout(() => { const m = $('#map-perfil'); if (m) m.scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'center' }); }, 160); break;
+        case 'nueva-mesa': openMesaPromo(); break;
+        case 'editar-mesa': openMesaPromo(id); break;
+        case 'borrar-mesa': borrarMesa(id); break;
+        case 'mesa-estado': estadoReserva(id, a.dataset.estado); break;
+        case 'door-qr': abrirQRLlegada(doorState.id); break;
+        case 'qr-parche': abrirQRLlegada(id); break;
+        case 'cerrar-qr': pararQRLlegada(); $('#dlg-qr').close(); break;
+        case 'mis-datos': descargarMisDatos(a); break;
+        case 'borrar-cuenta': borrarCuenta(a); break;
         case 'relampago': openRelampago(); break;
         case 'nuevo-parche': openParche(null, a.dataset.fecha || null); break;
         case 'editar': openParche(id); break;
@@ -1497,7 +2389,6 @@
         case 'door-out': { const p = findParche(doorState.id), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { checkOut(p, u); renderDoor(); toast('Llegada deshecha', u.nombre); } break; }
         case 'door-walkin': doorWalkin(); break;
         case 'flip-card': { a.classList.toggle('is-flipped'); a.setAttribute('aria-pressed', String(a.classList.contains('is-flipped'))); break; }
-        case 'solicitar': resetFields($('#form-solicitud')); $('#s-detalle').value = ''; $('#dlg-solicitud').showModal(); break;
       }
     });
 
@@ -1543,8 +2434,15 @@
       e.preventDefault();
       const inp = $('#chat-input'), txt = inp.value.trim(), p = findParche(asisState.id);
       if (!txt || !p) return;
-      p.chat.push({ autor: 'biz', texto: txt.slice(0, 400), ts: NOW() });
+      const msg = { autor: 'biz', texto: txt.slice(0, 400), ts: NOW() };
+      p.chat.push(msg);
       inp.value = ''; save(); renderChat(p, true);
+      if (p.remoto) {
+        SB().from('mensajes').insert({ parche_id: p.id, texto: msg.texto }).select('id').single().then(({ data, error }) => {
+          if (error) { p.chat = p.chat.filter(x => x !== msg); renderChat(p); toast('No se envió el mensaje', error.message, { error: true }); }
+          else if (data && !msg.id) msg.id = data.id;
+        });
+      }
     });
 
     // Modo puerta
@@ -1567,7 +2465,24 @@
     $$('#r-dur button').forEach(b => b.addEventListener('click', () => { relDur = Number(b.dataset.min); updRelSummary(); }));
     $('#r-cupon').addEventListener('change', updRelSummary);
     $('#form-cupon').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitCupon(e); });
-    $('#form-solicitud').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitSolicitud(e); });
+    $('#form-perfil').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitPerfil(e); });
+    $('#form-horarios').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitHorarios(e); });
+    $('#hours-edit').addEventListener('input', e => { const row = e.target.closest('.he-row'); if (row) notaHorario(row); $('#horarios-msg').textContent = ''; });
+    $('#hours-edit').addEventListener('change', e => { const row = e.target.closest('.he-row'); if (row) notaHorario(row); });
+    $('#form-mesa').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitMesaPromo(e); });
+    $$('#mesa-tabs [data-mtab]').forEach(b => b.addEventListener('click', () => { mesaUI.tab = b.dataset.mtab; renderMesa(); }));
+    document.addEventListener('change', e => { const sw = e.target.closest('[data-mesa-switch]'); if (sw) toggleMesa(sw.dataset.mesaSwitch, sw.checked); });
+    $('#dlg-qr').addEventListener('close', pararQRLlegada);
+    $('#bz-anuncios-sw').addEventListener('change', e => cambiarAnunciosNegocio(e.target.checked, e.target));
+    $('#dlg-pago').addEventListener('close', () => { siguiendoPago = null; });
+
+    // Foto del parche: elegir, arrastrar o quitar
+    $('#p-foto').addEventListener('change', e => elegirFoto(e.target.files && e.target.files[0]));
+    $('#photo-clear').addEventListener('click', () => { setFoto(null); $('#p-foto').value = ''; });
+    const drop = $('#photo-drop');
+    ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('is-drag'); }));
+    ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('is-drag')));
+    drop.addEventListener('drop', e => { e.preventDefault(); elegirFoto(e.dataTransfer.files && e.dataTransfer.files[0]); });
     $('#dlg-scan').addEventListener('close', closeScan);
 
     bindTilt();
@@ -1586,11 +2501,32 @@
     setTimeout(() => { $('#code-input').focus(); $('#validar').scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'center' }); }, 90);
   }
 
-  function init() {
-    load();
+  async function init() {
+    // Los botones de la pantalla de carga (cerrar sesión) funcionan desde el principio
+    $('#boot').addEventListener('click', e => { if (e.target.closest('[data-action="logout"]')) logout(); });
+    if (DEMO) load();
+    else if (!(await bootRemoto())) return;
     verificar();
     bind();
     go();
+    hideBoot();
+    const qs = new URLSearchParams(location.search), P = loc().perfil;
+    if (qs.has('bienvenida')) {
+      setTimeout(() => {
+        toast(`¡Bienvenido, ${P.nombre}!`, P.horarios ? 'Tu cuenta está lista. Publica tu primer parche con foto.' : 'Tu cuenta está lista. Empieza por poner tus horarios.');
+        burst(window.innerWidth / 2, window.innerHeight / 3, 46, ['#ff751f', '#86895d', '#15110e']);
+      }, 400);
+    }
+    // Volvió de Wompi (PSE, Bancolombia): seguimos el pago
+    if (qs.get('pago') && REMOTE()) { abrirPago(); seguirPago(qs.get('pago'), qs.get('id'), null); }
+    // Eligió un plan pago al registrarse: abrimos el pago
+    else if (REMOTE() && P.plan === 'basico' && (qs.get('pagar') === 'villavo' || (qs.has('bienvenida') && P.planPendiente === 'villavo'))) setTimeout(abrirPago, 900);
+    else if (qs.has('bienvenida') && !P.horarios) setTimeout(openHorarios, 1200);
+    if (['bienvenida', 'pago', 'pagar', 'id', 'env'].some(k => qs.has(k)) && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
+    // Si el local no tiene punto en el mapa, lo buscamos con su dirección
+    setTimeout(ubicarLocalAuto, 1500);
+    // Estado actual de los anuncios (link de baja)
+    if (REMOTE()) SB().from('perfiles').select('recibe_anuncios').eq('id', ME.id).maybeSingle().then(({ data }) => { if (data) $('#bz-anuncios-sw').checked = !!data.recibe_anuncios; });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

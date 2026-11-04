@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuenta de negocio - ModoParche</title>
+<meta name="description" content="Crea la cuenta de tu negocio en ModoParche, elige tu plan y publica parches con foto en el radar de Villavicencio.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ModoParche">
+<meta property="og:title" content="Cuenta de negocio - ModoParche">
+<meta property="og:description" content="Crea la cuenta de tu negocio en ModoParche, elige tu plan y publica parches con foto en el radar de Villavicencio.">
+<meta property="og:url" content="https://modoparche-hazel.vercel.app/empresa">
+<meta property="og:image" content="https://modoparche-hazel.vercel.app/src/assets/web/banner.jpg">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="mp-base.css">
+<link rel="stylesheet" href="login.css">
+<link rel="stylesheet" href="paginas.css">
+<script>
+  document.documentElement.classList.add('mp-js');
+  if (/^#entrar/.test(location.hash)) document.documentElement.classList.add('auth-start-signup');
+</script>
+<link rel="stylesheet" href="legal.css">
+</head>
+<body class="page-auth page-biz-auth">
+
+<a class="skip-link" href="#main">Saltar al formulario</a>
+
+<header class="nav auth-nav">
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo" aria-label="ModoParche, inicio">
+      <span class="logo-mark"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b><span class="logo-biz">Negocios</span>
+    </a>
+    <a href="comercio.html" class="auth-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Ver planes
+    </a>
+  </div>
+</header>
+
+<main id="main" class="auth-shell">
+
+  <!-- Panel con la vista previa en vivo (escritorio) -->
+  <aside class="biz-aside" aria-label="Así se verá tu negocio">
+    <img class="biz-aside-mark stk--float" src="src/assets/web/logo-isotipo-negro.webp" alt="" width="397" height="476" style="--float:8s">
+    <div class="biz-aside-copy">
+      <span class="tag-olive tag-olive--dark">Cuenta de negocio</span>
+      <p class="biz-aside-title">Tu local en el radar de Villavo</p>
+      <p class="biz-aside-lede">Crea la cuenta tú mismo. Sin esperar a nadie: eliges tu plan y publicas tu primer parche hoy.</p>
+    </div>
+
+    <div class="biz-live" aria-live="polite">
+      <p class="biz-live-label">Así te verán los parceros</p>
+      <article class="biz-live-card">
+        <div class="biz-live-cover">
+          <img src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476">
+          <span class="biz-live-badge">Aliado</span>
+        </div>
+        <div class="biz-live-body">
+          <span class="biz-live-cat" id="pvCat">Comida</span>
+          <h3 id="pvName">Tu negocio</h3>
+          <p id="pvZone">Villavicencio</p>
+          <p class="biz-live-plan">Plan <b id="pvPlan">Parche Villavo</b></p>
+        </div>
+      </article>
+    </div>
+
+    <ul class="biz-aside-points">
+      <li>Parches con foto que destacan en el radar</li>
+      <li>Ves quién llega y validas cupones en la puerta</li>
+      <li>Tu cuenta es solo tuya: nadie más ve tus datos</li>
+    </ul>
+  </aside>
+
+  <section class="auth-panel" aria-label="Cuenta de negocio">
+    <div class="auth-box auth-box--wide">
+
+      <div class="auth-tabs" role="tablist" aria-label="Crear cuenta o entrar">
+        <span class="auth-tabs-pill" aria-hidden="true"></span>
+        <button type="button" role="tab" id="tab-crear" aria-controls="view-crear" aria-selected="true" class="auth-tab active" data-biz="crear">Crear cuenta</button>
+        <button type="button" role="tab" id="tab-entrar" aria-controls="view-entrar" aria-selected="false" class="auth-tab" data-biz="entrar">Entrar</button>
+      </div>
+
+      <!-- ========================================================
+           CREAR CUENTA DE NEGOCIO (3 PASOS)
+      ======================================================== -->
+      <div class="auth-view active" id="view-crear" role="tabpanel" aria-labelledby="tab-crear">
+        <ol class="wizard-progress" aria-label="Progreso del registro">
+          <li class="wz-dot active" data-dot="1"><span>Tu negocio</span></li>
+          <li class="wz-dot" data-dot="2"><span>Acceso</span></li>
+          <li class="wz-dot" data-dot="3"><span>Tu plan</span></li>
+        </ol>
+
+        <form action="#" method="POST" id="form-negocio" data-validate novalidate>
+
+          <!-- PASO 1 -->
+          <div class="wz-step active" id="bz-step-1">
+            <h1>Cuéntanos de tu negocio</h1>
+            <p class="sub">Así aparecerás en el radar y en el mapa.</p>
+
+            <div class="field">
+              <label for="bz-nombre">Nombre del negocio</label>
+              <input type="text" id="bz-nombre" name="negocio" required maxlength="80" autocomplete="organization" placeholder="Ej. Café Origen Barzal" data-error="Escribe el nombre de tu negocio.">
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="bz-tipo">Tipo de negocio</label>
+                <select id="bz-tipo" name="tipo_negocio" required>
+                  <option value="Café o restaurante" data-cat="comida">Café o restaurante</option>
+                  <option value="Bar o discoteca" data-cat="rumba">Bar o discoteca</option>
+                  <option value="Plan chill" data-cat="chill">Plan chill (café, juegos)</option>
+                  <option value="Turismo y aventura" data-cat="pueblear">Turismo y aventura</option>
+                  <option value="Deporte y bienestar" data-cat="deportes">Deporte y bienestar</option>
+                  <option value="Música en vivo" data-cat="conciertos">Música en vivo</option>
+                  <option value="Cultura y talleres" data-cat="cultura">Cultura y talleres</option>
+                  <option value="Gaming" data-cat="gaming">Gaming</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="bz-nit">NIT <span class="field-hint">(opcional)</span></label>
+                <input type="text" id="bz-nit" name="nit" inputmode="numeric" maxlength="20" pattern="[0-9.\-]{5,20}" placeholder="900.000.000-0" data-error="Usa solo números, puntos y guion.">
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="bz-ciudad">Ciudad</label>
+                <select id="bz-ciudad" name="ciudad" required>
+                  <option value="Villavicencio" selected>Villavicencio</option>
+                  <option value="Acacías">Acacías</option>
+                  <option value="Restrepo">Restrepo</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="bz-barrio">Barrio</label>
+                <input type="text" id="bz-barrio" name="barrio" required maxlength="40" placeholder="Ej. El Barzal" data-error="Indica el barrio de tu local.">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="bz-dir">Dirección</label>
+              <input type="text" id="bz-dir" name="direccion" required maxlength="120" autocomplete="street-address" placeholder="Ej. Calle 40 # 24-15" data-error="Escribe la dirección del local.">
+            </div>
+
+            <div class="field">
+              <label for="bz-desc">En una frase, ¿qué ofreces? <span class="field-hint">(opcional)</span></label>
+              <textarea id="bz-desc" name="descripcion" maxlength="300" rows="3" placeholder="Ej. Café de especialidad del Meta, juegos de mesa y talleres."></textarea>
+            </div>
+
+            <div class="wz-actions">
+              <span></span>
+              <button type="button" class="btn" data-bz-next="1">Continuar
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- PASO 2 -->
+          <div class="wz-step" id="bz-step-2">
+            <h1>Datos de acceso</h1>
+            <p class="sub">Con este correo entrarás al panel de tu negocio.</p>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="bz-resp">Nombre del responsable</label>
+                <input type="text" id="bz-resp" name="responsable" required maxlength="80" autocomplete="name" placeholder="¿Quién administra la cuenta?" data-error="Escribe el nombre de quien administra.">
+              </div>
+              <div class="field">
+                <label for="bz-tel">WhatsApp del negocio</label>
+                <input type="tel" id="bz-tel" name="telefono" required inputmode="numeric" autocomplete="tel" pattern="[0-9 +()-]{7,15}" placeholder="300 000 0000" data-error="Ingresa un número de WhatsApp válido.">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="bz-email">Correo del negocio</label>
+              <input type="email" id="bz-email" name="email" required autocomplete="email" inputmode="email" placeholder="negocio@correo.com" data-error="Escribe un correo válido.">
+            </div>
+
+            <div class="field">
+              <label for="bz-pass">Contraseña</label>
+              <div class="pass-wrap">
+                <input type="password" id="bz-pass" name="password" required autocomplete="new-password" pattern="(?=.*[A-Z]).{8,}" placeholder="Mínimo 8 caracteres y 1 mayúscula" data-error="Usa mínimo 8 caracteres e incluye una letra mayúscula.">
+                <button type="button" class="pass-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                  <svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="i-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0112 19c-6.4 0-10-7-10-7a18.5 18.5 0 015.1-5.9M9.9 4.2A10.5 10.5 0 0112 4c6.4 0 10 7 10 7a18.5 18.5 0 01-2.2 3.2M1 1l22 22"/></svg>
+                </button>
+              </div>
+              <ul class="pass-rules" id="bzPassRules" aria-live="polite">
+                <li data-rule="len">8 caracteres o más</li>
+                <li data-rule="upper">1 letra mayúscula</li>
+              </ul>
+            </div>
+
+            <div class="wz-actions">
+              <button type="button" class="btn btn--paper" data-bz-prev="2">Atrás</button>
+              <button type="button" class="btn" data-bz-next="2">Continuar
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- PASO 3 -->
+          <div class="wz-step" id="bz-step-3">
+            <h1>Elige tu plan</h1>
+            <p class="sub">Empiezas gratis. Puedes cambiarlo o cancelarlo cuando quieras desde tu panel, sin permanencia.</p>
+
+            <fieldset class="plan-pick">
+              <legend class="sr-only">Plan</legend>
+              <label class="plan-opt">
+                <input type="radio" name="plan" value="basico" checked>
+                <span class="plan-opt-body">
+                  <span class="plan-opt-top"><b>Parche básico</b><em>Gratis</em></span>
+                  <span class="plan-opt-text">2 parches al mes, perfil en el radar y conteo de cupos.</span>
+                </span>
+              </label>
+              <label class="plan-opt plan-opt--star">
+                <input type="radio" name="plan" value="villavo">
+                <span class="plan-opt-body">
+                  <span class="plan-opt-top"><b>Parche Villavo</b><em>$89.000 / mes</em></span>
+                  <span class="plan-opt-text">Parches ilimitados con foto, promos relámpago destacadas y métricas. Prototipo académico: el pago es de prueba y no se cobra dinero real.</span>
+                  <span class="plan-opt-flag">Sin límite de parches</span>
+                </span>
+              </label>
+              <label class="plan-opt">
+                <input type="radio" name="plan" value="sedes">
+                <span class="plan-opt-body">
+                  <span class="plan-opt-top"><b>Varias sedes</b><em>A la medida</em></span>
+                  <span class="plan-opt-text">Para marcas con más de un local. Te contactamos para ajustar el precio.</span>
+                </span>
+              </label>
+            </fieldset>
+            <p class="field-note">Precios finales en pesos colombianos, impuestos incluidos, sin costos de inscripción ni de cancelación. Tienes 5 días hábiles de retracto. <a href="pagos.html" target="_blank" rel="noopener">Pagos y devoluciones</a></p>
+
+            <div class="field sedes-field" id="sedesField" hidden>
+              <label for="bz-sedes">¿Cuántas sedes tienes?</label>
+              <input type="number" id="bz-sedes" name="sedes" required min="2" max="50" value="2" inputmode="numeric" data-error="Indica entre 2 y 50 sedes.">
+            </div>
+
+            <fieldset class="consent">
+              <legend class="sr-only">Autorizaciones</legend>
+              <label class="check terms">
+                <input type="checkbox" name="acepto" id="bz-acepto" required data-error="Debes aceptar para continuar.">
+                <span>Confirmo que represento a este negocio y que los datos son reales.</span>
+              </label>
+              <label class="check terms">
+                <input type="checkbox" name="acepto_terminos" id="bz-terminos" required data-error="Debes aceptar los términos y la política de privacidad.">
+                <span>Acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos de uso</a> y autorizo el tratamiento de los datos según la <a href="privacidad.html" target="_blank" rel="noopener">Política de privacidad</a> (Ley 1581 de 2012).</span>
+              </label>
+              <label class="check terms">
+                <input type="checkbox" name="recibe_anuncios" id="bz-anuncios">
+                <span>Quiero recibir anuncios y novedades para negocios. <small>Opcional. Te puedes dar de baja cuando quieras.</small></span>
+              </label>
+            </fieldset>
+
+            <div class="status" id="bz-status" role="alert" tabindex="-1">
+              <span class="status-icon" aria-hidden="true">!</span>
+              <div class="status-text"></div>
+            </div>
+
+            <div class="wz-actions">
+              <button type="button" class="btn btn--paper" data-bz-prev="3">Atrás</button>
+              <button type="submit" class="btn btn--olive" id="bz-submit">Crear cuenta de negocio
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <p class="auth-switch">¿Ya tienes cuenta de negocio? <button type="button" class="text-link btn-link" data-biz="entrar">Entra aquí</button></p>
+      </div>
+
+      <!-- ========================================================
+           ENTRAR COMO NEGOCIO
+      ======================================================== -->
+      <div class="auth-view" id="view-entrar" role="tabpanel" aria-labelledby="tab-entrar" hidden>
+        <h1>Hola de nuevo</h1>
+        <p class="sub">Entra al panel de tu negocio.</p>
+
+        <form action="#" method="POST" id="form-entrar" data-validate>
+          <div class="field">
+            <label for="bz-login-email">Correo del negocio</label>
+            <input type="email" id="bz-login-email" required autocomplete="username" inputmode="email" placeholder="negocio@correo.com" data-error="Escribe el correo de tu negocio.">
+          </div>
+          <div class="field">
+            <label for="bz-login-pass">Contraseña</label>
+            <div class="pass-wrap">
+              <input type="password" id="bz-login-pass" required autocomplete="current-password" placeholder="Tu contraseña" data-error="Ingresa tu contraseña.">
+              <button type="button" class="pass-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="i-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0112 19c-6.4 0-10-7-10-7a18.5 18.5 0 015.1-5.9M9.9 4.2A10.5 10.5 0 0112 4c6.4 0 10 7 10 7a18.5 18.5 0 01-2.2 3.2M1 1l22 22"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-foot">
+            <button type="button" class="text-link btn-link" id="bz-forgot" aria-expanded="false" aria-controls="bz-forgot-box">¿Olvidaste tu contraseña?</button>
+          </div>
+          <div class="forgot-box" id="bz-forgot-box" hidden>
+            <p>Te enviamos un enlace al correo del negocio para crear una contraseña nueva.</p>
+            <div class="forgot-row">
+              <label class="sr-only" for="bz-forgot-email">Correo del negocio</label>
+              <input type="email" id="bz-forgot-email" class="input" placeholder="negocio@correo.com" autocomplete="email" inputmode="email">
+              <button type="button" class="btn btn--sm btn--ink" id="bz-forgot-send">Enviar enlace</button>
+            </div>
+            <p class="forgot-msg" id="bz-forgot-msg" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="status" id="bz-login-status" role="alert" tabindex="-1">
+            <span class="status-icon" aria-hidden="true">!</span>
+            <div class="status-text"></div>
+          </div>
+
+          <button type="submit" class="btn btn--block btn--ink" id="bz-login-submit">Entrar a mi panel
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <p class="auth-switch"><a class="text-link" href="empresa-dashboard.html?demo=1">Ver el panel de ejemplo</a> · <button type="button" class="text-link btn-link" data-biz="crear">Crear cuenta</button></p>
+      </div>
+
+      <a class="biz-link" href="login.html">
+        <span class="tag-olive">Personas</span>
+        <span>¿Buscas plan? Entra con tu cuenta personal</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" defer></script>
+<script src="supabase-client.js" defer></script>
+<script src="mp-base.js" defer></script>
+<script src="mp-mapa.js" defer></script>
+<script src="empresa.js" defer></script>
+<script src="legal.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+/* =====================================================================
+   ModoParche · mp-mapa.css
+   Caja de búsqueda de lugares dentro de los mapas (mp-mapa.js).
+===================================================================== */
+.mpm-search {
+  width: min(340px, calc(100vw - 92px));
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #111111;
+}
+.mpm-form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 #000000;
+}
+.mpm-form:focus-within { box-shadow: 3px 3px 0 #ff751f; }
+.mpm-ic {
+  position: absolute; left: 12px; width: 18px; height: 18px;
+  fill: none; stroke: #111111; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
+.mpm-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 40px 0 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: 500 15px/1 inherit;
+  font-family: inherit;
+  color: #111111;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.mpm-input::-webkit-search-cancel-button { display: none; }
+.mpm-input::placeholder { color: #66666d; }
+.mpm-input:focus { outline: none; }
+.mpm-clear {
+  position: absolute; right: 6px; display: grid; place-items: center;
+  width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+}
+.mpm-clear:hover { background: #f1f1f2; }
+.mpm-clear svg { width: 16px; height: 16px; fill: none; stroke: #111111; stroke-width: 2.4; stroke-linecap: round; }
+.mpm-list {
+  margin: 6px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 #000000;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.mpm-list li {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.mpm-list li b { font-size: 14px; font-weight: 700; }
+.mpm-list li small { font-size: 12px; color: #55555c; }
+.mpm-list li:hover, .mpm-list li[aria-selected="true"] { background: #fff1e8; }
+.mpm-list li[aria-selected="true"] b { color: #b84a0a; }
+.mpm-msg:empty { display: none; }
+.mpm-msg {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #111111;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  width: max-content;
+  max-width: 100%;
+}
+.mpm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .mpm-search { width: calc(100vw - 84px); }
+  .mpm-input { font-size: 16px; } /* evita el zoom de iOS al enfocar */
+}

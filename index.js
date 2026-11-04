@@ -1,6 +1,7 @@
 /* =====================================================================
    ModoParche - index.js
-   1. Radar interactivo (carga, filtro en vivo, estado vacío, apartar cupo)
+   1. Radar de muestra (carga, filtro en vivo, estado vacío). Es una vista
+      previa: no muestra el lugar y "Sumarme" lleva a crear la cuenta.
    2. Acordeón de etapas ("Cómo funciona")
    3. Pestañas ("Un parche para cada quien")
    4. Visor de campaña (con estado de carga y teclado)
@@ -125,6 +126,8 @@
     }
   ];
 
+  const LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
+
   function initRadar() {
     const form  = $('#radarFilters');
     const list  = $('#radarList');
@@ -134,7 +137,6 @@
     const reset = $('#radarReset');
     if (!form || !list || !empty) return;
 
-    const joined = new Set();
     let timer = null;
 
     function readFilters() {
@@ -186,26 +188,21 @@
 
         empty.hidden = true;
         list.hidden = false;
-        list.innerHTML = matches.slice(0, 4).map(p => {
-          const isJoined = joined.has(p.id);
-          const spotsLeft = isJoined ? Math.max(1, p.spots - 1) : p.spots;
-          return `
-            <li class="plan">
+        // Vista previa: sin lugar exacto ni inscripción. Sumarse lleva a crear la cuenta.
+        list.innerHTML = matches.slice(0, 4).map((p, i) => `
+            <li class="plan" style="--d:${i * 60}ms">
               <div class="plan-match"><b>${p.match}%</b><span>match</span></div>
               <div class="plan-body">
                 <div class="plan-top">
                   <span class="plan-cat">${p.cat}</span>
-                  <span class="plan-spots">Quedan ${spotsLeft} cupos</span>
+                  <span class="plan-spots">${p.spots <= 3 ? 'Últimos cupos' : 'Con cupos'}</span>
                 </div>
                 <h3 class="plan-title">${p.title}</h3>
-                <p class="plan-meta">${p.place} · ${p.whenLabel} · ${p.priceLabel}</p>
+                <p class="plan-meta">${p.whenLabel} · ${p.priceLabel} · <span class="plan-hidden">${LOCK}Lugar con tu cuenta</span></p>
               </div>
-              <button type="button" class="plan-join ${isJoined ? 'is-joined' : ''}" data-plan="${p.id}" aria-pressed="${isJoined}">
-                ${isJoined ? 'Cupo apartado' : 'Me sumo'}
-              </button>
+              <a class="plan-join" href="login.html#crear" aria-label="Crear cuenta para sumarte a ${p.title}">${LOCK}Sumarme</a>
             </li>
-          `;
-        }).join('');
+          `).join('');
       };
 
       if (immediate || (window.MP && window.MP.reduceMotion)) {
@@ -217,15 +214,6 @@
     }
 
     form.addEventListener('change', () => render(false));
-
-    list.addEventListener('click', e => {
-      const btn = e.target.closest('[data-plan]');
-      if (!btn) return;
-      const id = btn.dataset.plan;
-      if (joined.has(id)) joined.delete(id);
-      else joined.add(id);
-      render(true);
-    });
 
     if (reset) {
       reset.addEventListener('click', () => {
@@ -274,8 +262,20 @@
     const tablist = $('#whoTabs');
     if (!tablist) return;
     const tabs = $$('[role="tab"]', tablist);
+    const pill = $('.who-tabs-pill', tablist);
+
+    // La píldora negra se desliza hasta la pestaña activa
+    function movePill(tab) {
+      if (!pill) return;
+      pill.style.setProperty('--x', tab.offsetLeft + 'px');
+      pill.style.setProperty('--w', tab.offsetWidth + 'px');
+    }
+    window.addEventListener('resize', () => movePill(tabs.find(t => t.classList.contains('is-active')) || tabs[0]));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => movePill(tabs.find(t => t.classList.contains('is-active')) || tabs[0]));
+    movePill(tabs[0]);
 
     function select(tab, focus) {
+      movePill(tab);
       tabs.forEach(t => {
         const on = t === tab;
         t.classList.toggle('is-active', on);

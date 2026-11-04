@@ -3,3 +3,6 @@ includes/
 .agents/
 .taste-skill/
 skills-lock.json
+respaldo-dashboard-anterior/
+supabase/
+.claude/

@@ -1,21 +1,20 @@
 /* =====================================================================
-   Modo Parche · dashboard.js
-   Panel del usuario en Vanilla JS (ES6+) + Leaflet + Supabase.
+   ModoParche · dashboard.js
+   Panel del usuario en Vanilla JS + Leaflet + Supabase.
 
    1.  Utilidades
-   2.  Catálogos: categorías, lugares reales de Villavicencio, gente
-   3.  Avatar SVG (hombre / mujer)
-   4.  Datos: modo demo y persistencia
-   5.  Cálculos y filtros
-   6.  Plantillas
-   7.  Navegación y vistas
-   8.  Mapas y GPS del usuario
-   9.  Crear, editar, unirse y cancelar
-   10. Mis parches + chat
-   11. Perfil: avatar, foto y datos
-   12. Toasts y modales
-   13. Supabase: sesión, carga, tiempo real y escritura
-   14. Eventos e inicio
+   2.  Catálogos: categorías, lugares reales, gente de ejemplo
+   3.  Datos: modo demo (2 parches) y persistencia
+   4.  Cálculos
+   5.  Plantillas
+   6.  Navegación y vistas
+   7.  Mapa y GPS
+   8.  Crear, editar, unirse y cancelar
+   9.  Mis parches + chat
+   10. Perfil: foto opcional, datos e insignias
+   11. Toasts y modales
+   12. Supabase
+   13. Eventos e inicio (14. Gestos y microinteracciones va antes)
 ===================================================================== */
 (() => {
   'use strict';
@@ -26,10 +25,9 @@
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+  const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
   const pad = n => String(n).padStart(2, '0');
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
   const MIN = 60 * 1000;
   const HOUR = 60 * MIN;
 
@@ -60,7 +58,6 @@
 
   const soon = mins => Math.ceil((Date.now() + mins * MIN) / (5 * MIN)) * 5 * MIN;
   const at = (days, h, m = 0) => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, m, 0, 0); return d.getTime(); };
-  const todayAt = (h, m, fallback) => { const t = at(0, h, m); return t > Date.now() + 20 * MIN ? t : soon(fallback); };
 
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -73,7 +70,7 @@
     return 2 * R * Math.asin(Math.sqrt(s));
   }
 
-  // Supabase: con sesión todo se lee y guarda allá. Modo demo (?demo=1 o sin conexión): en este navegador.
+  // Con sesión todo se lee y guarda en Supabase. Modo demo (?demo=1 o sin conexión): en este navegador.
   const sb = window.mpSupabase || null;
   const DEMO = !sb || new URLSearchParams(window.location.search).has('demo');
   let me = null;
@@ -83,22 +80,21 @@
      2. CATÁLOGOS
   ===================================================================== */
   const CENTER = [4.1420, -73.6266]; // Villavicencio
-  const KEYS = { state: 'mp_dash_state_v3', perfil: 'mp_dash_perfil_v3' };
+  const KEYS = { state: 'mp_dash_state_v5', perfil: 'mp_dash_perfil_v4' };
 
   const CATS = [
-    { id: 'todos', label: 'Todos', icon: 'i-cat-todos' },
-    { id: 'rumba', label: 'Rumba y Bares', icon: 'i-cat-rumba' },
-    { id: 'comida', label: 'Comida y Antojos', icon: 'i-cat-comida' },
-    { id: 'chill', label: 'Planes Chill', icon: 'i-cat-chill' },
-    { id: 'pueblear', label: 'Pueblear y Miradores', icon: 'i-cat-pueblear' },
-    { id: 'rio', label: 'Río y Naturaleza', icon: 'i-cat-rio' },
-    { id: 'deportes', label: 'Deportes y Recocha', icon: 'i-cat-deportes' },
-    { id: 'conciertos', label: 'Conciertos y Toques', icon: 'i-cat-conciertos' },
-    { id: 'pet', label: 'Pet Friendly', icon: 'i-cat-pet' },
-    { id: 'cultura', label: 'Cultura y Talleres', icon: 'i-cat-cultura' },
-    { id: 'gaming', label: 'Gaming y Tecnología', icon: 'i-cat-gaming' },
+    { id: 'rumba', label: 'Rumba y bares', icon: 'i-cat-rumba', art: 'rumba-coctel', tone: '' },
+    { id: 'comida', label: 'Comida y antojos', icon: 'i-cat-comida', art: 'comida-asado', tone: '' },
+    { id: 'chill', label: 'Planes chill', icon: 'i-cat-chill', art: 'chill-juegosmesa', tone: 'is-olive' },
+    { id: 'pueblear', label: 'Pueblear y miradores', icon: 'i-cat-pueblear', art: 'aventura-camping', tone: 'is-olive' },
+    { id: 'rio', label: 'Río y naturaleza', icon: 'i-cat-rio', art: 'aventura-camara', tone: 'is-olive' },
+    { id: 'deportes', label: 'Deportes y recocha', icon: 'i-cat-deportes', art: 'deporte-balon-fuego', tone: 'is-ink' },
+    { id: 'conciertos', label: 'Conciertos y toques', icon: 'i-cat-conciertos', art: 'corona-principal', tone: 'is-ink' },
+    { id: 'pet', label: 'Pet friendly', icon: 'i-cat-pet', art: 'parceros', tone: '' },
+    { id: 'cultura', label: 'Cultura y talleres', icon: 'i-cat-cultura', art: 'chill-cine', tone: '' },
+    { id: 'gaming', label: 'Gaming y tecnología', icon: 'i-cat-gaming', art: 'ruleta', tone: 'is-ink' },
   ];
-  const catById = id => CATS.find(c => c.id === id) || CATS[0];
+  const catById = id => CATS.find(c => c.id === id) || CATS[2];
 
   // Coordenadas reales verificadas
   const LUGARES = [
@@ -107,260 +103,88 @@
     { id: 'fundadores', nombre: 'Parque Los Fundadores', ref: 'Entrada sur, Av. 40', lat: 4.1242, lng: -73.6395 },
     { id: 'piedra', nombre: 'Mirador La Piedra del Amor', ref: 'Buenavista, Vía Antigua a Bogotá', lat: 4.1585, lng: -73.6540 },
     { id: 'siete', nombre: 'Parque Siete de Agosto', ref: 'Barrio Siete de Agosto', lat: 4.1462, lng: -73.6335 },
-    { id: 'viva', nombre: 'C.C. Viva Villavicencio', ref: 'Av. 40', lat: 4.1290, lng: -73.6225 },
+    { id: 'viva', nombre: 'C.C. Viva Villavicencio', ref: 'Av. 40', lat: 4.125621, lng: -73.638716 },
     { id: 'hacha', nombre: 'Parque del Hacha', ref: 'Centro', lat: 4.1488, lng: -73.6382 },
     { id: 'carmen', nombre: 'Vereda El Carmen', ref: 'Inicio del sendero ecológico', lat: 4.1410, lng: -73.6615 },
   ];
   const lugar = id => LUGARES.find(l => l.id === id);
 
-  const MUJERES = new Set(['Laura M.', 'Valen G.', 'Mafe P.', 'Caro V.', 'Sofi H.', 'Majo A.', 'Luisa D.', 'Isa N.', 'Dani T.']);
-  const NOMBRES = ['Laura M.', 'Santi R.', 'Valen G.', 'Mafe P.', 'Juancho L.', 'Dani T.', 'Caro V.', 'Andrés F.', 'Nico B.', 'Sofi H.', 'Pipe C.', 'Majo A.', 'Kevin O.', 'Luisa D.', 'Tato Q.', 'Isa N.'];
-  let PEOPLE = []; // se llena después de definir los avatares
+  // Solo personas con cuenta real: no hay gente de ejemplo
   const peopleCache = new Map(); // perfiles reales por uuid
-  const personById = id => PEOPLE.find(p => p.id === id) || peopleCache.get(id);
+  const personById = id => peopleCache.get(id);
 
-  const CHAT_LINES = {
-    rumba: ['¿Alguien sabe si hay cover?', 'Yo llego tipo 9, guárdenme puesto', 'Que no falte el reguetón viejo'],
-    comida: ['Yo voy con hambre de tres días', '¿Pagamos por aparte o hacemos vaca?', 'Dicen que la mamona ahí es brutal'],
-    chill: ['Yo llevo cartas', '¿Llevo parlante?', 'Plan perfecto para bajar el estrés'],
-    pueblear: ['¿Salimos juntos desde el centro?', 'Lleven chaqueta, arriba hace viento', 'El atardecer desde ahí es otra cosa'],
-    rio: ['Lleven agua y bloqueador', '¿Hay que llevar botas?', 'Ojo con el barro después de la lluvia'],
-    deportes: ['Yo tapo, tranquilos', '¿Alguien tiene balón número 5?', 'Lleven petos de dos colores'],
-    conciertos: ['¿A qué hora abren puertas?', 'Me sé todo el repertorio', 'Nos vemos adelante'],
-    pet: ['Mi perra es súper sociable', 'Lleven bolsitas', '¿Hay agua para los peludos?'],
-    cultura: ['Nunca he hecho esto, voy a aprender', '¿Hay que llevar materiales?', 'Qué buen plan'],
-    gaming: ['Llevo mi control', '¿Es por equipos o todos contra todos?', 'Hoy no me gana nadie'],
-  };
-  const REPLIES = ['De una', 'Hágale', 'Melo', 'Listo, nos vemos allá', 'Jajaja sí señor', 'Va pa esa', 'Confirmado'];
+  // Colores de las iniciales, todos de la marca
+  const AV_TONES = [['#FF5A1F', '#111111'], ['#111111', '#ffffff'], ['#86895d', '#111111'], ['#fff1ea', '#b83709'], ['#eef0e3', '#55583a']];
+
 
   /* =====================================================================
-     3. AVATAR SVG (HOMBRE / MUJER)
+     3. DATOS: MODO DEMO Y PERSISTENCIA
   ===================================================================== */
-  const AV = {
-    piel: ['#f6d5b8', '#e8b48a', '#c98d5e', '#a56b3f', '#7a4a28', '#4e2e18'],
-    peloColor: { negro: '#141414', castano: '#5b3a22', rubio: '#e0b75c', pelirrojo: '#b5482a', neon: '#FF5A1F' },
-    ropaColor: { negro: '#111111', blanco: '#ffffff', naranja: '#FF5A1F', gris: '#9a9aa3' },
-    fondo: { naranja: '#FF5A1F', negro: '#111111', blanco: '#ffffff', gris: '#e9e9ef' },
-    pelo: { hombre: ['fade', 'afro', 'engominado', 'rapado', 'dreads'], mujer: ['largo', 'ondulado', 'mono', 'bob', 'capul'] },
-    ojos: ['normal', 'felices', 'grandes', 'relajados', 'guino'],
-    boca: ['sonrisa', 'risa', 'serio', 'picara', 'sorpresa'],
-    ropa: ['oversize', 'hoodie', 'chaqueta', 'esqueleto', 'camisa'],
-    gafas: ['ninguna', 'sol', 'urbanas'],
-    gorra: ['ninguna', 'adelante', 'atras'],
-    vello: ['ninguno', 'barba', 'bigote', 'candado'],
-  };
-  const AV_LBL = {
-    fade: 'Fade urbano', afro: 'Crespo / Afro', engominado: 'Engominado', rapado: 'Rapado', dreads: 'Dreads cortos',
-    largo: 'Largo liso', ondulado: 'Ondulado suelto', mono: 'Moño alto', bob: 'Corte bob', capul: 'Capul',
-    normal: 'Normales', felices: 'Felices', grandes: 'Grandes', relajados: 'Relajados', guino: 'Guiño',
-    sonrisa: 'Sonrisa', risa: 'Risa', serio: 'Serio urbano', picara: 'Pícara', sorpresa: 'Sorpresa',
-    oversize: 'Camiseta oversize', hoodie: 'Hoodie con capucha', chaqueta: 'Chaqueta urbana', esqueleto: 'Esqueleto deportivo', camisa: 'Camisa abierta',
-    sol: 'Gafas de sol cuadradas', urbanas: 'Gafas urbanas', adelante: 'Gorra adelante', atras: 'Gorra atrás',
-    barba: 'Barba', bigote: 'Bigote', candado: 'Candado',
-    negro: 'Negro', castano: 'Castaño', rubio: 'Rubio', pelirrojo: 'Pelirrojo', neon: 'Naranja neón',
-    blanco: 'Blanco', naranja: 'Naranja', gris: 'Gris',
-  };
-  const AV_DEFAULT = {
-    genero: 'hombre', piel: 2, pelo: 'fade', peloColor: 'negro', ojos: 'normal', boca: 'sonrisa',
-    ropa: 'hoodie', ropaColor: 'naranja', gafas: 'ninguna', gorra: 'ninguna', aretes: false, vello: 'ninguno', fondo: 'gris',
-  };
-
-  // Acepta también la configuración del avatar anterior
-  function normalizeAv(raw = {}) {
-    const o = Object.assign({}, raw || {});
-    if (o.pelo === 'gorra') { o.gorra = o.gorra || 'adelante'; o.pelo = 'fade'; }
-    o.pelo = { corto: 'fade', trenzas: 'dreads' }[o.pelo] || o.pelo;
-    o.gafas = { redondas: 'urbanas', visor: 'sol' }[o.gafas] || o.gafas;
-    o.ropa = { camiseta: 'oversize' }[o.ropa] || o.ropa;
-    if (!o.genero) o.genero = AV.pelo.mujer.includes(o.pelo) ? 'mujer' : 'hombre';
-    const c = Object.assign({}, AV_DEFAULT, o);
-    if (!['hombre', 'mujer'].includes(c.genero)) c.genero = 'hombre';
-    const all = AV.pelo.hombre.concat(AV.pelo.mujer);
-    if (!all.includes(c.pelo)) c.pelo = AV.pelo[c.genero][0];
-    c.piel = clamp(Number.isInteger(+c.piel) ? +c.piel : 2, 0, 5);
-    for (const k of ['ojos', 'boca', 'ropa', 'gafas', 'gorra', 'vello']) if (!AV[k].includes(c[k])) c[k] = AV_DEFAULT[k];
-    if (!AV.peloColor[c.peloColor]) c.peloColor = 'negro';
-    if (!AV.ropaColor[c.ropaColor]) c.ropaColor = 'naranja';
-    if (!AV.fondo[c.fondo]) c.fondo = 'gris';
-    if (c.genero === 'mujer') c.vello = 'ninguno';
-    c.aretes = !!c.aretes;
-    return c;
-  }
-
-  function avatarFor(name) {
-    const h = hash(name), mujer = MUJERES.has(name);
-    return normalizeAv({
-      genero: mujer ? 'mujer' : 'hombre',
-      piel: h % 6, pelo: AV.pelo[mujer ? 'mujer' : 'hombre'][(h >> 2) % 5],
-      peloColor: ['negro', 'castano', 'negro', 'rubio', 'pelirrojo', 'castano'][(h >> 4) % 6],
-      ojos: AV.ojos[(h >> 6) % 5], boca: AV.boca[(h >> 8) % 5],
-      ropa: AV.ropa[(h >> 10) % 5], ropaColor: Object.keys(AV.ropaColor)[(h >> 12) % 4],
-      gafas: AV.gafas[(h >> 14) % 5 > 2 ? 0 : (h >> 14) % 5], gorra: (h >> 16) % 4 === 0 ? 'adelante' : 'ninguna',
-      aretes: mujer && (h >> 18) % 2 === 0, vello: mujer ? 'ninguno' : AV.vello[(h >> 19) % 4],
-      fondo: Object.keys(AV.fondo)[(h >> 21) % 4],
-    });
-  }
-
-  function avatarSVG(raw) {
-    const c = normalizeAv(raw);
-    const K = '#000', O = '#FF5A1F', W = '#fff';
-    const S = AV.piel[c.piel], H = AV.peloColor[c.peloColor], C = AV.ropaColor[c.ropaColor], BG = AV.fondo[c.fondo];
-    const mujer = c.genero === 'mujer';
-    const det = C === '#111111' ? W : K;           // detalles sobre la ropa
-    const acc = C === O ? K : O;                    // acento sobre la ropa
-    const brow = c.peloColor === 'neon' ? K : c.peloColor === 'rubio' ? '#9c7a35' : H;
-    const st = `stroke="${K}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`;
-    const body = 'M10 106 C10 80 28 71 50 71 C72 71 90 80 90 106 Z';
-    let s = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="100" height="100" fill="${BG}"/>`;
-    if (c.fondo === 'negro') s += `<path d="M15 17l2 4 4.4.6-3.2 3 .8 4.4-4-2-4 2 .8-4.4-3.2-3 4.4-.6z" fill="${O}"/>`;
-    if (c.fondo === 'naranja') s += `<path d="M10 64h8M12 72h7M82 64h8M81 72h7" stroke="${K}" stroke-width="2.5" stroke-linecap="round"/>`;
-
-    // Cabello trasero
-    const back = {
-      afro: `<circle cx="50" cy="37" r="27" fill="${H}"/><circle cx="28" cy="33" r="12" fill="${H}"/><circle cx="72" cy="33" r="12" fill="${H}"/><circle cx="35" cy="19" r="11" fill="${H}"/><circle cx="65" cy="19" r="11" fill="${H}"/>`,
-      dreads: `<path d="M32 38 L28 60 M36 33 L34 62 M64 33 L66 62 M68 38 L72 60" stroke="${H}" stroke-width="5" stroke-linecap="round"/><circle cx="28" cy="60" r="2" fill="${O}"/><circle cx="72" cy="60" r="2" fill="${O}"/>`,
-      largo: `<path d="M27 42 C25 15 75 15 73 42 L77 92 L23 92 Z" fill="${H}"/>`,
-      ondulado: `<path d="M27 42 C25 15 75 15 73 42 C78 54 70 62 76 74 C80 84 70 90 64 86 L36 86 C30 90 20 84 24 74 C30 62 22 54 27 42Z" fill="${H}"/>`,
-      mono: `<circle cx="50" cy="15" r="9.5" fill="${H}"/><path d="M42.5 22.5 Q50 26.5 57.5 22.5" fill="none" stroke="${O}" stroke-width="3" stroke-linecap="round"/>`,
-      bob: `<path d="M25.5 44 C23 17 77 17 74.5 44 L76 64 Q66 69 60 63 L40 63 Q34 69 24 64 Z" fill="${H}"/>`,
-      capul: `<path d="M27 42 C25 15 75 15 73 42 L75 82 L25 82 Z" fill="${H}"/>`,
-    };
-    s += back[c.pelo] || '';
-
-    // Ropa streetwear
-    const ropa = {
-      oversize: `<path d="${body}" fill="${C}" ${st}/><path d="M40 72.5 Q50 81 60 72.5" fill="none" stroke="${det}" stroke-width="2.6" stroke-linecap="round"/><path d="M22 84 Q24 95 23 106 M78 84 Q76 95 77 106" fill="none" stroke="${det}" stroke-width="2" opacity=".55"/><path d="M50 86l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z" fill="${acc}" stroke="${K}" stroke-width="1.6" stroke-linejoin="round"/>`,
-      hoodie: `<path d="${body}" fill="${C}" ${st}/><path d="M32 74 C36 89 64 89 68 74" fill="${C}" ${st}/><path d="M45 83 L44 95 M55 83 L56 95" stroke="${det}" stroke-width="2.4" stroke-linecap="round"/><path d="M36 106 V97 H64 V106" fill="none" stroke="${det}" stroke-width="2.4"/>`,
-      chaqueta: `<path d="${body}" fill="${C}" ${st}/><path d="M50 78 V106" stroke="${acc}" stroke-width="3"/><path d="M39 71.5 L50 86 L45 71.5 Z M61 71.5 L50 86 L55 71.5 Z" fill="${W}" stroke="${K}" stroke-width="2" stroke-linejoin="round"/><path d="M25 93 h10 M65 93 h10" stroke="${det}" stroke-width="2.6" stroke-linecap="round"/>`,
-      esqueleto: `<path d="${body}" fill="${S}" ${st}/><path d="M33 106 L35.5 79 Q50 88 64.5 79 L67 106 Z" fill="${C}" ${st}/><path d="M38 95 H62" stroke="${acc}" stroke-width="3.5"/>`,
-      camisa: `<path d="${body}" fill="${C}" ${st}/><path d="M41 72 L50 92 L59 72 Z" fill="${S}" stroke="${K}" stroke-width="2" stroke-linejoin="round"/><path d="M39 71 L45 81 L50 74 M61 71 L55 81 L50 74" fill="none" stroke="${det}" stroke-width="2.4" stroke-linejoin="round"/><path d="M53 97h.01M54.5 103h.01" stroke="${det}" stroke-width="3.2" stroke-linecap="round"/>`,
-    };
-    s += ropa[c.ropa];
-
-    // Cuello, orejas, aretes, cabeza
-    s += `<path d="M43 58 L43 73 Q50 78 57 73 L57 58 Z" fill="${S}" ${st}/>`;
-    s += `<ellipse cx="29.5" cy="48" rx="4.5" ry="6" fill="${S}" ${st}/><ellipse cx="70.5" cy="48" rx="4.5" ry="6" fill="${S}" ${st}/>`;
-    if (c.aretes) {
-      s += mujer
-        ? `<circle cx="29.5" cy="57" r="3.2" fill="none" stroke="${O}" stroke-width="2.2"/><circle cx="70.5" cy="57" r="3.2" fill="none" stroke="${O}" stroke-width="2.2"/>`
-        : `<circle cx="29.5" cy="54.5" r="1.8" fill="${O}" stroke="${K}" stroke-width="1"/><circle cx="70.5" cy="54.5" r="1.8" fill="${O}" stroke="${K}" stroke-width="1"/>`;
-    }
-    s += `<ellipse cx="50" cy="46" rx="${mujer ? 19.5 : 20.5}" ry="23" fill="${S}" ${st}/>`;
-
-    // Barba (debajo de la boca)
-    const barba = c.vello === 'barba';
-    if (barba) s += `<path d="M29.8 47 C30 64 39 72.5 50 72.5 C61 72.5 70 64 70.2 47 C68 56 64 60.5 58.5 60.8 Q50 63.5 41.5 60.8 C36 60.5 32 56 29.8 47Z" fill="${H}"/>`;
-
-    // Cejas
-    s += mujer
-      ? `<path d="M38 39.5 Q42 36.5 46 38.6 M54 38.6 Q58 36.5 62 39.5" fill="none" stroke="${brow}" stroke-width="2" stroke-linecap="round"/>`
-      : `<path d="M37.5 39.8 L46 38.6 M54 38.6 L62.5 39.8" fill="none" stroke="${brow}" stroke-width="3.2" stroke-linecap="round"/>`;
-
-    // Ojos
-    const ojoNormal = x => `<ellipse cx="${x}" cy="47" rx="2.4" ry="3" fill="${K}"/><circle cx="${x + .8}" cy="46" r=".8" fill="${W}"/>`;
-    const ojos = {
-      normal: ojoNormal(42) + ojoNormal(58),
-      felices: `<path d="M39 48.5 Q42 44.5 45 48.5 M55 48.5 Q58 44.5 61 48.5" fill="none" stroke="${K}" stroke-width="2.4" stroke-linecap="round"/>`,
-      grandes: `<circle cx="42" cy="47" r="3.8" fill="${W}" stroke="${K}" stroke-width="2"/><circle cx="42.6" cy="47.4" r="2" fill="${K}"/><circle cx="58" cy="47" r="3.8" fill="${W}" stroke="${K}" stroke-width="2"/><circle cx="58.6" cy="47.4" r="2" fill="${K}"/>`,
-      relajados: `<path d="M39.2 46.6 Q42 50.4 44.8 46.6 Z M55.2 46.6 Q58 50.4 60.8 46.6 Z" fill="${K}"/><path d="M38.8 46.4 H45.2 M54.8 46.4 H61.2" stroke="${K}" stroke-width="2" stroke-linecap="round"/>`,
-      guino: ojoNormal(42) + `<path d="M55 48 Q58 50.5 61 48" fill="none" stroke="${K}" stroke-width="2.4" stroke-linecap="round"/>`,
-    };
-    s += ojos[c.ojos];
-    if (mujer && c.ojos !== 'felices') s += `<path d="M39.4 45 l-1.9 -1.3 M60.6 45 l1.9 -1.3${c.ojos === 'guino' ? '' : ''}" stroke="${K}" stroke-width="1.6" stroke-linecap="round"/>`;
-
-    // Nariz y mejillas
-    s += `<path d="M50 49 Q48.4 53.5 51 53.9" fill="none" stroke="${K}" stroke-width="2" stroke-linecap="round"/>`;
-    s += `<ellipse cx="37" cy="54.5" rx="3" ry="1.8" fill="${O}" opacity=".35"/><ellipse cx="63" cy="54.5" rx="3" ry="1.8" fill="${O}" opacity=".35"/>`;
-
-    // Boca
-    const lab = barba && c.peloColor !== 'rubio' ? W : (mujer ? '#a8321b' : K);
-    const boca = {
-      sonrisa: `<path d="M43.5 58 Q50 63.5 56.5 58" fill="none" stroke="${lab}" stroke-width="2.6" stroke-linecap="round"/>`,
-      risa: `<path d="M42.5 57 Q50 67.5 57.5 57 Z" fill="${K}" stroke="${K}" stroke-width="2" stroke-linejoin="round"/><path d="M44.6 57.8 H55.4" stroke="${W}" stroke-width="2.2"/><path d="M46.5 62.3 Q50 60 53.5 62.3 Q50 64.8 46.5 62.3Z" fill="${O}"/>`,
-      serio: `<path d="M45 59.5 H55" stroke="${lab}" stroke-width="2.8" stroke-linecap="round"/>`,
-      picara: `<path d="M44 60 Q51 62 57 57" fill="none" stroke="${lab}" stroke-width="2.6" stroke-linecap="round"/>`,
-      sorpresa: `<ellipse cx="50" cy="60" rx="2.6" ry="3.2" fill="${K}"/>`,
-    };
-    s += boca[c.boca];
-
-    // Bigote y candado
-    const bigote = `<path d="M42 56 Q46 53.4 50 55.4 Q54 53.4 58 56 Q54 58 50 56.9 Q46 58 42 56Z" fill="${H}"/>`;
-    if (c.vello === 'bigote' || barba) s += bigote;
-    if (c.vello === 'candado') s += bigote + `<path d="M45.5 64 Q50 67 54.5 64 L54.5 69 Q50 71 45.5 69Z" fill="${H}"/>`;
-
-    // Cabello frontal (la gorra lo tapa)
-    const front = {
-      fade: `<path d="M30 42 C29 26 40 20 50 20.5 C61 20 71 26 70 42 C67 34 60 31 50 31.5 C41 31 33 34 30 42Z" fill="${H}"/><path d="M29.7 42 L29.9 48.5 M70.3 42 L70.1 48.5" stroke="${H}" stroke-width="2.5" opacity=".45"/>`,
-      afro: `<path d="M30.5 41 C30 27 70 27 69.5 41 C63 33 37 33 30.5 41Z" fill="${H}"/>`,
-      engominado: `<path d="M30 43 C28 24 42 17 54 19 C66 21 72 30 70 43 C66 31 56 27 46 29 C38 31 33 36 30 43Z" fill="${H}"/><path d="M43 23.5 Q54 21 62 26.5" fill="none" stroke="${W}" stroke-width="2" opacity=".5" stroke-linecap="round"/>`,
-      rapado: `<path d="M30.5 41 C30 23 70 23 69.5 41 C64 32 36 32 30.5 41Z" fill="${H}" opacity=".38"/>`,
-      dreads: `<path d="M30 42 C29 26 40 20 50 20.5 C61 20 71 26 70 42 C67 34 60 31 50 31.5 C41 31 33 34 30 42Z" fill="${H}"/><path d="M34 29 l-2 11 M40 25.5 l-1 11 M46 23.5 v11 M54 23.5 v11 M60 25.5 l1 11 M66 29 l2 11" stroke="${H}" stroke-width="4.5" stroke-linecap="round"/>`,
-      largo: `<path d="M29 45 C27 24 40 19 52 19.5 C63 20 72 27 71 45 C67 34 58 28 48 31 C40 34 33 38 29 45Z" fill="${H}"/>`,
-      ondulado: `<path d="M29 45 C27 24 40 19 52 19.5 C63 20 72 27 71 45 C67 34 58 28 48 31 C40 34 33 38 29 45Z" fill="${H}"/>`,
-      mono: `<path d="M29.5 43 C29 24 71 24 70.5 43 C65 32 35 32 29.5 43Z" fill="${H}"/>`,
-      bob: `<path d="M28 45 C27 24 73 24 72 45 C66 37 34 37 28 45Z" fill="${H}"/>`,
-      capul: `<path d="M28.5 44 C27.5 23 72.5 23 71.5 44 L71.5 40.5 Q50 37 28.5 40.5Z" fill="${H}"/>`,
-    };
-    if (c.gorra === 'ninguna') s += front[c.pelo];
-    else {
-      const gc = C === O ? K : O;
-      s += `<path d="M28.5 41 C28 20 72 20 71.5 41 Z" fill="${gc}" ${st}/><circle cx="50" cy="22.5" r="2" fill="${K}"/>`;
-      s += c.gorra === 'adelante'
-        ? `<path d="M25 41 Q50 33 75 41 L76.5 46 Q50 38 23.5 46 Z" fill="${K}" stroke="${K}" stroke-width="1.5" stroke-linejoin="round"/><path d="M46 33 l3-5 h3 l-2 3 h3 l-4 5" fill="none" stroke="${K}" stroke-width="1.8" stroke-linejoin="round"/>`
-        : `<path d="M29 40 Q50 34.5 71 40" fill="none" stroke="${K}" stroke-width="2.6"/><path d="M61 23 Q74 14 83 21 Q75 24 67 29 Z" fill="${K}"/>`;
-    }
-
-    // Gafas
-    if (c.gafas === 'sol') s += `<g stroke="${K}" stroke-width="2.4" stroke-linejoin="round"><rect x="34" y="42.5" width="14" height="9" fill="${K}"/><rect x="52" y="42.5" width="14" height="9" fill="${K}"/><path d="M48 45h4M34 44.5l-5-1.2M66 44.5l5-1.2" fill="none"/></g><path d="M36.5 46l4-2M54.5 46l4-2" stroke="${O}" stroke-width="2" stroke-linecap="round"/>`;
-    if (c.gafas === 'urbanas') s += `<g fill="${W}" fill-opacity=".25" stroke="${K}" stroke-width="2.4"><circle cx="42" cy="47" r="6"/><circle cx="58" cy="47" r="6"/></g><path d="M48 46.5h4M36 45.5l-6-1.5M64 45.5l6-1.5" stroke="${K}" stroke-width="2.4" stroke-linecap="round"/><path d="M37 42.2 Q42 40.4 47 42.2" fill="none" stroke="${O}" stroke-width="2" stroke-linecap="round"/>`;
-
-    return s + '</svg>';
-  }
-  PEOPLE = NOMBRES.map((nombre, i) => ({ id: 'p' + (i + 1), nombre, av: avatarFor(nombre) }));
-
-  /* =====================================================================
-     4. DATOS: MODO DEMO Y PERSISTENCIA
-  ===================================================================== */
+  const FOTO_VACIA = { src: '', zoom: 1, x: 0, y: 0 };
   const PERFIL_DEF = {
     nombre: 'Camilo Rojas', primer: 'Camilo', tel: '3104567890', mail: 'camilo.rojas@gmail.com', ciudad: 'Villavicencio', cedula: '1121000456',
-    mostrar_foto_real: false, foto_encuadre: { src: '', zoom: 1, x: 0, y: 0 },
-    avatar_config: Object.assign({}, AV_DEFAULT),
+    mostrar_foto_real: false, foto_encuadre: Object.assign({}, FOTO_VACIA),
+    cedula_verificada: false, cedula_verificada_en: null,
+    rating: 0, resenas: 0, // las calificaciones arrancan en 0 hasta que alguien califique
   };
   let perfil = Object.assign({}, PERFIL_DEF, DEMO ? store.get(KEYS.perfil, {}) : {});
   const ME = () => {
     const [a, b] = String(perfil.nombre || 'Parcero').split(/\s+/);
     return { nombre: b ? `${a} ${b.charAt(0)}.` : a };
   };
-  const ppl = (...n) => n.map(x => 'p' + x);
 
   function normalizeParche(p) {
     return Object.assign({
       confirmados: [], unido: false, propio: false, chat: [], checkin: false,
       creadorId: null, creadorNombre: '', barrio: '', descripcion: '', costo: 0, presupuesto: 0,
+      oficial: false, info: {},
     }, p);
   }
 
-  // Los mismos 8 parches de ejemplo que la base de datos, en los lugares reales
+  // Solo dos parches de ejemplo y sin gente simulada: uno de un negocio aliado y uno que armaste tú
   function buildSeeds() {
     const L = id => { const l = lugar(id); return { lugar: l.nombre, barrio: l.ref, lat: l.lat, lng: l.lng }; };
     return [
-      { id: 'd1', titulo: 'Hora feliz 2x1 en el C.C. Viva', categoria: 'rumba', ...L('viva'), inicio: soon(40), costo: 0, presupuesto: 25000, cuposMax: 20, confirmados: ppl(1, 4, 6, 9, 11, 13, 2, 7, 15, 16, 10), creadorNombre: 'Terraza C.C. Viva', descripcion: '2x1 en cócteles mientras dure la hora feliz. Terraza al aire libre y buena música.' },
-      { id: 'd2', titulo: 'Micro en el Parque Siete de Agosto', categoria: 'deportes', ...L('siete'), inicio: soon(85), costo: 8000, presupuesto: 12000, cuposMax: 10, confirmados: ppl(2, 5, 8, 9, 11, 13, 14, 15), creadorId: 'p2', descripcion: 'Faltan poquitos para completar los dos equipos. Nivel recocha, nada de ponerse bravos.' },
-      { id: 'd3', titulo: 'Rumba en Los Capachos', categoria: 'rumba', ...L('capachos'), inicio: todayAt(21, 30, 190), costo: 15000, presupuesto: 45000, cuposMax: 12, confirmados: ppl(1, 3, 4, 6, 7, 9, 10, 12, 13, 14, 16, 5), creadorId: 'p4', descripcion: 'Arrancamos con unas frías y cerramos bailando. Mesa reservada para el grupo.' },
-      { id: 'd4', titulo: 'Cine y arcade en Primavera Urbana', categoria: 'gaming', ...L('primavera'), inicio: soon(130), costo: 0, presupuesto: 30000, cuposMax: 8, confirmados: ppl(8, 12, 16), creadorId: 'p8', descripcion: 'Película de estreno y después nos medimos en el arcade. Todo bajo techo.' },
-      { id: 'd5', titulo: 'Ruta de antojos llaneros', categoria: 'comida', ...L('hacha'), inicio: todayAt(19, 30, 150), costo: 0, presupuesto: 35000, cuposMax: 8, confirmados: ppl(3, 6, 10, 14), creadorId: 'p14', descripcion: 'Pandeyuca, empanadas de pipián y cerramos con una mamona por el centro.' },
-      { id: 'd6', titulo: 'Tarde de frisbee y picnic', categoria: 'chill', ...L('fundadores'), inicio: at(1, 16, 0), costo: 0, presupuesto: 10000, cuposMax: 10, confirmados: ppl(1, 2, 10, 12, 15), creadorId: 'me', propio: true, unido: true, descripcion: 'Cada uno lleva algo para compartir. Frisbee, cartas y parlante.' },
-      { id: 'd7', titulo: 'Atardecer en la Piedra del Amor', categoria: 'pueblear', ...L('piedra'), inicio: at(2, 16, 30), costo: 0, presupuesto: 15000, cuposMax: 15, confirmados: ppl(3, 5, 7, 9, 11, 15, 16), creadorId: 'p3', unido: true, descripcion: 'Subimos al mirador de Buenavista a ver cómo se prende Villavo. Salimos en grupo.' },
-      { id: 'd8', titulo: 'Caminata ecológica en la Vereda El Carmen', categoria: 'rio', ...L('carmen'), inicio: at(4, 7, 0), costo: 0, presupuesto: 0, cuposMax: 25, confirmados: ppl(1, 3, 4, 5, 6, 9, 10, 11, 12, 14, 15, 16), creadorId: 'p15', unido: true, descripcion: 'Sendero ecológico entre quebradas y monte llanero. Botas, agua y bloqueador.' },
+      { id: 'd1', titulo: 'Hora feliz 2x1 en la terraza del C.C. Viva', categoria: 'rumba', ...L('viva'), inicio: soon(70), costo: 0, presupuesto: 25000, cuposMax: 20, creadorNombre: 'Terraza C.C. Viva', aliado: true, imagen: 'src/assets/web/discoteca.jpg', promo: '2x1 en cócteles', descripcion: '2x1 en cócteles mientras dure la hora feliz. Terraza al aire libre y buena música.' },
+      { id: 'd2', titulo: 'Atardecer en la Piedra del Amor', categoria: 'pueblear', ...L('piedra'), inicio: at(1, 16, 30), costo: 0, presupuesto: 15000, cuposMax: 12, creadorId: 'me', propio: true, unido: true, creadoPorMi: false, descripcion: 'Subimos al mirador de Buenavista a ver cómo se prende Villavo. Salimos en grupo desde el Parque del Hacha.' },
     ].map(normalizeParche).map(p => {
-      const lines = CHAT_LINES[p.categoria] || CHAT_LINES.chill;
-      p.chat = [{ tipo: 'sys', texto: `${creatorName(p)} abrió el parche`, ts: Date.now() - 26 * HOUR }]
-        .concat(p.confirmados.slice(0, 3).map((id, i) => ({ tipo: 'user', autor: id, texto: lines[i % lines.length], ts: Date.now() - (50 - i * 12) * MIN })));
+      p.chat = [{ tipo: 'sys', texto: isMine(p) ? 'Abriste el parche. Cuando alguien se una, aparece aquí.' : `${creatorName(p)} abrió el parche`, ts: Date.now() - 26 * HOUR }];
       return p;
+    }).concat(oficialDemo());
+  }
+  // Datos de la boletería oficial (La Tiquetera). En la base los guarda un admin.
+  const OFICIAL_CEPEDA = {
+    artista: 'Andrés Cepeda', mes: 'Noviembre', boleteria: 'La Tiquetera',
+    horario: 'Puertas 7:00 p. m. · Andrés Cepeda 10:00 p. m.', edad_minima: 14,
+    localidades: [{ nombre: 'General', precio: 100000 }, { nombre: 'VIP', precio: 160000 }, { nombre: 'Platino menores', precio: 255000 }],
+    entrada_precio: 100000, entrada_url: 'https://latiquetera.com/event/andres-cepeda-en-villavicencio',
+    palco_precio: 3100000, palco_hasta: 4200000, palco_personas: 10, palco_url: 'https://latiquetera.com/event/andres-cepeda-en-villavicencio',
+  };
+  // Parche oficial del mes en el modo demo (en la base lo crea un admin)
+  function oficialDemo() {
+    const p = normalizeParche({
+      id: 'd0', oficial: true, titulo: 'Andrés Cepeda en Villavo', categoria: 'conciertos',
+      descripcion: 'El parche oficial de noviembre. Vamos en combo a cantar con Andrés Cepeda: en el chat armamos la previa, la llegada y la vaca para el transporte. Compra tu entrada o tu palco en la boletería oficial y cáele al parche.',
+      inicio: new Date('2026-11-28T19:00:00-05:00').getTime(), lugar: 'Coliseo Las Malocas', barrio: 'Parque Las Malocas', lat: 4.12287, lng: -73.574447,
+      costo: 0, presupuesto: 0, cuposMax: 1000, creadorNombre: 'Equipo ModoParche',
+      info: OFICIAL_CEPEDA,
     });
+    p.chat = [{ tipo: 'sys', texto: 'El equipo de ModoParche abrió este parche oficial. Aquí armamos la llegada, la vaca y la previa.', ts: Date.now() - 48 * HOUR }];
+    return p;
   }
 
-  const state = { parches: [], view: 'radar', cat: 'todos', search: '', time: { mode: 'hoy', date: null }, misTab: 'unido', chatId: null };
+  const state = { parches: [], view: 'inicio', search: '', time: 'hoy', misTab: 'unido', chatId: null, mesas: [], misMesas: [] };
+
+  // Modo Mesa de ejemplo (solo en ?demo=1)
+  function demoMesas() {
+    const lc = lugar('capachos'), pri = lugar('primavera');
+    return [
+      { id: 'm1', titulo: 'Mesa de 6: botella de la casa', beneficio: 'Botella de aguardiente de cortesía si llegan 6 o más', descripcion: 'Reserva tu mesa y llega con tu gente. Válido de jueves a sábado.', min_personas: 6, max_personas: 12, dias: [4, 5, 6], hora_desde: '20:00', hora_hasta: '02:00',
+        negocio: { id: 'n1', nombre: 'Discoteca Los Capachos', direccion: lc.ref, barrio: 'Vía Acacías', lat: lc.lat, lng: lc.lng, verificado: true } },
+      { id: 'm2', titulo: 'Combo parche de 4', beneficio: '4 hamburguesas y una jarra de limonada a precio de 3', descripcion: 'Para grupos de 4 a 8. Mesa guardada 20 minutos.', min_personas: 4, max_personas: 8, dias: [0, 1, 2, 3, 4, 5, 6], hora_desde: '12:00', hora_hasta: '22:00',
+        negocio: { id: 'n2', nombre: 'Patio de comidas Primavera', direccion: pri.ref, barrio: 'Primavera', lat: pri.lat, lng: pri.lng, verificado: false } },
+    ];
+  }
 
   function loadDemo() {
     const saved = store.get(KEYS.state, null);
@@ -369,6 +193,9 @@
       const mios = (saved && saved.parches || []).filter(p => p.creadoPorMi && p.inicio > Date.now() - 6 * HOUR).map(normalizeParche);
       state.parches = buildSeeds().concat(mios);
     }
+    const viejo = state.parches.findIndex(p => p.id === 'd0');
+    if (viejo >= 0) state.parches[viejo] = Object.assign(oficialDemo(), { unido: state.parches[viejo].unido, chat: state.parches[viejo].chat });
+    else if (!state.parches.some(p => p.oficial)) state.parches.push(oficialDemo());
   }
   function save() {
     if (!DEMO) return;
@@ -377,10 +204,9 @@
   const savePerfil = () => { if (DEMO && !store.set(KEYS.perfil, perfil)) toast('No se pudo guardar', 'La foto es muy pesada para este navegador.', { type: 'error' }); };
 
   /* =====================================================================
-     5. CÁLCULOS Y FILTROS
+     4. CÁLCULOS
   ===================================================================== */
-  let userPos = null;      // [lat, lng] real del GPS
-  let userAcc = null;
+  let userPos = null, userAcc = null;
   const origin = () => userPos || CENTER;
   const findP = id => state.parches.find(p => p.id === id);
   const ocupados = p => p.confirmados.length + (p.unido ? 1 : 0);
@@ -392,212 +218,425 @@
   const fmtKm = km => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace('.', ',')} km`;
   const precio = p => Math.max(Number(p.costo) || 0, Number(p.presupuesto) || 0);
   const isPast = p => p.inicio < Date.now() - 3 * HOUR;
+  // Un parche oficial sin sitio confirmado no se pone en el mapa
+  const sinLugar = p => p.oficial && /^por confirmar$/i.test(String(p.lugar || '').trim());
+  const enMapa = p => !sinLugar(p);
   const activeList = () => state.parches.filter(p => p.inicio > Date.now() - 90 * MIN);
   function creatorName(p) {
+    if (p.oficial) return 'Equipo ModoParche';
     if (p.creadorId === 'me') return ME().nombre;
     if (p.creadorId) return personById(p.creadorId)?.nombre || 'Parcero';
+    if (p.demo && !p.aliado) return 'ModoParche';
     return p.creadorNombre || 'Local aliado';
   }
-
   function matchesSearch(p) {
     if (!state.search) return true;
-    const hay = norm([p.titulo, p.lugar, p.barrio].join(' '));
+    const hay = norm([p.titulo, p.lugar, p.barrio, catById(p.categoria).label].join(' '));
     return norm(state.search).split(/\s+/).every(w => hay.includes(w));
   }
   function timeMatch(p) {
-    const k = dayKey(p.inicio), m = state.time.mode;
-    if (m === 'todos') return true;
-    if (m === 'hoy') return k === todayKey();
-    if (m === 'manana') return k === offsetKey(1);
-    return k === state.time.date;
+    const k = dayKey(p.inicio);
+    if (state.time === 'todos') return true;
+    if (state.time === 'hoy') return k === todayKey();
+    return k === offsetKey(1);
   }
-  function timeLabel() {
-    const m = state.time.mode;
-    if (m === 'todos') return 'en total';
-    if (m === 'hoy') return 'hoy';
-    if (m === 'manana') return 'mañana';
-    const d = daysFromToday(state.time.date);
-    return d >= 2 && d <= 6 ? 'el ' + weekdayLong(state.time.date) : 'el ' + shortDate(state.time.date);
-  }
-  function setTimeFor(ts) {
-    const k = dayKey(ts), d = daysFromToday(k);
-    state.time = d === 0 ? { mode: 'hoy', date: null } : d === 1 ? { mode: 'manana', date: null } : { mode: 'fecha', date: k };
-  }
+  const timeLabel = () => ({ hoy: 'hoy', manana: 'mañana', todos: 'en total' }[state.time]);
+  const nextMine = () => state.parches.filter(p => inside(p) && p.inicio > Date.now() - 60 * MIN).sort((a, b) => a.inicio - b.inicio)[0];
 
   /* =====================================================================
-     6. PLANTILLAS
+     5. PLANTILLAS
   ===================================================================== */
+  const STK = n => `src/assets/web/stk/${n}.webp`;
+  const initial = n => (String(n || '?').trim().charAt(0) || '?').toUpperCase();
+  const photoImg = f => `<span class="av-photo"><img src="${esc(f.src)}" alt="" style="transform:translate(${+f.x || 0}%, ${+f.y || 0}%) scale(${+f.zoom || 1})"></span>`;
+
   function avHTML(who, cls = '') {
-    if (who === 'me') {
-      const f = perfil.foto_encuadre;
-      if (perfil.mostrar_foto_real && f && f.src) return `<span class="av ${cls}"><span class="av-photo"><img src="${esc(f.src)}" alt="" style="transform:translate(${+f.x || 0}%, ${+f.y || 0}%) scale(${+f.zoom || 1})"></span></span>`;
-      return `<span class="av ${cls}">${avatarSVG(perfil.avatar_config)}</span>`;
-    }
-    const person = typeof who === 'string' ? personById(who) : who;
-    if (!person) return `<span class="av ${cls}">${avatarSVG(AV_DEFAULT)}</span>`;
-    if (person.foto && person.foto.src) {
-      const f = person.foto;
-      return `<span class="av ${cls}" title="${esc(person.nombre)}"><span class="av-photo"><img src="${esc(f.src)}" alt="" style="transform:translate(${+f.x || 0}%, ${+f.y || 0}%) scale(${+f.zoom || 1})"></span></span>`;
-    }
-    return `<span class="av ${cls}" title="${esc(person.nombre)}">${avatarSVG(person.av)}</span>`;
+    const meToo = who === 'me';
+    const person = meToo ? { nombre: perfil.nombre, foto: perfil.mostrar_foto_real && perfil.foto_encuadre && perfil.foto_encuadre.src ? perfil.foto_encuadre : null }
+      : (typeof who === 'string' ? personById(who) : who) || { nombre: 'Parcero' };
+    if (person.foto && person.foto.src) return `<span class="av ${cls}" title="${esc(person.nombre)}">${photoImg(person.foto)}</span>`;
+    const [bg, fg] = meToo ? AV_TONES[0] : AV_TONES[hash(person.nombre) % AV_TONES.length];
+    return `<span class="av ${cls}" style="--av:${bg};--avc:${fg}" title="${esc(person.nombre)}">${esc(initial(person.nombre))}</span>`;
   }
 
-  const priceHTML = p => precio(p) === 0 ? '<span class="price is-free">Gratis</span>' : `<span class="price tnum">${money(precio(p))} COP</span>`;
+  const priceTag = p => `<span class="tag tag--price tnum">${precio(p) === 0 ? 'Gratis' : money(precio(p))}</span>`;
+
+  function joinButton(p, { small = false } = {}) {
+    const sz = small ? ' btn--sm' : ' btn--sm';
+    if (isMine(p)) return `<span class="own-actions"><button class="icon-btn icon-btn--danger" data-action="cancelar" data-id="${p.id}" aria-label="Eliminar ${esc(p.titulo)}" title="Eliminar parche">${ic('i-trash')}</button><button class="btn btn--ghost${sz}" data-action="editar" data-id="${p.id}">${ic('i-edit')} Editar</button></span>`;
+    if (p.unido) return `<button class="btn btn--ink${sz}" data-action="chat" data-id="${p.id}">${ic('i-chat')} Chat</button>`;
+    if (isFull(p)) return `<button class="btn btn--ghost${sz}" disabled>Lleno</button>`;
+    return holdButton(p, sz);
+  }
+  // Mantener presionado para confirmar asistencia (ver initHold)
+  function holdButton(p, sz) {
+    const label = `${ic('i-bolt')}<span>Caerle</span>`;
+    return `<button class="btn btn--hold${sz}" data-hold="join" data-id="${p.id}" aria-label="Caerle a ${esc(p.titulo)}: mantén presionado para confirmar">
+      <span class="hold-label">${label}</span><span class="hold-fill" aria-hidden="true">${label}</span>
+      <span class="hold-tip" aria-hidden="true">Mantén presionado</span>
+    </button>`;
+  }
+
+  function coverHTML(p) {
+    const cat = catById(p.categoria);
+    const tags = `<div class="card-tags">
+        ${p.aliado ? `<span class="tag tag--ally">${ic('i-crown')} Aliado</span>${p.verificado ? `<span class="tag tag--verif">${ic('i-check')} Verificado</span>` : ''}` : `<span class="tag">${ic(cat.icon)} ${esc(cat.label)}</span>`}
+        ${p.promo ? `<span class="tag tag--promo">${esc(p.promo)}</span>` : ''}
+        ${priceTag(p)}
+      </div>`;
+    if (p.imagen) return `<figure class="card-cover"><img src="${esc(p.imagen)}" alt="Foto de ${esc(p.titulo)}" loading="lazy" decoding="async" onerror="this.remove()">${tags}</figure>`;
+    return `<figure class="card-cover card-cover--art ${cat.tone}"><img src="${STK(cat.art)}" alt="" loading="lazy" decoding="async">${tags}</figure>`;
+  }
 
   function cuposHTML(p) {
-    const free = libres(p), full = isFull(p), hot = !full && free < 3;
-    const extra = full ? ' · Lleno' : hot ? ` · ${free === 1 ? 'Último cupo' : `Últimos ${free}`}` : '';
-    return `<li class="${hot ? 'is-hot' : ''}">${ic(hot ? 'i-flame' : 'i-users')}<span class="tnum"><b>${ocupados(p)}</b> / ${p.cuposMax} cupos${extra}</span></li>`;
-  }
-
-  function joinButton(p, { compact = false } = {}) {
-    if (isMine(p)) return compact
-      ? `<button class="btn btn--ghost" data-action="editar" data-id="${p.id}">${ic('i-edit')} Editar</button>`
-      : `<button class="btn btn--ghost" data-action="editar" data-id="${p.id}">${ic('i-edit')} Editar parche</button>
-         <button class="btn btn--alert" data-action="cancelar" data-id="${p.id}">${ic('i-trash')} Cancelar parche</button>`;
-    if (p.unido) return `<button class="btn btn--alert" data-action="join" data-id="${p.id}">${compact ? 'Abrirse' : 'Abrirse del parche'}</button>`;
-    if (isFull(p)) return `<button class="btn btn--ghost" disabled>Parche lleno</button>`;
-    return `<button class="btn btn--primary" data-action="join" data-id="${p.id}">${ic('i-bolt')} ${compact ? 'Caerle' : 'Caerle al parche'}</button>`;
+    const free = libres(p), full = isFull(p), hot = !full && free <= 3;
+    const txt = full ? 'Lleno' : hot ? (free === 1 ? 'Último cupo' : `Últimos ${free} cupos`) : `${free} cupos libres`;
+    return `<li class="${hot ? 'is-hot' : ''}">${ic(hot ? 'i-flame' : 'i-users')}<span class="tnum">${txt}</span><span class="muted tnum">${ocupados(p)}/${p.cuposMax}</span></li>`;
   }
 
   function cardHTML(p, delay = 0) {
-    const cat = catById(p.categoria);
-    return `<article class="parche-card" style="--d:${delay}ms">
-      <div class="pc-top">
-        <span class="pc-cat"><i>${ic(cat.icon)}</i>${esc(cat.label)}</span>
-        ${priceHTML(p)}
+    const pct = Math.round(ocupados(p) / p.cuposMax * 100);
+    const hot = !isFull(p) && libres(p) <= 3;
+    const ids = (inside(p) ? ['me'] : []).concat(p.confirmados).slice(0, 4);
+    return `<article class="card" style="--d:${delay}ms">
+      ${coverHTML(p)}
+      <div class="card-body">
+        <h3 class="card-title">${esc(p.titulo)}</h3>
+        <p class="card-desc">${esc(p.descripcion)}</p>
+        <ul class="meta">
+          <li>${ic('i-clock')}<span class="tnum">${esc(fmtCuando(p.inicio))}</span></li>
+          <li>${ic('i-pin')}<span>${esc(p.lugar)}</span><span class="muted tnum">${fmtKm(distKm(p))}</span></li>
+          ${cuposHTML(p)}
+        </ul>
+        <div class="fill ${hot ? 'is-hot' : ''}" aria-hidden="true"><span style="--w:${pct}%"></span></div>
+        <div class="card-foot">
+          <span class="who">${ids.length ? `<span class="stack">${ids.map(id => avHTML(id, 'av--sm')).join('')}</span>` : ''}<span>${ids.length ? 'de' : 'Sé el primero · de'} <b>${esc(creatorName(p))}</b></span></span>
+          ${joinButton(p)}
+        </div>
+        <button class="link-btn" data-action="ver-mapa" data-id="${p.id}">${ic('i-map')} Ver en el mapa</button>
       </div>
-      <h3 class="pc-title">${esc(p.titulo)}</h3>
-      <p class="pc-desc">${esc(p.descripcion)}</p>
-      <ul class="pc-meta">
-        <li>${ic('i-pin')}<span>${esc(p.lugar)}${p.barrio ? ' · ' + esc(p.barrio) : ''}</span><span class="muted tnum">${fmtKm(distKm(p))}</span></li>
-        <li>${ic('i-clock')}<span class="tnum">${esc(fmtCuando(p.inicio))}</span></li>
-        ${cuposHTML(p)}
-      </ul>
-      <div class="pc-foot">
-        <span class="creator">${ic('i-crown')}<span>${esc(creatorName(p))}</span></span>
-        <button class="link-btn" data-action="ver-mapa" data-id="${p.id}">${ic('i-pin')} Ver en el mapa</button>
-      </div>
-      <div class="pc-actions">${joinButton(p)}</div>
     </article>`;
   }
 
-  const EMPTY_ART = `
-    <svg class="empty-art" viewBox="0 0 220 180" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="110" cy="82" r="72" stroke="#FF5A1F" stroke-width="3" stroke-dasharray="7 11"/>
-      <circle cx="110" cy="82" r="48" stroke="#000" stroke-width="2.5" stroke-dasharray="3 9" opacity=".5"/>
-      <path d="M110 152s-38-33-38-62a38 38 0 0 1 76 0c0 29-38 62-38 62z" fill="#FF5A1F" stroke="#000" stroke-width="4"/>
-      <circle cx="110" cy="88" r="18" fill="#fff" stroke="#000" stroke-width="4"/>
-      <path d="M103.5 83a6.5 6.5 0 1 1 9.6 5.6c-2.1 1.2-3.1 2.4-3.1 4.6" stroke="#000" stroke-width="4"/>
-      <circle cx="110" cy="99" r="1.2" fill="#000" stroke="#000" stroke-width="3"/>
-      <path d="M38 36l3.2 6.6 7.2 1-5.2 5 1.2 7.2L38 52.4l-6.4 3.4 1.2-7.2-5.2-5 7.2-1z" fill="#000"/>
-      <path d="M184 26l-9 15h9l-7 13" stroke="#000" stroke-width="4"/>
-    </svg>`;
-  const emptyHTML = ({ title, text, cta = 'Abrir el parche', action = 'crear', fecha = '' }) => `<div class="empty">${EMPTY_ART}<h3>${esc(title)}</h3><p>${esc(text)}</p><button class="btn btn--primary" data-action="${action}" ${fecha ? `data-fecha="${fecha}"` : ''}>${ic('i-plus')} ${esc(cta)}</button></div>`;
+  const emptyHTML = ({ art = 'clima', title, text, cta = 'Abrir un parche', action = 'crear' }) =>
+    `<div class="empty"><img src="${STK(art)}" alt="" loading="lazy"><h3>${esc(title)}</h3><p>${esc(text)}</p>${cta ? `<button class="btn btn--sm" data-action="${action}">${ic(action === 'crear' ? 'i-plus' : 'i-arrow')} ${esc(cta)}</button>` : ''}</div>`;
 
   function popupHTML(p) {
     const cat = catById(p.categoria);
     return `<div class="pop">
-      <span class="pc-cat"><i>${ic(cat.icon)}</i>${esc(cat.label)}</span>
-      <h3 class="pop-title">${esc(p.titulo)}</h3>
-      <ul class="pc-meta">
-        <li>${ic('i-clock')}<span class="tnum">${esc(fmtCuando(p.inicio))}</span></li>
-        <li>${ic('i-pin')}<span>${esc(p.lugar)}</span><span class="muted tnum">${fmtKm(distKm(p))}</span></li>
-        ${cuposHTML(p)}
-        <li>${ic('i-tag')}<span class="tnum">${precio(p) ? money(precio(p)) + ' COP' : 'Gratis'}</span></li>
-      </ul>
-      <div class="pop-actions">
-        ${joinButton(p, { compact: true })}
-        ${inside(p) ? `<button class="btn btn--ink" data-action="chat" data-id="${p.id}">${ic('i-chat')} Chat</button>` : `<button class="btn btn--ghost" data-action="cerrar-popup">Cerrar</button>`}
+      <div class="pop-cover">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : `<div class="card-cover card-cover--art ${cat.tone}" style="height:100%"><img src="${STK(cat.art)}" alt=""></div>`}</div>
+      <div class="pop-body">
+        <h3 class="pop-title">${esc(p.titulo)}</h3>
+        <ul class="meta">
+          <li>${ic('i-clock')}<span class="tnum">${esc(fmtCuando(p.inicio))}</span></li>
+          <li>${ic('i-pin')}<span>${esc(p.lugar)}</span><span class="muted tnum">${fmtKm(distKm(p))}</span></li>
+          ${cuposHTML(p)}
+        </ul>
+        <div class="pop-actions">${joinButton(p, { small: true })}</div>
       </div>
     </div>`;
   }
 
   /* =====================================================================
-     7. NAVEGACIÓN Y VISTAS
+     6. NAVEGACIÓN Y VISTAS
   ===================================================================== */
-  function go(view) {
+  // Píldora que se desliza bajo la opción activa
+  /* Liquid gooey: la píldora vive en una capa con un filtro SVG (desenfoque +
+     contraste alto). Una gota "rezagada" la sigue más lento; mientras se
+     separan, el filtro las funde y la píldora se estira como líquido. */
+  function gooey(container) {
+    if (container._goo || reduceMotion) return;
+    const pill = container.querySelector('.tabs-pill, .seg-pill');
+    if (!pill) return;
+    ensureGooFilter();
+    const layer = document.createElement('span');
+    layer.className = 'goo-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    const trail = document.createElement('span');
+    trail.className = 'goo-trail';
+    container.insertBefore(layer, pill);
+    layer.append(trail, pill);
+    container._goo = trail;
+  }
+  function movePill(container, instant = false) {
+    if (!container) return;
+    gooey(container);
+    const pill = container.querySelector('.tabs-pill, .seg-pill');
+    const trail = container._goo;
+    const active = container.querySelector('.is-active');
+    if (!pill) return;
+    const set = el => {
+      if (!el) return;
+      if (!active || !active.offsetWidth) { el.style.width = '0px'; return; }
+      if (instant) el.style.transition = 'none';
+      el.style.width = active.offsetWidth + 'px';
+      el.style.transform = `translateX(${active.offsetLeft}px)`;
+      if (instant) { el.offsetWidth; el.style.transition = ''; }
+    };
+    set(pill); set(trail);
+  }
+
+  function go(view, { scroll = true } = {}) {
     if (!$('#view-' + view)) return;
+    const changed = state.view !== view;
     state.view = view;
     $$('.view').forEach(v => v.classList.toggle('is-active', v.id === 'view-' + view));
-    $$('.nav-item, .bn-item').forEach(b => {
+    $$('.tab, .bn').forEach(b => {
       const on = b.dataset.nav === view;
       b.classList.toggle('is-active', on);
       if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    window.scrollTo({ top: 0 });
-    if (view === 'radar') renderRadar(true);
-    if (view === 'mapa') setTimeout(() => { initLiveMap(); liveMap && liveMap.invalidateSize(); renderLiveMap(); }, 40);
+    $('#me-chip').classList.toggle('is-active', view === 'perfil');
+    movePill($('#tabs'));
+    if (scroll && changed) window.scrollTo({ top: 0, behavior: 'auto' });
+    if (view === 'inicio') renderInicio(changed);
+    if (view === 'mapa') { renderTimeSeg(); setTimeout(() => { initLiveMap(); liveMap && liveMap.invalidateSize(); renderLiveMap(); }, 40); }
     if (view === 'mis') renderMis();
     if (view === 'perfil') renderPerfil();
   }
 
-  function renderRadar(animate = false) {
-    $('#hello-name').textContent = perfil.primer || 'parcero';
-    const base = activeList().filter(matchesSearch);
-    $('#cat-bar').innerHTML = CATS.map(c => {
-      const n = c.id === 'todos' ? base.length : base.filter(p => p.categoria === c.id).length;
-      return `<button class="chip ${state.cat === c.id ? 'is-active' : ''}" data-cat="${c.id}" aria-pressed="${state.cat === c.id}">${ic(c.icon)} ${esc(c.label)} <small>${n}</small></button>`;
-    }).join('');
-    const list = base.filter(p => state.cat === 'todos' || p.categoria === state.cat).sort((a, b) => a.inicio - b.inicio);
-    $('#radar-count').innerHTML = `<b>${list.length}</b> ${list.length === 1 ? 'parche abierto' : 'parches abiertos'}${state.cat !== 'todos' ? ' en ' + esc(catById(state.cat).label) : ''}${state.search ? ` para "${esc(state.search)}"` : ''}`;
-    $('#radar-sub').textContent = userPos ? 'Distancias calculadas desde tu ubicación en vivo.' : 'Planes abiertos en Villavicencio. Escoge uno y cáele, o abre el tuyo.';
-    const grid = $('#radar-grid');
-    grid.classList.toggle('is-static', !animate);
-    grid.innerHTML = list.length
-      ? list.map((p, i) => cardHTML(p, animate ? Math.min(i, 8) * 45 : 0)).join('')
-      : emptyHTML(state.search
-        ? { title: `Nada para "${state.search}"`, text: 'Prueba con otro nombre o lugar de Villavicencio.' }
-        : { title: 'Nadie ha armado parche por aquí', text: 'Sé quien arranca: abre tu plan y la gente se suma.' });
+  function saludo() {
+    const h = new Date().getHours();
+    return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
   }
 
-  function renderSideUser() {
-    $('#side-user').innerHTML = `${avHTML('me')}<span><b>${esc(ME().nombre)}</b><small>${esc(perfil.ciudad)} · Ver mi perfil</small></span>`;
-    $('#mini-profile').innerHTML = `${avHTML('me')}<span>${esc(perfil.primer || 'Yo')}</span>`;
+  function renderInicio(animate = false) {
+    $('#hello-name').textContent = perfil.primer || 'parcero';
+    const hoy = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+    $('#hello-date').textContent = `${saludo()} · ${cap(hoy)}`;
+    const nHoy = activeList().filter(p => dayKey(p.inicio) === todayKey()).length;
+    $('#hello-sub').textContent = nHoy
+      ? `Hay ${nHoy} ${nHoy === 1 ? 'parche abierto' : 'parches abiertos'} hoy en ${perfil.ciudad || 'Villavo'}. Cáele a uno o abre el tuyo.`
+      : 'Hoy está calmado. Abre tu propio plan y deja que la gente se sume.';
+    renderOficial(animate);
+    renderQuick();
+    renderNext();
+    renderMesas();
+    renderCards(animate);
+  }
+
+  function renderQuick() {
+    const total = activeList().length;
+    const mios = state.parches.filter(p => inside(p) && !isPast(p)).length;
+    $('#qk-map').textContent = `${total} ${total === 1 ? 'parche' : 'parches'} en el mapa`;
+    $('#qk-mis').textContent = mios ? `${mios} ${mios === 1 ? 'plan' : 'planes'} con chat` : 'Aún no te has unido';
+  }
+
+  function renderNext() {
+    const p = nextMine();
+    const slot = $('#next-slot');
+    if (!p) { slot.innerHTML = ''; return; }
+    const d = new Date(p.inicio);
+    slot.innerHTML = `<div class="next">
+      <div class="next-when"><small>${esc(fmtDia(p.inicio))}</small><b class="tnum">${pad(d.getHours() % 12 || 12)}:${pad(d.getMinutes())}</b><small>${d.getHours() < 12 ? 'a. m.' : 'p. m.'}</small></div>
+      <div class="next-copy">
+        <p class="eyebrow">Tu próximo parche</p>
+        <h3>${esc(p.titulo)}</h3>
+        <p>${esc(p.lugar)} · ${ocupados(p)} ${ocupados(p) === 1 ? 'confirmado' : 'confirmados'}</p>
+      </div>
+      <div class="next-actions">
+        <button class="btn btn--ghost btn--sm" data-action="ver-mapa" data-id="${p.id}">${ic('i-map')} Mapa</button>
+        <button class="btn btn--ink btn--sm" data-action="chat" data-id="${p.id}">${ic('i-chat')} Chat</button>
+      </div>
+    </div>`;
+  }
+
+  function renderCards(animate = false) {
+    const list = activeList().filter(p => !p.oficial).filter(matchesSearch).sort((a, b) => a.inicio - b.inicio);
+    $('#open-count').innerHTML = state.search
+      ? `<b>${list.length}</b> para "${esc(state.search)}"`
+      : userPos ? `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} · distancias desde tu ubicación` : `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} en Villavicencio`;
+    const grid = $('#cards');
+    grid.classList.toggle('is-static', !animate);
+    grid.innerHTML = list.length
+      ? list.map((p, i) => cardHTML(p, animate ? 120 + i * 90 : 0)).join('')
+      : emptyHTML(state.search
+        ? { art: 'radar', title: `Nada para "${state.search}"`, text: 'Prueba con otro nombre o lugar de Villavicencio.', cta: '' }
+        : { title: 'Nadie ha armado parche', text: 'Sé quien arranca: abre tu plan y la gente se suma.' });
+  }
+
+  /* ---------- Parche oficial del mes: arriba, grande y con boletería ---------- */
+  const oficialActual = () => state.parches.filter(p => p.oficial && p.inicio > Date.now() - 3 * HOUR).sort((a, b) => a.inicio - b.inicio)[0];
+  function faltaTxt(ts) {
+    const d = daysFromToday(dayKey(ts));
+    if (d <= 0) return ts > Date.now() ? `Hoy a las ${fmtHora(ts)}` : 'En curso';
+    return d === 1 ? 'Es mañana' : `Faltan ${d} días`;
+  }
+  function boletaHTML(tipo, precio, url, extra = '', detalle = '') {
+    const nombre = tipo === 'palco' ? 'Palco' : 'Entrada';
+    const valor = precio ? `Desde ${money(precio)}` : 'Precio por confirmar';
+    const inner = `<span class="of-tk-k">${ic(tipo === 'palco' ? 'i-crown' : 'i-ticket')} ${nombre}${extra ? ` <small>${esc(extra)}</small>` : ''}</span>
+      <b class="tnum">${valor}</b>
+      ${detalle}
+      <span class="of-tk-go">${url ? `Comprar ${tipo === 'palco' ? 'palco' : 'entrada'} ${ic('i-out')}` : 'Pronto a la venta'}</span>`;
+    return url
+      ? `<a class="of-tk of-tk--${tipo}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Comprar ${nombre.toLowerCase()} en la boletería oficial (se abre en otra pestaña)">${inner}</a>`
+      : `<div class="of-tk of-tk--${tipo} is-off" aria-label="${nombre}: pronto a la venta">${inner}</div>`;
+  }
+  function renderOficial(animate = false) {
+    const slot = $('#oficial-slot');
+    if (!slot) return;
+    const p = oficialActual();
+    if (!p) { slot.innerHTML = ''; return; }
+    const i = p.info || {}, d = new Date(p.inicio);
+    const locs = (Array.isArray(i.localidades) ? i.localidades : []).filter(l => l && l.nombre && l.precio);
+    const van = ocupados(p);
+    const cuando = `${cap(new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).format(d))} · ${fmtHora(p.inicio)}`;
+    const mes = i.mes || cap(new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(d));
+    const accion = p.unido
+      ? `<button class="btn btn--ink" data-action="chat" data-id="${p.id}">${ic('i-chat')} Ir al chat del parche</button>`
+      : isFull(p) ? `<button class="btn btn--ghost" disabled>Parche lleno</button>` : holdButton(p, '');
+    slot.innerHTML = `<section class="oficial ${animate ? 'is-in' : ''}" aria-labelledby="of-title">
+      <div class="of-art" aria-hidden="true">
+        <img class="of-stk of-stk--corona" src="${STK('coronanaranjabrochaarmador')}" alt="" loading="lazy">
+        <img class="of-stk of-stk--fuego" src="${STK('fuego-2-naranja')}" alt="" loading="lazy">
+        <img class="of-stk of-stk--chispa" src="${STK('chispasnaranjasimpactoesquina')}" alt="" loading="lazy">
+      </div>
+      <div class="of-copy">
+        <p class="of-badge">${ic('i-crown')} Parche oficial de ${esc(mes.toLowerCase())}</p>
+        <h2 class="of-title" id="of-title">${esc(i.artista || p.titulo)}${i.artista ? `<span>${esc(p.titulo.replace(i.artista, '').trim() || 'en Villavo')}</span>` : ''}</h2>
+        <p class="of-desc">${esc(p.descripcion)}</p>
+        <ul class="of-meta">
+          <li>${ic('i-calendar')}<span>${esc(cuando)}</span></li>
+          ${i.horario ? `<li>${ic('i-clock')}<span>${esc(i.horario)}</span></li>` : ''}
+          <li>${ic('i-pin')}<span>${sinLugar(p) ? 'Lugar por confirmar' : esc(p.lugar + (p.barrio ? ', ' + p.barrio : ''))}</span></li>
+          <li>${ic('i-users')}<span class="tnum">${van ? `${van} ${van === 1 ? 'parcero va' : 'parceros van'}` : 'Sé de los primeros'} · ${p.cuposMax.toLocaleString('es-CO')} cupos${i.edad_minima ? ` · Desde ${i.edad_minima} años` : ''}</span></li>
+        </ul>
+      </div>
+      <div class="of-side">
+        <p class="of-count tnum">${esc(faltaTxt(p.inicio))}</p>
+        <div class="of-tickets">
+          ${boletaHTML('entrada', i.entrada_precio || (locs.length ? Math.min(...locs.map(l => l.precio)) : 0), i.entrada_url, '',
+            locs.length ? `<ul class="of-locs">${locs.map(l => `<li><span>${esc(l.nombre)}</span><b class="tnum">${money(l.precio)}</b></li>`).join('')}</ul>` : '')}
+          ${boletaHTML('palco', i.palco_precio, i.palco_url, i.palco_personas ? `para ${i.palco_personas}` : '',
+            i.palco_hasta && i.palco_hasta > (i.palco_precio || 0) ? `<p class="of-locs-note tnum">Hasta ${money(i.palco_hasta)} según la ubicación${i.palco_personas ? ` · ${money(Math.round((i.palco_precio || 0) / i.palco_personas))} por persona` : ''}</p>` : '')}
+        </div>
+        ${i.boleteria ? `<p class="of-sold">Venta oficial en <b>${esc(i.boleteria)}</b>. Los precios los fija la boletería y pueden cambiar.</p>` : ''}
+        <div class="of-actions">${accion}${enMapa(p) ? `<button class="hello-link of-map" data-action="ver-mapa" data-id="${p.id}">Ver en el mapa ${ic('i-arrow')}</button>` : ''}</div>
+        <p class="of-note">${ic('i-info')} Las boletas se compran en la boletería oficial. ModoParche no cobra ni recibe ese dinero.</p>
+      </div>
+    </section>`;
+  }
+
+  function renderMeChip() {
+    $('#me-chip').innerHTML = `${avHTML('me')}<span class="me-name">${esc(perfil.primer || 'Yo')}</span>`;
   }
   function renderNavCount() {
     const n = state.parches.filter(p => inside(p) && !isPast(p)).length;
-    const el = $('#nav-count-mis');
+    const el = $('#tab-count');
+    const before = el.textContent;
     el.hidden = !n; el.textContent = n;
+    if (String(n) !== before && n && !reduceMotion) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+    movePill($('#tabs'), true);
   }
 
-  // Repinta lo que depende de los datos
+  /* ---------- Modo Mesa: promos para grupos que ya van juntos ---------- */
+  const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const horaTxt = hhmm => { const [h, m] = String(hhmm || '00:00').split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return fmtHora(d); };
+  function diasTxt(dias) {
+    const d = [...(dias || [])].sort();
+    if (d.length === 7) return 'Todos los días';
+    if (d.join() === '1,2,3,4,5') return 'Lunes a viernes';
+    return d.map(x => DIAS_CORTOS[x]).join(', ');
+  }
+  const ESTADO_MESA = {
+    pendiente: ['Esperando al local', ''], confirmada: ['Confirmada', 'is-ok'], rechazada: ['No disponible', 'is-off'],
+    cancelada: ['Cancelada', 'is-off'], llego: ['Llegaron', 'is-ok'], no_llego: ['No llegaron', 'is-off'],
+  };
+  function renderMesas() {
+    const block = $('#mesa-block');
+    if (!block) return;
+    const promos = state.mesas || [], mias = (state.misMesas || []).filter(r => r.llegada > Date.now() - 3 * HOUR && r.estado !== 'cancelada');
+    block.hidden = !promos.length && !mias.length;
+    if (block.hidden) return;
+    $('#mesa-mias').innerHTML = mias.sort((a, b) => a.llegada - b.llegada).map(r => {
+      const [txt, cls] = ESTADO_MESA[r.estado] || ESTADO_MESA.pendiente;
+      const viva = ['pendiente', 'confirmada'].includes(r.estado) && r.llegada > Date.now();
+      return `<li class="mesa-mia">
+        <span class="mesa-mia-ic">${ic('i-table')}</span>
+        <div><b>${esc(r.titulo)}</b><small>${esc(r.negocio.nombre)} · ${esc(fmtCuando(r.llegada))} · ${r.personas} personas</small></div>
+        <span class="mesa-pill ${cls}">${esc(txt)}</span>
+        <span class="mesa-code tnum" title="Muéstralo al llegar">${esc(r.codigo)}</span>
+        ${viva ? `<button class="btn btn--ghost btn--xs" data-action="mesa-cancelar" data-id="${esc(r.id)}">Cancelar</button>` : '<span></span>'}
+      </li>`;
+    }).join('');
+    $('#mesa-list').innerHTML = promos.map(m => {
+      const n = m.negocio || {}, dist = n.lat != null ? fmtKm(haversine(origin(), [n.lat, n.lng])) : '';
+      return `<article class="mesa-card">
+        <div class="mesa-card-top">
+          <span class="mesa-local">${esc(n.nombre || 'Local aliado')}${n.verificado ? `<span class="tag tag--verif">${ic('i-check')} Verificado</span>` : ''}</span>
+          ${dist ? `<span class="muted tnum">${dist}</span>` : ''}
+        </div>
+        <h3 class="mesa-title">${esc(m.titulo)}</h3>
+        <p class="mesa-ben">${ic('i-tag')}<span>${esc(m.beneficio)}</span></p>
+        <ul class="meta">
+          <li>${ic('i-users')}<span class="tnum">De ${m.min_personas} a ${m.max_personas} personas</span></li>
+          <li>${ic('i-clock')}<span>${esc(diasTxt(m.dias))} · ${esc(horaTxt(m.hora_desde))} a ${esc(horaTxt(m.hora_hasta))}</span></li>
+          ${n.direccion ? `<li>${ic('i-pin')}<span>${esc(n.direccion)}${n.barrio ? ', ' + esc(n.barrio) : ''}</span></li>` : ''}
+        </ul>
+        <div class="mesa-card-foot">
+          ${n.lat != null ? `<button class="link-btn" data-action="mesa-mapa" data-id="${esc(m.id)}">${ic('i-map')} Ver en el mapa</button>` : '<span></span>'}
+          <button class="btn btn--sm" data-action="mesa-reservar" data-id="${esc(m.id)}">${ic('i-table')} Reservar mesa</button>
+        </div>
+      </article>`;
+    }).join('');
+  }
+
   function refresh() {
-    if (state.view === 'radar') renderRadar();
+    if (state.view === 'inicio') { renderOficial(); renderQuick(); renderNext(); renderMesas(); renderCards(); }
     if (state.view === 'mapa') renderLiveMap();
     if (state.view === 'mis') renderMis();
     renderNavCount();
   }
 
   /* =====================================================================
-     8. MAPAS Y GPS DEL USUARIO
+     7. MAPA Y GPS
   ===================================================================== */
   let liveMap = null, createMap = null, createMarker = null, meMarker = null, meCircle = null, createMe = null;
   const liveMarkers = new Map();
-  // Tiles claros y legibles de OpenStreetMap, sin filtros oscuros.
-  // (CartoDB Voyager ya exige API key y muestra una marca de agua.)
   const tiles = () => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   });
 
   const pinIcon = p => L.divIcon({
     className: 'pin-icon',
-    html: `<div class="pin ${isMine(p) ? 'pin--own' : ''} ${isFull(p) ? 'pin--full' : ''} ${p._drop ? 'pin--drop' : ''}" title="${esc(p.titulo)}">${ic(catById(p.categoria).icon)}</div>`,
-    iconSize: [38, 38], iconAnchor: [19, 19], popupAnchor: [0, -22],
+    html: `<div class="pin ${isMine(p) ? 'pin--own' : ''} ${p.aliado ? 'pin--ally' : ''} ${p.oficial ? 'pin--oficial' : ''} ${isFull(p) ? 'pin--full' : ''} ${p._drop ? 'pin--drop' : ''}" title="${esc(p.titulo)}">${ic(p.oficial ? 'i-crown' : catById(p.categoria).icon)}</div>`,
+    iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40],
   });
-  const meIcon = () => L.divIcon({ className: 'me-icon', html: '<div class="me-dot"><span class="me-label">Tú estás aquí</span></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+  const meIcon = () => L.divIcon({ className: 'me-icon', html: '<div class="me-dot"><span class="me-label">Tú</span></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+
+  // Lugares sugeridos que coinciden con lo que se busca (salen primero en el buscador)
+  const lugaresQue = q => LUGARES.filter(l => norm(l.nombre + ' ' + l.ref).includes(norm(q)))
+    .map(l => ({ nombre: l.nombre, detalle: l.ref, lat: l.lat, lng: l.lng, id: l.id }));
+  let searchMarker = null;
 
   function initLiveMap() {
     if (liveMap || typeof L === 'undefined') return;
     liveMap = L.map('live-map', { zoomControl: false }).setView(CENTER, 13);
     L.control.zoom({ position: 'bottomright' }).addTo(liveMap);
     tiles().addTo(liveMap);
+    // Buscar cualquier lugar o dirección de Villavo y volar hasta allá
+    if (window.MPMapa) window.MPMapa.buscador(liveMap, {
+      placeholder: 'Busca un lugar o dirección',
+      extras: lugaresQue,
+      onElegir: r => {
+        if (searchMarker) liveMap.removeLayer(searchMarker);
+        searchMarker = L.marker([r.lat, r.lng], { icon: L.divIcon({ className: 'pin-icon', html: '<div class="pin pin--search">' + ic('i-pin') + '</div>', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] }) })
+          .bindPopup(`<div class="pop-search"><b>${esc(r.nombre)}</b>${r.detalle ? `<small>${esc(r.detalle)}</small>` : ''}<button class="btn btn--xs" data-action="crear-aqui" data-lat="${r.lat}" data-lng="${r.lng}" data-nombre="${esc(r.nombre)}">${ic('i-plus')} Abrir un parche aquí</button></div>`, { className: 'mp-popup' })
+          .addTo(liveMap);
+        liveMap.once('moveend', () => searchMarker && searchMarker.openPopup());
+      },
+    });
     if (userPos) updateUserMarker();
   }
 
+  function renderTimeSeg() {
+    $$('#time-seg .seg-btn').forEach(b => { const on = b.dataset.time === state.time; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on); });
+    requestAnimationFrame(() => movePill($('#time-seg')));
+  }
+
   function renderLiveMap() {
-    renderTimeBar();
-    const list = activeList().filter(matchesSearch).filter(timeMatch);
+    const list = activeList().filter(timeMatch).filter(enMapa);
     if (liveMap) {
       const ids = new Set(list.map(p => p.id));
       liveMarkers.forEach((m, id) => { if (!ids.has(id)) { liveMap.removeLayer(m); liveMarkers.delete(id); } });
@@ -605,7 +644,7 @@
         let m = liveMarkers.get(p.id);
         if (!m) {
           m = L.marker([p.lat, p.lng], { icon: pinIcon(p), riseOnHover: true });
-          m.bindPopup(() => popupHTML(findP(p.id) || p), { className: 'mp-popup', minWidth: 240, maxWidth: 280, autoPanPadding: [30, 90] });
+          m.bindPopup(() => popupHTML(findP(p.id) || p), { className: 'mp-popup', minWidth: 260, maxWidth: 260, autoPanPadding: [30, 90] });
           m.addTo(liveMap);
           liveMarkers.set(p.id, m);
         } else {
@@ -616,42 +655,22 @@
         delete p._drop;
       });
     }
-    $('#map-counter').innerHTML = `<b>${list.length}</b> ${list.length === 1 ? 'parche activo' : 'parches activos'} ${timeLabel()}`;
+    $('#map-counter').innerHTML = `<b>${list.length}</b> ${list.length === 1 ? 'parche' : 'parches'} ${timeLabel()}`;
     const empty = $('#map-empty');
     if (!list.length) {
-      const fecha = state.time.mode === 'hoy' ? todayKey() : state.time.mode === 'manana' ? offsetKey(1) : state.time.mode === 'fecha' ? state.time.date : '';
       empty.hidden = false;
-      empty.innerHTML = emptyHTML({ title: `Nadie ha abierto parche ${state.time.mode === 'todos' ? 'todavía' : timeLabel()}`, text: 'Ese día está libre. Arma el plan y deja que la gente se sume.', cta: 'Ser el primero', fecha });
+      empty.innerHTML = emptyHTML({ art: 'radar', title: `Nada ${state.time === 'todos' ? 'todavía' : timeLabel()}`, text: 'Ese día está libre. Arma el plan y la gente se suma.', cta: 'Ser el primero' });
     } else empty.hidden = true;
-  }
-
-  function buildTimeControls() {
-    const opts = ['<option value="">Elegir día</option>'];
-    for (let i = 2; i <= 13; i++) { const k = offsetKey(i); opts.push(`<option value="${k}">${cap(weekdayLong(k))} ${shortDate(k)}</option>`); }
-    opts.push('<option value="__fecha">Fecha exacta...</option>');
-    $('#time-select').innerHTML = opts.join('');
-    $('#time-date').min = todayKey();
-  }
-  function renderTimeBar() {
-    const m = state.time.mode;
-    $$('#time-bar .time-btn').forEach(b => b.classList.toggle('is-active', b.dataset.time === m));
-    const sel = $('#time-select');
-    const inSelect = m === 'fecha' && [...sel.options].some(o => o.value === state.time.date);
-    sel.value = inSelect ? state.time.date : (m === 'fecha' ? '__fecha' : '');
-    $('#time-select-wrap').classList.toggle('is-active', m === 'fecha');
-    const showDate = m === 'fecha' && !inSelect;
-    $('#time-date-wrap').hidden = !showDate && sel.value !== '__fecha';
-    if (showDate) $('#time-date').value = state.time.date;
   }
 
   function flyToParche(id) {
     const p = findP(id);
     if (!p) return;
+    if (!enMapa(p)) { toast('Lugar por confirmar', 'Apenas el equipo confirme el sitio, el parche aparece en el mapa.', { icon: 'i-pin' }); return; }
     closeAllModals();
-    if (!timeMatch(p)) setTimeFor(p.inicio);
-    if (state.search && !matchesSearch(p)) { state.search = ''; $('#search-input').value = ''; $('#search-clear').hidden = true; }
+    if (!timeMatch(p)) state.time = dayKey(p.inicio) === todayKey() ? 'hoy' : dayKey(p.inicio) === offsetKey(1) ? 'manana' : 'todos';
     const wasMap = state.view === 'mapa';
-    if (!wasMap) go('mapa');
+    if (!wasMap) go('mapa'); else renderTimeSeg();
     setTimeout(() => {
       initLiveMap();
       if (!liveMap) return;
@@ -659,16 +678,15 @@
       renderLiveMap();
       const m = liveMarkers.get(id);
       if (reduceMotion) { liveMap.setView([p.lat, p.lng], 16); m && m.openPopup(); }
-      else { liveMap.flyTo([p.lat, p.lng], 16, { duration: 1.6 }); if (m) liveMap.once('moveend', () => m.openPopup()); }
+      else { liveMap.flyTo([p.lat, p.lng], 16, { duration: 1.4 }); if (m) liveMap.once('moveend', () => m.openPopup()); }
     }, wasMap ? 60 : 140);
   }
 
-  /* ---------- GPS en tiempo real ---------- */
   let watchId = null, flyOnFix = false;
-  function setGeoStatus(html) { $('#geo-status').innerHTML = html; }
+  const setGeoStatus = html => { $('#geo-status').innerHTML = html; };
   function startGeo({ fly = false } = {}) {
     if (!('geolocation' in navigator)) {
-      setGeoStatus(`${ic('i-alert')} Tu navegador no comparte ubicación. Usamos el centro de Villavicencio.`);
+      setGeoStatus(`${ic('i-info')} Tu navegador no comparte ubicación. Medimos desde el centro de Villavicencio.`);
       if (fly) toast('Sin GPS', 'Este navegador no permite compartir la ubicación.', { type: 'error' });
       return;
     }
@@ -687,11 +705,11 @@
     setGeoStatus(`${ic('i-locate')} Ubicación en vivo · precisión ${Math.round(userAcc)} m`);
     $('#map-locate').classList.add('is-on');
     if (flyOnFix) { flyOnFix = false; flyToUser(); }
-    if (moved) { if (state.view === 'radar') renderRadar(); if (state.view === 'mapa') renderLiveMap(); }
+    if (moved) { if (state.view === 'inicio') renderCards(); if (state.view === 'mapa') renderLiveMap(); }
   }
   function onGeoErr(err) {
     const msg = err && err.code === 1 ? 'No diste permiso de ubicación.' : 'No pudimos leer tu ubicación.';
-    setGeoStatus(`${ic('i-alert')} ${msg} Distancias desde el centro de Villavicencio.`);
+    setGeoStatus(`${ic('i-info')} ${msg} Medimos desde el centro de Villavicencio.`);
     if (flyOnFix) { flyOnFix = false; toast('Sin ubicación', msg + ' Actívala en el candado de la barra de direcciones.', { type: 'error' }); }
   }
   function updateUserMarker() {
@@ -718,13 +736,25 @@
     }, 120);
   }
 
-  /* ---------- Mini mapa del formulario ---------- */
+  /* Mini mapa del formulario */
   function initCreateMap() {
     if (typeof L === 'undefined') return;
     if (!createMap) {
-      createMap = L.map('create-map', { attributionControl: false }).setView(CENTER, 13);
+      createMap = L.map('create-map', { attributionControl: false, zoomControl: false }).setView(CENTER, 13);
+      L.control.zoom({ position: 'bottomright' }).addTo(createMap);
       tiles().addTo(createMap);
-      createMap.on('click', e => { setCreatePin(e.latlng.lat, e.latlng.lng); selectPlaceChip(null); });
+      createMap.on('click', e => { setCreatePin(e.latlng.lat, e.latlng.lng); selectPlaceChip(null); autoLugar(e.latlng.lat, e.latlng.lng); });
+      if (window.MPMapa) window.MPMapa.buscador(createMap, {
+        placeholder: 'Busca el sitio exacto',
+        extras: lugaresQue,
+        onElegir: r => {
+          if (r.id) { choosePlace(r.id); return; }
+          setCreatePin(r.lat, r.lng); selectPlaceChip(null);
+          F('lugar').value = String(r.nombre).slice(0, 60); draft.autoLugar = true;
+          draft.barrio = String(r.detalle || '').split(',')[0].trim().slice(0, 40);
+          touched.add('lugar'); validate('lugar'); syncCreateUI();
+        },
+      });
       updateUserMarker();
     }
     createMap.invalidateSize();
@@ -736,14 +766,35 @@
     const icon = pinIcon({ categoria: F('categoria').value || 'chill', propio: true, cuposMax: 10, confirmados: [], unido: true, titulo: 'Punto de encuentro' });
     if (!createMarker) {
       createMarker = L.marker([draft.lat, draft.lng], { icon, draggable: true }).addTo(createMap);
-      createMarker.on('dragend', () => { const ll = createMarker.getLatLng(); setCreatePin(ll.lat, ll.lng); selectPlaceChip(null); });
+      createMarker.on('dragend', () => { const ll = createMarker.getLatLng(); setCreatePin(ll.lat, ll.lng); selectPlaceChip(null); autoLugar(ll.lat, ll.lng); });
     } else { createMarker.setLatLng([draft.lat, draft.lng]); createMarker.setIcon(icon); }
-    $('#create-coords').textContent = `Lat ${draft.lat.toFixed(5)} · Lng ${draft.lng.toFixed(5)} · a ${fmtKm(haversine(origin(), [draft.lat, draft.lng]))} de ti`;
+    $('#create-coords').textContent = `Punto marcado · a ${fmtKm(haversine(origin(), [draft.lat, draft.lng]))} de ti`;
     if (!silent) { touched.add('map'); validate('map'); }
+  }
+  // Al soltar el pin buscamos la dirección real del punto y llenamos el lugar
+  // (solo si la persona no escribió uno a mano)
+  let autoLugarTurno = 0;
+  function autoLugar(lat, lng) {
+    if (!window.MPMapa) return;
+    const turno = ++autoLugarTurno;
+    $('#create-coords').textContent = 'Punto marcado · buscando la dirección...';
+    window.MPMapa.inverso(lat, lng).then(r => {
+      if (turno !== autoLugarTurno || draft.lat == null) return;
+      const lejos = `a ${fmtKm(haversine(origin(), [draft.lat, draft.lng]))} de ti`;
+      if (!r) { $('#create-coords').textContent = `Punto marcado · ${lejos}`; return; }
+      $('#create-coords').textContent = `${r.texto || 'Punto marcado'} · ${lejos}`;
+      draft.barrio = String(r.barrio || draft.barrio || '').slice(0, 40);
+      const actual = F('lugar').value.trim();
+      if (!actual || draft.autoLugar) {
+        const nombre = r.lugar || r.direccion || r.barrio;
+        if (nombre) { F('lugar').value = nombre.slice(0, 60); draft.autoLugar = true; touched.add('lugar'); validate('lugar'); }
+      }
+      syncCreateUI();
+    });
   }
 
   /* =====================================================================
-     9. CREAR, EDITAR, UNIRSE Y CANCELAR
+     8. CREAR, EDITAR, UNIRSE Y CANCELAR
   ===================================================================== */
   let editingId = null;
   const draft = { lat: null, lng: null, barrio: '' };
@@ -769,12 +820,11 @@
     },
     costo: v => v === '' || Number(v) < 0 ? 'Usa 0 si es gratis.' : '',
     descripcion: v => v.trim().length < 10 ? 'Cuenta un poco más (mínimo 10 caracteres).' : '',
-    lugar: v => v.trim().length < 3 ? 'Escribe el lugar exacto o elige uno sugerido.' : '',
+    lugar: v => v.trim().length < 3 ? 'Escribe el lugar o elige uno sugerido.' : '',
     map: () => draft.lat == null ? 'Toca el mapa o elige un lugar para marcar el punto.' : '',
   };
   function setFieldState(field, msg) {
     field.classList.toggle('is-error', !!msg);
-    field.classList.toggle('is-valid', !msg);
     const out = $('.field-msg', field);
     if (out) out.innerHTML = msg ? `${ic('i-alert')} ${esc(msg)}` : '';
   }
@@ -788,30 +838,80 @@
   }
   function clearValidation() {
     touched.clear();
-    $$('#form-create .field').forEach(f => { f.classList.remove('is-error', 'is-valid'); const m = $('.field-msg', f); if (m) m.innerHTML = ''; });
+    $$('#form-create .field').forEach(f => { f.classList.remove('is-error'); const m = $('.field-msg', f); if (m) m.innerHTML = ''; });
   }
 
   function renderPlaceChips() {
     $('#place-chips').innerHTML = LUGARES.map(l => `<button type="button" class="chip" data-place="${l.id}" aria-pressed="false">${ic('i-pin')} ${esc(l.nombre)}</button>`).join('');
   }
-  function selectPlaceChip(id) { $$('#place-chips .chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.place === id))); }
+  function selectPlaceChip(id) {
+    $$('#place-chips .chip').forEach(c => {
+      const on = c.dataset.place === id;
+      c.setAttribute('aria-pressed', String(on));
+      // El lugar elegido queda a la vista dentro de la fila
+      if (on) c.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+  }
   function choosePlace(id) {
     const l = lugar(id);
     if (!l) return;
     F('lugar').value = l.nombre;
     draft.barrio = l.ref;
+    draft.autoLugar = false;
     selectPlaceChip(id);
     touched.add('lugar'); validate('lugar');
     if (createMap) { setCreatePin(l.lat, l.lng); createMap.flyTo([l.lat, l.lng], 16, { duration: reduceMotion ? 0 : .8 }); }
+    syncCreateUI();
   }
 
-  function openCreate({ id = null, fecha = null } = {}) {
+  /* ---------- Formulario de crear: selector, atajos y vista previa ---------- */
+  function renderCatPicker() {
+    $('#cat-picker').innerHTML = CATS.map(c => `<button type="button" class="cat-opt ${c.tone}" role="radio" aria-checked="false" data-cat-pick="${c.id}">
+      <img src="${STK(c.art)}" alt="" loading="lazy" decoding="async"><span>${esc(c.label)}</span></button>`).join('');
+  }
+  function nextWeekday(dow) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + ((dow - d.getDay() + 7) % 7 || 7)); return dayKey(d); }
+  function renderQuickDates() {
+    const opts = [['Hoy', todayKey()], ['Mañana', offsetKey(1)], ['Este viernes', nextWeekday(5)], ['Este sábado', nextWeekday(6)]];
+    const seen = new Set();
+    $('#quick-date').innerHTML = opts.filter(([, k]) => !seen.has(k) && seen.add(k))
+      .map(([l, k]) => `<button type="button" class="qchip" data-qdate="${k}">${l}</button>`).join('');
+  }
+  function syncCreateUI() {
+    const cat = F('categoria').value, fecha = F('fecha').value, costo = Number(F('costo').value) || 0;
+    $$('#cat-picker .cat-opt').forEach(b => b.setAttribute('aria-checked', String(b.dataset.catPick === cat)));
+    $$('#quick-date .qchip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.qdate === fecha)));
+    $$('[data-qprice]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.qprice) === costo)));
+    $$('[data-count-for]').forEach(c => { const i = $('#' + c.dataset.countFor); c.textContent = `${i.value.length}/${i.maxLength}`; c.classList.toggle('is-near', i.value.length > i.maxLength * .9); });
+    const c = catById(cat), cupos = clamp(Number(F('cupos').value) || 0, 0, 60);
+    const ts = fecha && F('hora').value ? tsFrom(fecha, F('hora').value) : null;
+    const titulo = F('titulo').value.trim() || 'Tu parche';
+    const when = ts ? fmtCuando(ts) : 'Elige fecha y hora';
+    const precioTxt = costo ? money(costo) : 'Gratis';
+    $('#create-preview').innerHTML = `
+      <div class="cpv-cover ${c.tone}"><img src="${STK(c.art)}" alt=""><span class="tag">${ic(c.icon)} ${esc(c.label)}</span><span class="tag tag--price tnum">${precioTxt}</span></div>
+      <div class="cpv-body">
+        <b>${esc(titulo)}</b>
+        <ul class="meta">
+          <li>${ic('i-clock')}<span class="tnum">${esc(when)}</span></li>
+          <li>${ic('i-pin')}<span>${esc(F('lugar').value.trim() || 'Sin lugar todavía')}</span></li>
+          <li>${ic('i-users')}<span class="tnum">${cupos} cupos · tú eres el primero</span></li>
+        </ul>
+      </div>`;
+    $('#create-summary').textContent = ts ? `${when} · ${cupos} cupos · ${precioTxt}` : '';
+  }
+
+  function openCreate({ id = null, punto = null } = {}) {
     editingId = id;
+    draft.autoLugar = false;
     const p = id ? findP(id) : null;
     $('#form-create').reset();
     clearValidation();
     $('#create-title').textContent = p ? 'Editar parche' : 'Abrir el parche';
+    $('#create-kicker').textContent = p ? 'Cambios para los que ya van' : 'Nuevo plan en Villavo';
+    renderQuickDates();
     $('#create-submit span').textContent = p ? 'Guardar cambios' : 'Publicar parche';
+    const del = $('#create-delete');
+    if (del) { del.hidden = !p; del.dataset.id = p ? p.id : ''; }
     if (p) {
       F('titulo').value = p.titulo; F('categoria').value = p.categoria; F('cupos').value = p.cuposMax;
       F('fecha').value = dayKey(p.inicio);
@@ -819,21 +919,23 @@
       F('costo').value = precio(p); F('descripcion').value = p.descripcion; F('lugar').value = p.lugar;
       draft.lat = p.lat; draft.lng = p.lng; draft.barrio = p.barrio || '';
     } else {
-      const k = fecha && fecha >= todayKey() ? fecha : todayKey();
-      F('categoria').value = state.cat !== 'todos' ? state.cat : 'chill';
-      F('fecha').value = k;
+      F('categoria').value = 'chill';
+      F('fecha').value = todayKey();
       const h = new Date(Date.now() + 90 * MIN);
-      F('hora').value = k === todayKey() ? `${pad(h.getHours())}:00` : '17:00';
+      F('hora').value = h.getDate() === new Date().getDate() ? `${pad(h.getHours())}:00` : '23:00';
       F('cupos').value = 8; F('costo').value = 0;
       draft.lat = null; draft.lng = null; draft.barrio = '';
+      // "Abrir un parche aquí" desde el buscador del mapa
+      if (punto) { draft.lat = +(+punto.lat).toFixed(6); draft.lng = +(+punto.lng).toFixed(6); F('lugar').value = String(punto.nombre || '').slice(0, 60); draft.autoLugar = true; }
     }
     F('fecha').min = todayKey();
     const match = p && LUGARES.find(l => l.lat === p.lat && l.lng === p.lng);
     selectPlaceChip(match ? match.id : null);
-    $('#create-coords').textContent = draft.lat != null ? `Lat ${draft.lat.toFixed(5)} · Lng ${draft.lng.toFixed(5)}` : 'Toca el mapa para soltar el pin';
+    $('#create-coords').textContent = draft.lat != null ? 'Punto marcado' : 'Toca el mapa para soltar el pin';
+    syncCreateUI();
     openModal('modal-create');
     setTimeout(initCreateMap, 120);
-    setTimeout(() => createMap && createMap.invalidateSize(), 400);
+    setTimeout(() => createMap && createMap.invalidateSize(), 420);
   }
 
   function draftParche() {
@@ -884,7 +986,7 @@
     closeModal('modal-create');
     toast(editingId ? 'Parche actualizado' : '¡Parche publicado!', editingId ? 'Los confirmados ya ven los cambios.' : `Ya está en el mapa: ${p ? fmtCuando(p.inicio) : ''}`, { icon: editingId ? 'i-check' : 'i-bolt' });
     renderNavCount();
-    if (p) { setTimeFor(p.inicio); flyToParche(id); } // vuelo al nuevo pin
+    if (p) flyToParche(id);
   }
 
   async function toggleJoin(id) {
@@ -896,6 +998,7 @@
     if (!isRemote(p)) p.chat.push({ tipo: 'sys', texto: `${ME().nombre} ${salir ? 'se abrió del parche' : 'le cayó al parche'}`, ts: Date.now() });
     toast(salir ? 'Te abriste del parche' : '¡Le caíste al parche!', salir ? `Liberaste tu cupo en ${p.titulo}.` : `Ya puedes escribir en el chat de ${p.titulo}.`, { icon: salir ? 'i-logout' : 'i-bolt', action: salir ? null : { label: 'Chat', act: 'chat', id } });
     save(); refresh();
+    if (liveMap && liveMap.closePopup) { const m = liveMarkers.get(id); if (m && m.isPopupOpen()) m.getPopup().update(); }
     if (state.chatId === id) renderChat();
     if (!isRemote(p)) return;
     const res = salir
@@ -908,10 +1011,24 @@
     await reloadParche(id);
   }
 
+  function askLeave(id) {
+    const p = findP(id);
+    if (!p) return;
+    $('#confirm-title').textContent = '¿Salirte del parche?';
+    $('#confirm-text').textContent = `Liberas tu cupo en "${p.titulo}" y dejas de ver el chat.`;
+    $('#confirm-ok').textContent = 'Sí, salirme';
+    $('#confirm-ok').onclick = () => { closeModal('modal-confirm'); toggleJoin(id); };
+    openModal('modal-confirm');
+  }
+
   function askDelete(id) {
     const p = findP(id);
     if (!p) return;
-    $('#confirm-text').textContent = `"${p.titulo}" desaparece del mapa y de la lista. Avisaremos a los ${p.confirmados.length} confirmados.`;
+    if (!isMine(p)) return;
+    const n = p.confirmados.length;
+    $('#confirm-title').textContent = '¿Eliminar el parche?';
+    $('#confirm-text').textContent = `"${p.titulo}" se borra del mapa, de la lista y su chat. ${n ? `Les avisamos a ${n === 1 ? 'la persona que iba' : `las ${n} personas que iban`}.` : 'Nadie se había unido todavía.'} No se puede deshacer.`;
+    $('#confirm-ok').textContent = 'Sí, eliminar';
     $('#confirm-ok').onclick = async () => {
       if (isRemote(p)) {
         const { error } = await sb.from('parches').delete().eq('id', id);
@@ -919,8 +1036,8 @@
       }
       removeParcheLocal(id);
       save();
-      closeModal('modal-confirm');
-      toast('Parche cancelado', 'Lo quitamos del mapa y de la lista.', { icon: 'i-trash' });
+      closeAllModals();
+      toast('Parche eliminado', 'Lo quitamos del mapa, de la lista y del chat.', { icon: 'i-trash' });
     };
     openModal('modal-confirm');
   }
@@ -928,12 +1045,12 @@
     state.parches = state.parches.filter(x => x.id !== id);
     const m = liveMarkers.get(id);
     if (m && liveMap) { liveMap.removeLayer(m); liveMarkers.delete(id); }
-    if (state.chatId === id) { state.chatId = null; $('#mis-layout').classList.remove('is-chat'); }
+    if (state.chatId === id) { state.chatId = null; $('#mis-wrap').classList.remove('is-chat'); }
     refresh();
   }
 
   /* =====================================================================
-     10. MIS PARCHES + CHAT
+     9. MIS PARCHES + CHAT
   ===================================================================== */
   const typing = { on: false };
   function misList() {
@@ -943,48 +1060,119 @@
     return l.sort((a, b) => a.inicio - b.inicio);
   }
   function renderMis() {
-    $$('[data-mis]').forEach(b => { const on = b.dataset.mis === state.misTab; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on); });
+    $$('#mis-seg .seg-btn').forEach(b => { const on = b.dataset.mis === state.misTab; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on); });
+    requestAnimationFrame(() => movePill($('#mis-seg')));
     const list = misList();
-    $('#mis-items').innerHTML = list.length ? list.map(p => `
-      <li><button class="mis-item ${state.chatId === p.id ? 'is-active' : ''}" data-action="chat" data-id="${p.id}">
-        <i>${ic(catById(p.categoria).icon)}</i>
-        <b>${esc(p.titulo)}</b>
-        <small>${esc(fmtCuando(p.inicio))} · ${ocupados(p)}/${p.cuposMax}</small>
-      </button></li>`).join('')
-      : `<li class="mis-empty">${state.misTab === 'propios' ? 'Aún no has armado ningún parche.' : 'Aún no le has caído a ningún parche.'}
-          <button class="btn btn--primary btn--sm" data-action="${state.misTab === 'propios' ? 'crear' : 'go-radar'}">${state.misTab === 'propios' ? 'Abrir el parche' : 'Explorar parches'}</button></li>`;
+    $('#mis-list').innerHTML = list.length ? list.map((p, i) => `
+      <li class="mis-row" data-id="${p.id}">
+        <div class="mis-actions" aria-hidden="true">${misActionsHTML(p)}</div>
+        <button class="mis-item ${state.chatId === p.id ? 'is-active' : ''}" data-action="chat" data-id="${p.id}" style="--d:${i * 60}ms">
+          <span class="mis-ic ${isMine(p) ? 'is-own' : ''}">${ic(catById(p.categoria).icon)}</span>
+          <span><b>${esc(p.titulo)}</b><small class="tnum">${esc(fmtCuando(p.inicio))} · ${ocupados(p)}/${p.cuposMax}</small></span>
+        </button>
+      </li>`).join('')
+      : `<li class="mis-empty">${state.misTab === 'propios'
+          ? emptyHTML({ art: 'corona-armador', title: 'Aún no armas uno', text: 'Abre tu primer parche y gánate la insignia de El armador.' })
+          : emptyHTML({ art: 'sneaker', title: 'Aún no te unes', text: 'Mira lo que hay abierto y cáele a un plan.', cta: 'Ver parches', action: 'go-inicio' })}</li>`;
     const current = state.chatId && findP(state.chatId);
     if (!current && !isMobile() && list.length) { openChat(list[0].id, { quiet: true }); return; }
     renderChat();
+    hintReveal();
+  }
+
+  // Acciones que aparecen al deslizar un parche hacia la izquierda
+  function misActionsHTML(p) {
+    const b = (act, icon, label, cls = '') => `<button class="mis-act ${cls}" data-action="${act}" data-id="${p.id}" tabindex="-1">${ic(icon)}<span>${label}</span></button>`;
+    return isMine(p)
+      ? b('ver-mapa', 'i-map', 'Mapa') + b('editar', 'i-edit', 'Editar', 'is-ink') + b('cancelar', 'i-trash', 'Eliminar', 'is-danger')
+      : b('ver-mapa', 'i-map', 'Mapa') + b('salir', 'i-logout', 'Salir', 'is-danger');
   }
 
   function openChat(id, { quiet = false } = {}) {
     const p = findP(id);
     if (!p) return;
     closeAllModals();
-    if (!inside(p)) state.misTab = 'unido';
-    else state.misTab = isMine(p) ? 'propios' : 'unido';
+    state.misTab = isMine(p) ? 'propios' : 'unido';
+    if (state.chatId !== id) replyTo = null;
     state.chatId = id;
-    if (state.view !== 'mis') { go('mis'); }
+    if (state.view !== 'mis') go('mis');
     else { $$('.mis-item').forEach(b => b.classList.toggle('is-active', b.dataset.id === id)); renderChat(); }
-    if (!quiet || isMobile()) $('#mis-layout').classList.toggle('is-chat', isMobile());
+    if (!quiet || isMobile()) $('#mis-wrap').classList.toggle('is-chat', isMobile());
     if (isRemote(p)) loadChat(id);
   }
 
-  function msgHTML(m) {
+  // Llave estable de cada mensaje: id de la base o una local para el modo demo
+  const msgKey = m => m.id != null ? 'i' + m.id : (m.key || (m.key = 'k' + m.ts + Math.random().toString(36).slice(2, 6)));
+  const autorNombre = a => a === 'me' ? 'Tú' : a === 'bot' ? 'Bot del parche' : personById(a)?.nombre || 'Parcero';
+  // Lo que se cita: copia guardada (demo y recién enviado) o el mensaje original por id
+  function citaDe(m, list) {
+    if (m.reply) return m.reply;
+    if (m.replyId == null) return null;
+    const o = (list || []).find(x => x.id === m.replyId);
+    return o ? { key: msgKey(o), autor: o.tipo === 'bot' ? 'bot' : o.autor, texto: o.texto } : { key: 'i' + m.replyId, autor: null, texto: 'Mensaje anterior' };
+  }
+  const quoteHTML = q => q ? `<button type="button" class="msg-quote" data-action="ir-msg" data-key="${esc(q.key)}"><b>${esc(q.autor ? autorNombre(q.autor) : 'Respuesta')}</b><span>${esc(String(q.texto).slice(0, 140))}</span></button>` : '';
+
+  function msgHTML(m, i, list) {
     const t = `<time>${fmtHora(m.ts)}</time>`;
-    if (m.tipo === 'bot') return `<div class="msg msg--bot"><span class="bot-ic">${ic('i-bot')}</span><div class="bubble"><small>Bot del Parche</small>${esc(m.texto)}${t}</div></div>`;
     if (m.tipo === 'sys') return `<div class="msg msg--sys"><div class="bubble">${esc(m.texto)}</div></div>`;
     if (m.tipo === 'alerta') return `<div class="msg msg--sys msg--alert"><div class="bubble">${esc(m.texto)}</div></div>`;
+    const k = msgKey(m);
+    const replyBtn = `<button class="msg-act" data-action="responder" data-key="${esc(k)}" aria-label="Responder este mensaje" title="Responder">${ic('i-reply')}</button>`;
+    const swipeIc = `<span class="msg-swipe-ic" aria-hidden="true">${ic('i-reply')}</span>`;
+    if (m.tipo === 'bot') return `<div class="msg msg--bot" data-key="${esc(k)}">${swipeIc}<span class="bot-ic">${ic('i-bot')}</span><div class="bubble"><small>Bot del parche</small>${esc(m.texto)}${t}</div>${replyBtn}</div>`;
     const mine = m.autor === 'me';
-    return `<div class="msg ${mine ? 'msg--me' : ''}">${avHTML(m.autor)}<div class="bubble">${mine ? '' : `<small>${esc(personById(m.autor)?.nombre || 'Parcero')}</small>`}${esc(m.texto)}${t}</div></div>`;
+    const rep = !mine && m.id != null && /^\d+$/.test(String(m.id)) ? `<button class="msg-rep" data-action="reportar" data-tipo="mensaje" data-id="${m.id}" aria-label="Reportar este mensaje" title="Reportar mensaje">${ic('i-flag')}</button>` : '';
+    return `<div class="msg ${mine ? 'msg--me' : ''}" data-key="${esc(k)}">${swipeIc}${avHTML(m.autor, 'av--sm')}<div class="bubble">${mine ? '' : `<small>${esc(personById(m.autor)?.nombre || 'Parcero')}${sello(m.autor)}</small>`}${quoteHTML(citaDe(m, list))}${esc(m.texto)}${t}</div>${replyBtn}${rep}</div>`;
   }
+  // Barra "Respondiendo a ..." encima del campo de texto
+  let replyTo = null, replyFresh = false;
+  function replyBarHTML() {
+    if (!replyTo) return '';
+    const fresh = replyFresh; replyFresh = false;
+    return `<div class="reply-bar ${fresh ? 'is-in' : ''}" id="reply-bar">
+      <span class="reply-bar-ic">${ic('i-reply')}</span>
+      <div class="reply-bar-txt"><b>Respondiendo a ${esc(autorNombre(replyTo.autor))}</b><span>${esc(String(replyTo.texto).slice(0, 140))}</span></div>
+      <button type="button" class="reply-bar-x" data-action="reply-cancel" aria-label="Cancelar respuesta">${ic('i-close')}</button>
+    </div>`;
+  }
+  function setReply(key) {
+    const p = state.chatId && findP(state.chatId);
+    const m = p && p.chat.find(x => msgKey(x) === key);
+    if (!m || !inside(p)) return;
+    replyTo = { key, id: m.id ?? null, autor: m.tipo === 'bot' ? 'bot' : m.autor, texto: m.texto };
+    replyFresh = true;
+    const slot = $('#reply-slot');
+    if (slot) slot.innerHTML = replyBarHTML();
+    const inp = $('#chat-input');
+    if (inp) inp.focus({ preventScroll: true });
+  }
+  function clearReply({ animate = true } = {}) {
+    if (!replyTo) return;
+    replyTo = null;
+    const bar = $('#reply-bar');
+    if (!bar) return;
+    if (!animate || reduceMotion) { bar.remove(); return; }
+    bar.removeAttribute('id');
+    bar.classList.add('is-out');
+    setTimeout(() => bar.remove(), 200);
+  }
+  // Ir al mensaje citado y hacerlo brillar un momento
+  function irAMensaje(key) {
+    const el = $(`#chat-msgs .msg[data-key="${CSS.escape(key)}"]`);
+    if (!el) { toast('Mensaje muy antiguo', 'Ese mensaje ya no está cargado en el chat.', { icon: 'i-info' }); return; }
+    el.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+    el.classList.remove('is-flash'); void el.offsetWidth; el.classList.add('is-flash');
+  }
+  // Sello de Parcero Verificado junto al nombre
+  const sello = id => (id === 'me' ? perfil.cedula_verificada : personById(id)?.verificado)
+    ? `<span class="sello" title="Parcero Verificado" aria-label="Parcero Verificado">${ic('i-shield')}</span>` : '';
 
   function renderChat() {
     const box = $('#chat');
     const p = state.chatId && findP(state.chatId);
     if (!p) {
-      box.innerHTML = `<div class="chat-placeholder">${ic('i-chat')}<h3>Elige un parche</h3><p>Aquí verás el chat del grupo, los confirmados y la vaca.</p></div>`;
+      box.innerHTML = `<div class="chat-placeholder"><img src="${STK('parceros')}" alt=""><h3>Elige un parche</h3><p>Aquí ves el chat del grupo, quiénes van y la vaca.</p></div>`;
       return;
     }
     const keepText = $('#chat-input')?.value || '';
@@ -1001,14 +1189,17 @@
             <p class="tnum">${esc(p.lugar)} · ${esc(fmtCuando(p.inicio))}</p>
           </div>
           <div class="chat-head-actions">
-            <button class="icon-btn" data-action="ver-mapa" data-id="${p.id}" aria-label="Ver en el mapa" title="Ver en el mapa">${ic('i-pin')}</button>
-            ${isMine(p) ? `<button class="icon-btn" data-action="editar" data-id="${p.id}" aria-label="Editar parche" title="Editar parche">${ic('i-edit')}</button>
-            <button class="icon-btn" data-action="cancelar" data-id="${p.id}" aria-label="Cancelar parche" title="Cancelar parche">${ic('i-trash')}</button>` : ''}
+            <button class="icon-btn" data-action="ver-mapa" data-id="${p.id}" aria-label="Ver en el mapa" title="Ver en el mapa">${ic('i-map')}</button>
+            ${isMine(p)
+              ? `<button class="icon-btn" data-action="editar" data-id="${p.id}" aria-label="Editar parche" title="Editar parche">${ic('i-edit')}</button>
+                 <button class="icon-btn icon-btn--danger" data-action="cancelar" data-id="${p.id}" aria-label="Eliminar parche" title="Eliminar parche">${ic('i-trash')}</button>`
+              : p.unido ? `<button class="icon-btn" data-action="salir" data-id="${p.id}" aria-label="Salirme del parche" title="Salirme del parche">${ic('i-logout')}</button>` : ''}
+            ${!isMine(p) && isRemote(p) ? `<button class="icon-btn" data-action="reportar" data-tipo="parche" data-id="${p.id}" aria-label="Reportar este parche" title="Reportar parche">${ic('i-flag')}</button>` : ''}
           </div>
         </div>
         <details class="attendees">
-          <summary><span class="stack">${ids.slice(0, 5).map(id => avHTML(id)).join('')}</span><span class="tnum">${ocupados(p)} / ${p.cuposMax} confirmados</span>${ic('i-chev-down')}</summary>
-          <div class="att-list">${ids.map((id, i) => `<span>${avHTML(id)}${esc(names[i])}</span>`).join('')}</div>
+          <summary><span class="stack">${ids.slice(0, 5).map(id => avHTML(id, 'av--sm')).join('')}</span><span class="tnum">${ocupados(p)} de ${p.cuposMax} van</span>${ic('i-chev-down')}</summary>
+          <div class="att-list">${ids.map((id, i) => `<span>${avHTML(id, 'av--sm')}${esc(names[i])}${sello(id)}${id !== 'me' && /^[0-9a-f-]{36}$/i.test(String(id)) ? `<button class="att-rep" data-action="reportar" data-tipo="persona" data-id="${id}" aria-label="Reportar a ${esc(names[i])}" title="Reportar">${ic('i-flag')}</button>` : ''}</span>`).join('')}</div>
         </details>
       </div>
       <div class="chat-msgs" id="chat-msgs">${p.chat.map(msgHTML).join('')}${typing.on ? '<div class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></div>' : ''}</div>
@@ -1017,15 +1208,14 @@
           <details class="vaca" id="vaca" ${vacaOpen ? 'open' : ''}>
             <summary>${ic('i-cash')} Hacer la vaca ${ic('i-chev-down')}</summary>
             <div class="vaca-body">
-              <div class="input-wrap">${ic('i-wallet')}<input class="input tnum" id="vaca-total" type="number" min="0" step="1000" inputmode="numeric" placeholder="Gasto total del grupo" value="${esc(vacaVal)}"></div>
+              <div class="input-wrap">${ic('i-cash')}<input class="input tnum" id="vaca-total" type="number" min="0" step="1000" inputmode="numeric" placeholder="Gasto total del grupo" value="${esc(vacaVal)}"></div>
               <div class="vaca-result"><span class="tnum" id="vaca-split"></span><b class="tnum" id="vaca-each">$0</b></div>
-              <button class="btn btn--ghost btn--sm" data-action="vaca-send">${ic('i-send')} Mandar al chat</button>
+              <button class="btn btn--ghost btn--xs" data-action="vaca-send">${ic('i-send')} Mandar al chat</button>
             </div>
           </details>
-          ${p.checkin
-            ? `<button class="btn btn--ok" disabled>${ic('i-check')} Ya hiciste check-in</button>`
-            : `<button class="btn btn--ink" data-action="checkin" data-id="${p.id}">${ic('i-flag')} Ya llegué al punto</button>`}
         </div>
+        ${checkinHTML(p)}
+        <div class="reply-slot" id="reply-slot">${replyBarHTML()}</div>
         <form class="chat-form" id="chat-form" autocomplete="off">
           <label class="sr-only" for="chat-input">Mensaje</label>
           <input class="input" id="chat-input" maxlength="400" placeholder="Escríbele al parche..." value="${esc(keepText)}">
@@ -1052,7 +1242,7 @@
     const inp = $('#vaca-total');
     if (!p || !inp) return;
     const n = Math.max(1, ocupados(p)), total = Math.max(0, Number(inp.value) || 0);
-    $('#vaca-split').textContent = `${money(total)} entre ${n} asistentes`;
+    $('#vaca-split').textContent = `${money(total)} entre ${n}`;
     $('#vaca-each').textContent = money(Math.ceil(total / n / 100) * 100) + ' c/u';
   }
 
@@ -1060,112 +1250,434 @@
     const p = state.chatId && findP(state.chatId);
     if (!p || !text.trim()) return;
     const msg = { tipo: 'user', autor: 'me', texto: text.trim().slice(0, 400), ts: Date.now() };
+    const resp = replyTo;
+    if (resp) { msg.reply = { key: resp.key, autor: resp.autor, texto: resp.texto }; clearReply(); }
     p.chat.push(msg);
     renderChatMsgs();
     if (isRemote(p)) {
-      const { data, error } = await sb.from('mensajes').insert({ parche_id: p.id, texto: msg.texto }).select('id').single();
+      const row = { parche_id: p.id, texto: msg.texto };
+      if (resp && resp.id != null) row.responde_a = resp.id;
+      let { data, error } = await sb.from('mensajes').insert(row).select('id').single();
+      // Si la base aún no tiene la columna responde_a, el mensaje sale igual (sin la cita guardada)
+      if (error && row.responde_a != null && /responde_a|PGRST204|42703/i.test(`${error.message} ${error.code}`)) {
+        delete row.responde_a;
+        ({ data, error } = await sb.from('mensajes').insert(row).select('id').single());
+      }
       if (error) { p.chat = p.chat.filter(m => m !== msg); renderChatMsgs(); toast('No se envió', dbMsg(error), { type: 'error' }); }
       else msg.id = data.id;
       return;
     }
     save();
-    // Tiempo real simulado en modo demo
-    const pid = p.id, who = pick(p.confirmados.length ? p.confirmados : PEOPLE.map(x => x.id));
-    setTimeout(() => { if (state.chatId === pid) { typing.on = true; renderChatMsgs(); } }, 700);
-    setTimeout(() => {
-      typing.on = false;
-      const q = findP(pid);
-      if (!q) return;
-      q.chat.push({ tipo: 'user', autor: who, texto: pick(REPLIES), ts: Date.now() });
-      save();
-      if (state.chatId === pid) renderChatMsgs();
-    }, 2200 + Math.random() * 1200);
   }
 
-  async function checkin(id) {
+  /* ---------- Verificar que el parche sí se hizo ----------
+     Opción 1: QR del organizador (cambia cada 30 s) que el asistente escanea.
+     Opción 2: GPS del navegador a menos de 200 m del punto.
+     El servidor vuelve a revisar todo (checkin_qr y checkin_gps). */
+  const CHECKIN_RADIO = 200; // metros
+  const ventanaCheckin = p => Date.now() >= p.inicio - 90 * MIN && Date.now() <= p.inicio + 6 * HOUR;
+  function checkinHTML(p) {
+    if (p.checkin) return `<div class="checkin-row"><span class="checkin-done">${ic('i-check')} Ya llegaste: tu asistencia quedó confirmada</span></div>`;
+    const abre = p.inicio - 90 * MIN > Date.now();
+    const botones = isMine(p)
+      ? `<button class="btn btn--ink btn--sm" data-action="qr-mostrar" data-id="${p.id}" ${isRemote(p) || DEMO ? '' : 'disabled'}>${ic('i-qr')} Mostrar QR de llegada</button>
+         <button class="btn btn--ghost btn--sm" data-action="checkin-gps" data-id="${p.id}">${ic('i-pin')} Ya llegué al punto</button>`
+      : `<button class="btn btn--ink btn--sm" data-action="checkin-gps" data-id="${p.id}">${ic('i-pin')} Ya llegué al punto</button>
+         <button class="btn btn--ghost btn--sm" data-action="qr-escanear" data-id="${p.id}">${ic('i-scan')} Escanear QR</button>`;
+    return `<div class="checkin-row">${botones}
+      <p class="checkin-msg" id="checkin-msg" role="status" aria-live="polite">${abre ? `El check-in se abre ${esc(fmtCuando(p.inicio - 90 * MIN).toLowerCase())}` : ''}</p></div>`;
+  }
+  function checkinMsg(texto, tipo = '') {
+    const el = $('#checkin-msg');
+    if (!el) return;
+    el.className = 'checkin-msg' + (tipo ? ' is-' + tipo : '');
+    el.innerHTML = texto ? `${ic(tipo === 'error' ? 'i-alert' : tipo === 'ok' ? 'i-check' : 'i-locate')} ${esc(texto)}` : '';
+  }
+  // Mensajes de error del servidor (vienen en el "hint")
+  const rpcMsg = err => (err && (err.hint || err.message)) || 'Intenta de nuevo en unos segundos.';
+
+  function llegadaOk(p, metodo) {
+    p.checkin = true;
+    toast('Llegada confirmada', metodo === 'qr' ? 'Escaneaste el QR del organizador.' : 'Tu GPS confirmó que estás en el punto.', { icon: 'i-flag' });
+    if (!isRemote(p)) p.chat.push({ tipo: 'sys', texto: `${ME().nombre} llegó al punto (${metodo === 'qr' ? 'QR' : 'GPS'})`, ts: Date.now() });
+    save();
+    if (state.chatId === p.id) renderChat();
+    renderInsignias();
+  }
+
+  async function checkinGps(id, btn) {
+    const p = findP(id);
+    if (!p || p.checkin) return;
+    if (!ventanaCheckin(p)) { checkinMsg(Date.now() < p.inicio ? 'El check-in se abre 90 minutos antes del parche.' : 'El check-in de este parche ya cerró.', 'error'); return; }
+    if (!window.MPMapa) { checkinMsg('No pudimos cargar el GPS. Recarga la página.', 'error'); return; }
+    if (btn) btn.classList.add('is-loading');
+    checkinMsg('Buscando tu ubicación exacta...');
+    let pos;
+    try {
+      pos = await window.MPMapa.ubicar({ objetivo: 30, maxMs: 12000, onProgreso: m => checkinMsg(`Afinando el GPS · precisión ${Math.round(m.precision)} m`) });
+    } catch (e) {
+      if (btn) btn.classList.remove('is-loading');
+      checkinMsg(e.message || 'No pudimos leer tu ubicación.', 'error');
+      return;
+    }
+    const dist = window.MPMapa.distancia(pos, { lat: p.lat, lng: p.lng });
+    if (pos.precision > CHECKIN_RADIO) {
+      if (btn) btn.classList.remove('is-loading');
+      checkinMsg(`El GPS está muy impreciso (${Math.round(pos.precision)} m). Sal a un lugar abierto o usa el QR del organizador.`, 'error');
+      return;
+    }
+    if (dist > CHECKIN_RADIO) {
+      if (btn) btn.classList.remove('is-loading');
+      checkinMsg(`Estás a ${fmtKm(dist / 1000)} del punto. Acércate a menos de ${CHECKIN_RADIO} m.`, 'error');
+      return;
+    }
+    if (isRemote(p)) {
+      const { error } = await sb.rpc('checkin_gps', { p_parche: id, p_lat: pos.lat, p_lng: pos.lng, p_precision: pos.precision });
+      if (btn) btn.classList.remove('is-loading');
+      if (error) { checkinMsg(rpcMsg(error), 'error'); return; }
+    } else if (btn) btn.classList.remove('is-loading');
+    llegadaOk(p, 'gps');
+  }
+
+  // El organizador muestra el QR que rota cada 30 s
+  let detenerQR = null;
+  async function mostrarQR(id) {
+    const p = findP(id);
+    if (!p || !isMine(p) || !window.MPCheckin) return;
+    $('#qr-sub').innerHTML = `Que cada persona abra el chat de <b>${esc(p.titulo)}</b>, toque <b>Escanear QR</b> y apunte aquí.`;
+    $('#qr-box').innerHTML = '<span class="qr-wait" aria-label="Generando el QR"></span>';
+    openModal('modal-qr');
+    let clave;
+    if (isRemote(p)) {
+      const { data, error } = await sb.rpc('mi_clave_checkin', { p_parche: id });
+      if (error) { $('#qr-box').innerHTML = `<p class="qr-err">${esc(rpcMsg(error))}</p>`; return; }
+      clave = data;
+    } else {
+      // Modo demo: secreto local solo para ver cómo se ve
+      clave = { secreto: store.get('mp_demo_qr_' + id, null) || Math.random().toString(36).slice(2) + Date.now().toString(36), ahora: Date.now() };
+      store.set('mp_demo_qr_' + id, clave.secreto);
+    }
+    if (detenerQR) detenerQR();
+    try {
+      detenerQR = await window.MPCheckin.mostrarQR({ clave, parcheId: id, qr: $('#qr-box'), cuenta: $('#qr-count'), codigo: $('#qr-code'), barra: $('#qr-bar') });
+    } catch (e) { $('#qr-box').innerHTML = `<p class="qr-err">${esc(e.message || 'No pudimos dibujar el QR.')}</p>`; }
+  }
+
+  // El asistente escanea el QR con la cámara (o escribe el código)
+  let escaner = null, escanerParche = null;
+  function abrirEscaner(id) {
+    const p = findP(id);
+    if (!p || !window.MPCheckin) return;
+    if (!ventanaCheckin(p)) { checkinMsg(Date.now() < p.inicio ? 'El check-in se abre 90 minutos antes del parche.' : 'El check-in de este parche ya cerró.', 'error'); return; }
+    escanerParche = id;
+    $('#scan-msg').textContent = ''; $('#scan-msg').className = 'checkin-msg';
+    $('#scan-code').value = '';
+    $('#qr-reader').innerHTML = '';
+    openModal('modal-escaner');
+    setTimeout(() => {
+      escaner = window.MPCheckin.escanear('qr-reader',
+        r => enviarQR(r.parcheId, r.codigo),
+        (e, sigue) => { const m = $('#scan-msg'); m.className = 'checkin-msg is-error'; m.innerHTML = `${ic('i-alert')} ${esc(e.message)}`; if (!sigue) $('#scan-code').focus(); });
+    }, 120);
+  }
+  function cerrarEscaner() { if (escaner) { escaner.detener(); escaner = null; } }
+  async function enviarQR(parcheId, codigo) {
+    const m = $('#scan-msg');
+    const id = escanerParche;
+    if (parcheId !== id) { m.className = 'checkin-msg is-error'; m.innerHTML = `${ic('i-alert')} Ese QR es de otro parche. Abre el chat del parche correcto.`; reiniciarEscaner(); return; }
     const p = findP(id);
     if (!p) return;
+    m.className = 'checkin-msg'; m.innerHTML = `${ic('i-locate')} Confirmando tu llegada...`;
     if (isRemote(p)) {
-      const { error } = await sb.from('parche_miembros').update({ checkin: true }).eq('parche_id', id).eq('usuario_id', me.id);
-      if (error) { toast('No se pudo hacer check-in', dbMsg(error), { type: 'error' }); return; }
+      const { error } = await sb.rpc('checkin_qr', { p_parche: id, p_codigo: codigo });
+      if (error) { m.className = 'checkin-msg is-error'; m.innerHTML = `${ic('i-alert')} ${esc(rpcMsg(error))}`; reiniciarEscaner(); return; }
     }
-    p.checkin = true;
-    toast('Check-in confirmado', 'Le avisamos al grupo que ya llegaste.', { icon: 'i-flag' });
-    renderChat();
-    sendChat('Ya llegué al punto');
+    closeModal('modal-escaner');
+    llegadaOk(p, 'qr');
+  }
+  function reiniciarEscaner() {
+    cerrarEscaner();
+    setTimeout(() => {
+      if ($('#modal-escaner').hidden) return;
+      escaner = window.MPCheckin.escanear('qr-reader', r => enviarQR(r.parcheId, r.codigo),
+        (e, sigue) => { if (!sigue) { const m = $('#scan-msg'); m.className = 'checkin-msg is-error'; m.innerHTML = `${ic('i-alert')} ${esc(e.message)}`; } });
+    }, 1600);
+  }
+
+  /* ---------- Modo Mesa: reservar ---------- */
+  const mesaState = { promo: null, dia: null };
+  const minutos = hhmm => { const [h, m] = String(hhmm).split(':').map(Number); return h * 60 + (m || 0); };
+  const cruzaMedianoche = m => minutos(m.hora_hasta) <= minutos(m.hora_desde);
+  // Timestamp de llegada: si la promo cruza la medianoche, la madrugada cae al día siguiente
+  function llegadaTs(m, diaKey, hora) {
+    if (!diaKey || !hora) return null;
+    let ts = tsFrom(diaKey, hora);
+    if (cruzaMedianoche(m) && minutos(hora) <= minutos(m.hora_hasta)) ts += 24 * HOUR;
+    return ts;
+  }
+  function horaEnFranja(m, hora) {
+    const h = minutos(hora), a = minutos(m.hora_desde), b = minutos(m.hora_hasta);
+    return cruzaMedianoche(m) ? (h >= a || h <= b) : (h >= a && h <= b);
+  }
+  function abrirMesa(id) {
+    const m = (state.mesas || []).find(x => x.id === id);
+    if (!m) return;
+    mesaState.promo = m;
+    $('#form-mesa').reset();
+    $('#mesa-local').textContent = m.negocio.nombre;
+    $('#mesa-title').textContent = m.titulo;
+    $('#mesa-benefit').innerHTML = `${ic('i-tag')} ${esc(m.beneficio)}`;
+    $('#mesa-p-rango').textContent = `Esta promo es para grupos de ${m.min_personas} a ${m.max_personas} personas.`;
+    const pin = $('#mesa-personas');
+    pin.min = m.min_personas; pin.max = m.max_personas;
+    pin.value = clamp(4, m.min_personas, m.max_personas);
+    // Días disponibles (los próximos 7 que la promo cubre)
+    const dias = [];
+    for (let i = 0; i < 8 && dias.length < 5; i++) {
+      const k = offsetKey(i), dow = keyToDate(k).getDay();
+      if (!m.dias.includes(dow)) continue;
+      // Hoy solo si todavía queda franja
+      if (i === 0 && !cruzaMedianoche(m) && Date.now() + 15 * MIN > tsFrom(k, m.hora_hasta)) continue;
+      dias.push({ k, txt: i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : `${cap(weekdayLong(k)).slice(0, 3)} ${shortDate(k)}` });
+    }
+    $('#mesa-dias').innerHTML = dias.map(d => `<button type="button" class="qchip" data-mesa-dia="${d.k}" aria-pressed="false">${esc(d.txt)}</button>`).join('')
+      || '<p class="mini-note">No hay días disponibles esta semana.</p>';
+    mesaState.dia = dias[0] ? dias[0].k : null;
+    $('#mesa-error').textContent = '';
+    $('#mesa-dia-msg').innerHTML = ''; $('#mesa-hora-msg').innerHTML = '';
+    syncMesa(true);
+    openModal('modal-mesa');
+  }
+  function syncMesa(reiniciarHora = false) {
+    const m = mesaState.promo;
+    if (!m) return;
+    $$('#mesa-dias [data-mesa-dia]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mesaDia === mesaState.dia)));
+    // Horas sugeridas: cada hora dentro de la franja, sin las que ya pasaron
+    const a = minutos(m.hora_desde), dur = (minutos(m.hora_hasta) - a + 24 * 60) % (24 * 60) || 24 * 60;
+    const horas = [];
+    for (let t = a; t <= a + dur && horas.length < 7; t += 60) {
+      const hh = `${pad(Math.floor(t / 60) % 24)}:${pad(t % 60)}`;
+      const ts = llegadaTs(m, mesaState.dia, hh);
+      if (ts && ts > Date.now() + 15 * MIN) horas.push(hh);
+    }
+    const inp = $('#mesa-hora');
+    if (reiniciarHora || !inp.value || !horas.includes(inp.value) && !horaEnFranja(m, inp.value)) inp.value = horas[0] || '';
+    $('#mesa-horas').innerHTML = horas.map(h => `<button type="button" class="qchip" data-mesa-hora="${h}" aria-pressed="${h === inp.value}">${esc(horaTxt(h))}</button>`).join('');
+    const ts = llegadaTs(m, mesaState.dia, inp.value), n = Number($('#mesa-personas').value) || 0;
+    $('#mesa-summary').textContent = ts ? `${n} personas · ${fmtCuando(ts)}` : '';
+  }
+  function validarMesa() {
+    const m = mesaState.promo, n = Number($('#mesa-personas').value), hora = $('#mesa-hora').value;
+    const ts = llegadaTs(m, mesaState.dia, hora);
+    const setMsg = (sel, t) => { $(sel).innerHTML = t ? `${ic('i-alert')} ${esc(t)}` : ''; };
+    let ok = true;
+    if (!Number.isInteger(n) || n < m.min_personas || n > m.max_personas) { $('#mesa-error').textContent = `Esta promo es para grupos de ${m.min_personas} a ${m.max_personas} personas.`; ok = false; }
+    else $('#mesa-error').textContent = '';
+    if (!mesaState.dia) { setMsg('#mesa-dia-msg', 'Elige el día.'); ok = false; } else setMsg('#mesa-dia-msg', '');
+    if (!hora) { setMsg('#mesa-hora-msg', 'Elige a qué hora llegan.'); ok = false; }
+    else if (!horaEnFranja(m, hora)) { setMsg('#mesa-hora-msg', `La promo aplica de ${horaTxt(m.hora_desde)} a ${horaTxt(m.hora_hasta)}.`); ok = false; }
+    else if (!ts || ts < Date.now() + 15 * MIN) { setMsg('#mesa-hora-msg', 'Elige una hora al menos 15 minutos desde ahora.'); ok = false; }
+    else setMsg('#mesa-hora-msg', '');
+    return ok ? { n, ts } : null;
+  }
+  async function submitMesa(e) {
+    e.preventDefault();
+    const m = mesaState.promo, v = m && validarMesa();
+    if (!v) return;
+    const btn = $('#mesa-submit');
+    btn.classList.add('is-loading');
+    const nota = $('#mesa-nota').value.trim().slice(0, 140);
+    let reserva;
+    if (DEMO || !sb) {
+      await new Promise(r => setTimeout(r, 450));
+      reserva = { id: 'r' + Date.now().toString(36), codigo: 'MESA-' + Math.random().toString(36).slice(2, 7).toUpperCase(), estado: 'pendiente' };
+    } else {
+      const { data, error } = await sb.rpc('reservar_mesa', { p_promo: m.id, p_personas: v.n, p_llegada: new Date(v.ts).toISOString(), p_nota: nota });
+      if (error) { btn.classList.remove('is-loading'); $('#mesa-error').textContent = rpcMsg(error); return; }
+      reserva = data;
+    }
+    btn.classList.remove('is-loading');
+    state.misMesas = (state.misMesas || []).concat([{ ...reserva, personas: v.n, llegada: v.ts, nota, titulo: m.titulo, beneficio: m.beneficio, negocio: m.negocio }]);
+    if (DEMO) store.set('mp_demo_mesas', state.misMesas);
+    closeModal('modal-mesa');
+    toast('Mesa reservada', `Tu código es ${reserva.codigo}. Te avisamos cuando ${m.negocio.nombre} la confirme.`, { icon: 'i-table', ms: 6500 });
+    renderMesas();
+  }
+  async function cancelarMesa(id) {
+    const r = (state.misMesas || []).find(x => x.id === id);
+    if (!r) return;
+    $('#confirm-title').textContent = '¿Cancelar la mesa?';
+    $('#confirm-text').textContent = `Le avisamos a ${r.negocio.nombre} que ya no van (${r.personas} personas, ${fmtCuando(r.llegada)}).`;
+    $('#confirm-ok').textContent = 'Sí, cancelar';
+    $('#confirm-ok').onclick = async () => {
+      if (!DEMO && sb) {
+        const { error } = await sb.rpc('cancelar_mi_mesa', { p_id: id });
+        if (error) { closeModal('modal-confirm'); toast('No se pudo cancelar', rpcMsg(error), { type: 'error' }); return; }
+      }
+      r.estado = 'cancelada';
+      if (DEMO) store.set('mp_demo_mesas', state.misMesas);
+      closeModal('modal-confirm');
+      toast('Mesa cancelada', 'Ya le avisamos al local.', { icon: 'i-table' });
+      renderMesas();
+    };
+    openModal('modal-confirm');
+  }
+  let mesaMarker = null;
+  function mesaEnMapa(id) {
+    const m = (state.mesas || []).find(x => x.id === id);
+    if (!m || m.negocio.lat == null) return;
+    if (state.view !== 'mapa') go('mapa');
+    setTimeout(() => {
+      initLiveMap();
+      if (!liveMap) return;
+      liveMap.invalidateSize();
+      if (mesaMarker) liveMap.removeLayer(mesaMarker);
+      mesaMarker = L.marker([m.negocio.lat, m.negocio.lng], { icon: L.divIcon({ className: 'pin-icon', html: `<div class="pin pin--mesa">${ic('i-table')}</div>`, iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] }) })
+        .bindPopup(`<div class="pop-search"><b>${esc(m.negocio.nombre)}</b><small>${esc(m.titulo)}</small><button class="btn btn--xs" data-action="mesa-reservar" data-id="${esc(m.id)}">${ic('i-table')} Reservar mesa</button></div>`, { className: 'mp-popup' })
+        .addTo(liveMap);
+      liveMap.flyTo([m.negocio.lat, m.negocio.lng], 16, { duration: reduceMotion ? 0 : 1.1 });
+      liveMap.once('moveend', () => mesaMarker && mesaMarker.openPopup());
+    }, 140);
+  }
+  async function cargarMesas() {
+    if (DEMO || !sb) {
+      state.mesas = demoMesas();
+      state.misMesas = (store.get('mp_demo_mesas', []) || []).filter(r => r && r.negocio);
+      return;
+    }
+    try {
+      const [a, b] = await Promise.all([sb.rpc('mesas_disponibles'), sb.rpc('mis_mesas')]);
+      if (!a.error) state.mesas = a.data || [];
+      if (!b.error) state.misMesas = (b.data || []).map(r => ({ ...r, llegada: Date.parse(r.llegada) }));
+    } catch (e) { /* Modo Mesa todavía no activo en la base: el bloque no se muestra */ }
   }
 
   /* =====================================================================
-     11. PERFIL: AVATAR, FOTO Y DATOS
+     10. PERFIL: FOTO OPCIONAL, DATOS E INSIGNIAS
   ===================================================================== */
-  let avDraft = normalizeAv(perfil.avatar_config);
-  let avTab = 'piel';
-  let crop = { src: '', zoom: 1, x: 0, y: 0 };
+  let crop = Object.assign({}, FOTO_VACIA);
+  let editingPhoto = false;
 
   function maskCedula(c) {
     if (!c) return 'Sin registrar';
-    const parts = Number(c).toLocaleString('es-CO').split('.');
-    return parts.length > 2 ? [parts[0], ...parts.slice(1, -1).map(() => '***'), parts[parts.length - 1]].join('.') : '***' + String(c).slice(-3);
+    const s = String(c);
+    return '•••• ' + s.slice(-3);
   }
 
   function renderPerfil() {
-    $('#id-avatar').innerHTML = avHTML('me');
     $('#id-name').textContent = perfil.nombre;
-    $('#id-sub').textContent = `${perfil.ciudad} · Cuenta verificada`;
+    $('#id-sub').textContent = `${perfil.ciudad} · Cuenta activa`;
     $('#id-cedula').textContent = maskCedula(perfil.cedula);
     $('#id-mail').textContent = perfil.mail || '-';
-    const mode = perfil.mostrar_foto_real ? 'foto' : 'avatar';
-    setIdMode(mode, false);
-    avDraft = normalizeAv(perfil.avatar_config);
-    renderBuilder();
-    crop = Object.assign({ src: '', zoom: 1, x: 0, y: 0 }, perfil.foto_encuadre);
-    renderCrop();
+    $('#id-mail').title = perfil.mail || '';
+    if (!editingPhoto) crop = Object.assign({}, FOTO_VACIA, perfil.mostrar_foto_real ? perfil.foto_encuadre : {});
+    renderPhoto();
     $('#p-tel').value = perfil.tel || ''; $('#p-city').value = perfil.ciudad; $('#p-pass').value = '';
-    updatePassRules();
-  }
-  function setIdMode(mode) {
-    $$('[data-idmode]').forEach(b => { const on = b.dataset.idmode === mode; b.classList.toggle('is-active', on); b.setAttribute('aria-checked', on); });
-    $('#pane-foto').hidden = mode !== 'foto';
-    $('#pane-avatar').hidden = mode !== 'avatar';
+    renderInsignias();
+    renderVerify();
+    renderRating();
+    const pa = $('#p-anuncios'); if (pa) pa.checked = !!perfil.recibe_anuncios;
   }
 
-  function renderBuilder() {
-    const c = avDraft;
-    $('#builder-preview').innerHTML = `<span class="av">${avatarSVG(c)}</span>`;
-    $$('[data-gen]').forEach(b => { const on = b.dataset.gen === c.genero; b.classList.toggle('is-active', on); b.setAttribute('aria-checked', on); });
-    $$('#av-tabs .tab').forEach(t => t.classList.toggle('is-active', t.dataset.tab === avTab));
-    const chips = (key, vals, labels = {}) => `<div class="opt-row">${vals.map(v => `<button type="button" class="chip" data-av="${key}" data-val="${v}" aria-pressed="${String(c[key]) === String(v)}">${esc(labels[v] || AV_LBL[v] || v)}</button>`).join('')}</div>`;
-    const swatches = (key, map) => `<div class="opt-row">${Object.entries(map).map(([k, col]) => `<button type="button" class="swatch" style="background:${col}" data-av="${key}" data-val="${k}" aria-pressed="${c[key] === k}" aria-label="${esc(AV_LBL[k] || k)}" title="${esc(AV_LBL[k] || k)}"></button>`).join('')}</div>`;
-    const thumbs = (key, vals) => `<div class="opt-thumbs">${vals.map(v => `<button type="button" class="thumb" data-av="${key}" data-val="${v}" aria-pressed="${c[key] === v}"><span class="av">${avatarSVG(Object.assign({}, c, { [key]: v, fondo: 'gris', gorra: key === 'pelo' ? 'ninguna' : c.gorra }))}</span>${esc(AV_LBL[v])}</button>`).join('')}</div>`;
-    const group = (title, html) => `<div class="opt-group"><span>${title}</span>${html}</div>`;
-    let body = '';
-    if (avTab === 'piel') {
-      body = group('Tono de piel', `<div class="opt-row">${AV.piel.map((col, i) => `<button type="button" class="swatch" style="background:${col}" data-av="piel" data-val="${i}" aria-pressed="${c.piel === i}" aria-label="Tono ${i + 1}"></button>`).join('')}</div>`)
-        + group('Fondo', swatches('fondo', AV.fondo));
-    } else if (avTab === 'pelo') {
-      body = group(`Estilo (${c.genero})`, thumbs('pelo', AV.pelo[c.genero])) + group('Color de cabello', swatches('peloColor', AV.peloColor));
-    } else if (avTab === 'cara') {
-      body = group('Ojos', chips('ojos', AV.ojos)) + group('Expresión de la boca', chips('boca', AV.boca));
-    } else if (avTab === 'ropa') {
-      body = group('Ropa streetwear', thumbs('ropa', AV.ropa)) + group('Color de la ropa', swatches('ropaColor', AV.ropaColor));
-    } else {
-      body = group('Gafas', chips('gafas', AV.gafas, { ninguna: 'Sin gafas' }))
-        + group('Gorra', chips('gorra', AV.gorra, { ninguna: 'Sin gorra' }))
-        + group('Aretes', chips('aretes', ['false', 'true'], { false: 'Sin aretes', true: 'Con aretes' }))
-        + (c.genero === 'hombre' ? group('Vello facial', chips('vello', AV.vello, { ninguno: 'Sin vello' })) : '');
+  // Calificación: empieza en 0 y solo sube cuando alguien te califica
+  function renderRating() {
+    const el = $('#id-rating');
+    if (!el) return;
+    const n = Number(perfil.resenas) || 0, r = n ? Number(perfil.rating) || 0 : 0;
+    const txt = r.toFixed(1).replace('.', ',');
+    el.classList.toggle('is-empty', !n);
+    el.innerHTML = `${ic('i-star')}<b class="tnum">${txt}</b><span>${n ? `${n} ${n === 1 ? 'calificación' : 'calificaciones'}` : 'Aún nadie te ha calificado'}</span>`;
+  }
+
+  /* ---------- Parcero Verificado (verificación progresiva) ----------
+     El registro solo pide el número de cédula. Las fotos se piden aquí, y
+     solo cuando hacen falta: al abrir un parche o al pedir la insignia. */
+  function renderVerify() {
+    const card = $('#verify-card');
+    if (!card) return;
+    const ok = !!perfil.cedula_verificada;
+    card.classList.toggle('is-verified', ok);
+    $('#verify-text').textContent = ok
+      ? `Verificaste tu cédula${perfil.cedula_verificada_en ? ' el ' + new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(perfil.cedula_verificada_en)) : ''}. Tu sello sale en tu perfil y en los chats.`
+      : 'Verifica tu cédula una sola vez para abrir parches y llevar el sello. Tus fotos quedan privadas.';
+    $('#verify-btn').hidden = ok;
+  }
+
+  async function pedirVerificacion(motivo) {
+    if (perfil.cedula_verificada) return true;
+    if (!window.MPVerificacion) { toast('No cargó la verificación', 'Recarga la página e intenta de nuevo.', { type: 'error' }); return false; }
+    if (!perfil.cedula) {
+      toast('Tu cuenta no tiene cédula', 'Escríbenos a modoparcheoficial@gmail.com para agregarla y poder verificarte.', { type: 'error', ms: 7000 });
+      return false;
     }
-    $('#av-body').innerHTML = body;
+    closeAllModals();
+    const ok = await window.MPVerificacion.abrir({
+      sb, uid: me && me.id, cedula: perfil.cedula, demo: DEMO, motivo,
+      abrirModal: () => openModal('modal-verificacion'),
+      cerrarModal: () => closeModal('modal-verificacion'),
+    });
+    if (!ok) return false;
+    perfil.cedula_verificada = true;
+    perfil.cedula_verificada_en = new Date().toISOString();
+    savePerfil();
+    renderVerify(); renderMeChip();
+    toast('Ya eres Parcero Verificado', motivo === 'crear' ? 'Arma tu parche: ya puedes publicarlo.' : 'Tu insignia ya sale en tu perfil.', { icon: 'i-shield', ms: 5200 });
+    return true;
   }
 
-  function renderCrop() {
-    const img = $('#crop-img');
-    if (crop.src) { if (img.getAttribute('src') !== crop.src) img.src = crop.src; img.hidden = false; $('#crop-empty').hidden = true; }
-    else { img.hidden = true; img.removeAttribute('src'); $('#crop-empty').hidden = false; }
-    img.style.transform = `translate(${crop.x}%, ${crop.y}%) scale(${crop.zoom})`;
-    $('#crop-zoom').value = crop.zoom; $('#crop-x').value = crop.x; $('#crop-y').value = crop.y;
-    $('#out-zoom').textContent = Number(crop.zoom).toFixed(1) + 'x';
-    $('#out-x').textContent = Math.round(crop.x); $('#out-y').textContent = Math.round(crop.y);
+  // "Abrir el parche": si la cédula no está verificada, primero el candado
+  async function abrirCrear(opts) {
+    if (!perfil.cedula_verificada) {
+      const ok = await pedirVerificacion('crear');
+      if (!ok) return;
+      await new Promise(r => setTimeout(r, reduceMotion ? 0 : 240)); // deja cerrar el modal anterior
+    }
+    closeAllModals();
+    openCreate(opts);
   }
+
+  function renderPhoto() {
+    const img = $('#photo-img');
+    const has = !!crop.src;
+    if (has) { if (img.getAttribute('src') !== crop.src) img.src = crop.src; img.hidden = false; }
+    else img.hidden = true;
+    img.style.transform = `translate(${crop.x}%, ${crop.y}%) scale(${crop.zoom})`;
+    $('#photo-initials').textContent = initial(perfil.nombre);
+    $('#photo-initials').hidden = has;
+    $('#photo-frame').classList.toggle('is-editing', editingPhoto);
+    $('#photo-edit').hidden = !editingPhoto;
+    $('#photo-zoom').value = crop.zoom;
+    $('#photo-note').hidden = editingPhoto || has;
+    $('#photo-remove').hidden = editingPhoto || !has;
+  }
+
+  /* Insignias: se ganan por cómo parchas */
+  const enCategoria = cat => () => state.parches.some(p => inside(p) && p.categoria === cat);
+  const INSIGNIAS = [
+    { img: 'medalla-el-armador', nombre: 'El armador', como: 'Arma tu primer parche', ok: () => state.parches.some(isMine) },
+    { img: 'medalla-firme-parche', nombre: 'Firme al parche', como: 'Únete a 3 parches', ok: () => state.parches.filter(p => p.unido).length >= 3 },
+    { img: 'medalla-cero-fantasma', nombre: 'Cero fantasma', como: 'Haz check-in al llegar', ok: () => state.parches.some(p => p.checkin) },
+    { img: 'medalla-buena-vibra', nombre: 'Buena vibra', como: 'Recibe 3 buenas calificaciones', ok: () => (perfil.resenas || 0) >= 3 && (perfil.rating || 0) >= 4.5 },
+    { img: 'medalla-rumbero-oficial', nombre: 'Rumbero oficial', como: 'Cáele a un parche de rumba', ok: enCategoria('rumba') },
+    { img: 'medalla-catador-bajon', nombre: 'Catador del bajón', como: 'Cáele a un parche de comida', ok: enCategoria('comida') },
+    { img: 'medalla-crack-deporte', nombre: 'Crack del deporte', como: 'Cáele a un parche de deporte', ok: enCategoria('deportes') },
+    { img: 'medalla-rey-mirador', nombre: 'Rey del mirador', como: 'Sube a un mirador con el parche', ok: enCategoria('pueblear') },
+  ];
+  function renderInsignias() {
+    const lista = INSIGNIAS.map(b => ({ ...b, ganada: !!b.ok() }));
+    const n = lista.filter(b => b.ganada).length;
+    $('#badges-count').textContent = `${n} de ${lista.length}`;
+    const bar = $('#badge-bar');
+    bar.style.width = '0%';
+    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = (n / lista.length * 100) + '%'; }));
+    // Primero las ganadas
+    lista.sort((a, b) => b.ganada - a.ganada);
+    $('#badges').innerHTML = lista.map((b, i) => `<li class="badge ${b.ganada ? 'is-on' : ''}" style="--d:${120 + i * 50}ms" title="${esc(b.ganada ? b.nombre : b.como)}">
+        <img src="${STK(b.img)}" alt="" loading="lazy" decoding="async">
+        <b>${esc(b.nombre)}</b><small>${b.ganada ? 'Ganada' : esc(b.como)}</small>
+      </li>`).join('');
+  }
+
   const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
   function downscale(file) {
     return new Promise((res, rej) => {
@@ -1183,103 +1695,62 @@
     });
   }
 
-  function updatePassRules() {
-    const v = $('#p-pass').value;
-    $('[data-rule="len"]').classList.toggle('is-met', v.length >= 8);
-    $('[data-rule="upper"]').classList.toggle('is-met', /[A-Z]/.test(v));
-  }
-
   function afterIdentityChange() {
-    savePerfil(); renderSideUser(); renderPerfil(); refresh();
+    savePerfil(); renderMeChip(); renderPerfil(); refresh();
     if (state.chatId) renderChat();
   }
 
   function initPerfil() {
-    $('#av-tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { avTab = t.dataset.tab; renderBuilder(); } });
-    $('#av-body').addEventListener('click', e => {
-      const b = e.target.closest('[data-av]');
-      if (!b) return;
-      const k = b.dataset.av, v = b.dataset.val;
-      avDraft[k] = k === 'piel' ? Number(v) : k === 'aretes' ? v === 'true' : v;
-      avDraft = normalizeAv(avDraft);
-      renderBuilder();
-    });
-    $$('[data-gen]').forEach(b => b.addEventListener('click', () => {
-      const g = b.dataset.gen;
-      if (avDraft.genero === g) return;
-      avDraft.genero = g;
-      if (!AV.pelo[g].includes(avDraft.pelo)) avDraft.pelo = AV.pelo[g][0];
-      if (g === 'mujer') { avDraft.vello = 'ninguno'; if (avTab === 'extra') avTab = 'extra'; }
-      avDraft = normalizeAv(avDraft);
-      renderBuilder();
-    }));
-    $('#avatar-random').addEventListener('click', () => {
-      const g = avDraft.genero;
-      avDraft = normalizeAv({
-        genero: g, piel: Math.floor(Math.random() * 6), pelo: pick(AV.pelo[g]), peloColor: pick(Object.keys(AV.peloColor)),
-        ojos: pick(AV.ojos), boca: pick(AV.boca), ropa: pick(AV.ropa), ropaColor: pick(Object.keys(AV.ropaColor)),
-        gafas: pick(AV.gafas), gorra: pick(['ninguna', 'ninguna', 'adelante', 'atras']), aretes: Math.random() > .6,
-        vello: g === 'hombre' ? pick(AV.vello) : 'ninguno', fondo: pick(Object.keys(AV.fondo)),
-      });
-      renderBuilder();
-    });
-    $('#avatar-save').addEventListener('click', async e => {
-      const btn = e.currentTarget;
-      if (!DEMO) {
-        btn.classList.add('is-loading');
-        try { await updatePerfilRemote({ avatar_config: avDraft, mostrar_foto_real: false }); }
-        catch (err) { btn.classList.remove('is-loading'); toast('No se guardó el avatar', dbMsg(err), { type: 'error' }); return; }
-        btn.classList.remove('is-loading');
-      }
-      perfil.avatar_config = Object.assign({}, avDraft);
-      perfil.mostrar_foto_real = false;
-      afterIdentityChange();
-      toast('Avatar guardado', 'Ya sale en el header, en las tarjetas y en el chat.', { icon: 'i-user' });
-    });
-
-    // Foto real con encuadre
-    $('#crop-file').addEventListener('change', async e => {
+    $('#photo-file').addEventListener('change', async e => {
       const f = e.target.files[0];
+      e.target.value = '';
       if (!f) return;
       if (!f.type.startsWith('image/')) { toast('Archivo no válido', 'Sube una imagen JPG o PNG.', { type: 'error' }); return; }
-      try { crop = { src: await downscale(f), zoom: 1, x: 0, y: 0 }; renderCrop(); }
+      if (f.size > 12 * 1024 * 1024) { toast('Foto muy pesada', 'Usa una imagen de menos de 12 MB.', { type: 'error' }); return; }
+      try { crop = { src: await downscale(f), zoom: 1, x: 0, y: 0 }; editingPhoto = true; renderPhoto(); }
       catch (err) { toast('No pudimos leer la foto', 'Prueba con otra imagen.', { type: 'error' }); }
-      e.target.value = '';
     });
-    $('#crop-url-btn').addEventListener('click', () => {
-      const url = $('#crop-url').value.trim();
-      if (!/^https:\/\/.+/i.test(url)) { toast('Enlace no válido', 'Pega un enlace que empiece por https://', { type: 'error' }); return; }
-      loadImg(url).then(() => { crop = { src: url, zoom: 1, x: 0, y: 0 }; renderCrop(); })
-        .catch(() => toast('No cargó la imagen', 'Revisa que el enlace sea de una foto pública.', { type: 'error' }));
-    });
-    ['zoom', 'x', 'y'].forEach(k => $('#crop-' + k).addEventListener('input', e => { crop[k] = Number(e.target.value); renderCrop(); }));
-    const frame = $('#crop-frame');
+    $('#photo-zoom').addEventListener('input', e => { crop.zoom = Number(e.target.value); renderPhoto(); });
+    const frame = $('#photo-frame');
     let drag = null;
-    frame.addEventListener('pointerdown', e => { if (!crop.src) return; drag = { x: e.clientX, y: e.clientY, cx: crop.x, cy: crop.y }; frame.setPointerCapture(e.pointerId); });
+    frame.addEventListener('pointerdown', e => { if (!editingPhoto) return; drag = { x: e.clientX, y: e.clientY, cx: crop.x, cy: crop.y }; frame.setPointerCapture(e.pointerId); });
     frame.addEventListener('pointermove', e => {
       if (!drag) return;
       const w = frame.clientWidth;
       crop.x = clamp(drag.cx + (e.clientX - drag.x) / w * 100, -50, 50);
       crop.y = clamp(drag.cy + (e.clientY - drag.y) / w * 100, -50, 50);
-      renderCrop();
+      renderPhoto();
     });
-    frame.addEventListener('pointerup', () => { drag = null; });
-    frame.addEventListener('pointercancel', () => { drag = null; });
-    $('#crop-save').addEventListener('click', async e => {
-      if (!crop.src) { toast('Falta la foto', 'Sube una foto o pega un enlace primero.', { type: 'error' }); return; }
+    const endDrag = () => { drag = null; };
+    frame.addEventListener('pointerup', endDrag);
+    frame.addEventListener('pointercancel', endDrag);
+
+    $('#photo-cancel').addEventListener('click', () => { editingPhoto = false; renderPerfil(); });
+    $('#photo-save').addEventListener('click', async e => {
       const btn = e.currentTarget;
       if (!DEMO) {
         btn.classList.add('is-loading');
         try {
-          if (crop.src.startsWith('data:')) crop.src = await uploadFoto(crop.src, 'avatar');
+          if (crop.src.startsWith('data:')) crop.src = await uploadFoto(crop.src, 'perfil');
           await updatePerfilRemote({ foto_encuadre: crop, mostrar_foto_real: true });
         } catch (err) { btn.classList.remove('is-loading'); toast('No se guardó la foto', dbMsg(err), { type: 'error' }); return; }
         btn.classList.remove('is-loading');
       }
       perfil.foto_encuadre = Object.assign({}, crop);
       perfil.mostrar_foto_real = true;
+      editingPhoto = false;
       afterIdentityChange();
-      toast('Foto guardada', 'Ya sale en el header, en las tarjetas y en el chat.', { icon: 'i-camera' });
+      toast('Foto guardada', 'Ya sale en tus parches y en el chat.', { icon: 'i-camera' });
+    });
+    $('#photo-remove').addEventListener('click', async () => {
+      if (!DEMO) {
+        try { await updatePerfilRemote({ mostrar_foto_real: false }); }
+        catch (err) { toast('No se quitó la foto', dbMsg(err), { type: 'error' }); return; }
+      }
+      perfil.mostrar_foto_real = false;
+      perfil.foto_encuadre = Object.assign({}, FOTO_VACIA);
+      afterIdentityChange();
+      toast('Foto quitada', 'Ahora mostramos tu inicial.', { icon: 'i-user' });
     });
 
     // Datos
@@ -1291,51 +1762,138 @@
     const check = id => { const inp = $('#' + id), msg = RULES_P[id](inp.value); setFieldState(inp.closest('.field'), msg); return !msg; };
     $('#p-tel').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10); });
     $('#p-tel').addEventListener('blur', () => check('p-tel'));
-    $('#p-pass').addEventListener('input', () => { updatePassRules(); if ($('#p-pass').value) check('p-pass'); });
+    $('#p-pass').addEventListener('blur', () => { if ($('#p-pass').value) check('p-pass'); });
     form.addEventListener('submit', async e => {
       e.preventDefault();
       if (![check('p-tel'), check('p-pass')].every(Boolean)) return;
       const tel = $('#p-tel').value, ciudad = $('#p-city').value, pass = $('#p-pass').value;
+      const btn = $('button[type="submit"]', form);
+      btn.classList.add('is-loading');
       if (!DEMO) {
-        const btn = $('button[type="submit"]', form);
-        btn.classList.add('is-loading');
         try {
           const r1 = await sb.from('perfiles_privados').update({ telefono: tel || null }).eq('id', me.id);
           if (r1.error) throw r1.error;
           await updatePerfilRemote({ ciudad });
           if (pass) { const r2 = await sb.auth.updateUser({ password: pass }); if (r2.error) throw r2.error; }
         } catch (err) { btn.classList.remove('is-loading'); toast('No se guardaron los datos', dbMsg(err), { type: 'error' }); return; }
-        btn.classList.remove('is-loading');
-      }
+      } else await new Promise(r => setTimeout(r, 400));
+      btn.classList.remove('is-loading');
       perfil.tel = tel; perfil.ciudad = ciudad;
-      $('#p-pass').value = ''; updatePassRules();
-      $$('.field', form).forEach(f => f.classList.remove('is-valid'));
-      savePerfil(); renderSideUser(); renderPerfil();
+      savePerfil(); renderMeChip(); renderPerfil();
       toast('Datos guardados', pass ? 'Actualizamos tus datos y tu contraseña.' : 'Tus datos quedaron al día.', { icon: 'i-check' });
     });
   }
 
   /* =====================================================================
-     12. TOASTS Y MODALES
+     11. TOASTS Y MODALES
   ===================================================================== */
+  /* Aviso que cae como una gota desde la barra superior: una gota grande cae,
+     se aplasta y se abre en tarjeta, y una gotita rezagada se funde con ella
+     (filtro gooey). Se cierra solo, con la X o deslizándolo de lado. */
   function toast(title, text = '', { icon = 'i-check', type = '', action = null, ms = 4200 } = {}) {
     const box = $('#toasts');
+    ensureGooFilter();
     const el = document.createElement('div');
     el.className = `toast ${type ? 'toast--' + type : ''}`;
     el.setAttribute('role', type === 'error' ? 'alert' : 'status');
-    el.innerHTML = `<span class="toast-ic">${ic(type === 'error' ? 'i-alert' : icon)}</span>
-      <div><b>${esc(title)}</b>${text ? `<p>${esc(text)}</p>` : ''}</div>
-      ${action ? `<button class="btn btn--primary btn--xs" data-action="${action.act || 'ver-mapa'}" data-id="${esc(action.id)}">${esc(action.label)}</button>` : ''}
+    el.innerHTML = `<span class="toast-goo" aria-hidden="true"><i class="toast-blob"></i><i class="toast-drip"></i></span>
+      <span class="toast-ic">${ic(type === 'error' ? 'i-alert' : icon)}</span>
+      <div class="toast-txt"><b>${esc(title)}</b>${text ? `<p>${esc(text)}</p>` : ''}</div>
+      ${action ? `<button class="btn btn--xs" data-action="${action.act || 'ver-mapa'}" data-id="${esc(action.id)}">${esc(action.label)}</button>` : '<span></span>'}
       <button class="toast-x" aria-label="Cerrar aviso">${ic('i-close')}</button>`;
-    box.appendChild(el);
-    while (box.children.length > 3) box.firstElementChild.remove();
-    const kill = () => { el.classList.add('is-out'); setTimeout(() => el.remove(), 260); };
-    el.querySelector('.toast-x').addEventListener('click', kill);
-    if (action) el.querySelector('[data-action]').addEventListener('click', kill);
-    setTimeout(kill, ms);
+
+    // Los avisos de abajo bajan suave para hacerle campo al nuevo (FLIP)
+    const sibs = [...box.children].filter(x => !x.classList.contains('is-out'));
+    const before = sibs.map(x => x.getBoundingClientRect().top);
+    box.prepend(el);
+    if (!reduceMotion) sibs.forEach((x, i) => {
+      const d = before[i] - x.getBoundingClientRect().top;
+      if (d && !x.classList.contains('is-dragging')) x.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 460, easing: SPRING });
+    });
+    sibs.slice(2).forEach(x => x._kill && x._kill());
+
+    // Tiempo: se pausa con el mouse encima o mientras se arrastra
+    let left = ms, t0 = 0, timer = null, gone = false;
+    const run = () => { clearTimeout(timer); t0 = Date.now(); timer = setTimeout(() => kill(), left); };
+    const pause = () => { clearTimeout(timer); left = Math.max(1200, left - (Date.now() - t0)); };
+    function kill(dir = 0, fromX = 0) {
+      if (gone) return;
+      gone = true; clearTimeout(timer);
+      el.classList.add('is-out');
+      const done = () => el.remove();
+      if (reduceMotion) { el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).onfinish = done; return; }
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const out = dir
+        ? [{ translate: `${fromX}px 0`, opacity: Math.max(0, 1 - Math.abs(fromX) / w) }, { translate: `${dir * (w + 40)}px 0`, opacity: 0 }]
+        : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px) scale(.94)' }];
+      el.animate(out, { duration: dir ? 240 : 220, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' }).onfinish = () => {
+        // Se recoge el espacio que dejó para que los demás suban sin salto
+        el.animate([{ height: h + 'px', marginBottom: '0px' }, { height: '0px', marginBottom: '-8px' }], { duration: 200, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards' }).onfinish = done;
+      };
+    }
+    el._kill = kill;
+    el.querySelector('.toast-x').addEventListener('click', () => kill());
+    if (action) el.querySelector('[data-action]').addEventListener('click', () => kill());
+    el.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse' && !gone) pause(); });
+    el.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !gone && !el.classList.contains('is-dragging')) run(); });
+    el.addEventListener('pointerdown', e => {
+      if (gone) return;
+      trackX(e, el, {
+        onLock() { pause(); el.classList.add('is-dragging'); },
+        onMove(dx) {
+          const w = el.offsetWidth;
+          el.style.translate = `${dx}px 0`;
+          el.style.opacity = String(Math.max(.15, 1 - Math.abs(dx) / (w * .9)));
+        },
+        onEnd(dx, vx) {
+          el.classList.remove('is-dragging');
+          const w = el.offsetWidth;
+          if (Math.abs(dx) > w * .32 || (Math.abs(vx) > .45 && Math.sign(vx) === Math.sign(dx))) { el.style.translate = ''; el.style.opacity = ''; kill(Math.sign(dx) || 1, dx); return; }
+          springBack(el, dx);
+          el.style.opacity = '';
+          run();
+        },
+      });
+    });
+    if (!reduceMotion) setTimeout(() => el.classList.add('is-settled'), 760);
+    else el.classList.add('is-settled');
+    run();
+  }
+  // Regresa un elemento arrastrado a su sitio con un resorte
+  function springBack(el, fromX) {
+    el.style.translate = '';
+    if (reduceMotion || !fromX) return;
+    el.animate([{ translate: `${fromX}px 0` }, { translate: '0 0' }], { duration: 420, easing: SPRING });
   }
 
   const modalStack = [];
+  /* ---------- Reportar: llega al equipo de ModoParche ---------- */
+  let reportTarget = null;
+  function openReport(tipo, id) {
+    reportTarget = { tipo, id };
+    const form = $('#report-form'); form.reset();
+    $('#report-msg').textContent = '';
+    const quien = tipo === 'persona' ? (personById(id)?.nombre || 'esta persona') : '';
+    $('#report-title').textContent = tipo === 'mensaje' ? 'Reportar mensaje' : tipo === 'parche' ? 'Reportar parche' : `Reportar a ${quien}`;
+    openModal('modal-report');
+  }
+  async function sendReport(e) {
+    e.preventDefault();
+    const motivo = ($('#report-form').querySelector('input[name="motivo"]:checked') || {}).value;
+    if (!motivo) { $('#report-msg').textContent = 'Elige qué pasó.'; return; }
+    if (DEMO || !sb) { closeModal('modal-report'); toast('Reporte de ejemplo', 'En el modo demo no se envía nada.', { icon: 'i-flag' }); return; }
+    const btn = $('#report-send'); btn.disabled = true;
+    const { error } = await sb.rpc('reportar', { p_tipo: reportTarget.tipo, p_objetivo: String(reportTarget.id), p_motivo: motivo, p_detalle: $('#report-detalle').value.trim() });
+    btn.disabled = false;
+    if (error) {
+      const m = `${error.message} ${error.hint || ''}`;
+      $('#report-msg').textContent = /DEMASIADOS/.test(m) ? 'Ya enviaste muchos reportes hoy. Intenta mañana.' : /A_TI_MISMO/.test(m) ? 'No te puedes reportar a ti mismo.' : /PGRST202|Could not find/.test(m) ? 'Los reportes todavía no están activos. Intenta más tarde.' : 'No pudimos enviar el reporte. Intenta de nuevo.';
+      return;
+    }
+    closeModal('modal-report');
+    toast('Reporte enviado', 'Gracias por cuidar la comunidad. El equipo lo revisa pronto.', { icon: 'i-flag', ms: 5200 });
+  }
+
   function openModal(id) {
     const m = $('#' + id);
     if (!m || (!m.hidden && !m.classList.contains('is-closing'))) return;
@@ -1351,16 +1909,18 @@
     const m = $('#' + id);
     if (!m || m.hidden || m.classList.contains('is-closing')) return;
     m.classList.add('is-closing');
-    m._t = setTimeout(() => { m.hidden = true; m.classList.remove('is-closing'); }, reduceMotion ? 0 : 190);
+    m._t = setTimeout(() => { m.hidden = true; m.classList.remove('is-closing'); }, reduceMotion ? 0 : 210);
     const i = modalStack.findIndex(x => x.id === id);
     const entry = i >= 0 ? modalStack.splice(i, 1)[0] : null;
+    if (id === 'modal-qr' && detenerQR) { detenerQR(); detenerQR = null; }
+    if (id === 'modal-escaner') cerrarEscaner();
     if (!modalStack.length) document.body.classList.remove('no-scroll');
     if (entry && entry.ret && document.contains(entry.ret)) entry.ret.focus({ preventScroll: true });
   }
   const closeAllModals = () => [...modalStack].reverse().forEach(x => closeModal(x.id));
 
   /* =====================================================================
-     13. SUPABASE: SESIÓN, CARGA, TIEMPO REAL Y ESCRITURA
+     12. SUPABASE
   ===================================================================== */
   const isUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || ''));
   const shortName = n => { const [a, b] = String(n || 'Parcero').trim().split(/\s+/); return b ? `${a} ${b.charAt(0)}.` : a; };
@@ -1370,19 +1930,20 @@
     if (/failed to fetch|network/i.test(m)) return 'Sin conexión. Revisa tu internet.';
     if (/jwt expired|invalid jwt/i.test(m)) return 'Tu sesión venció. Vuelve a entrar.';
     if (/PARCHE_LLENO/.test(m)) return 'Alguien tomó el último cupo antes que tú.';
+    if (/SIN_VERIFICAR/.test(m)) return 'Verifica tu cédula para abrir parches.';
     if (/permission denied|row-level security/i.test(m)) return 'No tienes permiso para hacer eso.';
     if (/PGRST205|42P01|Could not find the table/i.test(m)) return 'Faltan las tablas en Supabase.';
     return m || 'Intenta de nuevo en unos segundos.';
   }
   const setBoot = t => { const el = $('#boot-text'); if (el) el.textContent = t; };
-  const hideBoot = () => { const b = $('#boot'); if (b) { b.classList.add('is-done'); setTimeout(() => b.remove(), 400); } };
+  const hideBoot = () => { const b = $('#boot'); if (b) { b.classList.add('is-done'); setTimeout(() => b.remove(), 500); } };
   function bootError(err) {
     const sql = /PGRST205|42P01|Could not find the table/i.test(String(err && (err.code + ' ' + err.message)));
     setBoot(sql ? 'Faltan las tablas en Supabase. Corre los archivos de supabase/migrations en el SQL Editor y recarga.' : `No pudimos cargar tus parches. ${dbMsg(err)}`);
     const box = $('#boot-actions');
     box.hidden = false;
-    box.innerHTML = `<button class="btn btn--primary" data-boot="retry">${ic('i-refresh')} Reintentar</button>
-      <a class="btn btn--ghost" href="dashboard.html?demo=1">Ver en modo demo</a>
+    box.innerHTML = `<button class="btn btn--ink" data-boot="retry">${ic('i-refresh')} Reintentar</button>
+      <a class="btn btn--ghost" href="dashboard.html?demo=1">Ver el modo demo</a>
       <button class="btn btn--ghost" data-boot="logout">${ic('i-logout')} Cerrar sesión</button>`;
     box.addEventListener('click', e => {
       const b = e.target.closest('[data-boot]');
@@ -1390,6 +1951,58 @@
       if (b.dataset.boot === 'retry') window.location.reload(); else logout();
     });
   }
+  /* ---------- Derechos sobre tus datos (Ley 1581 de 2012) ---------- */
+  async function cambiarAnuncios(on) {
+    perfil.recibe_anuncios = on;
+    if (DEMO || !sb) { toast(on ? 'Anuncios activados' : 'Te diste de baja', 'En el modo demo no se guarda.', { icon: 'i-check' }); return; }
+    const { error } = await sb.rpc('cambiar_anuncios', { p_recibir: on });
+    if (error) { perfil.recibe_anuncios = !on; $('#p-anuncios').checked = !on; toast('No se pudo guardar', dbMsg(error), { type: 'error' }); return; }
+    toast(on ? 'Anuncios activados' : 'Te diste de baja de los anuncios', on ? 'Te avisaremos de novedades y planes especiales.' : 'Ya no te llegarán anuncios. Los avisos de tus parches siguen igual.', { icon: 'i-check' });
+  }
+  async function descargarMisDatos(btn) {
+    let datos;
+    if (DEMO || !sb) datos = { aviso: 'Modo demo: estos datos solo existen en este navegador.', perfil, parches: state.parches.filter(isMine) };
+    else {
+      btn.disabled = true;
+      const { data, error } = await sb.rpc('mis_datos');
+      btn.disabled = false;
+      if (error) { toast('No pudimos preparar el archivo', dbMsg(error), { type: 'error' }); return; }
+      datos = data;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' }));
+    a.download = 'mis-datos-modoparche-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('Archivo descargado', 'Ahí está todo lo que tenemos de tu cuenta.', { icon: 'i-check' });
+  }
+  function askBorrarCuenta() {
+    $('#confirm-title').textContent = '¿Borrar tu cuenta?';
+    $('#confirm-text').textContent = 'Se borran tu perfil, tus datos, tus fotos y los parches que creaste. Tus mensajes en otros parches quedan sin tu nombre. No se puede deshacer.';
+    $('#confirm-ok').textContent = 'Sí, borrar todo';
+    $('#confirm-ok').onclick = async () => {
+      const b = $('#confirm-ok'); b.disabled = true;
+      if (DEMO || !sb) { try { localStorage.clear(); } catch (e) { /* nada */ } window.location.replace('index.html'); return; }
+      // Las fotos se borran con la API de Storage (cada quien solo puede borrar su carpeta)
+      try {
+        const { data: files } = await sb.storage.from('fotos').list(me.id, { limit: 1000 });
+        if (files && files.length) await sb.storage.from('fotos').remove(files.map(f => me.id + '/' + f.name));
+      } catch (e) { /* seguimos con la cuenta */ }
+      // Fotos de la cédula (bucket privado): también se borran
+      try {
+        const carpeta = 'cedulas/' + me.id;
+        const { data: docs } = await sb.storage.from('documentos_identidad').list(carpeta, { limit: 100 });
+        if (docs && docs.length) await sb.storage.from('documentos_identidad').remove(docs.map(f => carpeta + '/' + f.name));
+      } catch (e) { /* seguimos con la cuenta */ }
+      const { error } = await sb.rpc('borrar_mi_cuenta');
+      b.disabled = false;
+      if (error) { closeModal('modal-confirm'); toast('No se pudo borrar', dbMsg(error), { type: 'error' }); return; }
+      try { await sb.auth.signOut(); } catch (e) { /* la sesión ya no existe */ }
+      try { localStorage.clear(); } catch (e) { /* nada */ }
+      window.location.replace('index.html?cuenta=borrada');
+    };
+    openModal('modal-confirm');
+  }
+
   async function logout() {
     if (DEMO || !sb) { window.location.href = 'login.html'; return; }
     try { await sb.auth.signOut(); } catch (e) { /* salimos igual */ }
@@ -1397,13 +2010,19 @@
   }
 
   const personFromRow = r => ({
-    id: r.id, nombre: shortName(r.nombre), av: normalizeAv(r.avatar_config),
+    id: r.id, nombre: shortName(r.nombre), verificado: !!r.verificado,
     foto: r.mostrar_foto_real && r.foto_encuadre && r.foto_encuadre.src ? r.foto_encuadre : null,
   });
+  let colVerificado = true; // false si la migración de verificación no se ha corrido
   async function cachePeople(ids) {
     const faltan = [...new Set(ids.filter(id => isUuid(id) && id !== (me && me.id) && !peopleCache.has(id)))];
     if (!faltan.length) return;
-    const { data, error } = await sb.from('perfiles').select('id, nombre, avatar_config, mostrar_foto_real, foto_encuadre').in('id', faltan);
+    const cols = 'id, nombre, mostrar_foto_real, foto_encuadre' + (colVerificado ? ', verificado' : '');
+    let { data, error } = await sb.from('perfiles').select(cols).in('id', faltan);
+    if (error && colVerificado && /verificado/.test(error.message)) {
+      colVerificado = false;
+      ({ data, error } = await sb.from('perfiles').select('id, nombre, mostrar_foto_real, foto_encuadre').in('id', faltan));
+    }
     if (error) { console.warn('[perfiles]', error.message); return; }
     data.forEach(r => peopleCache.set(r.id, personFromRow(r)));
   }
@@ -1414,9 +2033,11 @@
     perfil = Object.assign({}, PERFIL_DEF, {
       nombre: p.nombre, primer: String(p.nombre || 'Parcero').split(' ')[0], ciudad: p.ciudad || 'Villavicencio',
       mostrar_foto_real: !!p.mostrar_foto_real,
-      foto_encuadre: Object.assign({ src: '', zoom: 1, x: 0, y: 0 }, p.foto_encuadre || {}),
-      avatar_config: normalizeAv(p.avatar_config),
+      foto_encuadre: Object.assign({}, FOTO_VACIA, p.foto_encuadre || {}),
       tel: (priv && priv.telefono) || '', cedula: (priv && priv.cedula) || '', mail: me.email || '',
+      rating: Number(p.rating) || 0, resenas: Number(p.resenas) || 0,
+      recibe_anuncios: !!p.recibe_anuncios,
+      cedula_verificada: !!(priv && priv.cedula_verificada), cedula_verificada_en: (priv && priv.cedula_verificada_en) || null,
     });
   }
 
@@ -1427,12 +2048,26 @@
       id: r.id, titulo: r.titulo, categoria: r.categoria, descripcion: r.descripcion,
       inicio: Date.parse(r.inicio), lugar: r.lugar, barrio: r.barrio, lat: r.lat, lng: r.lng,
       costo: r.costo, presupuesto: r.presupuesto, cuposMax: r.cupos_max,
-      confirmados: (r.confirmados_demo || []).concat(miembros.filter(m => m.usuario_id !== me.id).map(m => m.usuario_id)),
+      confirmados: miembros.filter(m => m.usuario_id !== me.id).map(m => m.usuario_id), // solo cuentas reales
       unido: !!mia, propio, creadorId: propio ? 'me' : r.creador_id, creadorNombre: r.creador_nombre,
       checkin: !!(mia && mia.checkin), demo: r.demo, chat: prev ? prev.chat : [],
+      aliado: !!r.aliado, verificado: !!r.verificado, imagen: r.aliado ? (r.imagen || '') : '', promo: r.promo || '',
+      oficial: !!r.oficial, info: r.oficial_info || {},
     });
   }
-  const msgFromRow = r => ({ id: r.id, tipo: r.tipo, texto: r.texto, ts: Date.parse(r.creado_en), autor: r.autor_id ? (r.autor_id === me.id ? 'me' : r.autor_id) : r.autor_demo });
+  // Mensajes de personas de ejemplo (sin cuenta) no se muestran
+  const isRealMsg = r => r.tipo !== 'user' || !!r.autor_id;
+  const msgFromRow = r => ({ id: r.id, tipo: r.tipo, texto: r.texto, ts: Date.parse(r.creado_en), autor: r.autor_id ? (r.autor_id === me.id ? 'me' : r.autor_id) : r.autor_demo, replyId: r.responde_a ?? null });
+
+  // De los parches de ejemplo de la base de datos solo mostramos dos
+  const DEMO_LIMIT = 2;
+  let demoIds = null;
+  function keepRows(rows) {
+    const demos = rows.filter(r => r.demo).sort((a, b) => (b.aliado - a.aliado) || (Date.parse(a.inicio) - Date.parse(b.inicio)));
+    const upcoming = demos.filter(r => Date.parse(r.inicio) > Date.now() - 90 * MIN);
+    demoIds = new Set((upcoming.length ? upcoming : demos).slice(0, DEMO_LIMIT).map(r => r.id));
+    return rows.filter(r => !r.demo || demoIds.has(r.id));
+  }
 
   async function loadRemote() {
     const since = new Date(Date.now() - 7 * 24 * HOUR).toISOString();
@@ -1442,7 +2077,7 @@
       sb.from('parches').select('*').gte('inicio', since).order('inicio'),
     ]);
     for (const r of [pf, pv, ps]) if (r.error) throw r.error;
-    const rows = ps.data || [];
+    const rows = keepRows(ps.data || []);
     let miembros = [];
     if (rows.length) {
       const mm = await sb.from('parche_miembros').select('parche_id, usuario_id, checkin').in('parche_id', rows.map(r => r.id));
@@ -1452,6 +2087,7 @@
     await cachePeople(rows.map(r => r.creador_id).concat(miembros.map(m => m.usuario_id)));
     applyPerfilRow(pf.data, pv.data);
     state.parches = rows.map(r => fromRow(r, miembros.filter(m => m.parche_id === r.id)));
+    await cargarMesas();
   }
 
   async function fetchParche(id, drop = false) {
@@ -1466,6 +2102,7 @@
       if (wasOpen) toast('Parche cancelado', 'El organizador canceló este plan.', { icon: 'i-trash' });
       return;
     }
+    if (row.demo && demoIds && !demoIds.has(row.id)) return;
     const miembros = mm.data || [];
     await cachePeople([row.creador_id].concat(miembros.map(m => m.usuario_id)));
     const idx = state.parches.findIndex(p => p.id === id);
@@ -1490,7 +2127,7 @@
     await cachePeople(data.map(x => x.autor_id));
     const p = findP(id);
     if (!p) return;
-    p.chat = data.map(msgFromRow);
+    p.chat = data.filter(isRealMsg).map(msgFromRow);
     if (state.chatId === id) renderChat();
   }
 
@@ -1518,6 +2155,13 @@
       await fetchParche(res.data.id, !editId);
       return res.data.id;
     } catch (err) {
+      // El servidor también pone el candado: si la cédula no está verificada, pedimos verificarla
+      if (/SIN_VERIFICAR/.test(String(err && err.message))) {
+        perfil.cedula_verificada = false;
+        toast('Falta verificar tu cédula', 'Tus datos del parche se guardan aquí mientras te verificas.', { type: 'error' });
+        pedirVerificacion('crear').then(ok => { if (ok) openModal('modal-create'); });
+        return null;
+      }
       toast(editId ? 'No se guardaron los cambios' : 'No se publicó el parche', dbMsg(err), { type: 'error' });
       return null;
     }
@@ -1536,7 +2180,7 @@
           });
           return;
         }
-        reloadParche(id);
+        if (findP(id)) reloadParche(id);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'parche_miembros' }, pl => {
         const id = pidOf(pl);
@@ -1544,7 +2188,7 @@
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, async ({ new: r }) => {
         const p = findP(r.parche_id);
-        if (!p || p.chat.some(m => m.id === r.id)) return;
+        if (!p || !isRealMsg(r) || p.chat.some(m => m.id === r.id)) return;
         const mine = r.autor_id === me.id && p.chat.find(m => m.autor === 'me' && !m.id && m.texto === r.texto);
         if (mine) { mine.id = r.id; return; }
         await cachePeople([r.autor_id]);
@@ -1553,7 +2197,17 @@
         if (state.chatId === p.id) renderChatMsgs();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
-        if (r.icono !== 'i-bolt') toast('Novedad en tus parches', String(r.texto).replace(/<\/?b>/g, ''), { icon: 'i-live' });
+        // Las de mesa y verificación ya tienen su propio aviso
+        if (r.icono !== 'i-bolt' && r.icono !== 'i-users' && r.icono !== 'i-shield') toast('Novedad en tus parches', String(r.texto).replace(/<\/?b>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'), { icon: 'i-live' });
+      })
+      // Modo Mesa: el local confirma o rechaza la reserva
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mesa_reservas', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
+        const mia = (state.misMesas || []).find(x => x.id === r.id);
+        if (!mia || mia.estado === r.estado) return;
+        mia.estado = r.estado;
+        if (r.estado === 'confirmada') toast('Mesa confirmada', `${mia.negocio.nombre} te espera. Muestra el código ${mia.codigo} al llegar.`, { icon: 'i-table', ms: 6500 });
+        if (r.estado === 'rechazada') toast('El local no pudo recibirte', `${mia.negocio.nombre} no tiene mesa a esa hora. Prueba otra hora.`, { type: 'error', ms: 6500 });
+        if (state.view === 'inicio') renderMesas();
       })
       .subscribe();
   }
@@ -1564,6 +2218,8 @@
     try { session = (await sb.auth.getSession()).data.session; } catch (e) { /* sin sesión */ }
     if (!session) { window.location.replace('login.html'); return false; }
     me = session.user;
+    if (me.user_metadata && me.user_metadata.tipo === 'empresa') { window.location.replace('empresa-dashboard.html'); return false; }
+    try { const { data: esAdmin } = await sb.rpc('soy_admin'); if (esAdmin === true) { window.location.replace('admin.html'); return false; } } catch (e) { /* cuenta normal */ }
     sb.auth.onAuthStateChange((ev, s) => { if (ev === 'SIGNED_OUT' || (!s && ev !== 'INITIAL_SESSION')) window.location.replace('login.html'); });
     setBoot('Cargando los parches de Villavo...');
     try { await loadRemote(); } catch (err) { console.error(err); bootError(err); return false; }
@@ -1571,54 +2227,556 @@
   }
 
   /* =====================================================================
-     14. EVENTOS E INICIO
+     14. GESTOS Y MICROINTERACCIONES
+     Anillo al tocar, mantener para confirmar, deslizar para ver acciones,
+     deslizar para responder, buscador que se despliega y deslizar hacia
+     abajo para actualizar. Todo con transform/opacity y respetando
+     "reducir movimiento".
+  ===================================================================== */
+  // Resorte con un rebote mínimo (y curva normal si el navegador no entiende linear())
+  const SPRING = (window.CSS && CSS.supports && CSS.supports('animation-timing-function', 'linear(0, 1)'))
+    ? 'linear(0, 0.0047, 0.0186, 0.0409, 0.0702 4.9%, 0.1478, 0.2422 9.9%, 0.4571 15.4%, 0.6626 21.1%, 0.8175 26.5%, 0.9227 31.8%, 0.9874 37%, 1.0207 42%, 1.0326 47%, 1.0315 51.6%, 1.0222 57.2%, 1.0108 63.4%, 1.0013 70.4%, 0.9965 79.5%, 0.9965 89.9%, 1)'
+    : 'cubic-bezier(.23, 1, .32, 1)';
+  const buzz = pattern => { try { if (!reduceMotion && navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* sin vibración */ } };
+
+  // El filtro gooey (desenfoque + contraste alto) que funde formas como líquido
+  function ensureGooFilter() {
+    if (document.getElementById('mp-goo-svg')) return;
+    document.body.insertAdjacentHTML('beforeend', `<svg id="mp-goo-svg" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+      <filter id="mp-goo"><feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+      <feColorMatrix in="b" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="g"/>
+      <feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>`);
+  }
+
+  /* ---------- Arrastre horizontal con bloqueo de eje ----------
+     Si el dedo se mueve primero en vertical, se deja hacer scroll normal.
+     Si se mueve en horizontal, el gesto es nuestro y el clic se anula. */
+  let swallowClick = false;
+  function trackX(e, el, { onLock, onMove, onEnd }) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const x0 = e.clientX, y0 = e.clientY, id = e.pointerId;
+    let locked = false, dx = 0, lastX = x0, lastT = performance.now(), vx = 0;
+    const move = ev => {
+      if (ev.pointerId !== id) return;
+      dx = ev.clientX - x0;
+      const dy = ev.clientY - y0;
+      if (!locked) {
+        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { stop(); return; }
+        if (Math.abs(dx) < 8) return;
+        locked = true;
+        try { el.setPointerCapture(id); } catch (err) { /* ya soltó */ }
+        document.documentElement.classList.add('is-gesturing');
+        onLock && onLock();
+      }
+      const now = performance.now();
+      vx = vx * .4 + ((ev.clientX - lastX) / Math.max(1, now - lastT)) * .6;
+      lastX = ev.clientX; lastT = now;
+      onMove(dx);
+    };
+    const up = ev => { if (ev.pointerId === id) stop(); };
+    function stop() {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      if (!locked) return;
+      document.documentElement.classList.remove('is-gesturing');
+      swallowClick = true;
+      setTimeout(() => { swallowClick = false; }, 0);
+      onEnd(dx, vx);
+    }
+    window.addEventListener('pointermove', move, { passive: true });
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }
+
+  /* ---------- Ripple ring ----------
+     Un anillo naranja que sale del punto donde tocas. Con mouse sale al
+     presionar; en pantalla táctil, al soltar (así no salta al hacer scroll). */
+  const RING_SEL = '.btn, .icon-btn, .bn, .bn-create, .tab, .seg-btn, .qk, .mis-item, .mis-act, .me-chip, .search-toggle, .link-btn, .hello-link, .logo';
+  function ring(x, y, { size = 120, delay = 0, cls = '' } = {}) {
+    const layer = $('#fx-layer');
+    if (!layer || reduceMotion) return;
+    const r = document.createElement('span');
+    r.className = 'fx-ring' + (cls ? ' ' + cls : '');
+    r.style.cssText = `left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px;animation-delay:${delay}ms`;
+    layer.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
+    setTimeout(() => r.remove(), 1200 + delay);
+  }
+  const ringSize = el => { const b = el.getBoundingClientRect(); return clamp(Math.max(b.width, b.height) * 1.5, 72, 240); };
+  // Sobre una superficie naranja el anillo sale negro para que se vea
+  function ringTone(el) {
+    for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+      const m = getComputedStyle(n).backgroundColor.match(/[\d.]+/g);
+      if (!m || (m[3] !== undefined && +m[3] < .5)) continue;
+      const [r, g, b] = m.map(Number);
+      return r > 200 && g < 140 && b < 90 ? 'is-ink' : '';
+    }
+    return '';
+  }
+  function ringBurst(el) {
+    const b = el.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2, s = Math.max(b.width, b.height);
+    const tone = ringTone(el);
+    ring(cx, cy, { size: s * 1.5, cls: tone });
+    ring(cx, cy, { size: s * 2.3, delay: 110, cls: 'is-soft ' + tone });
+  }
+  function initRipple() {
+    let down = null;
+    document.addEventListener('pointerdown', e => {
+      const el = e.target.closest(RING_SEL);
+      if (!el || el.disabled || el.closest('[data-hold]') || el.closest('.leaflet-container')) { down = null; return; }
+      if (e.pointerType === 'mouse') { if (e.button === 0) ring(e.clientX, e.clientY, { size: ringSize(el), cls: ringTone(el) }); down = null; return; }
+      down = { el, x: e.clientX, y: e.clientY, id: e.pointerId };
+    }, { capture: true, passive: true });
+    document.addEventListener('pointerup', e => {
+      if (!down || e.pointerId !== down.id) return;
+      const d = down; down = null;
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || !d.el.contains(e.target) || swallowClick) return;
+      ring(e.clientX, e.clientY, { size: ringSize(d.el), cls: ringTone(d.el) });
+    }, { capture: true, passive: true });
+    document.addEventListener('pointercancel', () => { down = null; }, { capture: true, passive: true });
+  }
+
+  /* ---------- Hold to confirm: confirmar asistencia ----------
+     Hay que mantener presionado "Caerle" mientras se llena. Soltar antes
+     lo devuelve. Con teclado: mantener Enter o Espacio. Con lector de
+     pantalla (clic sin puntero) confirma directo. */
+  const HOLD_MS = 850;
+  let holding = null;
+  function holdStart(btn, kbd = false) {
+    if (holding || btn.disabled || btn.classList.contains('is-done')) return;
+    btn.classList.remove('is-hint');
+    btn.style.setProperty('--hold-ms', (reduceMotion ? 400 : HOLD_MS) + 'ms');
+    btn.classList.add('is-holding');
+    buzz(5);
+    holding = { btn, kbd, t0: performance.now(), timer: setTimeout(() => holdDone(btn), reduceMotion ? 400 : HOLD_MS) };
+  }
+  function holdEnd(cancelled = false) {
+    if (!holding) return;
+    const { btn, t0, timer } = holding;
+    holding = null;
+    clearTimeout(timer);
+    if (btn.classList.contains('is-done')) return;
+    btn.classList.remove('is-holding');
+    if (!cancelled && performance.now() - t0 < 320) holdHint(btn);
+  }
+  function holdHint(btn) {
+    btn.classList.remove('is-hint'); void btn.offsetWidth; btn.classList.add('is-hint');
+    clearTimeout(btn._hintT);
+    btn._hintT = setTimeout(() => btn.classList.remove('is-hint'), 1700);
+  }
+  function holdDone(btn) {
+    holding = null;
+    btn.classList.remove('is-holding', 'is-hint');
+    btn.classList.add('is-done');
+    buzz([10, 40, 18]);
+    ringBurst(btn);
+    setTimeout(() => {
+      toggleJoin(btn.dataset.id);
+      // Si no se pudo (parche lleno), el botón vuelve a quedar listo
+      setTimeout(() => { if (btn.isConnected) btn.classList.remove('is-done'); }, 900);
+    }, reduceMotion ? 0 : 340);
+  }
+  function onHoldClick(e, btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    // detail 0 = clic sin puntero (lector de pantalla o control por voz)
+    if (e.detail === 0 && !holding && !btn.classList.contains('is-done')) holdDone(btn);
+  }
+  function initHold() {
+    document.addEventListener('pointerdown', e => {
+      const b = e.target.closest('[data-hold]');
+      if (b && (e.pointerType !== 'mouse' || e.button === 0)) holdStart(b);
+    }, true);
+    window.addEventListener('pointerup', () => holdEnd(false), true);
+    window.addEventListener('pointercancel', () => holdEnd(true), true);
+    document.addEventListener('pointerout', e => {
+      if (holding && !holding.kbd && e.target.closest('[data-hold]') === holding.btn && !holding.btn.contains(e.relatedTarget)) holdEnd(true);
+    }, true);
+    document.addEventListener('contextmenu', e => { if (e.target.closest('[data-hold]')) e.preventDefault(); }, true);
+    const isKey = e => e.key === 'Enter' || e.key === ' ';
+    document.addEventListener('keydown', e => {
+      const b = isKey(e) && e.target.closest && e.target.closest('[data-hold]');
+      if (!b) return;
+      e.preventDefault();
+      if (!e.repeat) holdStart(b, true);
+    }, true);
+    document.addEventListener('keyup', e => {
+      if (!isKey(e) || !(e.target.closest && e.target.closest('[data-hold]'))) return;
+      e.preventDefault();
+      holdEnd(false);
+    }, true);
+  }
+
+  /* ---------- Reveal actions: deslizar un parche a la izquierda ---------- */
+  let openRowEl = null;
+  const rowParts = row => ({ item: $('.mis-item', row), acts: $('.mis-actions', row) });
+  const rowX = row => parseFloat(rowParts(row).item.style.translate) || 0;
+  function setRowX(row, x) {
+    const { item, acts } = rowParts(row);
+    item.style.translate = `${x}px 0`;
+    row.style.setProperty('--rp', clamp(-x / (acts.offsetWidth || 1), 0, 1.15).toFixed(3));
+  }
+  function setRowFocusable(row, on) {
+    const { acts } = rowParts(row);
+    acts.setAttribute('aria-hidden', on ? 'false' : 'true');
+    $$('.mis-act', acts).forEach(b => { b.tabIndex = on ? 0 : -1; });
+  }
+  function openReveal(row) {
+    if (openRowEl && openRowEl !== row) closeReveal(openRowEl);
+    setRowX(row, -rowParts(row).acts.offsetWidth);
+    row.classList.add('is-open');
+    setRowFocusable(row, true);
+    openRowEl = row;
+  }
+  function closeReveal(row = openRowEl) {
+    if (!row) return;
+    if (openRowEl === row) openRowEl = null;
+    if (!row.isConnected) return;
+    setRowX(row, 0);
+    row.classList.remove('is-open');
+    setRowFocusable(row, false);
+  }
+  function startReveal(e, row) {
+    const { acts } = rowParts(row);
+    let base = 0, w = 0;
+    trackX(e, rowParts(row).item, {
+      onLock() {
+        if (openRowEl && openRowEl !== row) closeReveal(openRowEl);
+        w = acts.offsetWidth; base = rowX(row);
+        row.classList.add('is-dragging');
+      },
+      onMove(dx) {
+        let x = base + dx;
+        if (x > 0) x *= .25;                       // resistencia hacia la derecha
+        if (x < -w) x = -w + (x + w) * .3;         // resistencia al pasarse
+        setRowX(row, x);
+      },
+      onEnd(dx, vx) {
+        row.classList.remove('is-dragging');
+        const x = rowX(row);
+        if (vx < -.35 || (vx < .35 && x < -w * .45)) { openReveal(row); buzz(6); } else closeReveal(row);
+      },
+    });
+  }
+  // La primera vez en el celular, la fila "se asoma" para enseñar el gesto
+  function hintReveal() {
+    if (reduceMotion || !isMobile() || store.get('mp_hint_reveal', false)) return;
+    const row = $('#mis-list .mis-row');
+    if (!row) return;
+    store.set('mp_hint_reveal', true);
+    setTimeout(() => {
+      if (!row.isConnected || openRowEl) return;
+      row.classList.add('is-peek');
+      setRowX(row, -64);
+      setTimeout(() => { if (row.isConnected && !row.classList.contains('is-open')) setRowX(row, 0); }, 650);
+      setTimeout(() => row.classList.remove('is-peek'), 1300);
+    }, 900);
+  }
+
+  /* ---------- Swipe to reply: deslizar un mensaje a la derecha ---------- */
+  const REPLY_AT = 58;
+  function startSwipeReply(e, msg) {
+    const p = state.chatId && findP(state.chatId);
+    if (!p || !inside(p)) return;
+    let armed = false, x = 0;
+    trackX(e, msg, {
+      onLock() { msg.classList.add('is-swiping'); },
+      onMove(dx) {
+        x = Math.max(0, dx);
+        x = x < REPLY_AT ? x : REPLY_AT + (x - REPLY_AT) * .22;
+        x = Math.min(x, 92);
+        msg.style.setProperty('--sx', x + 'px');
+        msg.style.setProperty('--sp', Math.min(1, x / REPLY_AT).toFixed(3));
+        const now = x >= REPLY_AT;
+        if (now !== armed) { armed = now; msg.classList.toggle('is-armed', armed); if (armed) buzz(8); }
+      },
+      onEnd() {
+        msg.classList.remove('is-swiping', 'is-armed');
+        msg.style.removeProperty('--sx');
+        msg.style.removeProperty('--sp');
+        if (armed) setReply(msg.dataset.key);
+      },
+    });
+  }
+
+  /* ---------- Icon expand: el buscador sale del ícono ---------- */
+  function initSearch() {
+    const wrap = $('#search'), inp = $('#search-input'), tog = $('#search-toggle'), clr = $('#search-clear'), head = $('#abiertos-head');
+    if (!wrap || !inp || !tog) return;
+    const isOpen = () => wrap.classList.contains('is-open');
+    function open() {
+      if (!isOpen()) {
+        wrap.classList.add('is-open'); head && head.classList.add('is-searching');
+        tog.setAttribute('aria-expanded', 'true');
+        inp.tabIndex = 0; tog.tabIndex = -1;
+      }
+      inp.focus({ preventScroll: true });
+    }
+    function close() {
+      if (!isOpen() || inp.value) return;
+      wrap.classList.remove('is-open'); head && head.classList.remove('is-searching');
+      tog.setAttribute('aria-expanded', 'false');
+      inp.tabIndex = -1; tog.tabIndex = 0;
+    }
+    const apply = (v, anim = true) => { state.search = v.trim(); clr.hidden = !v; renderCards(anim); };
+    tog.addEventListener('click', open);
+    wrap.addEventListener('focusout', () => setTimeout(() => { if (!wrap.contains(document.activeElement)) close(); }, 0));
+    let st;
+    inp.addEventListener('input', () => { clearTimeout(st); clr.hidden = !inp.value; st = setTimeout(() => apply(inp.value), 160); });
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (inp.value) { inp.value = ''; apply(''); } else { close(); tog.focus(); }
+    });
+    clr.addEventListener('click', () => { inp.value = ''; apply(''); inp.focus(); });
+    // Atajo: "/" abre el buscador en el inicio
+    document.addEventListener('keydown', e => {
+      if (e.key !== '/' || state.view !== 'inicio' || modalStack.length || e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      e.preventDefault(); open();
+    });
+  }
+
+  /* ---------- Pull to refresh con el logo de ModoParche ---------- */
+  async function refreshData() {
+    if (DEMO) {
+      await cargarMesas();
+      await new Promise(r => setTimeout(r, 500));
+    } else {
+      const prev = new Map(state.parches.map(p => [p.id, p]));
+      try { await loadRemote(); }
+      catch (err) { toast('No se pudo actualizar', dbMsg(err), { type: 'error' }); return false; }
+      state.parches.forEach(p => { const o = prev.get(p.id); if (o && o.chat && o.chat.length) p.chat = o.chat; });
+      renderMeChip();
+    }
+    refresh();
+    if (state.view === 'inicio') renderCards(true);
+    if (state.view === 'perfil') renderPerfil();
+    return true;
+  }
+  function initPullToRefresh() {
+    const ptr = $('#ptr');
+    if (!ptr || !('ontouchstart' in window)) return;
+    const MAX = 140, TRIG = 72, REST = 64;
+    let y0 = null, x0 = 0, pulling = false, armed = false, busy = false, d = 0;
+    const set = v => { d = v; ptr.style.setProperty('--pd', v.toFixed(1)); ptr.style.setProperty('--pp', Math.min(1, v / TRIG).toFixed(3)); };
+    const blocked = t => busy || window.scrollY > 0 || modalStack.length || document.body.classList.contains('no-scroll')
+      || state.view === 'mapa' || $('#mis-wrap').classList.contains('is-chat')
+      || !!t.closest('.leaflet-container, .chat-msgs, .toast, input, textarea, select, .modal');
+    document.addEventListener('touchstart', e => {
+      y0 = null;
+      if (e.touches.length !== 1 || blocked(e.target)) return;
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; pulling = false;
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+      if (y0 == null) return;
+      const dy = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
+      if (!pulling) {
+        if (dy < -4 || Math.abs(dx) > 12 || window.scrollY > 0) { y0 = null; return; }
+        if (dy < 8 || Math.abs(dx) > dy) return;
+        pulling = true; armed = false;
+        holdEnd(true);
+        document.documentElement.classList.add('is-ptr');
+        ptr.classList.remove('is-done', 'is-loading');
+        ptr.classList.add('is-pulling');
+      }
+      if (e.cancelable) e.preventDefault();
+      set(MAX * (1 - Math.exp(-(dy - 8) / MAX)));   // banda elástica
+      const now = d >= TRIG;
+      if (now !== armed) { armed = now; ptr.classList.toggle('is-armed', armed); if (armed) buzz(8); }
+    }, { passive: false });
+    const end = async () => {
+      if (!pulling) { y0 = null; return; }
+      pulling = false; y0 = null;
+      ptr.classList.remove('is-pulling');
+      if (!armed) { ptr.classList.remove('is-armed'); set(0); document.documentElement.classList.remove('is-ptr'); return; }
+      busy = true;
+      ptr.classList.add('is-loading');
+      set(REST);
+      $('#ptr-status').textContent = 'Actualizando parches...';
+      const [ok] = await Promise.all([refreshData(), new Promise(r => setTimeout(r, 900))]);
+      ptr.classList.remove('is-loading', 'is-armed');
+      ptr.classList.add('is-done');
+      $('#ptr-status').textContent = ok ? 'Parches al día' : '';
+      setTimeout(() => { set(0); }, reduceMotion ? 0 : 380);
+      setTimeout(() => { ptr.classList.remove('is-done'); busy = false; document.documentElement.classList.remove('is-ptr'); }, reduceMotion ? 0 : 900);
+    };
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', end, { passive: true });
+  }
+
+  /* ---------- Fila de lugares: flechas, rueda del mouse y arrastre ---------- */
+  function initPlaceRail() {
+    const rail = $('#place-rail'), row = $('#place-chips'), prev = $('#place-prev'), next = $('#place-next');
+    if (!rail || !row) return;
+    const sync = () => {
+      const max = row.scrollWidth - row.clientWidth;
+      const atStart = row.scrollLeft <= 2, atEnd = row.scrollLeft >= max - 2;
+      prev.hidden = max <= 2 || atStart;
+      next.hidden = max <= 2 || atEnd;
+      rail.classList.toggle('fade-start', max > 2 && !atStart);
+      rail.classList.toggle('fade-end', max > 2 && !atEnd);
+      paintTrack();
+    };
+    const step = dir => row.scrollBy({ left: dir * Math.max(160, row.clientWidth * .7), behavior: reduceMotion ? 'auto' : 'smooth' });
+    // Riel de la marca: muestra cuánto falta y se puede arrastrar
+    const track = $('#place-track'), thumb = $('#place-thumb');
+    const paintTrack = () => {
+      if (!track) return;
+      const max = row.scrollWidth - row.clientWidth;
+      track.hidden = max <= 2;
+      if (max <= 2) return;
+      const ratio = row.clientWidth / row.scrollWidth, tw = track.clientWidth;
+      const w = Math.max(36, tw * ratio);
+      thumb.style.width = w + 'px';
+      thumb.style.translate = `${(tw - w) * (row.scrollLeft / max)}px 0`;
+      track.setAttribute('aria-valuenow', String(Math.round(row.scrollLeft / max * 100)));
+    };
+    if (track) {
+      track.addEventListener('pointerdown', e => {
+        const b = track.getBoundingClientRect(), w = thumb.offsetWidth, max = row.scrollWidth - row.clientWidth;
+        const to = x => { row.scrollLeft = clamp((x - b.left - w / 2) / (b.width - w), 0, 1) * max; };
+        to(e.clientX);
+        track.classList.add('is-dragging');
+        try { track.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+        const move = ev => to(ev.clientX);
+        const up = () => { track.classList.remove('is-dragging'); track.removeEventListener('pointermove', move); track.removeEventListener('pointerup', up); track.removeEventListener('pointercancel', up); };
+        track.addEventListener('pointermove', move); track.addEventListener('pointerup', up); track.addEventListener('pointercancel', up);
+      });
+      track.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); step(e.key === 'ArrowRight' ? 1 : -1); }
+      });
+    }
+    prev.addEventListener('click', () => step(-1));
+    next.addEventListener('click', () => step(1));
+    row.addEventListener('scroll', () => requestAnimationFrame(sync), { passive: true });
+    window.addEventListener('resize', sync);
+    if (window.ResizeObserver) new ResizeObserver(sync).observe(row);
+    // Rueda vertical del mouse = mover la fila de lado
+    row.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || row.scrollWidth <= row.clientWidth) return;
+      const max = row.scrollWidth - row.clientWidth;
+      if ((e.deltaY < 0 && row.scrollLeft <= 0) || (e.deltaY > 0 && row.scrollLeft >= max)) return;
+      e.preventDefault();
+      row.scrollLeft += e.deltaY;
+    }, { passive: false });
+    // Arrastrar con el mouse (en pantalla táctil ya se desliza solo)
+    row.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      const x0 = e.clientX, s0 = row.scrollLeft;
+      let moved = false;
+      const move = ev => {
+        const dx = ev.clientX - x0;
+        if (!moved && Math.abs(dx) < 6) return;
+        if (!moved) { moved = true; row.classList.add('is-dragging'); }
+        row.scrollLeft = s0 - dx;
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        row.classList.remove('is-dragging');
+        if (moved) { swallowClick = true; setTimeout(() => { swallowClick = false; }, 0); }
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+    sync();
+  }
+
+  function initGestures() {
+    initRipple();
+    initPlaceRail();
+    initHold();
+    initPullToRefresh();
+    document.addEventListener('pointerdown', e => {
+      const t = e.target;
+      const item = t.closest('.mis-row .mis-item');
+      if (item) { startReveal(e, item.closest('.mis-row')); return; }
+      const msg = t.closest('#chat-msgs .msg[data-key]');
+      if (msg && !t.closest('.msg-act, .msg-rep, .av')) startSwipeReply(e, msg);
+    });
+  }
+
+  /* =====================================================================
+     13. EVENTOS E INICIO
   ===================================================================== */
   function onClick(e) {
     const t = e.target;
+    // Un arrastre (swipe) no cuenta como clic
+    if (swallowClick) { swallowClick = false; e.preventDefault(); e.stopPropagation(); return; }
+    const hold = t.closest('[data-hold]');
+    if (hold) { onHoldClick(e, hold); return; }
+    // Tocar una fila abierta la cierra en vez de abrir el chat
+    const openRow = t.closest('.mis-row.is-open');
+    if (openRow && !t.closest('.mis-act')) { e.preventDefault(); e.stopPropagation(); closeReveal(openRow); return; }
+    if (!t.closest('.mis-row')) closeReveal();
     const closer = t.closest('[data-close]');
     if (closer) { const m = closer.closest('.modal'); if (m) closeModal(m.id); return; }
     const nav = t.closest('[data-nav]');
-    if (nav) { closeAllModals(); go(nav.dataset.nav); return; }
-    const cat = t.closest('[data-cat]');
-    if (cat) { state.cat = cat.dataset.cat; renderRadar(true); return; }
+    if (nav) { closeAllModals(); $('#mis-wrap').classList.remove('is-chat'); go(nav.dataset.nav); return; }
     const tb = t.closest('[data-time]');
-    if (tb) { state.time = { mode: tb.dataset.time, date: null }; renderLiveMap(); return; }
+    if (tb) { state.time = tb.dataset.time; renderTimeSeg(); renderLiveMap(); return; }
     const mis = t.closest('[data-mis]');
     if (mis) { state.misTab = mis.dataset.mis; state.chatId = null; renderMis(); return; }
-    const idm = t.closest('[data-idmode]');
-    if (idm) {
-      const foto = idm.dataset.idmode === 'foto';
-      setIdMode(foto ? 'foto' : 'avatar');
-      // Volver al avatar se aplica de inmediato; la foto se aplica al guardarla
-      if (!foto && perfil.mostrar_foto_real) {
-        perfil.mostrar_foto_real = false;
-        afterIdentityChange();
-        if (!DEMO) updatePerfilRemote({ mostrar_foto_real: false }).catch(err => toast('No se guardó', dbMsg(err), { type: 'error' }));
-      } else if (foto && perfil.foto_encuadre.src && !perfil.mostrar_foto_real) {
-        perfil.mostrar_foto_real = true;
-        afterIdentityChange();
-        if (!DEMO) updatePerfilRemote({ mostrar_foto_real: true }).catch(err => toast('No se guardó', dbMsg(err), { type: 'error' }));
-      }
+    const cp = t.closest('[data-cat-pick]');
+    if (cp) { F('categoria').value = cp.dataset.catPick; F('categoria').dispatchEvent(new Event('change', { bubbles: true })); syncCreateUI(); return; }
+    const qd = t.closest('[data-qdate]');
+    if (qd) { F('fecha').value = qd.dataset.qdate; ['fecha', 'hora'].forEach(n => { touched.add(n); validate(n); }); syncCreateUI(); return; }
+    const qp = t.closest('[data-qprice]');
+    if (qp) { F('costo').value = qp.dataset.qprice; touched.add('costo'); validate('costo'); syncCreateUI(); return; }
+    const stp = t.closest('[data-step]');
+    if (stp) {
+      const inp = F('cupos');
+      inp.value = clamp((Number(inp.value) || 0) + Number(stp.dataset.step), 2, 60);
+      touched.add('cupos'); validate('cupos'); syncCreateUI();
+      if (!reduceMotion) { inp.classList.remove('bump'); void inp.offsetWidth; inp.classList.add('bump'); }
       return;
     }
     const place = t.closest('[data-place]');
     if (place) { choosePlace(place.dataset.place); return; }
+    // Modo Mesa: personas, día y hora
+    const ms = t.closest('[data-mesa-step]');
+    if (ms && mesaState.promo) {
+      const inp = $('#mesa-personas'), m = mesaState.promo;
+      inp.value = clamp((Number(inp.value) || 0) + Number(ms.dataset.mesaStep), m.min_personas, m.max_personas);
+      $('#mesa-error').textContent = '';
+      syncMesa();
+      return;
+    }
+    const md = t.closest('[data-mesa-dia]');
+    if (md) { mesaState.dia = md.dataset.mesaDia; $('#mesa-dia-msg').innerHTML = ''; syncMesa(true); return; }
+    const mh = t.closest('[data-mesa-hora]');
+    if (mh) { $('#mesa-hora').value = mh.dataset.mesaHora; $('#mesa-hora-msg').innerHTML = ''; syncMesa(); return; }
 
     const a = t.closest('[data-action]');
     if (!a) return;
     const id = a.dataset.id;
+    if (a.classList.contains('mis-act')) closeReveal();
     switch (a.dataset.action) {
-      case 'crear': closeAllModals(); openCreate({ fecha: a.dataset.fecha }); break;
+      case 'crear': abrirCrear(); break;
+      case 'crear-aqui': abrirCrear({ punto: { lat: a.dataset.lat, lng: a.dataset.lng, nombre: a.dataset.nombre } }); break;
+      case 'verificar': pedirVerificacion('insignia'); break;
+      case 'checkin-gps': checkinGps(id, a); break;
+      case 'qr-mostrar': mostrarQR(id); break;
+      case 'qr-escanear': abrirEscaner(id); break;
+      case 'mesa-reservar': closeAllModals(); abrirMesa(id); break;
+      case 'mesa-cancelar': cancelarMesa(id); break;
+      case 'mesa-mapa': mesaEnMapa(id); break;
       case 'join': toggleJoin(id); break;
+      case 'responder': setReply(a.dataset.key); break;
+      case 'reply-cancel': clearReply(); $('#chat-input')?.focus({ preventScroll: true }); break;
+      case 'ir-msg': irAMensaje(a.dataset.key); break;
+      case 'salir': askLeave(id); break;
       case 'editar': closeAllModals(); openCreate({ id }); break;
       case 'cancelar': askDelete(id); break;
       case 'ver-mapa': flyToParche(id); break;
       case 'chat': openChat(id); break;
-      case 'chat-back': $('#mis-layout').classList.remove('is-chat'); state.chatId = null; renderMis(); break;
-      case 'checkin': checkin(id); break;
-      case 'go-radar': go('radar'); break;
-      case 'cerrar-popup': liveMap && liveMap.closePopup(); break;
+      case 'chat-back': $('#mis-wrap').classList.remove('is-chat'); state.chatId = null; replyTo = null; renderMis(); break;
+      case 'reportar': openReport(a.dataset.tipo, id); break;
+      case 'go-inicio': go('inicio'); break;
       case 'logout': logout(); break;
+      case 'mis-datos': descargarMisDatos(a); break;
+      case 'borrar-cuenta': askBorrarCuenta(); break;
       case 'vaca-send': {
         const p = findP(state.chatId), total = Number($('#vaca-total').value) || 0;
         if (!p) break;
@@ -1633,43 +2791,37 @@
   function bind() {
     // En captura: los popups de Leaflet frenan la propagación del clic
     document.addEventListener('click', onClick, true);
+    $('#report-form')?.addEventListener('submit', sendReport);
+    $('#form-mesa')?.addEventListener('submit', submitMesa);
+    $('#mesa-hora')?.addEventListener('input', () => syncMesa());
+    $('#mesa-personas')?.addEventListener('input', () => { $('#mesa-error').textContent = ''; syncMesa(); });
+    // Código del QR escrito a mano (si la cámara no abre)
+    $('#scan-manual')?.addEventListener('submit', e => {
+      e.preventDefault();
+      const cod = $('#scan-code').value.replace(/\s/g, '').toLowerCase();
+      if (!/^[0-9a-f]{10}$/.test(cod)) { const m = $('#scan-msg'); m.className = 'checkin-msg is-error'; m.innerHTML = `${ic('i-alert')} El código tiene 10 letras y números. Revísalo en la pantalla del organizador.`; return; }
+      cerrarEscaner();
+      enviarQR(escanerParche, cod);
+    });
+    $('#p-anuncios')?.addEventListener('change', e => cambiarAnuncios(e.target.checked));
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && modalStack.length) closeModal(modalStack[modalStack.length - 1].id);
+      if (e.key === 'Escape' && modalStack.length) { closeModal(modalStack[modalStack.length - 1].id); return; }
+      if (e.key === 'Escape' && replyTo && document.activeElement && document.activeElement.id === 'chat-input') clearReply();
     });
 
-    let st;
-    $('#search-input').addEventListener('input', e => {
-      clearTimeout(st);
-      $('#search-clear').hidden = !e.target.value;
-      st = setTimeout(() => {
-        state.search = e.target.value.trim();
-        if (state.view !== 'radar' && state.view !== 'mapa') go('radar'); else refresh();
-      }, 140);
-    });
-    $('#search-clear').addEventListener('click', () => { $('#search-input').value = ''; $('#search-clear').hidden = true; state.search = ''; refresh(); });
+    initSearch();
+    initGestures();
 
-    $('#btn-locate').addEventListener('click', () => { go('mapa'); startGeo({ fly: true }); });
     $('#map-locate').addEventListener('click', () => startGeo({ fly: true }));
-
-    $('#time-select').addEventListener('change', e => {
-      const v = e.target.value;
-      if (v === '__fecha') { $('#time-date-wrap').hidden = false; $('#time-date').focus(); return; }
-      if (v) { state.time = { mode: 'fecha', date: v }; renderLiveMap(); }
-    });
-    $('#time-date').addEventListener('change', e => {
-      const v = e.target.value;
-      if (!v) return;
-      state.time = v === todayKey() ? { mode: 'hoy', date: null } : v === offsetKey(1) ? { mode: 'manana', date: null } : { mode: 'fecha', date: v };
-      renderLiveMap();
-    });
 
     const form = $('#form-create');
     form.addEventListener('submit', submitCreate);
+    form.addEventListener('input', () => syncCreateUI());
     form.addEventListener('input', e => {
       const n = e.target.name;
       if (n && touched.has(n)) validate(n);
       if (n === 'fecha' && touched.has('hora')) validate('hora');
-      if (n === 'lugar') selectPlaceChip(null);
+      if (n === 'lugar') { selectPlaceChip(null); draft.autoLugar = false; }
     });
     form.addEventListener('focusout', e => { const n = e.target.name; if (n && RULES[n]) { touched.add(n); validate(n); } });
     form.addEventListener('change', e => { if (e.target.name === 'categoria' && createMarker) setCreatePin(draft.lat, draft.lng, true); });
@@ -1682,35 +2834,47 @@
     });
     document.addEventListener('input', e => { if (e.target.id === 'vaca-total') updateVaca(); });
 
-    setInterval(() => { if (state.view === 'radar') renderRadar(); }, 60 * 1000);
+    // Sombra de la barra al bajar
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { $('#top').classList.toggle('is-scrolled', window.scrollY > 8); ticking = false; });
+    }, { passive: true });
+
+    setInterval(() => { if (state.view === 'inicio') { renderNext(); renderCards(); } }, 60 * 1000);
     window.addEventListener('resize', () => {
       liveMap && liveMap.invalidateSize();
-      if (!isMobile()) $('#mis-layout').classList.remove('is-chat');
+      if (!isMobile()) $('#mis-wrap').classList.remove('is-chat');
+      movePill($('#tabs'), true); movePill($('#time-seg'), true); movePill($('#mis-seg'), true);
     });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => movePill($('#tabs'), true));
   }
 
   async function init() {
-    if (DEMO) loadDemo();
+    if (DEMO) { loadDemo(); await cargarMesas(); }
     else if (!(await bootRemote())) return;
 
-    $('#c-categoria').innerHTML = CATS.filter(c => c.id !== 'todos').map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
+    $('#c-categoria').innerHTML = CATS.map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
+    renderCatPicker();
     renderPlaceChips();
-    buildTimeControls();
     bind();
     initPerfil();
 
-    renderSideUser();
+    renderMeChip();
     renderNavCount();
-    go('radar');
+    const hash = window.location.hash.replace('#', '');
+    go(['inicio', 'mapa', 'mis', 'perfil'].includes(hash) ? hash : 'inicio');
+    requestAnimationFrame(() => movePill($('#tabs'), true));
     hideBoot();
-    startGeo(); // pide permiso de ubicación al iniciar
+    startGeo();
 
     if (!DEMO) {
       subscribeRealtime();
       const abrir = new URLSearchParams(window.location.search).get('parche');
       if (abrir && findP(abrir)) setTimeout(() => openChat(abrir), 400);
     } else if (sb) {
-      toast('Modo demo', 'Estás viendo datos de ejemplo guardados en este navegador.', { icon: 'i-info' });
+      setTimeout(() => toast('Modo demo', 'Estás viendo parches de ejemplo guardados en este navegador.', { icon: 'i-info' }), 900);
     }
     if (typeof L === 'undefined') toast('El mapa no cargó', 'Revisa tu conexión para ver el mapa.', { type: 'error' });
   }

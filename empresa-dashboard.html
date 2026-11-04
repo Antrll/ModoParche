@@ -3,20 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#f9f9f9">
-<title>Modo Parche Business · Panel del local</title>
-<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
-<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
+<meta name="theme-color" content="#FF5A1F">
+<title>Panel del negocio · ModoParche</title>
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="empresa-dashboard.css">
+<link rel="stylesheet" href="mp-mapa.css">
+<link rel="stylesheet" href="legal.css">
 </head>
 <body>
+<a class="skip" href="#canvas">Saltar al contenido</a>
 
 <!-- Íconos de contorno (cero emojis) -->
 <svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
@@ -59,6 +64,8 @@
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 3 19.5h18z"/><path d="M12 10v4.5M12 17h.01"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14.5 4.5h4v15h-4M10 8.5 6.5 12l3.5 3.5M6.5 12h9"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 5 6.2v5.6c0 4.2 3 7.4 7 8.7 4-1.3 7-4.5 7-8.7V6.2z"/><path d="m9 12 2.2 2.2 4-4.4"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><path d="M3 9.5h18M5 9.5 6.5 20M19 9.5 17.5 20M12 9.5V20"/><circle cx="6" cy="5.5" r="1.8"/><circle cx="12" cy="4.8" r="1.8"/><circle cx="18" cy="5.5" r="1.8"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15h4"/></symbol>
     <symbol id="i-flip" viewBox="0 0 24 24"><path d="M4.5 9.5a7.5 7.5 0 0 1 13.4-3.2M19.5 14.5a7.5 7.5 0 0 1-13.4 3.2"/><path d="M18.5 3v3.8h-3.8M5.5 21v-3.8h3.8"/></symbol>
     <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7.5 4.5 12 9 16.5"/><path d="M4.5 12h10a5 5 0 0 1 0 10h-2"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4.5 9.5h3.5l4.5-4v13l-4.5-4H4.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
@@ -73,36 +80,39 @@
   ===================================================================== -->
   <aside class="sidebar" id="sidebar" aria-label="Navegación del panel">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true"><svg class="ic"><use href="#i-rock"/></svg></span>
-      <span class="brand-name"><b>Modo Parche</b><small>Business</small></span>
+      <a class="brand-link" href="#resumen" aria-label="Ir al resumen de tu negocio">
+        <img class="brand-iso" src="src/assets/web/isotipo-96.png" alt="" width="40" height="40">
+        <span class="brand-name"><b>Modo<i>Parche</i></b><small>Negocios</small></span>
+      </a>
       <button class="icon-btn menu-close" id="menu-close" aria-label="Cerrar menú"><svg class="ic"><use href="#i-close"/></svg></button>
     </div>
 
-    <div class="local-switch">
-      <button class="local-btn" id="local-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="local-list">
-        <span class="local-logo" id="local-logo-side" aria-hidden="true"></span>
-        <span class="local-txt"><b id="local-name-side"></b><small id="local-cat-side"></small></span>
-        <svg class="ic"><use href="#i-chev-down"/></svg>
-      </button>
-      <ul class="local-list" id="local-list" role="listbox" aria-label="Tus locales" hidden></ul>
-    </div>
+    <!-- Un negocio por cuenta: cada local entra con su propio correo -->
+    <a class="local-card" href="#perfil" aria-label="Ver el perfil de tu negocio">
+      <span class="local-logo" id="local-logo-side" aria-hidden="true"></span>
+      <span class="local-txt"><b id="local-name-side"></b><small id="local-cat-side"></small></span>
+      <span class="plan-badge" id="plan-badge"></span>
+    </a>
 
     <nav class="nav" aria-label="Secciones">
       <a class="nav-item" href="#resumen" data-route="resumen"><svg class="ic"><use href="#i-overview"/></svg>Resumen</a>
       <a class="nav-item" href="#parches" data-route="parches"><svg class="ic"><use href="#i-calendar"/></svg>Parches<span class="nav-count" id="count-parches" hidden></span></a>
       <a class="nav-item" href="#cupones" data-route="cupones"><svg class="ic"><use href="#i-ticket"/></svg>Cupones<span class="nav-count" id="count-cupones" hidden></span></a>
+      <a class="nav-item" href="#mesa" data-route="mesa"><svg class="ic"><use href="#i-table"/></svg>Modo Mesa<span class="nav-count" id="count-mesa" hidden></span></a>
       <a class="nav-item" href="#asistentes" data-route="asistentes"><svg class="ic"><use href="#i-users"/></svg>Asistentes y chat</a>
       <a class="nav-item" href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-map"/></svg>Mapa comercial</a>
       <p class="group-label">Tu negocio</p>
-      <a class="nav-item" href="#perfil" data-route="perfil"><svg class="ic"><use href="#i-store"/></svg>Perfil del local<svg class="ic lock-ic" role="img" aria-label="Solo lectura"><use href="#i-lock"/></svg></a>
+      <a class="nav-item" href="#perfil" data-route="perfil"><svg class="ic"><use href="#i-store"/></svg>Perfil y plan</a>
     </nav>
 
     <div class="side-bottom">
       <button class="door-cta" data-action="modo-puerta">
+        <img class="door-cta-stk" src="src/assets/web/stk/chispasnaranjasimpactoesquina.webp" alt="" width="560" height="460" loading="lazy">
         <span class="door-cta-ic" aria-hidden="true"><svg class="ic"><use href="#i-door"/></svg></span>
         <span><b>Modo puerta</b><small>Check-in rápido en la entrada</small></span>
       </button>
-      <a class="nav-item" href="index.html"><svg class="ic"><use href="#i-logout"/></svg>Salir al sitio</a>
+      <a class="nav-item" href="index.html"><svg class="ic"><use href="#i-chev-right"/></svg>Ir al sitio</a>
+      <button class="nav-item nav-item--btn" type="button" data-action="logout"><svg class="ic"><use href="#i-logout"/></svg>Cerrar sesión</button>
     </div>
   </aside>
 
@@ -119,6 +129,7 @@
         <kbd class="kbd" aria-hidden="true">/</kbd>
       </label>
       <div class="topbar-right">
+        <a class="demo-chip" id="demo-chip" href="empresa.html" hidden><span>Panel de ejemplo</span><b>Crear mi cuenta</b></a>
         <span class="live-chip" id="live-chip"><span class="live-dot" aria-hidden="true"></span><span id="live-text"></span></span>
         <button class="icon-btn" id="sound-btn" aria-pressed="true" aria-label="Sonido al validar" title="Sonido al validar"><svg class="ic"><use href="#i-sound"/></svg></button>
         <button class="btn primary" data-action="ir-validar"><svg class="ic"><use href="#i-scan"/></svg><span>Validar cupón</span></button>
@@ -129,13 +140,30 @@
 
       <!-- ============================ RESUMEN ============================ -->
       <section class="view" id="view-resumen" aria-labelledby="h-resumen">
-        <div class="title-row">
-          <div>
-            <h1 id="h-resumen" class="display">Resumen</h1>
-            <p class="sub" id="resumen-sub"></p>
+        <div class="hello">
+          <div class="hello-copy">
+            <p class="hello-kicker" id="hello-kicker">Panel de tu negocio</p>
+            <h1 id="h-resumen" class="hello-title"><span class="ln"><span>Hola,</span></span> <span class="ln"><span id="hello-local">tu local</span></span></h1>
+            <p class="hello-sub" id="resumen-sub"></p>
+            <div class="hello-actions">
+              <button class="btn dark" data-action="nuevo-parche"><svg class="ic"><use href="#i-plus"/></svg>Nuevo parche</button>
+              <button class="btn hello-ghost" data-action="relampago"><svg class="ic"><use href="#i-bolt"/></svg>Lanzar relámpago<kbd class="kbd kbd--in" aria-hidden="true">R</kbd></button>
+            </div>
           </div>
-          <button class="btn primary" data-action="relampago"><svg class="ic"><use href="#i-bolt"/></svg>Lanzar relámpago<kbd class="kbd kbd--in" aria-hidden="true">R</kbd></button>
+          <div class="hello-art" aria-hidden="true">
+            <div class="hello-seal">
+              <svg class="hello-ring" viewBox="0 0 200 200">
+                <defs><path id="sealPathBiz" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0"/></defs>
+                <text><textPath href="#sealPathBiz" textLength="512">Aliado ModoParche · Villavicencio · Meta ·</textPath></text>
+              </svg>
+              <img class="hello-iso" src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476">
+            </div>
+            <img class="hello-stk hello-stk--crown" src="src/assets/web/stk/coronablancabrochabasquiat.webp" alt="" width="399" height="427">
+            <img class="hello-stk hello-stk--bolt" src="src/assets/web/stk/rayoblancogrungequebrado.webp" alt="" width="278" height="506">
+          </div>
         </div>
+
+        <div id="setup-slot"></div>
 
         <div class="overview">
           <div class="col-main">
@@ -235,6 +263,32 @@
         </section>
       </section>
 
+      <!-- ============================ MODO MESA ============================ -->
+      <section class="view" id="view-mesa" aria-labelledby="h-mesa" hidden>
+        <div class="title-row">
+          <div>
+            <h1 id="h-mesa" class="display">Modo Mesa</h1>
+            <p class="sub">No todos llegan con desconocidos: muchos ya vienen con su grupo. Lanza una promo o experiencia para grupos y la gente reserva diciendo cuántos van y a qué hora llegan.</p>
+          </div>
+          <button class="btn primary" data-action="nueva-mesa"><svg class="ic"><use href="#i-plus"/></svg>Nueva promo de mesa</button>
+        </div>
+        <div class="mesa-grid">
+          <section class="panel" aria-labelledby="h-reservas" data-anim>
+            <header><h2 id="h-reservas">Reservas</h2>
+              <div class="segmented" role="group" aria-label="Filtrar reservas" id="mesa-tabs">
+                <button type="button" aria-pressed="true" data-mtab="proximas">Próximas</button>
+                <button type="button" aria-pressed="false" data-mtab="pasadas">Pasadas</button>
+              </div>
+            </header>
+            <ul class="rows mesa-rows" id="mesa-reservas"></ul>
+          </section>
+          <section class="panel" aria-labelledby="h-promos" data-anim>
+            <header><h2 id="h-promos">Tus promos de mesa</h2><span class="meta" id="mesa-promos-meta"></span></header>
+            <ul class="mesa-promos" id="mesa-promos"></ul>
+          </section>
+        </div>
+      </section>
+
       <!-- ============================ ASISTENTES ============================ -->
       <section class="view" id="view-asistentes" aria-labelledby="h-asistentes" hidden>
         <div class="title-row">
@@ -303,13 +357,13 @@
       <section class="view" id="view-perfil" aria-labelledby="h-perfil" hidden>
         <div class="title-row">
           <div>
-            <h1 id="h-perfil" class="display">Perfil del local</h1>
+            <h1 id="h-perfil" class="display">Perfil y plan</h1>
             <p class="sub">Así te ven los parceros en el mapa y en cada parche.</p>
           </div>
-          <button class="btn" data-action="solicitar"><svg class="ic"><use href="#i-mail"/></svg>Solicitar un cambio</button>
+          <button class="btn primary" data-action="editar-perfil"><svg class="ic"><use href="#i-edit"/></svg>Editar perfil</button>
         </div>
 
-        <p class="notice" data-anim><svg class="ic"><use href="#i-lock"/></svg><span>Esta información la administra el equipo de Modo Parche. Aquí la puedes ver; para cambiar algo, usa <b>Solicitar un cambio</b> y lo revisamos.</span></p>
+        <p class="notice notice--olive" data-anim><svg class="ic"><use href="#i-shield"/></svg><span>Tu cuenta es solo tuya: ningún otro negocio ve tus datos, parches ni clientes. Edita tu perfil cuando quieras; toca el mapa de ubicación para mover el pin de tu local.</span></p>
 
         <div class="profile-grid">
           <div class="profile-card" data-anim>
@@ -321,7 +375,7 @@
             <dl class="facts" id="facts"></dl>
           </section>
           <section class="panel" aria-labelledby="h-horarios" data-anim>
-            <header><h2 id="h-horarios">Horarios</h2><span class="meta" id="horario-hoy"></span></header>
+            <header><div><h2 id="h-horarios">Horarios</h2><span class="meta" id="horario-hoy"></span></div><button class="btn btn--sm" data-action="editar-horarios"><svg class="ic"><use href="#i-clock"/></svg>Editar horarios</button></header>
             <ul class="hours" id="hours"></ul>
           </section>
           <section class="panel panel--flush" aria-labelledby="h-ubic" data-anim>
@@ -332,9 +386,19 @@
             <header><h2 id="h-resenas">Reseñas de clientes</h2><span class="meta" id="resenas-meta"></span></header>
             <ul class="reviews" id="reviews"></ul>
           </section>
-          <section class="panel" aria-labelledby="h-solicitudes" data-anim>
-            <header><h2 id="h-solicitudes">Tus solicitudes</h2><span class="meta">Las revisa el equipo de Modo Parche</span></header>
-            <ul class="rows" id="solicitudes"></ul>
+          <section class="panel plan-panel" aria-labelledby="h-plan" data-anim>
+            <header><h2 id="h-plan">Tu plan</h2><span class="meta" id="plan-meta"></span></header>
+            <div id="plan-box"></div>
+            <p class="meta plan-legal">Precio final con impuestos incluidos. Sin permanencia: cancelas cuando quieras y tienes 5 días hábiles de retracto. <a href="pagos.html" target="_blank" rel="noopener">Pagos y devoluciones</a></p>
+          </section>
+          <section class="panel privacy-panel" aria-labelledby="h-privacidad" data-anim>
+            <header><h2 id="h-privacidad">Privacidad y cuenta</h2></header>
+            <ul class="pv-list">
+              <li><label class="pv-anuncios" for="bz-anuncios-sw"><span><b>Recibir anuncios de ModoParche</b><small>Novedades para negocios. Puedes darte de baja cuando quieras; los avisos de tus parches, mesas y pagos te llegan igual.</small></span></label><input type="checkbox" class="switch" id="bz-anuncios-sw" role="switch"></li>
+              <li><span><b>Descargar los datos de la cuenta</b><small>Todo lo que tenemos de tu negocio, en un archivo.</small></span><button class="btn btn--sm" type="button" data-action="mis-datos">Descargar</button></li>
+              <li><span><b>Borrar la cuenta del negocio</b><small>Se borran el negocio, sus parches y sus datos. No se puede deshacer.</small></span><button class="btn btn--sm danger" type="button" data-action="borrar-cuenta">Borrar</button></li>
+            </ul>
+            <p class="meta"><a href="terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="privacidad.html" target="_blank" rel="noopener">Privacidad</a> · <a href="legal.html" target="_blank" rel="noopener">Información legal</a></p>
           </section>
         </div>
       </section>
@@ -347,10 +411,11 @@
 ===================================================================== -->
 <div class="door-mode" id="door-mode" role="dialog" aria-modal="true" aria-labelledby="door-title" hidden>
   <header class="door-head">
-    <span class="brand-mark" aria-hidden="true"><svg class="ic"><use href="#i-rock"/></svg></span>
+    <img class="door-iso" src="src/assets/web/isotipo-negro-96.png" alt="" width="40" height="40">
     <div class="door-title"><b id="door-title">Modo puerta</b><small id="door-sub"></small></div>
     <label class="sr-only" for="door-select">Parche</label>
     <select class="input input--sm" id="door-select"></select>
+    <button class="btn btn--sm door-qr-btn" data-action="door-qr"><svg class="ic"><use href="#i-qr"/></svg>QR de llegada</button>
     <button class="icon-btn icon-btn--lg" data-action="cerrar-puerta" aria-label="Salir del modo puerta"><svg class="ic"><use href="#i-close"/></svg></button>
   </header>
   <div class="door-body">
@@ -385,8 +450,28 @@
           <div class="field"><label for="p-consumo">Consumo por persona (COP)</label><input class="input num" type="number" id="p-consumo" min="0" step="1000" inputmode="numeric"><p class="field-msg"></p></div>
         </div>
         <div class="field"><label for="p-promo">Qué pasa ese día</label><textarea class="input" id="p-promo" rows="3" maxlength="200" placeholder="La música, la promo y qué gana quien llegue"></textarea><p class="field-msg"></p></div>
+        <div class="field"><label for="p-cat">Categoría en el radar</label>
+          <select class="input" id="p-cat">
+            <option value="comida">Comida</option><option value="rumba">Rumba</option><option value="chill">Plan chill</option>
+            <option value="conciertos">Música en vivo</option><option value="cultura">Cultura</option><option value="deportes">Deporte</option>
+            <option value="pueblear">Aventura</option><option value="gaming">Gaming</option>
+          </select>
+        </div>
       </div>
       <div>
+        <div class="field">
+          <span id="p-foto-label">Foto del parche <small class="opt">(recomendada)</small></span>
+          <label class="photo-drop" id="photo-drop" aria-labelledby="p-foto-label">
+            <input type="file" id="p-foto" accept="image/jpeg,image/png,image/webp" class="sr-only">
+            <span class="photo-empty"><svg class="ic"><use href="#i-image"/></svg><b>Sube una foto que llame la atención</b><small>Se verá en el radar de los usuarios. JPG, PNG o WebP.</small></span>
+            <img class="photo-prev" id="photo-prev" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Vista previa de la foto del parche" hidden>
+          </label>
+          <div class="photo-actions" id="photo-actions" hidden>
+            <label class="btn btn--sm" for="p-foto"><svg class="ic"><use href="#i-image"/></svg>Cambiar</label>
+            <button type="button" class="btn ghost btn--sm" id="photo-clear"><svg class="ic"><use href="#i-trash"/></svg>Quitar</button>
+          </div>
+          <p class="field-msg"></p>
+        </div>
         <div class="field field--map">
           <span>Dónde es</span>
           <div id="map-parche" class="map map--dialog"></div>
@@ -470,25 +555,129 @@
   </form>
 </dialog>
 
-<dialog class="dialog" id="dlg-solicitud" aria-labelledby="dlg-sol-title">
-  <form method="dialog" class="dialog-body" id="form-solicitud" novalidate>
+<dialog class="dialog dialog--wide" id="dlg-perfil" aria-labelledby="dlg-perfil-title">
+  <form method="dialog" class="dialog-body" id="form-perfil" novalidate>
     <header class="dialog-head">
-      <h2 id="dlg-sol-title">Solicitar un cambio</h2>
+      <h2 id="dlg-perfil-title">Editar perfil del negocio</h2>
       <button class="icon-btn" value="cancel" formnovalidate aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
     </header>
-    <p class="dialog-note">El equipo de Modo Parche revisa tu solicitud y hace el cambio desde el panel de administración.</p>
-    <div class="field"><label for="s-campo">Qué quieres cambiar</label>
-      <select class="input" id="s-campo">
-        <option>Nombre o categoría</option><option>Teléfono o dirección</option><option>Horarios</option><option>Fotos o logo</option><option>Ubicación en el mapa</option><option>Otra cosa</option>
-      </select>
+    <div class="form-grid">
+      <div class="field"><label for="e-nombre">Nombre del negocio</label><input class="input" id="e-nombre" maxlength="80" autofocus><p class="field-msg"></p></div>
+      <div class="field"><label for="e-cat">Categoría</label>
+        <select class="input" id="e-cat">
+          <option value="comida">Comida</option><option value="rumba">Rumba</option><option value="chill">Plan chill</option>
+          <option value="conciertos">Música en vivo</option><option value="cultura">Cultura</option><option value="deportes">Deporte</option>
+          <option value="pueblear">Aventura</option><option value="gaming">Gaming</option>
+        </select>
+      </div>
+      <div class="field"><label for="e-tel">WhatsApp</label><input class="input num" id="e-tel" inputmode="numeric" maxlength="15"><p class="field-msg"></p></div>
+      <div class="field"><label for="e-barrio">Barrio</label><input class="input" id="e-barrio" maxlength="40"><p class="field-msg"></p></div>
     </div>
-    <div class="field"><label for="s-detalle">Cuéntanos el cambio</label><textarea class="input" id="s-detalle" autofocus rows="4" maxlength="400" placeholder="Ej. Desde noviembre abrimos los domingos de 4:00 p. m. a 12:00 a. m."></textarea><p class="field-msg"></p></div>
+    <div class="field"><label for="e-dir">Dirección</label><input class="input" id="e-dir" maxlength="120"><p class="field-msg"></p></div>
+    <div class="field"><label for="e-desc">Descripción</label><textarea class="input" id="e-desc" rows="3" maxlength="300" placeholder="Qué ofreces y por qué vale la pena caer"></textarea><p class="field-msg"></p></div>
     <footer class="dialog-foot">
       <button class="btn" value="cancel" formnovalidate>Cancelar</button>
-      <button class="btn primary" type="submit"><svg class="ic"><use href="#i-send"/></svg>Enviar solicitud</button>
+      <button class="btn primary" type="submit" id="e-submit">Guardar cambios</button>
     </footer>
   </form>
 </dialog>
+
+<dialog class="dialog dialog--wide" id="dlg-horarios" aria-labelledby="dlg-horarios-title">
+  <form method="dialog" class="dialog-body" id="form-horarios" novalidate>
+    <header class="dialog-head">
+      <h2 id="dlg-horarios-title">Tus horarios</h2>
+      <button class="icon-btn" value="cancel" formnovalidate aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <p class="dialog-note">Tú decides cuándo abres. Con esto el panel sabe si estás abierto, sugiere horas para tus parches y avisa si lanzas un relámpago con el local cerrado.</p>
+    <div class="hours-edit" id="hours-edit"></div>
+    <div class="hours-tools">
+      <button type="button" class="btn btn--sm" data-action="horario-copiar"><svg class="ic"><use href="#i-copy"/></svg>Copiar el lunes a todos los días</button>
+    </div>
+    <p class="field-msg" id="horarios-msg"></p>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button class="btn primary" type="submit" id="h-submit">Guardar horarios</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog dialog--wide" id="dlg-mesa" aria-labelledby="dlg-mesa-title">
+  <form method="dialog" class="dialog-body" id="form-mesa" novalidate>
+    <header class="dialog-head">
+      <h2 id="dlg-mesa-title">Nueva promo de mesa</h2>
+      <button class="icon-btn" value="cancel" formnovalidate aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="field"><label for="m-titulo">Nombre de la promo</label><input class="input" id="m-titulo" maxlength="60" placeholder="Ej. Mesa de 6: botella de la casa"><p class="field-msg"></p></div>
+    <div class="field"><label for="m-beneficio">Qué gana el grupo</label><input class="input" id="m-beneficio" maxlength="120" placeholder="Ej. Botella de cortesía si llegan 6 o más"><p class="field-msg"></p></div>
+    <div class="field"><label for="m-desc">Condiciones <small class="opt">(opcional)</small></label><textarea class="input" id="m-desc" rows="2" maxlength="300" placeholder="Ej. Mesa guardada 20 minutos. No acumulable."></textarea></div>
+    <div class="form-grid">
+      <div class="field"><label for="m-min">Mínimo de personas</label><input class="input num" type="number" id="m-min" min="2" max="30" inputmode="numeric"><p class="field-msg"></p></div>
+      <div class="field"><label for="m-max">Máximo de personas</label><input class="input num" type="number" id="m-max" min="2" max="30" inputmode="numeric"><p class="field-msg"></p></div>
+      <div class="field"><label for="m-desde">Desde</label><input class="input num" type="time" id="m-desde"><p class="field-msg"></p></div>
+      <div class="field"><label for="m-hasta">Hasta</label><input class="input num" type="time" id="m-hasta"><p class="field-msg"></p></div>
+      <div class="field"><label for="m-cupos">Mesas por día</label><input class="input num" type="number" id="m-cupos" min="1" max="100" inputmode="numeric"><p class="field-msg"></p></div>
+      <div class="field"><label for="m-vence">Vence <small class="opt">(opcional)</small></label><input class="input num" type="date" id="m-vence"></div>
+    </div>
+    <div class="field">
+      <span id="m-dias-label">Días</span>
+      <div class="day-pick" id="m-dias" role="group" aria-labelledby="m-dias-label"></div>
+      <p class="field-msg" id="m-dias-msg"></p>
+    </div>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button class="btn primary" type="submit" id="m-submit">Publicar promo</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="dlg-pago" aria-labelledby="dlg-pago-title">
+  <div class="dialog-body">
+    <header class="dialog-head">
+      <h2 id="dlg-pago-title">Pásate a Parche Villavo</h2>
+      <button class="icon-btn" data-action="cerrar-pago" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="pay-sum">
+      <div><b>Parche Villavo</b><small>30 días · parches sin límite con foto, relámpagos y métricas</small></div>
+      <span class="pay-price" id="pago-precio">$89.000</span>
+    </div>
+    <ul class="pay-methods" aria-label="Medios de pago">
+      <li><svg class="ic"><use href="#i-card"/></svg>Tarjeta débito o crédito</li>
+      <li><svg class="ic"><use href="#i-store"/></svg>PSE (cualquier banco)</li>
+      <li><svg class="ic"><use href="#i-send"/></svg>Nequi</li>
+      <li><svg class="ic"><use href="#i-shield"/></svg>Botón Bancolombia</li>
+    </ul>
+    <div class="pay-status" id="pago-status" role="status" aria-live="polite" hidden></div>
+    <p class="pay-test"><b>Prototipo académico: pago de prueba.</b> No se cobra dinero real. Usa las tarjetas o cuentas de prueba de Wompi (por ejemplo, la tarjeta 4242 4242 4242 4242).</p>
+    <p class="hint">El pago lo procesa <b>Wompi</b> (Bancolombia): ModoParche nunca ve ni guarda los datos de tu tarjeta. Sin permanencia y con 5 días hábiles de retracto. <a href="pagos.html" target="_blank" rel="noopener">Pagos y devoluciones</a></p>
+    <footer class="dialog-foot">
+      <button class="btn" data-action="cerrar-pago">Ahora no</button>
+      <button class="btn primary" id="pago-btn" data-action="pagar"><svg class="ic"><use href="#i-lock"/></svg>Pagar seguro con Wompi</button>
+    </footer>
+  </div>
+</dialog>
+
+<dialog class="dialog" id="dlg-qr" aria-labelledby="dlg-qr-title">
+  <div class="dialog-body">
+    <header class="dialog-head">
+      <h2 id="dlg-qr-title">QR de llegada</h2>
+      <button class="icon-btn" data-action="cerrar-qr" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <p class="dialog-note" id="qr-note">Quien llega abre el chat del parche en su app, toca <b>Escanear QR</b> y apunta aquí. El código cambia cada 30 segundos.</p>
+    <div class="qr-big" id="biz-qr-box"></div>
+    <div class="qr-timer" aria-hidden="true"><span id="biz-qr-bar"></span></div>
+    <p class="hint qr-foot">Cambia en <b class="num" id="biz-qr-count">30 s</b> · Código <b class="num" id="biz-qr-code">-----</b></p>
+  </div>
+</dialog>
+
+<!-- Pantalla de carga y avisos de sesión -->
+<div class="boot" id="boot" role="status" aria-live="polite">
+  <div class="boot-card">
+    <span class="boot-ring" aria-hidden="true"></span>
+    <img class="boot-stk" src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476">
+    <p class="boot-msg" id="boot-msg">Abriendo el panel de tu negocio…</p>
+    <div class="boot-actions" id="boot-actions" hidden></div>
+  </div>
+</div>
 
 <dialog class="dialog" id="dlg-scan" aria-labelledby="dlg-scan-title">
   <div class="dialog-body">
@@ -521,6 +710,11 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<script src="mp-mapa.js"></script>
+<script src="mp-checkin.js"></script>
 <script src="empresa-dashboard.js"></script>
+<script src="legal.js" defer></script>
 </body>
 </html>

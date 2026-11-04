@@ -1,15 +1,24 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ModoParche - Villavicencio tiene plan</title>
 <meta name="description" content="ModoParche te muestra los planes en grupo abiertos hoy en Villavicencio, ordenados por tus gustos, tu presupuesto y tu horario.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ModoParche">
+<meta property="og:title" content="ModoParche - Villavicencio tiene plan">
+<meta property="og:description" content="ModoParche te muestra los planes en grupo abiertos hoy en Villavicencio, ordenados por tus gustos, tu presupuesto y tu horario.">
+<meta property="og:url" content="https://modoparche-hazel.vercel.app/">
+<meta property="og:image" content="https://modoparche-hazel.vercel.app/src/assets/web/banner.jpg">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
-<link rel="icon" type="image/png" href="src/assets/Branding/isotipo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="src/assets/Branding/favicon-192.png">
-<link rel="apple-touch-icon" href="src/assets/Branding/apple-touch-icon.png">
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
@@ -17,6 +26,7 @@
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="index.css">
 <script>document.documentElement.classList.add('mp-js');</script>
+<link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-home">
 
@@ -28,16 +38,18 @@
 <header class="nav nav--orange">
   <div class="wrap nav-row">
     <a href="index.html" class="logo" aria-label="ModoParche, inicio">
-      <img src="src/assets/web/isotipo-96.png" alt="" width="44" height="44">Modo<b>Parche</b>
+      <span class="logo-mark"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b>
     </a>
     <nav class="nav-links" aria-label="Principal">
       <a href="index.html" aria-current="page">Inicio</a>
-      <a href="equipo.html">Equipo y contacto</a>
       <a href="comercio.html">Para negocios</a>
+      <a href="preguntas.html">Preguntas</a>
+      <a href="marca.html">La marca</a>
+      <a href="equipo.html">Equipo</a>
     </nav>
     <div class="nav-right">
       <a href="login.html" class="nav-login">Iniciar sesión</a>
-      <a href="#feed" class="btn btn--sm"><span class="pulse" aria-hidden="true"></span>Abrir un parche</a>
+      <a href="login.html#crear" class="btn btn--sm nav-cta"><span class="pulse" aria-hidden="true"></span>Crear cuenta</a>
       <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
     </div>
   </div>
@@ -46,12 +58,15 @@
 <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
   <nav aria-label="Menú móvil">
     <a href="index.html" aria-current="page">Inicio</a>
-    <a href="equipo.html">Equipo</a>
     <a href="comercio.html">Negocios</a>
-    <a href="login.html">Entrar</a>
+    <a href="preguntas.html">Preguntas</a>
+    <a href="marca.html">La marca</a>
+    <a href="equipo.html">Equipo</a>
+    <a href="login.html">Iniciar sesión</a>
   </nav>
   <div class="mobile-menu-foot">
-    <a href="login.html" class="btn btn--block">Crear mi cuenta</a>
+    <a href="login.html#crear" class="btn btn--block">Crear mi cuenta</a>
+    <a href="empresa.html" class="btn btn--block btn--ghost">Tengo un negocio</a>
     <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
 </div>
@@ -73,16 +88,16 @@
         <defs><path id="sealPath" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0"/></defs>
         <text><textPath href="#sealPath" textLength="512">Tu modo · Tu parche · Villavicencio · Meta ·</textPath></text>
       </svg>
-      <img src="src/assets/web/isotipo.png" alt="" width="512" height="512">
+      <img src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476">
     </div>
 
     <div class="hero-foot" data-reveal-group="90">
-      <p class="hero-lede" data-reveal>Parches reales hoy en Villavicencio, armados a tu medida.</p>
+      <p class="hero-lede" data-reveal>Parches reales hoy en Villavicencio, armados a tu medida. Crea tu cuenta gratis y sal acompañado.</p>
       <div class="hero-actions" data-reveal>
-        <a href="#feed" class="btn btn--ink">Ver lo que hay ahora
+        <a href="login.html#crear" class="btn btn--ink">Crear mi cuenta gratis
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="login.html" class="link">Crear mi cuenta</a>
+        <a href="#feed" class="link">Ver lo que hay hoy</a>
       </div>
     </div>
   </div>
@@ -96,13 +111,13 @@
 </section>
 
 <!-- ============================================================
-     RADAR EN VIVO (lo que la persona puede probar)
+     RADAR (vista previa: sin ubicación ni inscripción)
 ============================================================ -->
 <section class="radar" id="feed" aria-labelledby="radar-title">
   <div class="wrap radar-grid">
     <div class="radar-intro" data-reveal-group>
       <h2 class="h-xl" id="radar-title" data-reveal>Tu radar en vivo</h2>
-      <p class="radar-lede" data-reveal>Marca qué te provoca, cuánto quieres gastar y cuándo sales. Cada parche llega con su porcentaje de match contigo.</p>
+      <p class="radar-lede" data-reveal>Marca qué te provoca, cuánto quieres gastar y cuándo sales. Así se ve lo que te espera adentro: cada parche llega con su porcentaje de match contigo.</p>
 
       <form class="radar-filters" id="radarFilters" data-reveal onsubmit="return false">
         <fieldset>
@@ -141,7 +156,7 @@
     <div class="radar-panel" data-ui data-reveal="scale">
       <div class="radar-head">
         <p class="radar-count" aria-live="polite"><b id="radarCount">0</b> <span id="radarCountLabel">parches para ti</span></p>
-        <span class="radar-live"><span class="pulse" aria-hidden="true"></span>En vivo · Villavo</span>
+        <span class="tag-olive">Vista previa</span>
       </div>
 
       <ul class="radar-list" id="radarList" aria-busy="false">
@@ -150,67 +165,71 @@
           <div class="plan-match"><b>92%</b><span>match</span></div>
           <div class="plan-body">
             <h3 class="plan-title">Cata de café de origen</h3>
-            <p class="plan-meta">Los Centauros · Hoy 5:00 p. m. · $25.000</p>
+            <p class="plan-meta">Hoy 5:00 p. m. · $25.000</p>
           </div>
         </li>
         <li class="plan">
           <div class="plan-match"><b>87%</b><span>match</span></div>
           <div class="plan-body">
             <h3 class="plan-title">Caminata al amanecer</h3>
-            <p class="plan-meta">Kirpas Ecoparque · Sáb 6:00 a. m. · Gratis</p>
+            <p class="plan-meta">Sáb 6:00 a. m. · Gratis</p>
           </div>
         </li>
       </ul>
 
       <div class="radar-empty" id="radarEmpty" hidden>
-        <div class="empty-mark"><img src="src/assets/web/isotipo-light.png" alt="" width="48" height="48"></div>
+        <div class="empty-mark"><img src="src/assets/web/isotipo-negro.png" alt="" width="48" height="48"></div>
         <h3>Nada cuadra con eso… todavía</h3>
-        <p>Ningún parche abierto coincide con esos filtros. Suelta alguno o abre tú el plan: seguro alguien se suma.</p>
+        <p>Ningún parche de muestra coincide con esos filtros. Suelta alguno, o crea tu cuenta y abre tú el plan.</p>
         <div class="empty-actions">
           <button type="button" class="btn btn--sm" id="radarReset">Quitar filtros</button>
-          <a href="login.html" class="btn btn--sm btn--ghost">Abrir mi parche</a>
+          <a href="login.html#crear" class="btn btn--sm btn--ghost">Crear mi cuenta</a>
         </div>
       </div>
 
-      <p class="radar-note">Planes de muestra. Los reales aparecen cuando creas tu cuenta.</p>
+      <div class="radar-lock">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+        <p><b>El lugar exacto y los cupos se ven adentro.</b> Por seguridad, solo quienes tienen cuenta ven dónde es cada parche y pueden sumarse.</p>
+        <a href="login.html#crear" class="btn btn--sm btn--ink">Crear cuenta y sumarme</a>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============================================================
-     QUÉ ES - especímenes sobre fichas de color
+     QUÉ ES - stickers sobre fichas de color
 ============================================================ -->
 <section class="specimens" id="proyecto" aria-labelledby="spec-title">
   <div class="wrap spec-grid">
     <div class="spec-head" data-reveal-group>
       <h2 class="h-lg" id="spec-title" data-reveal>Todo Villavo junto</h2>
       <p data-reveal>Lo que hace ModoParche, sin rodeos: junta a la gente que quiere salir con los planes que ya se están armando.</p>
-      <a href="login.html" class="btn" data-reveal>Crear mi cuenta</a>
+      <a href="login.html#crear" class="btn" data-reveal>Crear mi cuenta</a>
     </div>
 
     <ul class="tiles" data-reveal-group="70">
       <li class="tile" data-reveal>
-        <div class="tile-face tile--peach"><img src="src/assets/ExplorarPlanes.jpg" alt="Boceto de un formulario de planes con lápiz" width="753" height="672" loading="lazy"></div>
+        <div class="tile-face tile--peach"><span class="tile-burst" aria-hidden="true"><b>92%</b><small>match</small></span></div>
         <h3>Tu radar personal</h3>
         <p>Gustos, presupuesto y horario, cruzados con cada plan.</p>
       </li>
-      <li class="tile tile-wide" data-reveal>
-        <div class="tile-face tile--orange"><img src="src/assets/CrearParche.jpg" alt="Boceto de un calendario y un grupo de personas" width="617" height="672" loading="lazy"></div>
+      <li class="tile" data-reveal>
+        <div class="tile-face tile--orange"><img src="src/assets/web/corona.png" alt="Corona de la marca" width="600" height="352" loading="lazy"></div>
         <h3>Cualquiera convoca</h3>
         <p>Personas y negocios abren parches. Tú solo llegas.</p>
       </li>
       <li class="tile" data-reveal>
-        <div class="tile-face tile--paper"><img src="src/assets/BuscarPersonas.jpg" alt="Boceto de una lupa buscando a una persona" width="630" height="672" loading="lazy"></div>
+        <div class="tile-face tile--paper"><img src="src/assets/web/logo-isotipo.webp" alt="Isotipo de ModoParche" width="397" height="476" loading="lazy"></div>
         <h3>Gente con tu vibra</h3>
         <p>Sales acompañado, aunque llegues solo.</p>
       </li>
       <li class="tile" data-reveal>
-        <div class="tile-face tile--ink"><img class="cutout" src="src/assets/web/fuego.png" alt="Llama naranja de la marca" width="520" height="638" loading="lazy"></div>
+        <div class="tile-face tile--ink"><img src="src/assets/web/fuego.png" alt="Llama naranja de la marca" width="520" height="638" loading="lazy"></div>
         <h3>Cupos en vivo</h3>
         <p>Ves cuántos faltan antes de moverte.</p>
       </li>
       <li class="tile" data-reveal>
-        <div class="tile-face tile--orange"><img class="cutout" src="src/assets/web/corona.png" alt="Corona de la marca" width="600" height="352" loading="lazy"></div>
+        <div class="tile-face tile--olive"><span class="tile-burst tile-burst--ink" aria-hidden="true"><b>2x1</b><small>promo</small></span></div>
         <h3>Negocios aliados</h3>
         <p>Promos relámpago en las horas flojas.</p>
       </li>
@@ -235,15 +254,15 @@
 
     <ol class="stages" id="stages" data-reveal>
       <li class="stage stage--1 is-open">
-        <button class="stage-tab" type="button" aria-expanded="true" aria-controls="stage-1">Cuéntanos qué te gusta</button>
+        <button class="stage-tab" type="button" aria-expanded="true" aria-controls="stage-1"><span class="stage-n">01</span>Crea tu cuenta</button>
         <div class="stage-body" id="stage-1">
-          <h3>Cuéntanos qué te gusta</h3>
+          <h3>Crea tu cuenta</h3>
           <p>Eliges tus categorías, tu presupuesto y en qué horario te queda bien salir. Te toma menos de un minuto.</p>
           <div class="stage-art stage-art--chips" aria-hidden="true"><span>Rumba</span><span class="on">Comida</span><span class="on">Aventura</span><span>Gaming</span></div>
         </div>
       </li>
       <li class="stage stage--2">
-        <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-2">Mira tu radar</button>
+        <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-2"><span class="stage-n">02</span>Mira tu radar</button>
         <div class="stage-body" id="stage-2">
           <h3>Mira tu radar</h3>
           <p>Los parches abiertos aparecen ordenados por porcentaje de match contigo, con lugar, hora y precio.</p>
@@ -251,15 +270,15 @@
         </div>
       </li>
       <li class="stage stage--3">
-        <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-3">Únete o abre el tuyo</button>
+        <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-3"><span class="stage-n">03</span>Únete o abre el tuyo</button>
         <div class="stage-body" id="stage-3">
           <h3>Únete o abre el tuyo</h3>
-          <p>Reserva un cupo o convoca a tu gente. Los negocios abren el suyo desde su vitrina.</p>
+          <p>Reserva un cupo o convoca a tu gente. Los negocios abren el suyo desde su panel.</p>
           <div class="stage-art stage-art--seats" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><span>Quedan 3 cupos</span></div>
         </div>
       </li>
       <li class="stage stage--4">
-        <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-4">Sal al parche</button>
+        <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-4"><span class="stage-n">04</span>Sal al parche</button>
         <div class="stage-body" id="stage-4">
           <h3>Sal al parche</h3>
           <p>Llegas, conoces gente y el plan ya estaba armado. Lo único que te toca es llegar.</p>
@@ -278,9 +297,9 @@
     <div class="who-head" data-reveal-group>
       <h2 class="h-xl" id="who-title" data-reveal>Un parche para cada quien</h2>
       <div class="who-tabs" role="tablist" aria-label="Cómo llegas a ModoParche" id="whoTabs" data-reveal>
+        <span class="who-tabs-pill" aria-hidden="true"></span>
         <button role="tab" id="tab-personas" aria-controls="panel-personas" aria-selected="true" class="who-tab is-active" type="button">Busco plan</button>
         <button role="tab" id="tab-negocios" aria-controls="panel-negocios" aria-selected="false" class="who-tab" type="button" tabindex="-1">Tengo un negocio</button>
-        <button role="tab" id="tab-organizo" aria-controls="panel-organizo" aria-selected="false" class="who-tab" type="button" tabindex="-1">Quiero convocar</button>
       </div>
     </div>
 
@@ -291,37 +310,27 @@
           <ul class="checks">
             <li>Planes ordenados por match con tus gustos, tu presupuesto y tu horario.</li>
             <li>Cupos reales: sabes cuántos faltan antes de moverte.</li>
-            <li>Sales acompañado, incluso si llegas solo.</li>
+            <li>Abre tu propio parche y deja que la gente se sume.</li>
           </ul>
-          <a href="login.html" class="btn">Crear mi cuenta</a>
+          <a href="login.html#crear" class="btn">Crear mi cuenta</a>
         </div>
-        <div class="who-art who-art--match" aria-hidden="true"><b>92%</b><span>match</span></div>
+        <div class="who-art" aria-hidden="true"><b>92%</b><span>match</span></div>
       </div>
 
       <div class="who-panel" role="tabpanel" id="panel-negocios" aria-labelledby="tab-negocios" tabindex="0" hidden>
         <div class="who-copy">
           <h3>Llena tus mesas en las horas flojas</h3>
           <ul class="checks">
-            <li>Lanza una promo relámpago y deja que la ciudad se entere.</li>
-            <li>Arma parches desde tu vitrina, con hora y cupos.</li>
+            <li>Crea tu cuenta de negocio tú mismo, sin esperar a nadie.</li>
+            <li>Publica parches con foto, hora y cupos desde tu panel.</li>
             <li>Recibe grupos que llegan juntos y con ganas de pedir.</li>
           </ul>
-          <a href="comercio.html" class="btn">Alíate con nosotros</a>
+          <div class="who-actions">
+            <a href="empresa.html" class="btn btn--olive">Crear cuenta de negocio</a>
+            <a href="comercio.html#planes" class="link">Ver planes</a>
+          </div>
         </div>
-        <div class="who-art who-art--promo" aria-hidden="true"><b>2x1</b><span>promo</span></div>
-      </div>
-
-      <div class="who-panel" role="tabpanel" id="panel-organizo" aria-labelledby="tab-organizo" tabindex="0" hidden>
-        <div class="who-copy">
-          <h3>Convoca a tu gente y cierra los cupos</h3>
-          <ul class="checks">
-            <li>Abre un parche con lugar, hora y número de cupos.</li>
-            <li>Ve quién se suma y cuánto falta para completar el grupo.</li>
-            <li>Se muestra a quienes de verdad lo quieren.</li>
-          </ul>
-          <a href="login.html" class="btn">Abrir mi primer parche</a>
-        </div>
-        <div class="who-art who-art--seats" aria-hidden="true"><b>8</b><span>cupos</span></div>
+        <div class="who-art who-art--biz" aria-hidden="true"><b>2x1</b><span>promo</span></div>
       </div>
     </div>
   </div>
@@ -392,46 +401,19 @@
 </section>
 
 <!-- ============================================================
-     PREGUNTAS FRECUENTES - una banda por pregunta
+     DUDAS - enlace a la página de preguntas
 ============================================================ -->
-<section class="faq" id="preguntas" aria-labelledby="faq-title">
-  <div class="faq-head">
-    <div class="wrap">
-      <h2 class="h-xl" id="faq-title" data-reveal>Antes de que preguntes</h2>
+<section class="ask" aria-labelledby="ask-title">
+  <div class="wrap ask-row" data-reveal-group>
+    <span class="ask-mark" aria-hidden="true" data-reveal>?</span>
+    <div class="ask-copy">
+      <h2 class="h-lg" id="ask-title" data-reveal>¿Te quedó alguna duda?</h2>
+      <p data-reveal>Qué es un parche, cómo se calcula el match, si es seguro, cuánto cuesta para negocios. Lo respondimos todo en un solo lugar.</p>
     </div>
+    <a href="preguntas.html" class="btn btn--ink" data-reveal>Ver preguntas frecuentes
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
   </div>
-  <dl class="faq-list">
-    <div class="faq-band">
-      <div class="wrap faq-row" data-reveal-group>
-        <dt data-reveal>¿Qué es un parche?</dt>
-        <dd data-reveal>Es un plan en grupo: una cata, una caminata, una trivia, un partido. Alguien lo abre, define lugar, hora y cupos, y los demás se suman.</dd>
-      </div>
-    </div>
-    <div class="faq-band">
-      <div class="wrap faq-row" data-reveal-group>
-        <dt data-reveal>¿Cómo se calcula el porcentaje de match?</dt>
-        <dd data-reveal>Cruzamos tres cosas: las categorías que te gustan, el presupuesto que tienes y el momento en que quieres salir. Mientras más coincida un plan con eso, más arriba aparece para ti.</dd>
-      </div>
-    </div>
-    <div class="faq-band">
-      <div class="wrap faq-row" data-reveal-group>
-        <dt data-reveal>¿En qué ciudades funciona?</dt>
-        <dd data-reveal>Por ahora, solo en Villavicencio. Empezamos aquí porque es donde vivimos.</dd>
-      </div>
-    </div>
-    <div class="faq-band">
-      <div class="wrap faq-row" data-reveal-group>
-        <dt data-reveal>¿Puedo abrir mi propio parche?</dt>
-        <dd data-reveal>Sí. Creas tu cuenta, tocas «Abrir un parche» y defines qué vas a hacer, dónde y cuántos cupos hay.</dd>
-      </div>
-    </div>
-    <div class="faq-band">
-      <div class="wrap faq-row" data-reveal-group>
-        <dt data-reveal>Tengo un negocio, ¿cómo participo?</dt>
-        <dd data-reveal>Cafés, bares, miradores y rutas pueden abrir su parche desde su vitrina. Mira los planes en <a href="comercio.html" class="text-link">Para negocios</a>.</dd>
-      </div>
-    </div>
-  </dl>
 </section>
 
 <!-- ============================================================
@@ -447,14 +429,14 @@
       <h2 id="close-title">Tu parche te espera</h2>
       <p>Crea tu cuenta en tres pasos y deja que ModoParche haga el resto.</p>
       <div class="close-actions">
-        <a href="login.html" class="btn btn--ink">Crear mi cuenta
+        <a href="login.html#crear" class="btn btn--ink">Crear mi cuenta
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="#feed" class="link">Ver el radar</a>
+        <a href="login.html" class="link">Ya tengo cuenta</a>
       </div>
     </div>
     <div class="close-side close-side--ink" aria-hidden="true">
-      <img src="src/assets/web/isotipo-light.png" alt="" width="512" height="512" loading="lazy">
+      <img src="src/assets/web/isotipo-negro.png" alt="" width="512" height="512" loading="lazy">
     </div>
   </div>
 </section>
@@ -472,34 +454,34 @@
     <div class="foot-grid">
       <div class="foot-intro">
         <p>Planes en grupo para Villavicencio. Sal, encuentra y conecta con gente de tu misma vibra.</p>
-        <a href="login.html" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
       </div>
       <div class="foot-col">
         <h2>Explora</h2>
         <a href="#feed">El radar</a>
         <a href="#como-funciona">Cómo funciona</a>
-        <a href="#campana">Campaña</a>
-        <a href="#preguntas">Preguntas</a>
+        <a href="preguntas.html">Preguntas</a>
+        <a href="marca.html">La marca</a>
       </div>
       <div class="foot-col">
-        <h2>ModoParche</h2>
-        <a href="equipo.html">Equipo y contacto</a>
+        <h2>Negocios</h2>
         <a href="comercio.html">Para negocios</a>
-        <a href="login.html">Iniciar sesión</a>
+        <a href="empresa.html">Crear cuenta de negocio</a>
+        <a href="empresa.html#entrar">Entrar como negocio</a>
       </div>
       <div class="foot-col foot-contact">
         <h2>Escríbenos</h2>
         <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
         <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
+        <a href="equipo.html">Equipo y contacto</a>
         <p>Villavicencio, Meta</p>
       </div>
     </div>
     <div class="foot-bottom">
       <p>© <span data-year>2026</span> ModoParche · Hecho en Villavo</p>
-      <button type="button" class="foot-top" data-to-top>Volver arriba
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
-      </button>
+      <nav class="foot-legal" aria-label="Documentos legales"><a href="terminos.html">Términos</a><a href="privacidad.html">Privacidad</a><a href="cookies.html">Cookies</a><a href="pagos.html">Pagos y devoluciones</a><a href="legal.html">Información legal</a></nav>
     </div>
+    <p class="foot-entity">Responsable: <span data-legal="responsable"></span> · <span data-legal="documento"></span> · <span data-legal="direccion"></span>, <span data-legal="ciudad"></span>. El logo, las ilustraciones, las piezas de campaña y parte de los textos se hicieron con ayuda de inteligencia artificial: <a href="legal.html#ia">ver aviso</a>.</p>
   </div>
 </footer>
 
@@ -524,11 +506,11 @@
 </div>
 
 <button class="to-top" type="button" aria-label="Volver arriba">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
 </button>
 
 <script src="mp-base.js" defer></script>
-<script src="supabase-client.js" defer></script>
 <script src="index.js" defer></script>
+<script src="legal.js" defer></script>
 </body>
 </html>

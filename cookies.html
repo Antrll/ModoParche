@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookies y almacenamiento - ModoParche</title>
+<meta name="description" content="Qué guarda ModoParche en tu navegador. Solo lo necesario: sin cookies de publicidad ni de rastreo.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ModoParche">
+<meta property="og:title" content="Cookies y almacenamiento - ModoParche">
+<meta property="og:description" content="Qué guarda ModoParche en tu navegador. Solo lo necesario: sin cookies de publicidad ni de rastreo.">
+<meta property="og:url" content="https://modoparche-hazel.vercel.app/cookies">
+<meta property="og:image" content="https://modoparche-hazel.vercel.app/src/assets/web/banner.jpg">
+<meta property="og:locale" content="es_CO">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="mp-base.css">
+<link rel="stylesheet" href="paginas.css">
+<link rel="stylesheet" href="legal.css">
+<script>document.documentElement.classList.add('mp-js');</script>
+</head>
+<body class="page-legal">
+
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="nav nav--ink">
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo" aria-label="ModoParche, inicio">
+      <span class="logo-mark"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b>
+    </a>
+    <nav class="nav-links" aria-label="Principal">
+      <a href="index.html">Inicio</a>
+      <a href="comercio.html">Para negocios</a>
+      <a href="preguntas.html">Preguntas</a>
+      <a href="marca.html">La marca</a>
+      <a href="equipo.html">Equipo</a>
+    </nav>
+    <div class="nav-right">
+      <a href="login.html" class="nav-login">Iniciar sesión</a>
+      <a href="login.html#crear" class="btn btn--sm nav-cta"><span class="pulse" aria-hidden="true"></span>Crear cuenta</a>
+      <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
+    </div>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <nav aria-label="Menú móvil">
+    <a href="index.html">Inicio</a>
+    <a href="comercio.html">Negocios</a>
+    <a href="preguntas.html">Preguntas</a>
+    <a href="marca.html">La marca</a>
+    <a href="equipo.html">Equipo</a>
+    <a href="login.html">Iniciar sesión</a>
+  </nav>
+  <div class="mobile-menu-foot">
+    <a href="login.html#crear" class="btn btn--block">Crear mi cuenta</a>
+    <a href="empresa.html" class="btn btn--block btn--ghost">Tengo un negocio</a>
+    <p>Villavicencio, Meta · @modoparcheoficial</p>
+  </div>
+</div>
+
+<main id="main">
+  <section class="legal-hero" aria-labelledby="legal-title">
+    <div class="wrap">
+      <span class="legal-kicker">Cookies</span>
+      <h1 id="legal-title">Sin rastreo</h1>
+      <p>ModoParche no usa cookies de publicidad ni herramientas de analítica que te sigan por internet. Solo guardamos en tu navegador lo necesario para que el sitio funcione.</p>
+      <p class="legal-meta"><span>Versión <b><span data-legal="version"></span></b></span><span>Vigente desde el <b><span data-legal="vigencia"></span></b></span><span>Responsable: <b><span data-legal="responsable"></span></b></span></p>
+    </div>
+  </section>
+
+  <div class="wrap legal-layout">
+    <nav class="legal-toc" aria-label="En esta página">
+      <p>En esta página</p>
+        <a href="#que">1. Qué guardamos</a>
+        <a href="#terceros">2. Servicios externos</a>
+        <a href="#control">3. Cómo borrarlas</a>
+    </nav>
+    <article class="legal-doc">
+      <section id="que" aria-labelledby="h-que">
+        <h2 id="h-que"><span class="n">1.</span>Qué guardamos</h2>
+        <div class="legal-table-wrap"><table class="legal-table"><thead><tr><th>Nombre</th><th>Tipo</th><th>Para qué</th><th>Duración</th></tr></thead><tbody>
+        <tr><td>Sesión de Supabase (<code>sb-…-auth-token</code>)</td><td>Necesaria</td><td>Mantener tu sesión iniciada.</td><td>Hasta que cierres sesión</td></tr>
+        <tr><td><code>mp_aviso_cookies_v1</code></td><td>Necesaria</td><td>Recordar que ya viste este aviso.</td><td>Hasta que borres los datos del navegador</td></tr>
+        <tr><td>Preferencias del panel</td><td>Necesaria</td><td>Recordar cosas como el sonido del panel de negocios o los parches del modo de ejemplo.</td><td>Hasta que borres los datos del navegador</td></tr>
+        </tbody></table></div>
+        <p>Todo esto se guarda en el almacenamiento local de tu navegador, no en cookies de terceros.</p>
+        <p>Cuando un negocio paga un plan, la ventana de pago es de la pasarela (<span data-legal="pasarela"></span>) y puede usar sus propias cookies necesarias para procesar el pago de forma segura. Solo pasa si abres esa ventana.</p>
+      </section>
+
+      <section id="terceros" aria-labelledby="h-terceros">
+        <h2 id="h-terceros"><span class="n">2.</span>Servicios externos</h2>
+        <p>Al cargar la página, tu navegador se conecta a algunos servicios (tipografía, mapas, librerías). Ellos pueden ver tu dirección IP, pero no les pedimos que te rastreen. La lista completa está en la <a href="privacidad.html#encargados">política de privacidad</a>.</p>
+      </section>
+
+      <section id="control" aria-labelledby="h-control">
+        <h2 id="h-control"><span class="n">3.</span>Cómo borrarlas</h2>
+        <p>Puedes borrar todo lo que guardamos desde la configuración de tu navegador ("Borrar datos de navegación"). Si lo haces, se cerrará tu sesión y volverás a ver este aviso.</p>
+        <p>Si algún día queremos usar analítica o publicidad, te pediremos permiso antes y podrás decir que no.</p>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
+      <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
+    </svg>
+    <div class="foot-grid">
+      <div class="foot-intro">
+        <p>Planes en grupo para Villavicencio. Sal, encuentra y conecta con gente de tu misma vibra.</p>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
+      </div>
+      <div class="foot-col">
+        <h2>Explora</h2>
+        <a href="index.html">Inicio</a>
+        <a href="preguntas.html">Preguntas</a>
+        <a href="marca.html">La marca</a>
+      </div>
+      <div class="foot-col">
+        <h2>Negocios</h2>
+        <a href="comercio.html">Para negocios</a>
+        <a href="empresa.html">Crear cuenta de negocio</a>
+        <a href="pagos.html">Pagos y devoluciones</a>
+      </div>
+      <div class="foot-col foot-contact">
+        <h2>Escríbenos</h2>
+        <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
+        <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
+        <a href="equipo.html">Equipo y contacto</a>
+        <p>Villavicencio, Meta</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <p>© <span data-year>2026</span> ModoParche · Hecho en Villavo</p>
+      <nav class="foot-legal" aria-label="Documentos legales"><a href="terminos.html">Términos</a><a href="privacidad.html">Privacidad</a><a href="cookies.html">Cookies</a><a href="pagos.html">Pagos y devoluciones</a><a href="legal.html">Información legal</a></nav>
+    </div>
+    <p class="foot-entity">Responsable: <span data-legal="responsable"></span> · <span data-legal="documento"></span> · <span data-legal="direccion"></span>, <span data-legal="ciudad"></span>. El logo, las ilustraciones, las piezas de campaña y parte de los textos se hicieron con ayuda de inteligencia artificial: <a href="legal.html#ia">ver aviso</a>.</p>
+  </div>
+</footer>
+
+<button class="to-top" type="button" aria-label="Volver arriba">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="mp-base.js" defer></script>
+<script src="legal.js" defer></script>
+</body>
+</html>
