@@ -3,7 +3,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/p/:id", "destination": "/api/p?id=:id" }
+    { "source": "/p/:id", "destination": "/api/p?id=:id" },
+    { "source": "/seguro/:t", "destination": "/api/seguro?t=:t" }
   ],
   "headers": [
     {

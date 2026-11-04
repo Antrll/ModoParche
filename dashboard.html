@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FF5A1F">
 <title>Mi panel · ModoParche</title>
+<script>(function(){var t='sistema';try{t=localStorage.getItem('mp_tema')||'sistema';}catch(e){}var d=t==='oscuro'||(t!=='claro'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('is-dark');})();</script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
@@ -87,6 +88,7 @@
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5h17v3a1.8 1.8 0 0 0 0 3.6v3h-17v-3a1.8 1.8 0 0 0 0-3.6z"/><path d="M14 8v1.5M14 11.3v1.4M14 14.5V16"/></symbol>
     <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></symbol>
     <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/></symbol>
     <symbol id="i-reply" viewBox="0 0 24 24"><path d="M10 5 4 11l6 6"/><path d="M4 11h9a7 7 0 0 1 7 7v1"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
@@ -112,6 +114,7 @@
 
     <div class="top-right">
       <button class="btn btn--sm top-create" data-action="crear"><svg class="ic"><use href="#i-plus"/></svg><span>Crear parche</span></button>
+      <button class="sos-btn" data-action="seguridad" aria-label="Ayuda y seguridad: llamar al 123 o enviar tu ubicación"><svg class="ic"><use href="#i-shield"/></svg><span>Ayuda</span></button>
       <button class="me-chip" data-nav="perfil" id="me-chip" aria-label="Ir a mi perfil"></button>
     </div>
   </div>
@@ -183,6 +186,11 @@
       <ul class="mesa-mias" id="mesa-mias" aria-label="Tus mesas reservadas"></ul>
       <div class="mesa-list" id="mesa-list"></div>
     </section>
+
+    <!-- Consejo de seguridad del día (ver renderConsejo) -->
+    <div id="consejo-slot"></div>
+    <!-- Recomendaciones (ver renderParaTi) -->
+    <div id="parati-slot"></div>
 
     <!-- Parches abiertos -->
     <section class="block" aria-labelledby="t-abiertos">
@@ -275,6 +283,15 @@
         <h2 class="id-name" id="id-name">Parcero</h2>
         <p class="id-sub" id="id-sub">Villavicencio</p>
         <p class="id-rating" id="id-rating"></p>
+        <div class="id-qr-acts">
+          <button type="button" class="btn btn--ink btn--sm" data-action="qr-mio"><svg class="ic"><use href="#i-qr"/></svg> Mi QR de identidad</button>
+          <button type="button" class="btn btn--ghost btn--sm" data-action="qr-escanear-id"><svg class="ic"><use href="#i-scan"/></svg> Verificar a alguien</button>
+        </div>
+        <div class="tema" role="group" aria-label="Apariencia">
+          <button type="button" class="tema-btn" data-action="tema" data-tema="sistema" aria-pressed="true">Como el celular</button>
+          <button type="button" class="tema-btn" data-action="tema" data-tema="claro" aria-pressed="false">Claro</button>
+          <button type="button" class="tema-btn" data-action="tema" data-tema="oscuro" aria-pressed="false">Oscuro</button>
+        </div>
 
         <div class="photo-edit" id="photo-edit" hidden>
           <p class="mini-note">Arrastra la foto para encuadrarla.</p>
@@ -530,6 +547,127 @@
         <button type="button" class="btn" id="cal-send" data-action="cal-send"><svg class="ic"><use href="#i-star"/></svg> Enviar</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: AYUDA Y SEGURIDAD -->
+<div class="modal" id="modal-seguridad" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="sos-h">
+    <div class="sos">
+      <button type="button" class="icon-btn modal-x" data-close aria-label="Cerrar">  <svg class="ic"><use href="#i-close"/></svg></button>
+      <h2 class="modal-title" id="sos-h">¿Te sientes incómodo o en peligro?</h2>
+      <p class="sos-sub">Sal del lugar si puedes y pide ayuda. No esperes.</p>
+      <a class="sos-call" href="tel:123"><svg class="ic"><use href="#i-phone"/></svg><span><b>Llamar al 123</b><small>Policía · Línea de emergencias</small></span></a>
+      <a class="sos-line" href="tel:155"><svg class="ic"><use href="#i-phone"/></svg><span><b>Línea 155</b><small>Orientación a mujeres víctimas de violencia</small></span></a>
+      <button type="button" class="sos-opt" id="sos-enviar" data-action="sos-enviar"><svg class="ic"><use href="#i-pin"/></svg><span><b>Enviar mi ubicación por WhatsApp</b><small id="sos-contacto-txt">Aún no tienes contacto de confianza</small></span></button>
+      <button type="button" class="sos-opt" id="sos-vivo" data-action="sos-vivo"><svg class="ic"><use href="#i-locate"/></svg><span><b id="sos-vivo-txt">Compartir mi ubicación en vivo</b><small id="sos-vivo-sub">Tu contacto la ve en un enlace, sin cuenta.</small></span></button>
+      <button type="button" class="sos-opt" data-action="qr-escanear-id"><svg class="ic"><use href="#i-scan"/></svg><span><b>Verificar a alguien con su QR</b><small>Mira si su cédula está verificada antes de encontrarte</small></span></button>
+      <details class="sos-contacto">
+        <summary>Contacto de confianza <svg class="ic"><use href="#i-chev-down"/></svg></summary>
+        <form id="sos-contacto" class="sos-form" autocomplete="off">
+          <input class="input" id="sos-nombre" maxlength="40" placeholder="Nombre (ej. Mamá)" aria-label="Nombre del contacto">
+          <input class="input tnum" id="sos-tel" inputmode="tel" maxlength="15" placeholder="Celular (ej. 3104567890)" aria-label="Celular del contacto">
+          <button class="btn btn--ink btn--sm" type="submit">Guardar</button>
+        </form>
+      </details>
+      <p class="sos-tip"><svg class="ic"><use href="#i-shield"/></svg><span id="sos-consejo"></span></p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MI QR DE IDENTIDAD -->
+<div class="modal" id="modal-qrid" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="qrid-h">
+    <div class="qrid">
+      <button type="button" class="icon-btn modal-x" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+      <p class="eyebrow" id="qrid-h">Mi QR de identidad</p>
+      <h2 class="qrid-nombre" id="qrid-nombre"></h2>
+      <p class="qrid-estado" id="qrid-estado"></p>
+      <div class="qrid-qr" id="qrid-qr" aria-label="Código QR de identidad"></div>
+      <div class="qrid-barra"><span id="qrid-barra"></span></div>
+      <p class="qrid-nota">Cambia cada 30 segundos: un pantallazo no sirve. Quien lo escanea ve tu nombre y si tu cédula está verificada, nunca el número.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VERIFICAR A ALGUIEN -->
+<div class="modal" id="modal-qrscan" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="qrscan-h">
+    <div class="qrid">
+      <button type="button" class="icon-btn modal-x" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+      <h2 class="modal-title" id="qrscan-h">Verificar a alguien</h2>
+      <div class="scan-reader" id="qrscan-reader"></div>
+      <p class="checkin-msg" id="qrscan-msg" role="status" aria-live="polite"></p>
+      <div id="qrscan-res" hidden></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INVITAR PARCEROS -->
+<div class="modal" id="modal-invitar" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="inv-h">
+    <div class="cal">
+      <h2 class="modal-title" id="inv-h">Invitar parceros</h2>
+      <p class="cal-sub" id="inv-title"></p>
+      <ul class="inv-list" id="inv-list"></ul>
+      <p class="field-msg is-error" id="inv-msg" role="alert"></p>
+      <div class="form-actions form-actions--split">
+        <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+        <button type="button" class="btn" id="inv-send" data-action="inv-send"><svg class="ic"><use href="#i-bolt"/></svg> Invitar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVA ENCUESTA -->
+<div class="modal" id="modal-encuesta" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="enc-h">
+    <form class="cal enc" id="form-encuesta" autocomplete="off" novalidate>
+      <h2 class="modal-title" id="enc-h">Nueva encuesta</h2>
+      <input class="input" id="enc-q" maxlength="120" placeholder="¿A qué hora nos vemos?" aria-label="Pregunta" required>
+      <div class="enc-ops" id="enc-ops">
+        <label class="enc-op"><span class="sr-only">Opción 1</span><input class="input" maxlength="40" placeholder="Opción 1"></label>
+        <label class="enc-op"><span class="sr-only">Opción 2</span><input class="input" maxlength="40" placeholder="Opción 2"></label>
+        <label class="enc-op" hidden><span class="sr-only">Opción 3</span><input class="input" maxlength="40" placeholder="Opción 3"></label>
+        <label class="enc-op" hidden><span class="sr-only">Opción 4</span><input class="input" maxlength="40" placeholder="Opción 4"></label>
+        <label class="enc-op" hidden><span class="sr-only">Opción 5</span><input class="input" maxlength="40" placeholder="Opción 5"></label>
+      </div>
+      <button type="button" class="text-btn" data-action="enc-mas">+ Otra opción</button>
+      <p class="field-msg is-error" id="enc-msg" role="alert"></p>
+      <div class="form-actions form-actions--split">
+        <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn" id="enc-send"><svg class="ic"><use href="#i-chart"/></svg> Publicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ÁLBUM DEL PARCHE -->
+<div class="modal" id="modal-album" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="album-h">
+    <div class="album">
+      <div class="album-head">
+        <div><h2 class="modal-title" id="album-h">Álbum del parche</h2><p class="cal-sub" id="album-title"></p></div>
+        <label class="btn btn--sm" id="album-add"><svg class="ic"><use href="#i-camera"/></svg> Subir fotos<input type="file" id="album-file" accept="image/*" multiple hidden></label>
+        <button type="button" class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="album-grid" id="album-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FOTO GRANDE -->
+<div class="modal modal--foto" id="modal-foto" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-label="Foto del álbum">
+    <button type="button" class="icon-btn modal-x" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
+    <img id="foto-grande" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Foto del álbum del parche">
   </div>
 </div>
 

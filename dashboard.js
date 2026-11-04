@@ -126,6 +126,7 @@
     mostrar_foto_real: false, foto_encuadre: Object.assign({}, FOTO_VACIA),
     cedula_verificada: false, cedula_verificada_en: null,
     rating: 0, resenas: 0, // las calificaciones arrancan en 0 hasta que alguien califique
+    intereses: ['rumba', 'conciertos'], contacto_nombre: '', contacto_tel: '',
   };
   let perfil = Object.assign({}, PERFIL_DEF, DEMO ? store.get(KEYS.perfil, {}) : {});
   const ME = () => {
@@ -138,6 +139,7 @@
       confirmados: [], unido: false, propio: false, chat: [], checkin: false,
       creadorId: null, creadorNombre: '', barrio: '', descripcion: '', costo: 0, presupuesto: 0,
       oficial: false, info: {}, llegaron: [], locs: {}, localidad: '', imagen: '',
+      viajes: [], encuestas: {}, album: [],
     }, p);
   }
 
@@ -174,7 +176,8 @@
   }
 
   const state = { parches: [], view: 'inicio', search: '', time: 'hoy', misTab: 'unido', chatId: null, mesas: [], misMesas: [],
-    filtro: 'todos', chatFiltro: 'todo', calificados: new Set(), historial: [] };
+    filtro: 'todos', chatFiltro: 'todo', calificados: new Set(), historial: [],
+    espera: new Set(), parceros: null, invitarId: null, abiertoTransporte: false };
 
   // Modo Mesa de ejemplo (solo en ?demo=1)
   function demoMesas() {
@@ -200,7 +203,8 @@
   }
   function save() {
     if (!DEMO) return;
-    store.set(KEYS.state, { day: todayKey(), parches: state.parches.map(p => { const c = Object.assign({}, p); delete c._drop; return c; }) });
+    // El álbum del demo no se guarda: las fotos pesan demasiado para el navegador
+    store.set(KEYS.state, { day: todayKey(), parches: state.parches.map(p => { const c = Object.assign({}, p); delete c._drop; delete c.album; return c; }) });
   }
   const savePerfil = () => { if (DEMO && !store.set(KEYS.perfil, perfil)) toast('No se pudo guardar', 'La foto es muy pesada para este navegador.', { type: 'error' }); };
 
@@ -266,7 +270,9 @@
     const sz = small ? ' btn--sm' : ' btn--sm';
     if (isMine(p)) return `<span class="own-actions"><button class="icon-btn icon-btn--danger" data-action="cancelar" data-id="${p.id}" aria-label="Eliminar ${esc(p.titulo)}" title="Eliminar parche">${ic('i-trash')}</button><button class="btn btn--ghost${sz}" data-action="editar" data-id="${p.id}">${ic('i-edit')} Editar</button></span>`;
     if (p.unido) return `<button class="btn btn--ink${sz}" data-action="chat" data-id="${p.id}">${ic('i-chat')} Chat</button>`;
-    if (isFull(p)) return `<button class="btn btn--ghost${sz}" disabled>Lleno</button>`;
+    if (isFull(p)) return state.espera.has(p.id)
+      ? `<button class="btn btn--olive${sz}" data-action="espera" data-id="${p.id}" aria-pressed="true">${ic('i-check')} En lista de espera</button>`
+      : `<button class="btn btn--ghost${sz}" data-action="espera" data-id="${p.id}">${ic('i-users')} Avísame si se libera</button>`;
     return holdButton(p, sz);
   }
   // Mantener presionado para confirmar asistencia (ver initHold)
@@ -414,7 +420,9 @@
     renderQuick();
     renderNext();
     renderCalificar();
+    renderConsejo();
     renderMesas();
+    renderParaTi();
     renderCards(animate);
     renderHistorial();
   }
@@ -719,7 +727,7 @@
   }
 
   function refresh() {
-    if (state.view === 'inicio') { renderOficial(); renderQuick(); renderNext(); renderCalificar(); renderMesas(); renderCards(); renderHistorial(); }
+    if (state.view === 'inicio') { renderOficial(); renderQuick(); renderNext(); renderCalificar(); renderMesas(); renderParaTi(); renderCards(); renderHistorial(); }
     if (state.view === 'mapa') renderLiveMap();
     if (state.view === 'mis') renderMis();
     renderNavCount();
@@ -1293,7 +1301,7 @@
     if (state.view !== 'mis') go('mis');
     else { $$('.mis-item').forEach(b => b.classList.toggle('is-active', b.dataset.id === id)); renderChat(); }
     if (!quiet || isMobile()) $('#mis-wrap').classList.toggle('is-chat', isMobile());
-    if (isRemote(p)) loadChat(id);
+    if (isRemote(p)) { loadChat(id); cargarExtras(id); }
   }
 
   // Llave estable de cada mensaje: id de la base o una local para el modo demo
@@ -1312,6 +1320,7 @@
     const t = `<time>${fmtHora(m.ts)}</time>`;
     if (m.tipo === 'sys') return `<div class="msg msg--sys"><div class="bubble">${esc(m.texto)}</div></div>`;
     if (m.tipo === 'alerta') return `<div class="msg msg--sys msg--alert"><div class="bubble">${esc(m.texto)}</div></div>`;
+    if (m.tipo === 'encuesta') return encuestaHTML(m);
     const k = msgKey(m);
     const replyBtn = `<button class="msg-act" data-action="responder" data-key="${esc(k)}" aria-label="Responder este mensaje" title="Responder">${ic('i-reply')}</button>`;
     const swipeIc = `<span class="msg-swipe-ic" aria-hidden="true">${ic('i-reply')}</span>`;
@@ -1324,6 +1333,9 @@
   }
   /* ---------- Parches grandes: anuncios y subgrupos por localidad ---------- */
   const esAnuncio = m => m.tipo === 'sys' || m.tipo === 'bot' || m.tipo === 'alerta';
+  // Consejo de seguridad fijo arriba del chat cuando el parche es pronto
+  const consejoChatHTML = p => p.inicio - Date.now() < 30 * HOUR && p.inicio > Date.now() - 6 * HOUR
+    ? `<p class="chat-tip">${ic('i-shield')}<span><b>Consejo:</b> ${esc(consejoDelDia(2))} <button type="button" class="link-inline" data-action="seguridad" data-id="${p.id}">Ayuda</button></span></p>` : '';
   function chatLista(p) {
     if (!p.oficial || state.chatFiltro === 'todo') return p.chat;
     if (state.chatFiltro === 'anuncios') return p.chat.filter(esAnuncio);
@@ -1412,6 +1424,8 @@
       return;
     }
     const keepText = $('#chat-input')?.value || '';
+    const trPanel = $('[data-panel="transporte"]');
+    if (trPanel) state.abiertoTransporte = trPanel.open;
     const vacaOpen = $('#vaca')?.open || false;
     const vacaVal = $('#vaca-total')?.value || '';
     const ids = (inside(p) ? ['me'] : []).concat(p.confirmados);
@@ -1425,6 +1439,7 @@
             <p class="tnum">${esc(p.lugar)} · ${esc(fmtCuando(p.inicio))}</p>
           </div>
           <div class="chat-head-actions">
+            <button class="icon-btn icon-btn--sos" data-action="seguridad" data-id="${p.id}" aria-label="Ayuda y seguridad" title="Ayuda y seguridad">${ic('i-shield')}</button>
             <button class="icon-btn" data-action="compartir" data-id="${p.id}" aria-label="Compartir el parche" title="Compartir">${ic('i-share')}</button>
             ${enMapa(p) ? `<button class="icon-btn" data-action="ver-mapa" data-id="${p.id}" aria-label="Ver en el mapa" title="Ver en el mapa">${ic('i-map')}</button>` : ''}
             ${isMine(p)
@@ -1440,7 +1455,7 @@
         </details>
       </div>
       ${chatTabsHTML(p)}
-      <div class="chat-msgs" id="chat-msgs">${chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()}${typing.on ? '<div class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></div>' : ''}</div>
+      <div class="chat-msgs" id="chat-msgs">${consejoChatHTML(p)}${chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()}${typing.on ? '<div class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></div>' : ''}</div>
       <div class="chat-foot">${inside(p) ? `
         <div class="chat-tools">
           <details class="vaca" id="vaca" ${vacaOpen ? 'open' : ''}>
@@ -1451,6 +1466,12 @@
               <button class="btn btn--ghost btn--xs" data-action="vaca-send">${ic('i-send')} Mandar al chat</button>
             </div>
           </details>
+          ${transporteHTML(p)}
+          <div class="chat-acts">
+            <button type="button" class="chip-btn" data-action="invitar" data-id="${p.id}">${ic('i-users')} Invitar parceros</button>
+            <button type="button" class="chip-btn" data-action="encuesta">${ic('i-chart')} Encuesta</button>
+            <button type="button" class="chip-btn" data-action="album">${ic('i-camera')} Álbum${(p.album || []).length ? ` <b class="tnum">${p.album.length}</b>` : ''}</button>
+          </div>
         </div>
         ${checkinHTML(p)}
         ${localidadHTML(p)}
@@ -1469,7 +1490,7 @@
     const p = state.chatId && findP(state.chatId);
     const box = $('#chat-msgs');
     if (!p || !box) return;
-    box.innerHTML = (chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()) + (typing.on ? '<div class="typing"><i></i><i></i><i></i></div>' : '');
+    box.innerHTML = consejoChatHTML(p) + (chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()) + (typing.on ? '<div class="typing"><i></i><i></i><i></i></div>' : '');
     scrollChat();
   }
   function scrollChat(smooth = true) {
@@ -2153,6 +2174,8 @@
     const entry = i >= 0 ? modalStack.splice(i, 1)[0] : null;
     if (id === 'modal-qr' && detenerQR) { detenerQR(); detenerQR = null; }
     if (id === 'modal-escaner') cerrarEscaner();
+    if (id === 'modal-qrscan') cerrarLectorQR();
+    if (id === 'modal-qrid') clearTimeout(qridTimer);
     if (!modalStack.length) document.body.classList.remove('no-scroll');
     if (entry && entry.ret && document.contains(entry.ret)) entry.ret.focus({ preventScroll: true });
   }
@@ -2275,6 +2298,8 @@
       foto_encuadre: Object.assign({}, FOTO_VACIA, p.foto_encuadre || {}),
       tel: (priv && priv.telefono) || '', cedula: (priv && priv.cedula) || '', mail: me.email || '',
       rating: Number(p.rating) || 0, resenas: Number(p.resenas) || 0,
+      intereses: Array.isArray(p.intereses) ? p.intereses : [],
+      contacto_nombre: (priv && priv.contacto_nombre) || '', contacto_tel: (priv && priv.contacto_tel) || '',
       recibe_anuncios: !!p.recibe_anuncios,
       cedula_verificada: !!(priv && priv.cedula_verificada), cedula_verificada_en: (priv && priv.cedula_verificada_en) || null,
     });
@@ -2299,7 +2324,7 @@
   }
   // Mensajes de personas de ejemplo (sin cuenta) no se muestran
   const isRealMsg = r => r.tipo !== 'user' || !!r.autor_id;
-  const msgFromRow = r => ({ id: r.id, tipo: r.tipo, texto: r.texto, ts: Date.parse(r.creado_en), autor: r.autor_id ? (r.autor_id === me.id ? 'me' : r.autor_id) : r.autor_demo, replyId: r.responde_a ?? null });
+  const msgFromRow = r => ({ id: r.id, tipo: r.tipo, texto: r.texto, ts: Date.parse(r.creado_en), autor: r.autor_id ? (r.autor_id === me.id ? 'me' : r.autor_id) : r.autor_demo, replyId: r.responde_a ?? null, encuestaId: r.encuesta_id ?? null });
 
   // De los parches de ejemplo de la base de datos solo mostramos dos
   const DEMO_LIMIT = 2;
@@ -2348,7 +2373,7 @@
     await cachePeople(rows.map(r => r.creador_id).concat(miembros.map(m => m.usuario_id)));
     applyPerfilRow(pf.data, pv.data);
     state.parches = rows.map(r => fromRow(r, miembros.filter(m => m.parche_id === r.id)));
-    await Promise.all([cargarMesas(), cargarCalificados(), cargarHistorial()]);
+    await Promise.all([cargarMesas(), cargarCalificados(), cargarHistorial(), cargarEspera(), cargarParceros()]);
   }
 
   async function fetchParche(id, drop = false) {
@@ -2431,6 +2456,8 @@
     }
   }
 
+  let extrasT = null;
+  const extrasPronto = id => { clearTimeout(extrasT); extrasT = setTimeout(() => cargarExtras(id), 400); };
   function subscribeRealtime() {
     const pidOf = pl => (pl.new && (pl.new.parche_id || pl.new.id)) || (pl.old && (pl.old.parche_id || pl.old.id));
     sb.channel('mp-dashboard')
@@ -2458,12 +2485,18 @@
         await cachePeople([r.autor_id]);
         if (p.chat.some(m => m.id === r.id)) return;
         p.chat.push(msgFromRow(r));
+        if (r.encuesta_id && !(p.encuestas || {})[r.encuesta_id]) extrasPronto(p.id);
         if (state.chatId === p.id) renderChatMsgs();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
         // Las de mesa y verificación ya tienen su propio aviso
         if (r.icono !== 'i-bolt' && r.icono !== 'i-users' && r.icono !== 'i-shield') toast('Novedad en tus parches', String(r.texto).replace(/<\/?b>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'), { icon: 'i-live' });
       })
+      // Transporte, encuestas y álbum del chat abierto
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'viajes' }, pl => { const pid = (pl.new && pl.new.parche_id) || (pl.old && pl.old.parche_id); if (pid && pid === state.chatId) extrasPronto(pid); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'viaje_pasajeros' }, () => { if (state.chatId) extrasPronto(state.chatId); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'encuesta_votos' }, () => { if (state.chatId) extrasPronto(state.chatId); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fotos_parche' }, ({ new: r }) => { if (r.parche_id === state.chatId) extrasPronto(r.parche_id); })
       // Modo Mesa: el local confirma o rechaza la reserva
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mesa_reservas', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
         const mia = (state.misMesas || []).find(x => x.id === r.id);
@@ -2951,6 +2984,519 @@
     sync();
   }
 
+  /* =====================================================================
+     16. SEGURIDAD Y COMUNIDAD
+     Botón de ayuda (123), consejos de seguridad, QR personal de
+     identidad, ubicación en vivo para un contacto de confianza, lista de
+     espera, invitar parceros, transporte, encuestas, álbum y "Para ti".
+  ===================================================================== */
+
+  /* ---------- Consejos de seguridad (rotan cada día) ---------- */
+  const CONSEJOS = [
+    'Antes de salir, comparte tu ubicación en vivo con alguien de confianza.',
+    'Para encontrarte con alguien nuevo, elige lugares públicos y con gente.',
+    'Pide el QR de identidad de quien no conoces: verás si su cédula está verificada.',
+    'Nunca dejes tu bebida sola ni recibas tragos de desconocidos.',
+    'Acuerda con tu parche la hora y el medio de regreso antes de salir.',
+    'Lleva el celular cargado y con datos. Si puedes, una batería extra.',
+    'Si algo te incomoda, sal del lugar y llama al 123. No esperes.',
+    'No compartas tu dirección, cédula ni datos bancarios por el chat.',
+    'Paga la vaca solo a personas del parche y por medios que dejen registro.',
+    'Si te sientes en peligro, toca "Ayuda" arriba: 123 y tu ubicación a un toque.',
+    'En planes de río o montaña, avisa a alguien la ruta y la hora de regreso.',
+    'Confía en tu instinto: si un plan no te da buena espina, no vayas.',
+  ];
+  const consejoDelDia = (k = 0) => CONSEJOS[(Math.floor(Date.now() / (24 * HOUR)) + k) % CONSEJOS.length];
+  function renderConsejo() {
+    const slot = $('#consejo-slot');
+    if (!slot) return;
+    if (store.get('mp_consejo_oculto', '') === todayKey()) { slot.innerHTML = ''; return; }
+    slot.innerHTML = `<aside class="tip-card" aria-label="Consejo de seguridad">
+      <span class="tip-ic">${ic('i-shield')}</span>
+      <p><b>Consejo de seguridad</b>${esc(consejoDelDia())}</p>
+      <button type="button" class="icon-btn tip-x" data-action="consejo-ocultar" aria-label="Ocultar el consejo de hoy">${ic('i-close')}</button>
+    </aside>`;
+  }
+  // Un recordatorio como aviso, máximo cada 12 horas
+  function consejoPeriodico() {
+    const ult = store.get('mp_consejo_toast', 0);
+    if (Date.now() - ult < 12 * HOUR) return;
+    store.set('mp_consejo_toast', Date.now());
+    setTimeout(() => toast('Consejo de seguridad', consejoDelDia(3), { icon: 'i-shield', ms: 7000, action: { label: 'Ayuda', act: 'seguridad', id: '' } }), 6000);
+  }
+
+  /* ---------- Botón de ayuda: 123, ubicación y contacto de confianza ---------- */
+  let ayudaParche = null;
+  function abrirSeguridad(parcheId) {
+    ayudaParche = parcheId && findP(parcheId) ? parcheId : null;
+    renderSeguridad();
+    openModal('modal-seguridad');
+  }
+  function renderSeguridad() {
+    const c = { nombre: perfil.contacto_nombre || '', tel: perfil.contacto_tel || '' };
+    $('#sos-contacto-txt').textContent = c.tel ? `${c.nombre || 'Tu contacto'} · ${c.tel}` : 'Aún no tienes contacto de confianza';
+    $('#sos-enviar').disabled = !c.tel;
+    $('#sos-nombre').value = c.nombre; $('#sos-tel').value = c.tel;
+    const viva = ubicacionViva.token;
+    $('#sos-vivo').classList.toggle('is-on', !!viva);
+    $('#sos-vivo-txt').textContent = viva ? 'Compartiendo tu ubicación en vivo' : 'Compartir mi ubicación en vivo';
+    $('#sos-vivo-sub').textContent = viva ? 'Toca para dejar de compartir. Se apaga sola en 8 horas.' : 'Tu contacto la ve en un enlace, sin cuenta. Hasta 8 horas.';
+    $('#sos-consejo').textContent = consejoDelDia(1);
+  }
+  const telWa = t => { const d = String(t || '').replace(/\D/g, ''); return d.length === 10 ? '57' + d : d; };
+  function posicionAhora() {
+    return new Promise((res, rej) => {
+      if (userPos) { res({ lat: userPos[0], lng: userPos[1], acc: userAcc }); return; }
+      if (!navigator.geolocation) { rej(new Error('GPS')); return; }
+      navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }), rej, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+    });
+  }
+  async function enviarUbicacion() {
+    if (!perfil.contacto_tel) { $('#sos-nombre').focus(); return; }
+    let msg = `Hola, soy ${perfil.primer || 'yo'} (ModoParche).`;
+    try {
+      const p = await posicionAhora();
+      msg += ` Estoy aquí: https://maps.google.com/?q=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+    } catch (e) { msg += ' No pude sacar mi ubicación, pero quiero que sepas dónde ando.'; }
+    const pa = ayudaParche && findP(ayudaParche);
+    if (pa) msg += ` Voy al parche "${pa.titulo}" en ${pa.lugar} (${fmtCuando(pa.inicio)}).`;
+    if (ubicacionViva.token) msg += ` Ubicación en vivo: ${location.origin}/seguro/${ubicacionViva.token}`;
+    window.open(`https://wa.me/${telWa(perfil.contacto_tel)}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+  }
+  async function guardarContacto(e) {
+    e.preventDefault();
+    const nombre = $('#sos-nombre').value.trim().slice(0, 40), tel = $('#sos-tel').value.replace(/\D/g, '');
+    if (tel && !/^[0-9]{7,15}$/.test(tel)) { toast('Revisa el número', 'Escribe solo números, por ejemplo 3104567890.', { type: 'error' }); return; }
+    if (!DEMO) {
+      const { error } = await sb.from('perfiles_privados').update({ contacto_nombre: nombre || null, contacto_tel: tel || null }).eq('id', me.id);
+      if (error) { toast('No se guardó el contacto', /contacto_/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error), { type: 'error' }); return; }
+    }
+    perfil.contacto_nombre = nombre; perfil.contacto_tel = tel;
+    savePerfil();
+    renderSeguridad();
+    toast('Contacto guardado', tel ? `${nombre || 'Tu contacto'} recibirá tu ubicación cuando lo pidas.` : 'Quitaste tu contacto de confianza.', { icon: 'i-shield' });
+  }
+
+  /* ---------- Ubicación en vivo (enlace /seguro/<token>) ---------- */
+  const ubicacionViva = { token: store.get('mp_ubicacion_viva', null), watch: null, ultimo: 0 };
+  async function toggleUbicacionViva() {
+    if (ubicacionViva.token) { pararUbicacionViva(); return; }
+    if (DEMO) { toast('Modo demo', 'La ubicación en vivo funciona cuando entras con tu cuenta.', { icon: 'i-info' }); return; }
+    const { data, error } = await sb.rpc('iniciar_ubicacion_viva', { p_parche: ayudaParche && isUuid(ayudaParche) ? ayudaParche : null });
+    if (error) { toast('No pudimos compartir tu ubicación', /iniciar_ubicacion_viva|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error), { type: 'error' }); return; }
+    ubicacionViva.token = data; store.set('mp_ubicacion_viva', data);
+    seguirUbicacion();
+    renderSeguridad();
+    const link = `${location.origin}/seguro/${data}`;
+    toast('Ubicación en vivo activada', 'Mándale el enlace a tu contacto de confianza.', { icon: 'i-locate', ms: 8000, action: perfil.contacto_tel ? { label: 'Enviar', act: 'sos-enviar', id: '' } : null });
+    try { await navigator.clipboard.writeText(link); } catch (e) { /* sin portapapeles */ }
+  }
+  function seguirUbicacion() {
+    if (!ubicacionViva.token || !navigator.geolocation || ubicacionViva.watch != null) return;
+    ubicacionViva.watch = navigator.geolocation.watchPosition(async pos => {
+      if (Date.now() - ubicacionViva.ultimo < 20000) return; // cada 20 s basta
+      ubicacionViva.ultimo = Date.now();
+      const { error } = await sb.from('ubicaciones_vivas').update({ lat: pos.coords.latitude, lng: pos.coords.longitude, precision_m: Math.round(pos.coords.accuracy), actualizado: new Date().toISOString() }).eq('token', ubicacionViva.token);
+      if (error) console.warn('[ubicación viva]', error.message);
+    }, () => { /* sin permiso: el enlace muestra la última conocida */ }, { enableHighAccuracy: true, maximumAge: 15000 });
+  }
+  async function pararUbicacionViva() {
+    const t = ubicacionViva.token;
+    if (ubicacionViva.watch != null) navigator.geolocation.clearWatch(ubicacionViva.watch);
+    ubicacionViva.watch = null; ubicacionViva.token = null; store.set('mp_ubicacion_viva', null);
+    if (t && !DEMO) await sb.from('ubicaciones_vivas').update({ activa: false }).eq('token', t);
+    renderSeguridad();
+    toast('Dejaste de compartir tu ubicación', 'El enlace ya no muestra dónde estás.', { icon: 'i-check' });
+  }
+
+  /* ---------- QR personal de identidad ---------- */
+  let qridTimer = null;
+  async function mostrarMiQR() {
+    openModal('modal-qrid');
+    $('#qrid-nombre').innerHTML = `${esc(perfil.nombre)}${perfil.cedula_verificada ? ` <span class="sello">${ic('i-shield')}</span>` : ''}`;
+    $('#qrid-estado').textContent = perfil.cedula_verificada ? 'Cédula verificada' : 'Cédula sin verificar';
+    $('#qrid-estado').classList.toggle('is-ok', !!perfil.cedula_verificada);
+    clearTimeout(qridTimer);
+    const ciclo = async () => {
+      if ($('#modal-qrid').hidden) return;
+      let cod;
+      if (DEMO) cod = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+      else {
+        const { data, error } = await sb.rpc('nuevo_qr_identidad');
+        if (error) { $('#qrid-qr').innerHTML = `<p class="qr-err">${/nuevo_qr_identidad|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : esc(dbMsg(error))}</p>`; return; }
+        cod = data.codigo;
+      }
+      try { $('#qrid-qr').innerHTML = await window.MPCheckin.dibujar('MPID|' + cod); } catch (e) { $('#qrid-qr').innerHTML = '<p class="qr-err">Sin conexión para dibujar el QR.</p>'; }
+      const barra = $('#qrid-barra');
+      barra.style.transition = 'none'; barra.style.transform = 'scaleX(1)'; void barra.offsetWidth;
+      barra.style.transition = 'transform 30s linear'; barra.style.transform = 'scaleX(0)';
+      qridTimer = setTimeout(ciclo, 30000);
+    };
+    ciclo();
+  }
+  let qrLector = null;
+  function escanearIdentidad() {
+    openModal('modal-qrscan');
+    $('#qrscan-res').innerHTML = '';
+    $('#qrscan-res').hidden = true;
+    $('#qrscan-reader').hidden = false;
+    $('#qrscan-msg').textContent = 'Apunta la cámara al QR de la otra persona.';
+    if (!window.MPCheckin) return;
+    qrLector = window.MPCheckin.escanear('qrscan-reader', async r => {
+      qrLector = null;
+      $('#qrscan-reader').hidden = true;
+      $('#qrscan-msg').textContent = 'Revisando...';
+      await verificarIdentidad(r.codigo);
+    }, (err, sigue) => { $('#qrscan-msg').textContent = err.message; if (!sigue) $('#qrscan-reader').hidden = true; }, window.MPCheckin.parsearIdentidad);
+  }
+  function cerrarLectorQR() { if (qrLector) { qrLector.detener(); qrLector = null; } }
+  async function verificarIdentidad(codigo) {
+    let d;
+    if (DEMO) d = { nombre: perfil.nombre, verificado: !!perfil.cedula_verificada, rating: 0, resenas: 0, desde: new Date().toISOString(), parches: 0 };
+    else {
+      const { data, error } = await sb.rpc('verificar_qr_identidad', { p_codigo: codigo });
+      if (error) {
+        $('#qrscan-msg').textContent = /QR_VENCIDO/.test(`${error.message} ${error.hint}`) ? 'Ese QR ya venció. Pide que lo vuelva a mostrar (cambia cada 30 s).' : dbMsg(error);
+        return;
+      }
+      d = data;
+    }
+    const desde = d.desde ? new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(new Date(d.desde)) : '';
+    const foto = d.foto && d.foto.src ? photoImg(d.foto) : `<span class="qr-res-ini">${esc(initial(d.nombre))}</span>`;
+    $('#qrscan-msg').textContent = '';
+    const res = $('#qrscan-res');
+    res.hidden = false;
+    res.innerHTML = `<div class="qr-res ${d.verificado ? 'is-ok' : 'is-warn'}">
+      <span class="qr-res-av">${foto}</span>
+      <b class="qr-res-nombre">${esc(d.nombre)}</b>
+      <p class="qr-res-sello">${ic(d.verificado ? 'i-shield' : 'i-alert')} ${d.verificado ? (d.es_negocio ? 'Negocio verificado por ModoParche' : 'Cédula verificada por ModoParche') : 'Sin verificar: ten más cuidado'}</p>
+      <ul class="qr-res-datos">
+        ${d.es_negocio ? '<li>Cuenta de negocio</li>' : `<li>${ic('i-star')} ${d.resenas ? `${Number(d.rating).toFixed(1).replace('.', ',')} · ${d.resenas} ${d.resenas === 1 ? 'calificación' : 'calificaciones'}` : 'Sin calificaciones todavía'}</li>
+        <li>${ic('i-check')} ${d.parches || 0} ${d.parches === 1 ? 'parche con llegada confirmada' : 'parches con llegada confirmada'}</li>`}
+        ${desde ? `<li>${ic('i-calendar')} En ModoParche desde ${esc(desde)}</li>` : ''}
+      </ul>
+      <button type="button" class="btn btn--ghost btn--sm" data-action="qr-escanear-id">${ic('i-scan')} Escanear otro</button>
+    </div>`;
+    buzz(d.verificado ? [10, 40, 10] : 30);
+  }
+
+  /* ---------- Lista de espera ---------- */
+  async function toggleEspera(id) {
+    const p = findP(id);
+    if (!p) return;
+    const on = !state.espera.has(id);
+    if (on) state.espera.add(id); else state.espera.delete(id);
+    refresh(); if (state.chatId === id) renderChat();
+    if (isRemote(p)) {
+      const res = on ? await sb.from('lista_espera').insert({ parche_id: id }) : await sb.from('lista_espera').delete().eq('parche_id', id).eq('usuario_id', me.id);
+      if (res.error) {
+        if (on) state.espera.delete(id); else state.espera.add(id);
+        refresh(); if (state.chatId === id) renderChat();
+        toast('No se pudo', /lista_espera/.test(res.error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(res.error), { type: 'error' });
+        return;
+      }
+    } else store.set('mp_demo_espera', [...state.espera]);
+    toast(on ? 'Te avisamos si se libera un cupo' : 'Saliste de la lista de espera', on ? `Eres parte de la lista de "${p.titulo}". Si alguien se sale, te llega un aviso.` : '', { icon: on ? 'i-users' : 'i-check' });
+  }
+  async function cargarEspera() {
+    if (DEMO) { state.espera = new Set(store.get('mp_demo_espera', [])); return; }
+    const r = await sb.from('lista_espera').select('parche_id').eq('usuario_id', me.id);
+    state.espera = new Set(r.error ? [] : (r.data || []).map(x => x.parche_id));
+  }
+
+  /* ---------- Invitar a tus parceros ---------- */
+  async function cargarParceros() {
+    if (DEMO) { state.parceros = []; return; }
+    const { data, error } = await sb.rpc('mis_parceros');
+    state.parceros = error ? [] : (data || []);
+    await cachePeople(state.parceros.map(x => x.id));
+  }
+  async function abrirInvitar(id) {
+    const p = findP(id);
+    if (!p) return;
+    state.invitarId = id;
+    openModal('modal-invitar');
+    $('#inv-title').textContent = p.titulo;
+    $('#inv-msg').textContent = '';
+    if (!DEMO && !state.parceros) await cargarParceros();
+    const lista = (state.parceros || []).filter(x => !p.confirmados.includes(x.id) && x.id !== me?.id);
+    $('#inv-list').innerHTML = lista.length ? lista.map(x => `<li><label class="inv-row">
+        <input type="checkbox" value="${esc(x.id)}">
+        ${avHTML(x.id, 'av--sm')}
+        <span><b>${esc(x.nombre)}${x.verificado ? ` <span class="sello">${ic('i-shield')}</span>` : ''}</b><small>${x.veces} ${x.veces === 1 ? 'parche juntos' : 'parches juntos'}</small></span>
+      </label></li>`).join('')
+      : `<li class="inv-vacio">${emptyHTML({ art: 'parceros', title: 'Aún no tienes parceros', text: 'Cuando compartas parches con gente, aparecen aquí para invitarlos con un toque.', cta: '' })}</li>`;
+    $('#inv-send').disabled = !lista.length;
+  }
+  async function enviarInvitaciones() {
+    const p = findP(state.invitarId);
+    const ids = $$('#inv-list input:checked').map(i => i.value);
+    if (!p) return;
+    if (!ids.length) { $('#inv-msg').textContent = 'Elige al menos una persona.'; return; }
+    const btn = $('#inv-send'); btn.classList.add('is-loading');
+    const { data, error } = await sb.rpc('invitar_a_parche', { p_parche: p.id, p_invitados: ids });
+    btn.classList.remove('is-loading');
+    if (error) { $('#inv-msg').textContent = /MUCHOS/.test(error.message) ? 'Invita máximo 15 personas a la vez.' : dbMsg(error); return; }
+    closeModal('modal-invitar');
+    ringBurst(btn);
+    toast(data ? '¡Invitaciones enviadas!' : 'Ya estaban invitados', data ? `Les llegó un aviso a ${data} ${data === 1 ? 'parcero' : 'parceros'}.` : 'Esas personas ya tenían la invitación o ya están dentro.', { icon: 'i-bolt' });
+  }
+
+  /* ---------- Extras del chat: transporte, encuestas y álbum ---------- */
+  async function cargarExtras(id) {
+    const p = findP(id);
+    if (!p || !isRemote(p)) return;
+    const [vj, en, fo] = await Promise.all([
+      sb.from('viajes').select('id, usuario_id, medio, puestos, desde, hora, viaje_pasajeros(usuario_id)').eq('parche_id', id).order('creado_en'),
+      sb.from('encuestas').select('id, autor_id, pregunta, opciones, encuesta_votos(usuario_id, opcion)').eq('parche_id', id),
+      sb.from('fotos_parche').select('id, usuario_id, url, creado_en').eq('parche_id', id).order('creado_en', { ascending: false }).limit(120),
+    ]);
+    const yo = u => u === me.id ? 'me' : u;
+    if (!vj.error) p.viajes = (vj.data || []).map(v => ({ id: v.id, autor: yo(v.usuario_id), medio: v.medio, puestos: v.puestos, desde: v.desde, hora: v.hora, pasajeros: (v.viaje_pasajeros || []).map(x => yo(x.usuario_id)) }));
+    if (!en.error) p.encuestas = Object.fromEntries((en.data || []).map(e => [e.id, { pregunta: e.pregunta, opciones: e.opciones, votos: Object.fromEntries((e.encuesta_votos || []).map(v => [yo(v.usuario_id), v.opcion])) }]));
+    if (!fo.error) p.album = (fo.data || []).map(f => ({ id: f.id, autor: yo(f.usuario_id), url: f.url }));
+    await cachePeople([].concat((vj.data || []).map(v => v.usuario_id), (fo.data || []).map(f => f.usuario_id)));
+    if (state.chatId === id) renderChat();
+  }
+
+  // Transporte compartido
+  const MEDIOS = { carro: 'Carro', moto: 'Moto', taxi: 'Taxi compartido' };
+  function transporteHTML(p) {
+    const vs = p.viajes || [];
+    const libres = vs.reduce((a, v) => a + Math.max(0, v.puestos - v.pasajeros.length), 0);
+    const mio = vs.find(v => v.autor === 'me');
+    return `<details class="vaca transporte" ${state.abiertoTransporte ? 'open' : ''} data-panel="transporte">
+      <summary>${ic('i-users')} Transporte ${vs.length ? `<span class="tnum">${libres} ${libres === 1 ? 'puesto' : 'puestos'}</span>` : ''} ${ic('i-chev-down')}</summary>
+      <div class="vaca-body tr-body">
+        ${vs.length ? `<ul class="tr-list">${vs.map(v => {
+          const quedan = v.puestos - v.pasajeros.length, voy = v.pasajeros.includes('me');
+          return `<li class="tr-item">
+            ${avHTML(v.autor, 'av--sm')}
+            <span><b>${esc(v.autor === 'me' ? 'Tú' : personById(v.autor)?.nombre || 'Parcero')} · ${esc(MEDIOS[v.medio] || v.medio)}</b><small>Sale de ${esc(v.desde)}${v.hora ? ` a las ${esc(horaTxt(v.hora))}` : ''} · ${quedan > 0 ? `${quedan} ${quedan === 1 ? 'puesto libre' : 'puestos libres'}` : 'Lleno'}</small></span>
+            ${v.autor === 'me' ? `<button type="button" class="btn btn--ghost btn--xs" data-action="viaje-borrar" data-id="${v.id}">Quitar</button>`
+              : voy ? `<button type="button" class="btn btn--ghost btn--xs" data-action="viaje-bajar" data-id="${v.id}">Bajarme</button>`
+              : `<button type="button" class="btn btn--xs" data-action="viaje-subir" data-id="${v.id}" ${quedan > 0 ? '' : 'disabled'}>Me voy contigo</button>`}
+          </li>`;
+        }).join('')}</ul>` : '<p class="tr-vacio">Nadie ha ofrecido puestos todavía. Si tienes carro o moto, ofrece y llegan juntos.</p>'}
+        ${mio ? '' : `<form class="tr-form" id="tr-form" autocomplete="off">
+          <select class="input" name="medio" aria-label="Medio">${Object.entries(MEDIOS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
+          <input class="input tnum" name="puestos" type="number" min="1" max="6" value="3" aria-label="Puestos libres">
+          <input class="input" name="desde" maxlength="60" placeholder="Salgo de... (barrio o punto)" aria-label="De dónde sales" required>
+          <input class="input" name="hora" type="time" aria-label="Hora de salida (opcional)">
+          <button class="btn btn--ink btn--xs" type="submit">${ic('i-plus')} Ofrecer puestos</button>
+        </form>`}
+      </div>
+    </details>`;
+  }
+  async function ofrecerViaje(form) {
+    const p = state.chatId && findP(state.chatId);
+    if (!p) return;
+    const f = new FormData(form);
+    const v = { medio: f.get('medio'), puestos: clamp(Number(f.get('puestos')) || 1, 1, 6), desde: String(f.get('desde') || '').trim().slice(0, 60), hora: f.get('hora') || null };
+    if (v.desde.length < 2) { toast('Falta de dónde sales', 'Escribe el barrio o el punto de salida.', { type: 'error' }); return; }
+    if (isRemote(p)) {
+      const { error } = await sb.from('viajes').insert({ parche_id: p.id, ...v });
+      if (error) { toast('No se publicó el viaje', /viajes/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error), { type: 'error' }); return; }
+      await cargarExtras(p.id);
+    } else { p.viajes = (p.viajes || []).concat({ id: 'v' + Date.now(), autor: 'me', pasajeros: [], ...v }); save(); renderChat(); }
+    toast('Ofreciste puestos', 'Quien necesite llegar se puede ir contigo.', { icon: 'i-users' });
+  }
+  async function accionViaje(tipo, vid) {
+    const p = state.chatId && findP(state.chatId);
+    const v = p && (p.viajes || []).find(x => String(x.id) === String(vid));
+    if (!v) return;
+    if (!isRemote(p)) {
+      if (tipo === 'subir') v.pasajeros.push('me'); else if (tipo === 'bajar') v.pasajeros = v.pasajeros.filter(x => x !== 'me'); else p.viajes = p.viajes.filter(x => x !== v);
+      save(); renderChat(); return;
+    }
+    const res = tipo === 'subir' ? await sb.from('viaje_pasajeros').insert({ viaje_id: v.id })
+      : tipo === 'bajar' ? await sb.from('viaje_pasajeros').delete().eq('viaje_id', v.id).eq('usuario_id', me.id)
+      : await sb.from('viajes').delete().eq('id', v.id);
+    if (res.error) { toast('No se pudo', /SIN_PUESTOS/.test(res.error.message + res.error.hint) ? 'Ya no quedan puestos en ese viaje.' : dbMsg(res.error), { type: 'error' }); }
+    await cargarExtras(p.id);
+  }
+
+  // Encuestas
+  function encuestaHTML(m) {
+    const p = state.chatId && findP(state.chatId);
+    const e = p && p.encuestas && p.encuestas[m.encuestaId];
+    if (!e) return `<div class="msg msg--sys"><div class="bubble">${ic('i-chart')} Encuesta: ${esc(m.texto)}</div></div>`;
+    const votos = Object.values(e.votos), total = votos.length, mio = e.votos.me;
+    return `<div class="msg msg--poll"><div class="poll">
+      <small>${ic('i-chart')} Encuesta de ${esc(m.autor === 'me' ? 'ti' : personById(m.autor)?.nombre || 'un parcero')}</small>
+      <b class="poll-q">${esc(e.pregunta)}</b>
+      <div class="poll-ops" role="group" aria-label="${esc(e.pregunta)}">${e.opciones.map((o, i) => {
+        const n = votos.filter(v => v === i).length, pct = total ? Math.round(n / total * 100) : 0;
+        return `<button type="button" class="poll-op ${mio === i ? 'is-mine' : ''}" data-voto="${i}" data-enc="${m.encuestaId}" aria-pressed="${mio === i}">
+          <span class="poll-bar" style="--p:${pct}%"></span><span class="poll-t">${esc(o)}</span><span class="poll-n tnum">${pct}%</span></button>`;
+      }).join('')}</div>
+      <small class="poll-total tnum">${total} ${total === 1 ? 'voto' : 'votos'}${mio != null ? ' · toca otra opción para cambiar' : ''}</small>
+    </div></div>`;
+  }
+  async function votar(encId, opcion) {
+    const p = state.chatId && findP(state.chatId);
+    const e = p && p.encuestas && p.encuestas[encId];
+    if (!e) return;
+    const antes = e.votos.me;
+    if (antes === opcion) delete e.votos.me; else e.votos.me = opcion;
+    renderChatMsgs();
+    buzz(5);
+    if (!isRemote(p)) { save(); return; }
+    const res = antes === opcion
+      ? await sb.from('encuesta_votos').delete().eq('encuesta_id', encId).eq('usuario_id', me.id)
+      : await sb.from('encuesta_votos').upsert({ encuesta_id: Number(encId), opcion }, { onConflict: 'encuesta_id,usuario_id' });
+    if (res.error) { if (antes == null) delete e.votos.me; else e.votos.me = antes; renderChatMsgs(); toast('No se guardó tu voto', dbMsg(res.error), { type: 'error' }); }
+  }
+  function abrirEncuesta() {
+    $('#form-encuesta').reset();
+    $('#enc-msg').textContent = '';
+    $$('#enc-ops .enc-op').forEach((el, i) => { el.hidden = i > 1; });
+    openModal('modal-encuesta');
+  }
+  async function crearEncuesta(e) {
+    e.preventDefault();
+    const p = state.chatId && findP(state.chatId);
+    if (!p) return;
+    const pregunta = $('#enc-q').value.trim();
+    const ops = $$('#enc-ops .enc-op:not([hidden]) input').map(i => i.value.trim()).filter(Boolean);
+    if (pregunta.length < 3) { $('#enc-msg').textContent = 'Escribe la pregunta.'; return; }
+    if (ops.length < 2) { $('#enc-msg').textContent = 'Pon al menos 2 opciones.'; return; }
+    const btn = $('#enc-send'); btn.classList.add('is-loading');
+    if (isRemote(p)) {
+      const { data, error } = await sb.rpc('crear_encuesta', { p_parche: p.id, p_pregunta: pregunta, p_opciones: ops });
+      btn.classList.remove('is-loading');
+      if (error) { $('#enc-msg').textContent = /DEMASIADAS/.test(error.message) ? 'Máximo 3 encuestas por hora.' : /crear_encuesta|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error); return; }
+      p.encuestas = p.encuestas || {};
+      p.encuestas[data] = { pregunta, opciones: ops, votos: {} };
+      if (!p.chat.some(m => m.encuestaId === data)) p.chat.push({ tipo: 'encuesta', autor: 'me', texto: pregunta, ts: Date.now(), encuestaId: data });
+    } else {
+      btn.classList.remove('is-loading');
+      const eid = 'e' + Date.now();
+      p.encuestas = p.encuestas || {};
+      p.encuestas[eid] = { pregunta, opciones: ops, votos: {} };
+      p.chat.push({ tipo: 'encuesta', autor: 'me', texto: pregunta, ts: Date.now(), encuestaId: eid });
+      save();
+    }
+    closeModal('modal-encuesta');
+    renderChatMsgs();
+  }
+
+  // Álbum del parche
+  function abrirAlbum() {
+    const p = state.chatId && findP(state.chatId);
+    if (!p) return;
+    renderAlbum();
+    openModal('modal-album');
+  }
+  function renderAlbum() {
+    const p = state.chatId && findP(state.chatId);
+    if (!p) return;
+    const fotos = p.album || [];
+    $('#album-title').textContent = p.titulo;
+    $('#album-grid').innerHTML = fotos.length ? fotos.map((f, i) => `<figure class="album-ph" style="--d:${Math.min(i, 12) * 40}ms">
+        <button type="button" class="album-open" data-action="album-ver" data-id="${esc(String(f.id))}" aria-label="Ver foto ${i + 1}"><img src="${esc(f.url)}" alt="" loading="lazy" decoding="async"></button>
+        ${f.autor === 'me' ? `<button type="button" class="album-del" data-action="album-borrar" data-id="${esc(String(f.id))}" aria-label="Borrar mi foto">${ic('i-trash')}</button>` : ''}
+      </figure>`).join('')
+      : `<div class="album-vacio">${emptyHTML({ art: 'aventura-camara', title: 'El álbum está vacío', text: 'Suban las fotos del parche: quedan de recuerdo para todos los que fueron.', cta: '' })}</div>`;
+  }
+  async function subirAlbum(files) {
+    const p = state.chatId && findP(state.chatId);
+    if (!p || !files || !files.length) return;
+    const lista = [...files].filter(f => /^image\//.test(f.type)).slice(0, 10);
+    $('#album-add').classList.add('is-loading');
+    let ok = 0;
+    for (const file of lista) {
+      try {
+        const data = await comprimirFoto(file);
+        if (isRemote(p)) {
+          const url = await uploadFoto(data, 'album');
+          const { data: row, error } = await sb.from('fotos_parche').insert({ parche_id: p.id, url }).select('id').single();
+          if (error) throw error;
+          p.album = [{ id: row.id, autor: 'me', url }].concat(p.album || []);
+        } else p.album = [{ id: 'f' + Date.now() + ok, autor: 'me', url: data }].concat(p.album || []);
+        ok++;
+        renderAlbum();
+      } catch (e) {
+        toast('Una foto no se subió', /fotos_parche/.test(String(e && e.message)) ? 'Falta activar el álbum en la base de datos.' : dbMsg(e), { type: 'error' });
+        break;
+      }
+    }
+    $('#album-add').classList.remove('is-loading');
+    if (ok) { toast(ok === 1 ? 'Foto agregada' : `${ok} fotos agregadas`, 'Ya las ven todos los del parche.', { icon: 'i-camera' }); if (state.chatId === p.id) renderChat(); }
+  }
+  async function borrarFotoAlbum(fid) {
+    const p = state.chatId && findP(state.chatId);
+    if (!p) return;
+    const f = (p.album || []).find(x => String(x.id) === fid);
+    if (!f) return;
+    if (isRemote(p)) {
+      const { error } = await sb.from('fotos_parche').delete().eq('id', f.id);
+      if (error) { toast('No se borró', dbMsg(error), { type: 'error' }); return; }
+    }
+    p.album = p.album.filter(x => x !== f);
+    renderAlbum(); renderChat();
+  }
+  function verFoto(fid) {
+    const p = state.chatId && findP(state.chatId);
+    const f = p && (p.album || []).find(x => String(x.id) === fid);
+    if (!f) return;
+    $('#foto-grande').src = f.url;
+    openModal('modal-foto');
+  }
+
+  /* ---------- "Para ti": recomendaciones ---------- */
+  const NOMBRE_CAT = { rumba: 'la rumba', comida: 'comer rico', chill: 'los planes chill', pueblear: 'pueblear', rio: 'el río', deportes: 'el deporte', conciertos: 'los conciertos', pet: 'salir con tu peludo', cultura: 'la cultura', gaming: 'el gaming' };
+  function paraTi() {
+    const gustos = new Set(perfil.intereses || []);
+    const historial = {};
+    state.parches.filter(p => inside(p) && p.inicio < Date.now()).forEach(p => { historial[p.categoria] = (historial[p.categoria] || 0) + 1; });
+    const amigos = new Set((state.parceros || []).map(x => x.id));
+    return activeList().filter(p => !p.oficial && !inside(p) && !isFull(p) && p.inicio > Date.now()).map(p => {
+      let s = 0; const por = [];
+      if (gustos.has(p.categoria)) { s += 3; por.push(`Te gusta ${NOMBRE_CAT[p.categoria] || catById(p.categoria).label.toLowerCase()}`); }
+      if (historial[p.categoria]) { s += Math.min(3, historial[p.categoria]); if (!gustos.has(p.categoria)) por.push('Parecido a lo que haces'); }
+      const va = p.confirmados.filter(id => amigos.has(id)).length;
+      if (va) { s += 2.5 * va; por.push(va === 1 ? 'Va un parcero tuyo' : `Van ${va} parceros tuyos`); }
+      if (userPos) { const km = distKm(p); if (km < 3) { s += 2; por.push(`A ${fmtKm(km)}`); } else if (km < 6) s += 1; }
+      const d = daysFromToday(dayKey(p.inicio));
+      if (d === 0) { s += 1.5; por.push('Es hoy'); } else if (d === 1) s += 1;
+      if (precio(p) === 0) s += .5;
+      return { p, s, por };
+    }).filter(x => x.s >= 2).sort((a, b) => b.s - a.s).slice(0, 3);
+  }
+  function renderParaTi() {
+    const slot = $('#parati-slot');
+    if (!slot) return;
+    const recs = state.search ? [] : paraTi();
+    if (!recs.length) { slot.innerHTML = ''; return; }
+    slot.innerHTML = `<section class="block parati" aria-labelledby="t-parati">
+      <div class="block-head"><div><h2 class="block-title" id="t-parati">Para ti</h2><p class="block-sub">Según tus gustos, tus parceros y lo cerca que está.</p></div></div>
+      <div class="parati-row">${recs.map(({ p, por }, i) => `<article class="pt-card" style="--d:${i * 80}ms">
+        <span class="pt-ic">${ic(catById(p.categoria).icon)}</span>
+        <div class="pt-body"><b>${esc(p.titulo)}</b><small class="tnum">${esc(fmtCuando(p.inicio))} · ${esc(p.lugar)}</small>
+          <div class="pt-por">${por.slice(0, 2).map(t => `<span>${esc(t)}</span>`).join('')}</div></div>
+        <div class="pt-act">${joinButton(p)}</div>
+      </article>`).join('')}</div>
+    </section>`;
+  }
+
+  /* ---------- Modo oscuro: sistema, claro u oscuro ---------- */
+  function aplicarTema(t, avisar = false) {
+    const tema = ['claro', 'oscuro'].includes(t) ? t : 'sistema';
+    try { localStorage.setItem('mp_tema', tema); } catch (e) { /* sin almacenamiento */ }
+    marcarTema();
+    if (avisar) toast(tema === 'oscuro' ? 'Modo oscuro' : tema === 'claro' ? 'Modo claro' : 'Igual que tu celular', '', { icon: 'i-check', ms: 1800 });
+  }
+  function marcarTema() {
+    let t = 'sistema';
+    try { t = localStorage.getItem('mp_tema') || 'sistema'; } catch (e) { /* nada */ }
+    $$('[data-tema]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === t)));
+    const oscuro = t === 'oscuro' || (t === 'sistema' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('is-dark', oscuro);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', oscuro ? '#121214' : '#FF5A1F');
+  }
+
   /* ---------- App instalable (PWA) y avisos push ---------- */
   // Llave pública VAPID (la privada vive solo en los secretos de Supabase)
   const VAPID_PUBLIC = 'BJImaxL4PZ8Jxr9HoIOiAApsCke6NDbQBspCFXQilxh70y7uWqbcZr3ZlX6632T-isTqK4-78_R2wwUkHABfdUI';
@@ -3047,6 +3593,11 @@
     if (!t.closest('.mis-row')) closeReveal();
     const closer = t.closest('[data-close]');
     if (closer) { const m = closer.closest('.modal'); if (m) closeModal(m.id); return; }
+    // Clic a la boletería oficial (no frena el enlace)
+    const tk = t.closest('a.of-tk');
+    if (tk) { const po = oficialActual(); if (po && isRemote(po)) sb.rpc('registrar_clic_boleta', { p_parche: po.id, p_tipo: tk.classList.contains('of-tk--palco') ? 'palco' : 'entrada' }).then(() => {}, () => {}); return; }
+    const vt = t.closest('[data-voto]');
+    if (vt) { votar(vt.dataset.enc, Number(vt.dataset.voto)); return; }
     const fb = t.closest('[data-filtro]');
     if (fb) { state.filtro = fb.dataset.filtro; renderCards(true); return; }
     const cf = t.closest('[data-chatf]');
@@ -3110,6 +3661,24 @@
       case 'join': toggleJoin(id); break;
       case 'responder': setReply(a.dataset.key); break;
       case 'compartir': compartir(id); break;
+      case 'seguridad': abrirSeguridad(id); break;
+      case 'sos-enviar': enviarUbicacion(); break;
+      case 'sos-vivo': toggleUbicacionViva(); break;
+      case 'qr-mio': closeAllModals(); setTimeout(mostrarMiQR, 120); break;
+      case 'qr-escanear-id': closeAllModals(); setTimeout(escanearIdentidad, 120); break;
+      case 'consejo-ocultar': store.set('mp_consejo_oculto', todayKey()); renderConsejo(); break;
+      case 'espera': toggleEspera(id); break;
+      case 'invitar': abrirInvitar(id); break;
+      case 'inv-send': enviarInvitaciones(); break;
+      case 'encuesta': abrirEncuesta(); break;
+      case 'enc-mas': { const h = $$('#enc-ops .enc-op[hidden]')[0]; if (h) { h.hidden = false; h.querySelector('input').focus(); } if (!$$('#enc-ops .enc-op[hidden]').length) a.hidden = true; break; }
+      case 'album': abrirAlbum(); break;
+      case 'album-ver': verFoto(id); break;
+      case 'album-borrar': borrarFotoAlbum(id); break;
+      case 'viaje-subir': accionViaje('subir', id); break;
+      case 'viaje-bajar': accionViaje('bajar', id); break;
+      case 'viaje-borrar': accionViaje('borrar', id); break;
+      case 'tema': aplicarTema(a.dataset.tema, true); break;
       case 'wa': { const pp = findP(id); if (pp) window.open(waLink(pp), '_blank', 'noopener'); break; }
       case 'calificar': abrirCalificar(id); break;
       case 'cal-send': enviarCalificaciones(); break;
@@ -3155,6 +3724,9 @@
       enviarQR(escanerParche, cod);
     });
     $('#p-anuncios')?.addEventListener('change', e => cambiarAnuncios(e.target.checked));
+    $('#form-encuesta')?.addEventListener('submit', crearEncuesta);
+    $('#sos-contacto')?.addEventListener('submit', guardarContacto);
+    $('#album-file')?.addEventListener('change', e => { subirAlbum(e.target.files); e.target.value = ''; });
     $('#c-foto')?.addEventListener('change', e => { elegirFotoParche(e.target.files && e.target.files[0]); e.target.value = ''; });
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && modalStack.length) { closeModal(modalStack[modalStack.length - 1].id); return; }
@@ -3179,6 +3751,7 @@
     form.addEventListener('change', e => { if (e.target.name === 'categoria' && createMarker) setCreatePin(draft.lat, draft.lng, true); });
 
     document.addEventListener('submit', e => {
+      if (e.target.id === 'tr-form') { e.preventDefault(); ofrecerViaje(e.target); return; }
       if (e.target.id !== 'chat-form') return;
       e.preventDefault();
       const inp = $('#chat-input');
@@ -3204,7 +3777,7 @@
   }
 
   async function init() {
-    if (DEMO) { loadDemo(); await cargarMesas(); }
+    if (DEMO) { loadDemo(); await cargarMesas(); await cargarEspera(); }
     else if (!(await bootRemote())) return;
 
     $('#c-categoria').innerHTML = CATS.map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
@@ -3227,6 +3800,11 @@
     if (abrir && findP(abrir)) setTimeout(() => openChat(abrir), 400);
     if (qs.has('crear')) setTimeout(() => abrirCrear(), 500);
     initApp();
+    consejoPeriodico();
+    if (!DEMO && ubicacionViva.token) seguirUbicacion();
+    marcarTema();
+    // Si el celular cambia a oscuro (por la noche), seguimos el cambio
+    try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', marcarTema); } catch (e) { /* navegador viejo */ }
     if (!DEMO) {
       subscribeRealtime();
     } else if (sb) {

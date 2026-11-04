@@ -98,7 +98,8 @@
 
   /* Abre la cámara y avisa cuando lee un QR de llegada válido.
      Devuelve { detener } . onLeido({ parcheId, codigo }) */
-  function escanear(elId, onLeido, onError) {
+  function escanear(elId, onLeido, onError, lector_) {
+    var leer = lector_ || parsear; // otro formato (por ejemplo el QR de identidad)
     var lector = null, parado = false, yaLeyo = false;
     var api = {
       detener: function () {
@@ -114,7 +115,7 @@
       return lector.start({ facingMode: 'environment' }, { fps: 10, qrbox: function (w, h) { var s = Math.floor(Math.min(w, h) * 0.72); return { width: s, height: s }; } },
         function (raw) {
           if (yaLeyo) return;
-          var r = parsear(raw);
+          var r = leer(raw);
           if (!r) { if (onError) onError(new Error('Ese QR no es de ModoParche.'), true); return; }
           yaLeyo = true;
           api.detener().then(function () { onLeido(r); });
@@ -130,5 +131,15 @@
     return api;
   }
 
-  window.MPCheckin = { codigo: codigo, texto: texto, parsear: parsear, mostrarQR: mostrarQR, escanear: escanear, PASO: PASO };
+  /* Dibuja cualquier texto como QR (carga la librería si hace falta) */
+  function dibujar(text) {
+    return cargar(LIB_QR, function () { return typeof window.qrcode === 'function'; }).then(function () { return qrSVG(text); });
+  }
+  /* QR personal de identidad: "MPID|<código de 32 letras>" */
+  function parsearIdentidad(raw) {
+    var m = /^MPID\|([0-9a-f]{32})$/i.exec(String(raw || '').trim());
+    return m ? { codigo: m[1].toLowerCase() } : null;
+  }
+
+  window.MPCheckin = { codigo: codigo, texto: texto, parsear: parsear, mostrarQR: mostrarQR, escanear: escanear, dibujar: dibujar, parsearIdentidad: parsearIdentidad, PASO: PASO };
 })();

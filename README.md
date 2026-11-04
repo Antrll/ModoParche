@@ -124,6 +124,26 @@ Correr `20261104140000_mejoras_noviembre.sql` en el SQL Editor (después de las 
 | Parches grandes | En los oficiales, el chat tiene pestañas Todo, Anuncios y la localidad de cada quien (General, VIP, Palco…). Cada persona elige su localidad y se ve junto a su nombre. |
 | Afiche del oficial | `src/assets/web/oficiales/andres-cepeda.webp` (y `-og.jpg` para compartir). En el panel admin se cambia en el campo "Afiche". |
 
+### Seguridad y comunidad (noviembre 2026)
+
+Correr `20261104150000_seguridad_y_comunidad.sql` en el SQL Editor (después de `20261104140000_mejoras_noviembre.sql`).
+
+| Función | Dónde | Cómo funciona |
+| --- | --- | --- |
+| Ayuda (123) | Botón rojo "Ayuda" arriba y escudo en cada chat | Llamar al 123 (Policía) o a la Línea 155, enviar tu ubicación por WhatsApp a tu contacto de confianza, compartir tu ubicación en vivo y verificar a alguien con QR. |
+| Emergencia para negocios | Botón "Emergencia" en el panel de empresas (`mp-seguridad-biz.js`) | 123, Línea 155 y "Verificar cliente" con su QR. |
+| Consejos de seguridad | Inicio, chat de parches próximos, aviso cada 12 h y panel de empresas | Cambian cada día. |
+| QR de identidad | Perfil > "Mi QR de identidad" y "Verificar a alguien" | Cambia cada 30 s. Quien lo escanea ve nombre, foto (si la muestras), cédula verificada sí/no, calificación y parches con llegada. Nunca el número de cédula. |
+| Ubicación en vivo | Ayuda > Compartir mi ubicación en vivo | Enlace `/seguro/<token>` (`api/seguro.js`) que tu contacto abre sin cuenta. Se actualiza cada 20 s, dura máximo 8 horas y se puede apagar. |
+| Lista de espera | Parches llenos: "Avísame si se libera" | Cuando alguien se sale, la primera persona de la lista recibe un aviso. |
+| Invitar parceros | Chat > Invitar parceros | Lista de personas con las que has compartido parches; les llega una notificación. |
+| Transporte | Chat > Transporte | Ofrecer puestos (carro, moto o taxi compartido) o irte con alguien. El conductor recibe aviso. |
+| Encuestas | Chat > Encuesta | 2 a 5 opciones, resultados en vivo, se puede cambiar el voto. |
+| Álbum | Chat > Álbum | Fotos del parche, solo para quienes están dentro. Máximo 30 por persona. |
+| Para ti | Inicio | Recomienda según tus gustos, tus parceros, la distancia y el día. |
+| Clics a la boletería | Panel admin > Parches > Oficiales | Cuántas personas tocaron "Comprar entrada" y "Comprar palco". |
+| Modo oscuro | Perfil > Como el celular / Claro / Oscuro | Sin parpadeo al cargar; el parche oficial y el saludo conservan sus colores. |
+
 #### Activar los avisos push
 
 1. Las llaves están en `.env.local` (no se sube a git ni a Vercel). La pública ya está en `dashboard.js`.

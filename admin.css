@@ -959,3 +959,7 @@ body.is-mod [data-solo-admin] { display: none !important; }
 /* Saltar al contenido (uso con teclado) */
 .skip { position: fixed; left: 12px; top: -60px; z-index: 7000; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--text); font-weight: 800; transition: top .2s ease; }
 .skip:focus { top: 12px; outline: 3px solid #fff; outline-offset: 3px; }
+/* Clics a la boletería en los parches oficiales */
+.pclics { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.pclics .ic { width: 15px; height: 15px; flex: none; }
+.pclics b { color: var(--text); }

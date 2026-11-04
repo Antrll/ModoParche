@@ -1409,3 +1409,36 @@ select.input { background-position: right 14px center; }
 .pv-anuncios { cursor: pointer; min-width: 0; }
 .plan-retracto { margin-top: 10px; }
 .pay-test { margin-bottom: 12px; padding: 10px 12px; border: 2px dashed var(--text); border-radius: 10px; background: var(--pill-warning-bg); color: var(--pill-warning-ink); font-size: 13px; line-height: 18px; }
+
+/* =====================================================================
+   SEGURIDAD: emergencia 123, verificar cliente con QR y consejo del día
+   (mp-seguridad-biz.js)
+===================================================================== */
+.btn.sos-biz { background: #b52b06; color: #fff; border-color: transparent; font-weight: 700; }
+.btn.sos-biz:hover { background: #8e2104; }
+@media (max-width: 760px) { .btn.sos-biz span { display: none; } .btn.sos-biz { padding: 0 12px; } }
+.biz-tip { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 14px; border-radius: 16px; background: #e7f4ec; color: #0e4d24; }
+.biz-tip > .ic { width: 22px; height: 22px; }
+.biz-tip p { display: grid; gap: 1px; font-size: 14px; line-height: 20px; }
+.biz-tip b { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+@media (max-width: 640px) { .biz-tip { grid-template-columns: auto 1fr; } .biz-tip .btn { grid-column: 1 / -1; } }
+.sos-biz-body { display: grid; gap: 10px; }
+.sos-biz-call, .sos-biz-line, .sos-biz-opt { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; text-align: left; text-decoration: none; border: 0; cursor: pointer; font: inherit; }
+.sos-biz-call span, .sos-biz-line span, .sos-biz-opt span { display: grid; gap: 1px; }
+.sos-biz-call small, .sos-biz-line small, .sos-biz-opt small { font-size: 13px; opacity: .8; }
+.sos-biz-call { background: #b52b06; color: #fff; }
+.sos-biz-call b { font-size: 20px; }
+.sos-biz-call .ic { width: 26px; height: 26px; }
+.sos-biz-line { background: #fde8e1; color: #b52b06; }
+.sos-biz-opt { background: var(--raised, #f4f4f5); color: var(--text, #111); }
+.sos-biz-tip { display: flex; gap: 8px; padding: 12px 14px; border-radius: 12px; background: #fff1ea; color: #b83709; font-size: 14px; font-weight: 600; }
+.sos-biz-tip .ic { width: 18px; height: 18px; flex: none; }
+.qrid-reader { min-height: 240px; border-radius: 14px; overflow: hidden; background: #111; }
+.qrid-reader video { display: block; width: 100% !important; height: auto !important; object-fit: cover; }
+.qrv { display: grid; justify-items: center; gap: 6px; margin-top: 10px; padding: 18px; border-radius: 14px; text-align: center; }
+.qrv.is-ok { background: #e7f4ec; color: #0e6f31; }
+.qrv.is-warn { background: #fff1ea; color: #b83709; }
+.qrv-nombre { font-size: 20px; color: var(--text, #111); }
+.qrv-sello { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.qrv-sello .ic { width: 18px; height: 18px; }
+.qrv-dato { font-size: 14px; color: var(--muted, #55555c); }

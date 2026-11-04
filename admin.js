@@ -196,6 +196,8 @@
     S.negocios = negocios || [];
     S.mensajes = mensajes || [];
     S.registro = registro || [];
+    // Clics a la boletería de los oficiales (si la base ya tiene la función)
+    try { S.clics = (await rpc('admin_clics_oficiales')) || {}; } catch (e) { S.clics = {}; }
     S.cargado = Date.now();
     CUENTA = byId();
   }
@@ -922,6 +924,7 @@
             <span>${ic('i-pin')}<span>${esc(p.lugar)}${p.barrio ? ', ' + esc(p.barrio) : ''}</span></span>
             <span>${ic(p.aliado ? 'i-store' : 'i-user')}<span>${esc(p.creador_nombre || nombreDe(p.creador_id))}${p.aliado ? ' · aliado' : ''}</span></span>
           </div>
+          ${p.oficial ? (() => { const k = (S.clics || {})[p.id] || {}; return `<p class="pclics">${ic('i-ticket')}<span><b>${int(k.entrada || 0)}</b> clics a entradas · <b>${int(k.palco || 0)}</b> a palcos · ${plural(k.personas || 0, 'persona')}${k.semana ? ` · ${int(k.semana)} esta semana` : ''}</span></p>`; })() : ''}
           <div><span class="track ${full ? 'is-full' : ''}"><i data-v="${Math.min(1, p.miembros / p.cupos_max).toFixed(3)}"></i></span>
             <div class="pfill"><span><b>${int(p.miembros)}</b> de ${int(p.cupos_max)} cupos</span><span>${pct(p.miembros, p.cupos_max)} %</span></div></div>
           <div class="pfoot">
