@@ -3152,7 +3152,7 @@
   function cerrarLectorQR() { if (qrLector) { qrLector.detener(); qrLector = null; } }
   async function verificarIdentidad(codigo) {
     let d;
-    if (DEMO) d = { nombre: perfil.nombre, verificado: !!perfil.cedula_verificada, rating: 0, resenas: 0, desde: new Date().toISOString(), parches: 0 };
+    if (DEMO) d = { nombre: 'Laura M.', verificado: true, rating: 4.8, resenas: 12, desde: new Date(Date.now() - 90 * 24 * HOUR).toISOString(), parches: 9, escaneo: 1, calificar: { parche: 'Atardecer en la Piedra del Amor', estrellas: null } };
     else {
       const { data, error } = await sb.rpc('verificar_qr_identidad', { p_codigo: codigo });
       if (error) {
@@ -3175,9 +3175,52 @@
         <li>${ic('i-check')} ${d.parches || 0} ${d.parches === 1 ? 'parche con llegada confirmada' : 'parches con llegada confirmada'}</li>`}
         ${desde ? `<li>${ic('i-calendar')} En ModoParche desde ${esc(desde)}</li>` : ''}
       </ul>
+      ${calificarQRHTML(d)}
       <button type="button" class="btn btn--ghost btn--sm" data-action="qr-escanear-id">${ic('i-scan')} Escanear otro</button>
     </div>`;
     buzz(d.verificado ? [10, 40, 10] : 30);
+  }
+
+  /* ---------- Calificar al escanear su QR (1 a 5 estrellas) ---------- */
+  let qrEscaneo = null;
+  function calificarQRHTML(d) {
+    qrEscaneo = d.escaneo || null;
+    if (d.es_yo) return '<p class="qr-cal-nota">Este es tu propio QR.</p>';
+    if (d.es_negocio) return '';
+    if (!d.calificar || !qrEscaneo) return `<p class="qr-cal-nota">${ic('i-star')} Para calificar a ${esc(String(d.nombre).split(' ')[0])}, deben estar en el mismo parche.</p>`;
+    const v = Number(d.calificar.estrellas) || 0;
+    return `<div class="cal-row qr-cal" data-v="${v}">
+      <p class="qr-cal-t"><b>${v ? 'Tu calificación' : `¿Cómo te fue con ${esc(String(d.nombre).split(' ')[0])}?`}</b><small>Por el parche "${esc(d.calificar.parche)}"</small></p>
+      <div class="stars-in" role="radiogroup" aria-label="Estrellas para ${esc(d.nombre)}">
+        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star-btn ${n <= v ? 'is-on' : ''}" role="radio" aria-checked="${n === v}" data-star="${n}" aria-label="${n} ${n === 1 ? 'estrella' : 'estrellas'}">${ic('i-star')}</button>`).join('')}
+      </div>
+      <button type="button" class="cal-volver" aria-pressed="false">${ic('i-check')} Volvería a parchar</button>
+      <button type="button" class="btn btn--sm qr-cal-send" data-action="qr-calificar">${ic('i-star')} ${v ? 'Cambiar calificación' : 'Calificar'}</button>
+      <p class="qr-cal-msg" role="status" aria-live="polite"></p>
+    </div>`;
+  }
+  async function calificarPorQR(btn) {
+    const box = btn.closest('.qr-cal');
+    const estrellas = Number(box.dataset.v) || 0, volver = box.querySelector('.cal-volver').getAttribute('aria-pressed') === 'true';
+    const msg = box.querySelector('.qr-cal-msg');
+    if (!estrellas) { msg.textContent = 'Toca las estrellas primero.'; return; }
+    btn.classList.add('is-loading');
+    if (!DEMO) {
+      const { error } = await sb.rpc('calificar_por_qr', { p_escaneo: qrEscaneo, p_estrellas: estrellas, p_volver: volver });
+      btn.classList.remove('is-loading');
+      if (error) {
+        const m = `${error.message} ${error.hint || ''}`;
+        msg.textContent = /ESCANEO_VENCIDO/.test(m) ? 'Pasaron más de 30 minutos: vuelve a escanear su QR.'
+          : /SIN_PARCHE/.test(m) ? 'Solo puedes calificar a alguien con quien compartes un parche.'
+          : /calificar_por_qr|PGRST202/.test(m) ? 'Falta activar esta función en la base de datos.' : dbMsg(error);
+        return;
+      }
+    } else btn.classList.remove('is-loading');
+    ringBurst(btn);
+    buzz([10, 40, 18]);
+    msg.textContent = `Guardaste ${estrellas} ${estrellas === 1 ? 'estrella' : 'estrellas'}. Puedes cambiarla en los próximos 30 minutos.`;
+    btn.innerHTML = `${ic('i-check')} Calificación guardada`;
+    toast('¡Gracias por calificar!', 'Así se notan los buenos parceros.', { icon: 'i-star' });
   }
 
   /* ---------- Lista de espera ---------- */
@@ -3666,6 +3709,7 @@
       case 'sos-vivo': toggleUbicacionViva(); break;
       case 'qr-mio': closeAllModals(); setTimeout(mostrarMiQR, 120); break;
       case 'qr-escanear-id': closeAllModals(); setTimeout(escanearIdentidad, 120); break;
+      case 'qr-calificar': calificarPorQR(a); break;
       case 'consejo-ocultar': store.set('mp_consejo_oculto', todayKey()); renderConsejo(); break;
       case 'espera': toggleEspera(id); break;
       case 'invitar': abrirInvitar(id); break;

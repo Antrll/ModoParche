@@ -2101,3 +2101,24 @@ html.is-dark .qrid-qr { box-shadow: none; }
 
 /* Logos: versión clara (mano y "Modo" en blanco) cuando el fondo es oscuro */
 html:not(.is-dark) .logo-dk, html.is-dark .logo-lt { display: none !important; }
+
+/* Modo oscuro: piezas que tenían fondo blanco fijo */
+html.is-dark .create-close { background: rgba(24,24,27,.86); color: var(--ink); }
+html.is-dark .modal--foto .modal-x { background: rgba(24,24,27,.9); color: #f4f4f5; }
+html.is-dark .field.is-error .input { background-color: #2b1510; }
+html.is-dark .logout:hover { background: #2b1510; }
+html.is-dark .leaflet-bar a, html.is-dark .leaflet-bar a:hover { background: var(--paper) !important; color: var(--ink) !important; }
+html.is-dark .leaflet-popup-content-wrapper, html.is-dark .leaflet-popup-tip { background: var(--paper); color: var(--ink); }
+html.is-dark .leaflet-container .leaflet-control-attribution { background: rgba(24,24,27,.8); color: var(--muted); }
+html.is-dark .leaflet-container .leaflet-control-attribution a { color: var(--ink); }
+html.is-dark .create-panel .form-actions { background: rgba(24,24,27,.94); }
+
+/* Calificar al escanear el QR */
+.qr-cal { width: 100%; justify-items: center; text-align: center; background: var(--paper); }
+.qr-cal-t { display: grid; gap: 2px; }
+.qr-cal-t small { color: var(--muted); font-size: .8125rem; }
+.qr-cal .cal-volver { justify-self: center; }
+.qr-cal-msg { font-size: .8125rem; color: var(--ok); font-weight: 700; min-height: 1em; }
+.qr-cal-msg:empty { display: none; }
+.qr-cal-nota { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; color: var(--muted); text-align: center; }
+.qr-cal-nota .ic { width: 15px; height: 15px; }
