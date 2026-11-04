@@ -2098,3 +2098,6 @@ html.is-dark .qk--ink { background: #050506; }
 /* Mapas: un poco más tenues para no encandilar */
 html.is-dark .leaflet-tile-pane { filter: brightness(.82) contrast(1.08) saturate(.9); }
 html.is-dark .qrid-qr { box-shadow: none; }
+
+/* Logos: versión clara (mano y "Modo" en blanco) cuando el fondo es oscuro */
+html:not(.is-dark) .logo-dk, html.is-dark .logo-lt { display: none !important; }

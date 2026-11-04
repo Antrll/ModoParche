@@ -6,10 +6,10 @@
    - Supabase, mapas y otros sitios nunca pasan por aquí.
    - Muestra las notificaciones push (función enviar-push).
 ===================================================================== */
-const VERSION = 'mp-v2';
+const VERSION = 'mp-v3';
 const BASICO = [
   '/dashboard', '/dashboard.css', '/dashboard.js', '/mp-mapa.js', '/mp-mapa.css', '/supabase-client.js',
-  '/src/assets/web/isotipo-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2',
+  '/src/assets/web/isotipo-96.png', '/src/assets/web/isotipo-light-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2',
 ];
 
 self.addEventListener('install', e => {
