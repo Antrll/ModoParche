@@ -88,11 +88,13 @@ grant execute on function public.verificar_qr_identidad(text) to authenticated;
 -- (parche que empieza en menos de 2 horas)
 create or replace function private.validar_calificacion()
 returns trigger language plpgsql security definer set search_path = '' as $$
-declare v_inicio timestamptz; v_qr boolean := current_setting('mp.calif_qr', true) = '1';
+declare
+  v_inicio timestamptz;
+  -- Desde un escaneo de QR se puede calificar hasta 2 horas antes de que empiece
+  v_margen interval := case when current_setting('mp.calif_qr', true) = '1' then interval '2 hours' else interval '0' end;
 begin
   select inicio into v_inicio from public.parches where id = new.parche_id;
-  if v_inicio is null or v_inicio < now() - interval '7 days'
-     or v_inicio > now() + case when v_qr then interval '2 hours' else interval '0' end then
+  if v_inicio is null or v_inicio < now() - interval '7 days' or v_inicio > now() + v_margen then
     raise exception 'FUERA_DE_TIEMPO' using errcode = 'P0001', hint = 'Se califica desde que empieza el parche y hasta 7 días después.';
   end if;
   if not exists (select 1 from public.parche_miembros m where m.parche_id = new.parche_id and m.usuario_id = new.calificado_id) then
