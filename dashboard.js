@@ -137,7 +137,7 @@
     return Object.assign({
       confirmados: [], unido: false, propio: false, chat: [], checkin: false,
       creadorId: null, creadorNombre: '', barrio: '', descripcion: '', costo: 0, presupuesto: 0,
-      oficial: false, info: {},
+      oficial: false, info: {}, llegaron: [], locs: {}, localidad: '', imagen: '',
     }, p);
   }
 
@@ -167,13 +167,14 @@
       descripcion: 'El parche oficial de noviembre. Vamos en combo a cantar con Andrés Cepeda: en el chat armamos la previa, la llegada y la vaca para el transporte. Compra tu entrada o tu palco en la boletería oficial y cáele al parche.',
       inicio: new Date('2026-11-28T19:00:00-05:00').getTime(), lugar: 'Coliseo Las Malocas', barrio: 'Parque Las Malocas', lat: 4.12287, lng: -73.574447,
       costo: 0, presupuesto: 0, cuposMax: 1000, creadorNombre: 'Equipo ModoParche',
-      info: OFICIAL_CEPEDA,
+      info: OFICIAL_CEPEDA, imagen: 'src/assets/web/oficiales/andres-cepeda.webp',
     });
     p.chat = [{ tipo: 'sys', texto: 'El equipo de ModoParche abrió este parche oficial. Aquí armamos la llegada, la vaca y la previa.', ts: Date.now() - 48 * HOUR }];
     return p;
   }
 
-  const state = { parches: [], view: 'inicio', search: '', time: 'hoy', misTab: 'unido', chatId: null, mesas: [], misMesas: [] };
+  const state = { parches: [], view: 'inicio', search: '', time: 'hoy', misTab: 'unido', chatId: null, mesas: [], misMesas: [],
+    filtro: 'todos', chatFiltro: 'todo', calificados: new Set(), historial: [] };
 
   // Modo Mesa de ejemplo (solo en ?demo=1)
   function demoMesas() {
@@ -284,8 +285,9 @@
         ${p.promo ? `<span class="tag tag--promo">${esc(p.promo)}</span>` : ''}
         ${priceTag(p)}
       </div>`;
-    if (p.imagen) return `<figure class="card-cover"><img src="${esc(p.imagen)}" alt="Foto de ${esc(p.titulo)}" loading="lazy" decoding="async" onerror="this.remove()">${tags}</figure>`;
-    return `<figure class="card-cover card-cover--art ${cat.tone}"><img src="${STK(cat.art)}" alt="" loading="lazy" decoding="async">${tags}</figure>`;
+    const share = `<button type="button" class="cover-share" data-action="compartir" data-id="${p.id}" aria-label="Compartir ${esc(p.titulo)}" title="Compartir">${ic('i-share')}</button>`;
+    if (p.imagen) return `<figure class="card-cover"><img src="${esc(p.imagen)}" alt="Foto de ${esc(p.titulo)}" loading="lazy" decoding="async" onerror="this.remove()">${tags}${share}</figure>`;
+    return `<figure class="card-cover card-cover--art ${cat.tone}"><img src="${STK(cat.art)}" alt="" loading="lazy" decoding="async">${tags}${share}</figure>`;
   }
 
   function cuposHTML(p) {
@@ -390,7 +392,7 @@
     movePill($('#tabs'));
     if (scroll && changed) window.scrollTo({ top: 0, behavior: 'auto' });
     if (view === 'inicio') renderInicio(changed);
-    if (view === 'mapa') { renderTimeSeg(); setTimeout(() => { initLiveMap(); liveMap && liveMap.invalidateSize(); renderLiveMap(); }, 40); }
+    if (view === 'mapa') { renderTimeSeg(); renderLiveMap(); loadLeaflet().then(ok => ok && setTimeout(() => { initLiveMap(); liveMap && liveMap.invalidateSize(); renderLiveMap(); }, 40)); }
     if (view === 'mis') renderMis();
     if (view === 'perfil') renderPerfil();
   }
@@ -411,8 +413,10 @@
     renderOficial(animate);
     renderQuick();
     renderNext();
+    renderCalificar();
     renderMesas();
     renderCards(animate);
+    renderHistorial();
   }
 
   function renderQuick() {
@@ -442,7 +446,8 @@
   }
 
   function renderCards(animate = false) {
-    const list = activeList().filter(p => !p.oficial).filter(matchesSearch).sort((a, b) => a.inicio - b.inicio);
+    renderFiltros();
+    const list = activeList().filter(p => !p.oficial).filter(matchesSearch).filter(filtroMatch).sort((a, b) => a.inicio - b.inicio);
     $('#open-count').innerHTML = state.search
       ? `<b>${list.length}</b> para "${esc(state.search)}"`
       : userPos ? `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} · distancias desde tu ubicación` : `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} en Villavicencio`;
@@ -452,6 +457,8 @@
       ? list.map((p, i) => cardHTML(p, animate ? 120 + i * 90 : 0)).join('')
       : emptyHTML(state.search
         ? { art: 'radar', title: `Nada para "${state.search}"`, text: 'Prueba con otro nombre o lugar de Villavicencio.', cta: '' }
+        : state.filtro !== 'todos'
+        ? { art: 'radar', title: 'Nada con ese filtro', text: 'Prueba con otro o mira todos los parches abiertos.', cta: 'Ver todos', action: 'filtro-todos' }
         : { title: 'Nadie ha armado parche', text: 'Sé quien arranca: abre tu plan y la gente se suma.' });
   }
 
@@ -486,7 +493,9 @@
     const accion = p.unido
       ? `<button class="btn btn--ink" data-action="chat" data-id="${p.id}">${ic('i-chat')} Ir al chat del parche</button>`
       : isFull(p) ? `<button class="btn btn--ghost" disabled>Parche lleno</button>` : holdButton(p, '');
-    slot.innerHTML = `<section class="oficial ${animate ? 'is-in' : ''}" aria-labelledby="of-title">
+    const poster = p.imagen ? `<figure class="of-poster"><img src="${esc(p.imagen)}" alt="Afiche oficial: ${esc(i.artista || p.titulo)}, ${esc(cuando)}" decoding="async"></figure>` : '';
+    slot.innerHTML = `<section class="oficial ${p.imagen ? 'has-poster' : ''} ${animate ? 'is-in' : ''}" aria-labelledby="of-title">
+      ${poster}
       <div class="of-art" aria-hidden="true">
         <img class="of-stk of-stk--corona" src="${STK('coronanaranjabrochaarmador')}" alt="" loading="lazy">
         <img class="of-stk of-stk--fuego" src="${STK('fuego-2-naranja')}" alt="" loading="lazy">
@@ -512,10 +521,137 @@
             i.palco_hasta && i.palco_hasta > (i.palco_precio || 0) ? `<p class="of-locs-note tnum">Hasta ${money(i.palco_hasta)} según la ubicación${i.palco_personas ? ` · ${money(Math.round((i.palco_precio || 0) / i.palco_personas))} por persona` : ''}</p>` : '')}
         </div>
         ${i.boleteria ? `<p class="of-sold">Venta oficial en <b>${esc(i.boleteria)}</b>. Los precios los fija la boletería y pueden cambiar.</p>` : ''}
-        <div class="of-actions">${accion}${enMapa(p) ? `<button class="hello-link of-map" data-action="ver-mapa" data-id="${p.id}">Ver en el mapa ${ic('i-arrow')}</button>` : ''}</div>
+        <div class="of-actions">${accion}<button class="icon-btn of-share" data-action="compartir" data-id="${p.id}" aria-label="Compartir el parche oficial" title="Compartir">${ic('i-share')}</button>${enMapa(p) ? `<button class="hello-link of-map" data-action="ver-mapa" data-id="${p.id}">Ver en el mapa ${ic('i-arrow')}</button>` : ''}</div>
         <p class="of-note">${ic('i-info')} Las boletas se compran en la boletería oficial. ModoParche no cobra ni recibe ese dinero.</p>
       </div>
     </section>`;
+  }
+
+  /* ---------- Filtros: Hoy, Gratis, Cerca de mí y categorías ---------- */
+  const CERCA_KM = 3;
+  function filtroMatch(p) {
+    const f = state.filtro;
+    if (f === 'todos') return true;
+    if (f === 'hoy') return dayKey(p.inicio) === todayKey();
+    if (f === 'gratis') return precio(p) === 0;
+    if (f === 'cerca') return !!userPos && distKm(p) <= CERCA_KM;
+    return p.categoria === f;
+  }
+  function renderFiltros() {
+    const box = $('#filtros');
+    if (!box) return;
+    const base = activeList().filter(p => !p.oficial).filter(matchesSearch);
+    const cuenta = f => { const prev = state.filtro; state.filtro = f; const n = base.filter(filtroMatch).length; state.filtro = prev; return n; };
+    const opts = [['todos', 'Todos', 'i-bolt'], ['hoy', 'Hoy', 'i-clock'], ['gratis', 'Gratis', 'i-tag']];
+    if (userPos) opts.push(['cerca', `A ${CERCA_KM} km`, 'i-locate']);
+    [...new Set(base.map(p => p.categoria))].forEach(c => { const k = catById(c); opts.push([c, k.label.split(' ')[0], k.icon]); });
+    if (!opts.some(o => o[0] === state.filtro)) state.filtro = 'todos';
+    box.innerHTML = opts.map(([k, l, i]) => {
+      const n = k === 'todos' ? base.length : cuenta(k);
+      return `<button type="button" class="fchip" data-filtro="${k}" aria-pressed="${state.filtro === k}" ${n || k === 'todos' ? '' : 'disabled'}>${ic(i)}<span>${esc(l)}</span><b class="tnum">${n}</b></button>`;
+    }).join('');
+  }
+
+  /* ---------- Calificar después del parche ---------- */
+  function porCalificar() {
+    const now = Date.now();
+    return state.parches
+      .filter(p => p.checkin && p.inicio <= now && p.inicio > now - 7 * 24 * HOUR)
+      .map(p => ({ p, gente: p.confirmados.filter(id => !state.calificados.has(p.id + ':' + id)) }))
+      .filter(x => x.gente.length);
+  }
+  function renderCalificar() {
+    const slot = $('#calificar-slot');
+    if (!slot) return;
+    const x = porCalificar()[0];
+    if (!x) { slot.innerHTML = ''; return; }
+    const n = x.gente.length;
+    slot.innerHTML = `<div class="rate-card">
+      <span class="rate-ic">${ic('i-star')}</span>
+      <div><p class="eyebrow">¿Cómo estuvo?</p><h3>${esc(x.p.titulo)}</h3><p>Califica a ${n === 1 ? 'la persona' : `las ${n} personas`} con quien fuiste. Ayuda a que los buenos parceros se noten.</p></div>
+      <button class="btn btn--ink btn--sm" data-action="calificar" data-id="${x.p.id}">${ic('i-star')} Calificar</button>
+    </div>`;
+  }
+  let calParche = null;
+  function abrirCalificar(id) {
+    const x = porCalificar().find(y => y.p.id === id);
+    if (!x) return;
+    calParche = id;
+    $('#cal-title').textContent = x.p.titulo;
+    $('#cal-msg').textContent = '';
+    $('#cal-list').innerHTML = x.gente.map(uid => {
+      const nombre = personById(uid)?.nombre || 'Parcero';
+      return `<li class="cal-row" data-uid="${esc(uid)}" data-v="0">
+        <div class="cal-who">${avHTML(uid, 'av--sm')}<span><b>${esc(nombre)}</b>${x.p.llegaron.includes(uid) ? '<small>Llegó al punto</small>' : '<small>Estaba en el parche</small>'}</span></div>
+        <div class="stars-in" role="radiogroup" aria-label="Estrellas para ${esc(nombre)}">
+          ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star-btn" role="radio" aria-checked="false" data-star="${n}" aria-label="${n} ${n === 1 ? 'estrella' : 'estrellas'}">${ic('i-star')}</button>`).join('')}
+        </div>
+        <button type="button" class="cal-volver" aria-pressed="false">${ic('i-check')} Volvería a parchar</button>
+      </li>`;
+    }).join('');
+    openModal('modal-calificar');
+  }
+  function marcarEstrellas(btn) {
+    const row = btn.closest('.cal-row'), v = Number(btn.dataset.star);
+    row.dataset.v = v;
+    $$('.star-btn', row).forEach(b => { const on = Number(b.dataset.star) <= v; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(Number(b.dataset.star) === v)); });
+    if (!reduceMotion) { btn.classList.remove('is-pop'); void btn.offsetWidth; btn.classList.add('is-pop'); }
+    buzz(6);
+  }
+  async function enviarCalificaciones() {
+    const p = findP(calParche);
+    if (!p) return;
+    const filas = $$('#cal-list .cal-row').filter(r => Number(r.dataset.v) > 0).map(r => ({
+      parche_id: p.id, calificado_id: r.dataset.uid, estrellas: Number(r.dataset.v), volver: r.querySelector('.cal-volver').getAttribute('aria-pressed') === 'true',
+    }));
+    if (!filas.length) { $('#cal-msg').textContent = 'Toca las estrellas de al menos una persona.'; return; }
+    const btn = $('#cal-send'); btn.classList.add('is-loading');
+    if (isRemote(p)) {
+      const { error } = await sb.from('calificaciones').insert(filas);
+      btn.classList.remove('is-loading');
+      if (error) {
+        const m = `${error.message} ${error.hint || ''}`;
+        $('#cal-msg').textContent = /NO_ESTABA/.test(m) ? 'Una de esas personas no estaba en el parche.' : /FUERA_DE_TIEMPO/.test(m) ? 'Este parche ya no se puede calificar (pasaron más de 7 días).' : /row-level|permission/i.test(m) ? 'Solo califica quien hizo check-in en el parche.' : /duplicate/i.test(m) ? 'Ya habías calificado a alguien de la lista.' : dbMsg(error);
+        return;
+      }
+    } else btn.classList.remove('is-loading');
+    filas.forEach(f => state.calificados.add(f.parche_id + ':' + f.calificado_id));
+    ringBurst(btn);
+    closeModal('modal-calificar');
+    toast('¡Gracias por calificar!', `Enviaste ${filas.length} ${filas.length === 1 ? 'calificación' : 'calificaciones'}.`, { icon: 'i-star' });
+    renderCalificar();
+  }
+
+  /* ---------- Historial de parches oficiales ---------- */
+  function renderHistorial() {
+    const slot = $('#hist-slot');
+    if (!slot) return;
+    const h = state.historial || [];
+    if (!h.length) { slot.innerHTML = ''; return; }
+    slot.innerHTML = `<section class="block hist" aria-labelledby="t-hist">
+      <div class="block-head"><div><h2 class="block-title" id="t-hist">Oficiales anteriores</h2><p class="block-sub">Los parches grandes que ya armamos con la comunidad.</p></div></div>
+      <div class="hist-row">${h.map(x => `<article class="hist-card">
+        <figure>${x.imagen ? `<img src="${esc(x.imagen)}" alt="Afiche de ${esc(x.info.artista || x.titulo)}" loading="lazy">` : `<img src="${STK('corona-principal')}" alt="" loading="lazy" class="is-art">`}</figure>
+        <div><small>${esc(cap(new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(x.inicio)))}</small><b>${esc(x.titulo)}</b><span class="tnum">${x.van ? `${x.van} ${x.van === 1 ? 'parcero fue' : 'parceros fueron'}` : esc(x.lugar)}</span></div>
+      </article>`).join('')}</div>
+    </section>`;
+  }
+
+  /* ---------- Compartir un parche ---------- */
+  const linkParche = p => isRemote(p) && isUuid(p.id) ? `${location.origin}/p/${p.id}` : `${location.origin}/dashboard?parche=${encodeURIComponent(p.id)}`;
+  const textoShare = p => `${p.oficial ? '👑 ' : ''}${p.titulo} · ${fmtCuando(p.inicio)} · ${sinLugar(p) ? 'lugar por confirmar' : p.lugar}. ¿Le caes? Únete en ModoParche:`;
+  const waLink = p => `https://wa.me/?text=${encodeURIComponent(textoShare(p) + ' ' + linkParche(p))}`;
+  async function compartir(id) {
+    const p = findP(id);
+    if (!p) return;
+    if (navigator.share) {
+      try { await navigator.share({ title: p.titulo, text: textoShare(p), url: linkParche(p) }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(`${textoShare(p)} ${linkParche(p)}`);
+      toast('Enlace copiado', 'Pégalo en tu grupo o mándalo directo por WhatsApp.', { icon: 'i-share', action: { label: 'WhatsApp', act: 'wa', id } });
+    } catch (e) { window.open(waLink(p), '_blank', 'noopener'); }
   }
 
   function renderMeChip() {
@@ -583,7 +719,7 @@
   }
 
   function refresh() {
-    if (state.view === 'inicio') { renderOficial(); renderQuick(); renderNext(); renderMesas(); renderCards(); }
+    if (state.view === 'inicio') { renderOficial(); renderQuick(); renderNext(); renderCalificar(); renderMesas(); renderCards(); renderHistorial(); }
     if (state.view === 'mapa') renderLiveMap();
     if (state.view === 'mis') renderMis();
     renderNavCount();
@@ -594,6 +730,23 @@
   ===================================================================== */
   let liveMap = null, createMap = null, createMarker = null, meMarker = null, meCircle = null, createMe = null;
   const liveMarkers = new Map();
+  // Leaflet pesa ~150 KB: se carga la primera vez que se abre un mapa
+  let leafletP = null;
+  function loadLeaflet() {
+    if (typeof L !== 'undefined') return Promise.resolve(true);
+    if (leafletP) return leafletP;
+    leafletP = new Promise(res => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; css.crossOrigin = '';
+      document.head.insertBefore(css, document.querySelector('link[href="dashboard.css"]'));
+      const js = document.createElement('script');
+      js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; js.crossOrigin = '';
+      js.onload = () => { res(true); updateUserMarker(); };
+      js.onerror = () => { leafletP = null; toast('El mapa no cargó', 'Revisa tu conexión para ver el mapa.', { type: 'error' }); res(false); };
+      document.head.appendChild(js);
+    });
+    return leafletP;
+  }
   const tiles = () => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   });
@@ -671,7 +824,7 @@
     if (!timeMatch(p)) state.time = dayKey(p.inicio) === todayKey() ? 'hoy' : dayKey(p.inicio) === offsetKey(1) ? 'manana' : 'todos';
     const wasMap = state.view === 'mapa';
     if (!wasMap) go('mapa'); else renderTimeSeg();
-    setTimeout(() => {
+    loadLeaflet().then(ok => ok && setTimeout(() => {
       initLiveMap();
       if (!liveMap) return;
       liveMap.invalidateSize();
@@ -679,7 +832,7 @@
       const m = liveMarkers.get(id);
       if (reduceMotion) { liveMap.setView([p.lat, p.lng], 16); m && m.openPopup(); }
       else { liveMap.flyTo([p.lat, p.lng], 16, { duration: 1.4 }); if (m) liveMap.once('moveend', () => m.openPopup()); }
-    }, wasMap ? 60 : 140);
+    }, wasMap ? 60 : 140));
   }
 
   let watchId = null, flyOnFix = false;
@@ -727,13 +880,13 @@
   }
   function flyToUser() {
     if (state.view !== 'mapa') go('mapa');
-    setTimeout(() => {
+    loadLeaflet().then(ok => ok && setTimeout(() => {
       initLiveMap();
       if (!liveMap || !userPos) return;
       liveMap.invalidateSize();
       updateUserMarker();
       liveMap.flyTo(userPos, 15, { duration: reduceMotion ? 0 : 1.2 });
-    }, 120);
+    }, 120));
   }
 
   /* Mini mapa del formulario */
@@ -887,8 +1040,9 @@
     const titulo = F('titulo').value.trim() || 'Tu parche';
     const when = ts ? fmtCuando(ts) : 'Elige fecha y hora';
     const precioTxt = costo ? money(costo) : 'Gratis';
+    renderFotoParche();
     $('#create-preview').innerHTML = `
-      <div class="cpv-cover ${c.tone}"><img src="${STK(c.art)}" alt=""><span class="tag">${ic(c.icon)} ${esc(c.label)}</span><span class="tag tag--price tnum">${precioTxt}</span></div>
+      <div class="cpv-cover ${c.tone} ${draft.foto ? 'has-photo' : ''}"><img src="${draft.foto ? esc(draft.foto) : STK(c.art)}" alt=""><span class="tag">${ic(c.icon)} ${esc(c.label)}</span><span class="tag tag--price tnum">${precioTxt}</span></div>
       <div class="cpv-body">
         <b>${esc(titulo)}</b>
         <ul class="meta">
@@ -898,6 +1052,41 @@
         </ul>
       </div>`;
     $('#create-summary').textContent = ts ? `${when} · ${cupos} cupos · ${precioTxt}` : '';
+  }
+
+  /* ---------- Foto del parche (opcional, para cualquier persona) ---------- */
+  function renderFotoParche() {
+    const box = $('#c-foto-box');
+    if (!box) return;
+    box.classList.toggle('has-photo', !!draft.foto);
+    $('#c-foto-img').src = draft.foto || 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
+    $('#c-foto-quitar').hidden = !draft.foto;
+    $('#c-foto-txt').textContent = draft.foto ? 'Cambiar foto' : 'Agregar foto';
+  }
+  // Achica la foto en el celular antes de subirla (máx. 1280 px, JPEG ~80 %)
+  function comprimirFoto(file) {
+    return new Promise((res, rej) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        res(cv.toDataURL('image/jpeg', .8));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('FOTO')); };
+      img.src = url;
+    });
+  }
+  async function elegirFotoParche(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast('Eso no es una foto', 'Elige una imagen JPG, PNG o WebP.', { type: 'error' }); return; }
+    try {
+      draft.foto = await comprimirFoto(file);
+      if (draft.foto.length > 1.9 * 1024 * 1024 * 1.37) throw new Error('FOTO');
+      syncCreateUI();
+    } catch (e) { draft.foto = ''; toast('No pudimos usar esa foto', 'Prueba con otra más liviana.', { type: 'error' }); syncCreateUI(); }
   }
 
   function openCreate({ id = null, punto = null } = {}) {
@@ -918,6 +1107,7 @@
       const d = new Date(p.inicio); F('hora').value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
       F('costo').value = precio(p); F('descripcion').value = p.descripcion; F('lugar').value = p.lugar;
       draft.lat = p.lat; draft.lng = p.lng; draft.barrio = p.barrio || '';
+      draft.foto = p.imagen || '';
     } else {
       F('categoria').value = 'chill';
       F('fecha').value = todayKey();
@@ -925,6 +1115,7 @@
       F('hora').value = h.getDate() === new Date().getDate() ? `${pad(h.getHours())}:00` : '23:00';
       F('cupos').value = 8; F('costo').value = 0;
       draft.lat = null; draft.lng = null; draft.barrio = '';
+      draft.foto = '';
       // "Abrir un parche aquí" desde el buscador del mapa
       if (punto) { draft.lat = +(+punto.lat).toFixed(6); draft.lng = +(+punto.lng).toFixed(6); F('lugar').value = String(punto.nombre || '').slice(0, 60); draft.autoLugar = true; }
     }
@@ -934,8 +1125,11 @@
     $('#create-coords').textContent = draft.lat != null ? 'Punto marcado' : 'Toca el mapa para soltar el pin';
     syncCreateUI();
     openModal('modal-create');
-    setTimeout(initCreateMap, 120);
-    setTimeout(() => createMap && createMap.invalidateSize(), 420);
+    loadLeaflet().then(ok => {
+      if (!ok) return;
+      setTimeout(initCreateMap, 120);
+      setTimeout(() => createMap && createMap.invalidateSize(), 420);
+    });
   }
 
   function draftParche() {
@@ -947,6 +1141,7 @@
       inicio: tsFrom(F('fecha').value, F('hora').value),
       lugar: F('lugar').value.trim(), barrio: draft.barrio, lat: draft.lat, lng: draft.lng,
       costo, presupuesto: costo, cuposMax: clamp(Number(F('cupos').value) || 2, 2, 60),
+      imagen: draft.foto || '',
       confirmados: base ? base.confirmados : [], chat: base ? base.chat : [],
       unido: true, propio: true, creadorId: 'me', creadoPorMi: true, checkin: base ? base.checkin : false,
     });
@@ -1093,7 +1288,7 @@
     if (!p) return;
     closeAllModals();
     state.misTab = isMine(p) ? 'propios' : 'unido';
-    if (state.chatId !== id) replyTo = null;
+    if (state.chatId !== id) { replyTo = null; state.chatFiltro = 'todo'; }
     state.chatId = id;
     if (state.view !== 'mis') go('mis');
     else { $$('.mis-item').forEach(b => b.classList.toggle('is-active', b.dataset.id === id)); renderChat(); }
@@ -1123,8 +1318,49 @@
     if (m.tipo === 'bot') return `<div class="msg msg--bot" data-key="${esc(k)}">${swipeIc}<span class="bot-ic">${ic('i-bot')}</span><div class="bubble"><small>Bot del parche</small>${esc(m.texto)}${t}</div>${replyBtn}</div>`;
     const mine = m.autor === 'me';
     const rep = !mine && m.id != null && /^\d+$/.test(String(m.id)) ? `<button class="msg-rep" data-action="reportar" data-tipo="mensaje" data-id="${m.id}" aria-label="Reportar este mensaje" title="Reportar mensaje">${ic('i-flag')}</button>` : '';
-    return `<div class="msg ${mine ? 'msg--me' : ''}" data-key="${esc(k)}">${swipeIc}${avHTML(m.autor, 'av--sm')}<div class="bubble">${mine ? '' : `<small>${esc(personById(m.autor)?.nombre || 'Parcero')}${sello(m.autor)}</small>`}${quoteHTML(citaDe(m, list))}${esc(m.texto)}${t}</div>${replyBtn}${rep}</div>`;
+    const pc = state.chatId && findP(state.chatId);
+    const loc = pc && pc.oficial && pc.locs[m.autor] ? `<em class="msg-loc">${esc(pc.locs[m.autor])}</em>` : '';
+    return `<div class="msg ${mine ? 'msg--me' : ''}" data-key="${esc(k)}">${swipeIc}${avHTML(m.autor, 'av--sm')}<div class="bubble">${mine ? '' : `<small>${esc(personById(m.autor)?.nombre || 'Parcero')}${sello(m.autor)}${loc}</small>`}${quoteHTML(citaDe(m, list))}${esc(m.texto)}${t}</div>${replyBtn}${rep}</div>`;
   }
+  /* ---------- Parches grandes: anuncios y subgrupos por localidad ---------- */
+  const esAnuncio = m => m.tipo === 'sys' || m.tipo === 'bot' || m.tipo === 'alerta';
+  function chatLista(p) {
+    if (!p.oficial || state.chatFiltro === 'todo') return p.chat;
+    if (state.chatFiltro === 'anuncios') return p.chat.filter(esAnuncio);
+    return p.chat.filter(m => esAnuncio(m) || m.autor === 'me' || (p.localidad && p.locs[m.autor] === p.localidad));
+  }
+  const chatVacioHTML = () => state.chatFiltro === 'local'
+    ? '<p class="chat-vacio">Aún nadie de tu localidad escribe. ¡Arranca tú!</p>'
+    : state.chatFiltro === 'anuncios' ? '<p class="chat-vacio">Todavía no hay anuncios del equipo.</p>' : '';
+  function chatTabsHTML(p) {
+    if (!p.oficial) return '';
+    const t = (k, l) => `<button type="button" class="ctab" role="tab" data-chatf="${k}" aria-selected="${state.chatFiltro === k}">${l}</button>`;
+    return `<div class="chat-tabs" role="tablist" aria-label="Qué mensajes ver">${t('todo', 'Todo')}${t('anuncios', 'Anuncios')}${p.localidad ? t('local', esc(p.localidad)) : ''}</div>`;
+  }
+  const opcionesLocalidad = p => (Array.isArray(p.info.localidades) ? p.info.localidades.map(l => l.nombre) : []).concat(p.info.palco_precio ? ['Palco'] : []);
+  function localidadHTML(p) {
+    if (!p.oficial || !inside(p)) return '';
+    const ops = opcionesLocalidad(p);
+    if (!ops.length) return '';
+    return `<div class="loc-pick"><span>${p.localidad ? 'Tu localidad' : '¿En qué localidad vas?'}</span>${ops.map(o => `<button type="button" class="loc-chip" data-loc="${esc(o)}" aria-pressed="${p.localidad === o}">${esc(o)}</button>`).join('')}</div>`;
+  }
+  async function setLocalidad(loc) {
+    const p = state.chatId && findP(state.chatId);
+    if (!p || !inside(p)) return;
+    const antes = p.localidad;
+    p.localidad = p.localidad === loc ? '' : loc;
+    if (p.localidad) p.locs.me = p.localidad; else delete p.locs.me;
+    if (!p.localidad && state.chatFiltro === 'local') state.chatFiltro = 'todo';
+    renderChat();
+    if (!isRemote(p)) { save(); return; }
+    const { error } = await sb.from('parche_miembros').update({ localidad: p.localidad || null }).eq('parche_id', p.id).eq('usuario_id', me.id);
+    if (error) {
+      p.localidad = antes; if (antes) p.locs.me = antes; else delete p.locs.me;
+      renderChat();
+      toast('No se guardó tu localidad', /localidad/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error), { type: 'error' });
+    }
+  }
+
   // Barra "Respondiendo a ..." encima del campo de texto
   let replyTo = null, replyFresh = false;
   function replyBarHTML() {
@@ -1189,7 +1425,8 @@
             <p class="tnum">${esc(p.lugar)} · ${esc(fmtCuando(p.inicio))}</p>
           </div>
           <div class="chat-head-actions">
-            <button class="icon-btn" data-action="ver-mapa" data-id="${p.id}" aria-label="Ver en el mapa" title="Ver en el mapa">${ic('i-map')}</button>
+            <button class="icon-btn" data-action="compartir" data-id="${p.id}" aria-label="Compartir el parche" title="Compartir">${ic('i-share')}</button>
+            ${enMapa(p) ? `<button class="icon-btn" data-action="ver-mapa" data-id="${p.id}" aria-label="Ver en el mapa" title="Ver en el mapa">${ic('i-map')}</button>` : ''}
             ${isMine(p)
               ? `<button class="icon-btn" data-action="editar" data-id="${p.id}" aria-label="Editar parche" title="Editar parche">${ic('i-edit')}</button>
                  <button class="icon-btn icon-btn--danger" data-action="cancelar" data-id="${p.id}" aria-label="Eliminar parche" title="Eliminar parche">${ic('i-trash')}</button>`
@@ -1202,7 +1439,8 @@
           <div class="att-list">${ids.map((id, i) => `<span>${avHTML(id, 'av--sm')}${esc(names[i])}${sello(id)}${id !== 'me' && /^[0-9a-f-]{36}$/i.test(String(id)) ? `<button class="att-rep" data-action="reportar" data-tipo="persona" data-id="${id}" aria-label="Reportar a ${esc(names[i])}" title="Reportar">${ic('i-flag')}</button>` : ''}</span>`).join('')}</div>
         </details>
       </div>
-      <div class="chat-msgs" id="chat-msgs">${p.chat.map(msgHTML).join('')}${typing.on ? '<div class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></div>' : ''}</div>
+      ${chatTabsHTML(p)}
+      <div class="chat-msgs" id="chat-msgs">${chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()}${typing.on ? '<div class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></div>' : ''}</div>
       <div class="chat-foot">${inside(p) ? `
         <div class="chat-tools">
           <details class="vaca" id="vaca" ${vacaOpen ? 'open' : ''}>
@@ -1215,6 +1453,7 @@
           </details>
         </div>
         ${checkinHTML(p)}
+        ${localidadHTML(p)}
         <div class="reply-slot" id="reply-slot">${replyBarHTML()}</div>
         <form class="chat-form" id="chat-form" autocomplete="off">
           <label class="sr-only" for="chat-input">Mensaje</label>
@@ -1230,7 +1469,7 @@
     const p = state.chatId && findP(state.chatId);
     const box = $('#chat-msgs');
     if (!p || !box) return;
-    box.innerHTML = p.chat.map(msgHTML).join('') + (typing.on ? '<div class="typing"><i></i><i></i><i></i></div>' : '');
+    box.innerHTML = (chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()) + (typing.on ? '<div class="typing"><i></i><i></i><i></i></div>' : '');
     scrollChat();
   }
   function scrollChat(smooth = true) {
@@ -1527,7 +1766,7 @@
     const m = (state.mesas || []).find(x => x.id === id);
     if (!m || m.negocio.lat == null) return;
     if (state.view !== 'mapa') go('mapa');
-    setTimeout(() => {
+    loadLeaflet().then(ok => ok && setTimeout(() => {
       initLiveMap();
       if (!liveMap) return;
       liveMap.invalidateSize();
@@ -1537,7 +1776,7 @@
         .addTo(liveMap);
       liveMap.flyTo([m.negocio.lat, m.negocio.lng], 16, { duration: reduceMotion ? 0 : 1.1 });
       liveMap.once('moveend', () => mesaMarker && mesaMarker.openPopup());
-    }, 140);
+    }, 140));
   }
   async function cargarMesas() {
     if (DEMO || !sb) {
@@ -2051,8 +2290,11 @@
       confirmados: miembros.filter(m => m.usuario_id !== me.id).map(m => m.usuario_id), // solo cuentas reales
       unido: !!mia, propio, creadorId: propio ? 'me' : r.creador_id, creadorNombre: r.creador_nombre,
       checkin: !!(mia && mia.checkin), demo: r.demo, chat: prev ? prev.chat : [],
-      aliado: !!r.aliado, verificado: !!r.verificado, imagen: r.aliado ? (r.imagen || '') : '', promo: r.promo || '',
+      aliado: !!r.aliado, verificado: !!r.verificado, imagen: r.imagen || '', promo: r.promo || '',
       oficial: !!r.oficial, info: r.oficial_info || {},
+      llegaron: miembros.filter(m => m.checkin).map(m => m.usuario_id === me.id ? 'me' : m.usuario_id),
+      locs: Object.fromEntries(miembros.filter(m => m.localidad).map(m => [m.usuario_id === me.id ? 'me' : m.usuario_id, m.localidad])),
+      localidad: (mia && mia.localidad) || '',
     });
   }
   // Mensajes de personas de ejemplo (sin cuenta) no se muestran
@@ -2069,6 +2311,25 @@
     return rows.filter(r => !r.demo || demoIds.has(r.id));
   }
 
+  // Columnas de parche_miembros: "localidad" existe desde la migración de noviembre
+  let MIEMBRO_COLS = 'parche_id, usuario_id, checkin, localidad';
+  async function selMiembros(q) {
+    let r = await q(MIEMBRO_COLS);
+    if (r.error && /localidad/.test(String(r.error.message))) { MIEMBRO_COLS = 'parche_id, usuario_id, checkin'; r = await q(MIEMBRO_COLS); }
+    return r;
+  }
+  // Calificaciones que ya hice (para no pedirlas dos veces)
+  async function cargarCalificados() {
+    const r = await sb.from('calificaciones').select('parche_id, calificado_id').eq('autor_id', me.id);
+    if (!r.error) state.calificados = new Set((r.data || []).map(x => x.parche_id + ':' + x.calificado_id));
+  }
+  // Parches oficiales que ya pasaron (historial)
+  async function cargarHistorial() {
+    const r = await sb.from('parches').select('id, titulo, inicio, lugar, imagen, oficial_info, parche_miembros(count)')
+      .eq('oficial', true).lt('inicio', new Date(Date.now() - 3 * HOUR).toISOString()).order('inicio', { ascending: false }).limit(8);
+    state.historial = r.error ? [] : (r.data || []).map(x => ({ id: x.id, titulo: x.titulo, inicio: Date.parse(x.inicio), lugar: x.lugar, imagen: x.imagen || '', info: x.oficial_info || {}, van: (x.parche_miembros && x.parche_miembros[0] && x.parche_miembros[0].count) || 0 }));
+  }
+
   async function loadRemote() {
     const since = new Date(Date.now() - 7 * 24 * HOUR).toISOString();
     const [pf, pv, ps] = await Promise.all([
@@ -2080,20 +2341,20 @@
     const rows = keepRows(ps.data || []);
     let miembros = [];
     if (rows.length) {
-      const mm = await sb.from('parche_miembros').select('parche_id, usuario_id, checkin').in('parche_id', rows.map(r => r.id));
+      const mm = await selMiembros(c => sb.from('parche_miembros').select(c).in('parche_id', rows.map(r => r.id)));
       if (mm.error) throw mm.error;
       miembros = mm.data;
     }
     await cachePeople(rows.map(r => r.creador_id).concat(miembros.map(m => m.usuario_id)));
     applyPerfilRow(pf.data, pv.data);
     state.parches = rows.map(r => fromRow(r, miembros.filter(m => m.parche_id === r.id)));
-    await cargarMesas();
+    await Promise.all([cargarMesas(), cargarCalificados(), cargarHistorial()]);
   }
 
   async function fetchParche(id, drop = false) {
     const [{ data: row, error }, mm] = await Promise.all([
       sb.from('parches').select('*').eq('id', id).maybeSingle(),
-      sb.from('parche_miembros').select('parche_id, usuario_id, checkin').eq('parche_id', id),
+      selMiembros(c => sb.from('parche_miembros').select(c).eq('parche_id', id)),
     ]);
     if (error) { console.warn('[parche]', error.message); return; }
     if (!row) {
@@ -2148,6 +2409,9 @@
         titulo: d.titulo, categoria: d.categoria, descripcion: d.descripcion, inicio: new Date(d.inicio).toISOString(),
         lugar: d.lugar, barrio: d.barrio || '', lat: d.lat, lng: d.lng, costo: d.costo, presupuesto: d.costo, cupos_max: d.cuposMax,
       };
+      // Foto nueva: se sube al bucket "fotos" (carpeta propia) y se guarda el enlace
+      if (d.imagen && d.imagen.startsWith('data:')) row.imagen = await uploadFoto(d.imagen, 'parche');
+      else row.imagen = d.imagen || '';
       const res = editId
         ? await sb.from('parches').update(row).eq('id', editId).select('id').single()
         : await sb.from('parches').insert(row).select('id').single();
@@ -2216,7 +2480,11 @@
     setBoot('Revisando tu sesión...');
     let session = null;
     try { session = (await sb.auth.getSession()).data.session; } catch (e) { /* sin sesión */ }
-    if (!session) { window.location.replace('login.html'); return false; }
+    if (!session) {
+      // Si llegó por un enlace compartido, lo abrimos después de entrar
+      try { const a = new URLSearchParams(window.location.search).get('parche'); if (a) sessionStorage.setItem('mp_abrir', a); } catch (e) { /* sin almacenamiento */ }
+      window.location.replace('login.html'); return false;
+    }
     me = session.user;
     if (me.user_metadata && me.user_metadata.tipo === 'empresa') { window.location.replace('empresa-dashboard.html'); return false; }
     try { const { data: esAdmin } = await sb.rpc('soy_admin'); if (esAdmin === true) { window.location.replace('admin.html'); return false; } } catch (e) { /* cuenta normal */ }
@@ -2683,6 +2951,73 @@
     sync();
   }
 
+  /* ---------- App instalable (PWA) y avisos push ---------- */
+  // Llave pública VAPID (la privada vive solo en los secretos de Supabase)
+  const VAPID_PUBLIC = 'BJImaxL4PZ8Jxr9HoIOiAApsCke6NDbQBspCFXQilxh70y7uWqbcZr3ZlX6632T-isTqK4-78_R2wwUkHABfdUI';
+  let installEvt = null, swReg = null;
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const b64u = s => { const pad = '='.repeat((4 - s.length % 4) % 4); const raw = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
+  async function pushActual() { try { return swReg && swReg.pushManager ? await swReg.pushManager.getSubscription() : null; } catch (e) { return null; } }
+  function initApp() {
+    const seguro = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+    if ('serviceWorker' in navigator && seguro) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(r => { swReg = r; renderApp(); }).catch(() => renderApp());
+    }
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; renderApp(); });
+    window.addEventListener('appinstalled', () => { installEvt = null; renderApp(); toast('¡ModoParche instalado!', 'Ya lo tienes en tu pantalla de inicio.', { icon: 'i-check' }); });
+    $('#app-install')?.addEventListener('click', async () => {
+      if (!installEvt) return;
+      installEvt.prompt();
+      try { await installEvt.userChoice; } catch (e) { /* cerró el aviso */ }
+      installEvt = null; renderApp();
+    });
+    $('#p-push')?.addEventListener('change', e => togglePush(e.target.checked));
+    renderApp();
+  }
+  async function renderApp() {
+    const btn = $('#app-install'), sub = $('#app-install-sub'), pp = $('#p-push'), ps = $('#push-sub');
+    if (!btn || !pp) return;
+    if (standalone()) { btn.hidden = true; sub.textContent = 'Ya lo estás usando como app.'; }
+    else if (installEvt) { btn.hidden = false; sub.textContent = 'Ábrelo como app desde tu pantalla de inicio, sin tienda y sin ocupar casi espacio.'; }
+    else if (isIOS()) { btn.hidden = true; sub.textContent = 'En iPhone: toca Compartir y luego "Agregar a inicio".'; }
+    else { btn.hidden = true; sub.textContent = 'Desde el menú del navegador: "Instalar app" o "Agregar a pantalla de inicio".'; }
+    const soporta = 'PushManager' in window && 'Notification' in window && !!swReg;
+    if (!soporta) {
+      pp.disabled = true; pp.checked = false;
+      ps.textContent = isIOS() && !standalone() ? 'En iPhone primero instala la app (Agregar a inicio) y luego activa los avisos aquí.' : 'Este navegador no permite avisos.';
+      return;
+    }
+    if (DEMO) { pp.disabled = true; pp.checked = false; ps.textContent = 'Disponible cuando entras con tu cuenta.'; return; }
+    const denegado = Notification.permission === 'denied';
+    pp.disabled = denegado;
+    pp.checked = !denegado && Notification.permission === 'granted' && !!(await pushActual());
+    ps.textContent = denegado ? 'Bloqueaste los avisos. Actívalos en la configuración del navegador.'
+      : 'Te avisamos cuando alguien se une, te escribe o cambia un parche, aunque la app esté cerrada.';
+  }
+  async function togglePush(on) {
+    const pp = $('#p-push');
+    pp.disabled = true;
+    try {
+      if (on) {
+        if (await Notification.requestPermission() !== 'granted') throw new Error('PERMISO');
+        const sub = (await pushActual()) || await swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUBLIC) });
+        const j = sub.toJSON();
+        const { error } = await sb.from('push_suscripciones').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint', ignoreDuplicates: true });
+        if (error) { await sub.unsubscribe().catch(() => {}); throw error; }
+        toast('Avisos activados', 'Te avisamos aunque ModoParche esté cerrado.', { icon: 'i-live' });
+      } else {
+        const sub = await pushActual();
+        if (sub) { await sb.from('push_suscripciones').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe().catch(() => {}); }
+        toast('Avisos desactivados', 'Ya no te llegan avisos en este dispositivo.', { icon: 'i-check' });
+      }
+    } catch (err) {
+      toast('No se pudo cambiar', err && err.message === 'PERMISO' ? 'Permite las notificaciones en el navegador para activarlos.' : dbMsg(err), { type: 'error' });
+    }
+    pp.disabled = false;
+    renderApp();
+  }
+
   function initGestures() {
     initRipple();
     initPlaceRail();
@@ -2712,6 +3047,16 @@
     if (!t.closest('.mis-row')) closeReveal();
     const closer = t.closest('[data-close]');
     if (closer) { const m = closer.closest('.modal'); if (m) closeModal(m.id); return; }
+    const fb = t.closest('[data-filtro]');
+    if (fb) { state.filtro = fb.dataset.filtro; renderCards(true); return; }
+    const cf = t.closest('[data-chatf]');
+    if (cf) { state.chatFiltro = cf.dataset.chatf; renderChat(); return; }
+    const lc = t.closest('[data-loc]');
+    if (lc) { setLocalidad(lc.dataset.loc); return; }
+    const sb5 = t.closest('[data-star]');
+    if (sb5) { marcarEstrellas(sb5); return; }
+    const cv = t.closest('.cal-volver');
+    if (cv) { cv.setAttribute('aria-pressed', String(cv.getAttribute('aria-pressed') !== 'true')); return; }
     const nav = t.closest('[data-nav]');
     if (nav) { closeAllModals(); $('#mis-wrap').classList.remove('is-chat'); go(nav.dataset.nav); return; }
     const tb = t.closest('[data-time]');
@@ -2764,6 +3109,12 @@
       case 'mesa-mapa': mesaEnMapa(id); break;
       case 'join': toggleJoin(id); break;
       case 'responder': setReply(a.dataset.key); break;
+      case 'compartir': compartir(id); break;
+      case 'wa': { const pp = findP(id); if (pp) window.open(waLink(pp), '_blank', 'noopener'); break; }
+      case 'calificar': abrirCalificar(id); break;
+      case 'cal-send': enviarCalificaciones(); break;
+      case 'filtro-todos': state.filtro = 'todos'; renderCards(true); break;
+      case 'foto-quitar': draft.foto = ''; syncCreateUI(); break;
       case 'reply-cancel': clearReply(); $('#chat-input')?.focus({ preventScroll: true }); break;
       case 'ir-msg': irAMensaje(a.dataset.key); break;
       case 'salir': askLeave(id); break;
@@ -2804,6 +3155,7 @@
       enviarQR(escanerParche, cod);
     });
     $('#p-anuncios')?.addEventListener('change', e => cambiarAnuncios(e.target.checked));
+    $('#c-foto')?.addEventListener('change', e => { elegirFotoParche(e.target.files && e.target.files[0]); e.target.value = ''; });
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && modalStack.length) { closeModal(modalStack[modalStack.length - 1].id); return; }
       if (e.key === 'Escape' && replyTo && document.activeElement && document.activeElement.id === 'chat-input') clearReply();
@@ -2869,14 +3221,19 @@
     hideBoot();
     startGeo();
 
+    const qs = new URLSearchParams(window.location.search);
+    let abrir = qs.get('parche');
+    if (!abrir) { try { abrir = sessionStorage.getItem('mp_abrir'); sessionStorage.removeItem('mp_abrir'); } catch (e) { abrir = null; } }
+    if (abrir && findP(abrir)) setTimeout(() => openChat(abrir), 400);
+    if (qs.has('crear')) setTimeout(() => abrirCrear(), 500);
+    initApp();
     if (!DEMO) {
       subscribeRealtime();
-      const abrir = new URLSearchParams(window.location.search).get('parche');
-      if (abrir && findP(abrir)) setTimeout(() => openChat(abrir), 400);
     } else if (sb) {
       setTimeout(() => toast('Modo demo', 'Estás viendo parches de ejemplo guardados en este navegador.', { icon: 'i-info' }), 900);
     }
-    if (typeof L === 'undefined') toast('El mapa no cargó', 'Revisa tu conexión para ver el mapa.', { type: 'error' });
+    // El mapa se precarga cuando el navegador está libre
+    (window.requestIdleCallback || (f => setTimeout(f, 2500)))(() => loadLeaflet());
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

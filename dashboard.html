@@ -9,14 +9,17 @@
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ModoParche">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<!-- Leaflet (mapas) se carga la primera vez que se abre un mapa: ver loadLeaflet() -->
 <link rel="stylesheet" href="dashboard.css">
 <link rel="stylesheet" href="mp-mapa.css">
 <link rel="stylesheet" href="mp-verificacion.css">
@@ -84,6 +87,7 @@
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5h17v3a1.8 1.8 0 0 0 0 3.6v3h-17v-3a1.8 1.8 0 0 0 0-3.6z"/><path d="M14 8v1.5M14 11.3v1.4M14 14.5V16"/></symbol>
     <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/></symbol>
     <symbol id="i-reply" viewBox="0 0 24 24"><path d="M10 5 4 11l6 6"/><path d="M4 11h9a7 7 0 0 1 7 7v1"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
   </defs>
@@ -165,6 +169,8 @@
 
     <!-- Próximo parche -->
     <div id="next-slot"></div>
+    <!-- Calificar a quienes fueron contigo (ver renderCalificar) -->
+    <div id="calificar-slot"></div>
 
     <!-- Modo Mesa: promos de locales para grupos que ya van juntos -->
     <section class="block mesa-block" id="mesa-block" aria-labelledby="t-mesa" hidden>
@@ -193,8 +199,12 @@
           <button type="button" class="search-clear" id="search-clear" aria-label="Limpiar búsqueda" hidden><svg class="ic"><use href="#i-close"/></svg></button>
         </div>
       </div>
+      <div class="filtros" id="filtros" role="toolbar" aria-label="Filtrar parches"></div>
       <div class="cards" id="cards"></div>
     </section>
+
+    <!-- Parches oficiales que ya pasaron (ver renderHistorial) -->
+    <div id="hist-slot"></div>
   </section>
 
   <!-- ===================== MAPA ===================== -->
@@ -326,6 +336,19 @@
         <ul class="badges" id="badges"></ul>
       </section>
 
+      <!-- App instalable y avisos push -->
+      <section class="pcard app-card" aria-labelledby="t-app">
+        <h2 class="pcard-title" id="t-app">App y avisos</h2>
+        <div class="pv-row app-row">
+          <span><b>Instala ModoParche</b><small id="app-install-sub">Ábrelo como app desde tu pantalla de inicio.</small></span>
+          <button type="button" class="btn btn--sm" id="app-install" hidden><svg class="ic"><use href="#i-plus"/></svg> Instalar</button>
+        </div>
+        <label class="pv-row" for="p-push">
+          <span><b>Avisos en este dispositivo</b><small id="push-sub">Te avisamos cuando alguien se une, te escribe o cambia un parche.</small></span>
+          <input type="checkbox" class="pv-switch" id="p-push" role="switch">
+        </label>
+      </section>
+
       <!-- Privacidad: derechos sobre tus datos -->
       <section class="pcard privacy-card" aria-labelledby="t-privacy">
         <h2 class="pcard-title" id="t-privacy">Tu privacidad</h2>
@@ -400,6 +423,15 @@
             <div class="label-row"><label for="c-desc">Descripción corta</label><span class="count tnum" data-count-for="c-desc">0/280</span></div>
             <textarea class="input" id="c-desc" name="descripcion" rows="3" maxlength="280" placeholder="¿Qué se va a hacer? ¿Hay que llevar algo?"></textarea>
             <p class="field-msg" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <span class="label-like">Foto del parche <small>(opcional)</small></span>
+            <div class="foto-box" id="c-foto-box">
+              <img id="c-foto-img" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Foto elegida para el parche">
+              <label class="btn btn--ghost btn--sm foto-pick"><svg class="ic"><use href="#i-camera"/></svg><span id="c-foto-txt">Agregar foto</span><input type="file" id="c-foto" accept="image/*" hidden></label>
+              <button type="button" class="text-btn" data-action="foto-quitar" id="c-foto-quitar" hidden>Quitar foto</button>
+            </div>
+            <p class="mini-note">Una foto del lugar o del plan hace que más gente le caiga. Se ve en la tarjeta y al compartir.</p>
           </div>
         </section>
 
@@ -480,6 +512,24 @@
         <button type="submit" class="btn" id="create-submit"><svg class="ic"><use href="#i-bolt"/></svg><span>Publicar parche</span></button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- MODAL: CALIFICAR DESPUÉS DEL PARCHE -->
+<div class="modal" id="modal-calificar" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="cal-h">
+    <div class="cal">
+      <img class="confirm-art" src="src/assets/web/stk/medalla-buena-vibra.webp" alt="" width="300" height="300">
+      <h2 class="modal-title" id="cal-h">¿Cómo estuvo el parche?</h2>
+      <p class="cal-sub" id="cal-title"></p>
+      <ul class="cal-list" id="cal-list"></ul>
+      <p class="field-msg is-error" id="cal-msg" role="alert"></p>
+      <div class="form-actions form-actions--split">
+        <button type="button" class="btn btn--ghost" data-close>Después</button>
+        <button type="button" class="btn" id="cal-send" data-action="cal-send"><svg class="ic"><use href="#i-star"/></svg> Enviar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -749,7 +799,6 @@
   <div class="boot-actions" id="boot-actions" hidden></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="supabase-client.js"></script>
 <script src="mp-mapa.js"></script>

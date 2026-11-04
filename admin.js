@@ -177,7 +177,7 @@
     const [met, cuentas, parches, negocios, mensajes, registro, reportes, cals, ret, equipo] = await Promise.all([
       rpc('admin_metricas', metArgs()),
       rpc('admin_cuentas'),
-      c.from('parches').select('id,titulo,categoria,descripcion,inicio,lugar,barrio,lat,lng,costo,cupos_max,creador_id,creador_nombre,aliado,verificado,demo,relampago,promo,plan_b_activo,creado_en,oficial,oficial_info,parche_miembros(count)').order('inicio', { ascending: false }).limit(1500).then(unwrap),
+      c.from('parches').select('id,titulo,categoria,descripcion,inicio,lugar,barrio,lat,lng,costo,cupos_max,creador_id,creador_nombre,aliado,verificado,demo,relampago,promo,plan_b_activo,creado_en,oficial,oficial_info,imagen,parche_miembros(count)').order('inicio', { ascending: false }).limit(1500).then(unwrap),
       c.from('negocios').select('*').then(unwrap),
       c.from('mensajes').select('id,parche_id,autor_id,texto,creado_en').eq('tipo', 'user').not('autor_id', 'is', null).order('creado_en', { ascending: false }).limit(400).then(unwrap),
       c.from('admin_registro').select('*').order('creado_en', { ascending: false }).limit(300).then(unwrap),
@@ -1589,7 +1589,7 @@
     val('#o-lugar', p ? p.lugar : 'Por confirmar'); val('#o-barrio', p ? p.barrio : 'Villavicencio');
     val('#o-lat', p && p.lat); val('#o-lng', p && p.lng);
     val('#o-cupos', p ? p.cupos_max : 500); $('#o-cupos').min = Math.max(2, p ? p.miembros : 2);
-    val('#o-desc', p && p.descripcion);
+    val('#o-desc', p && p.descripcion); val('#o-imagen', p && p.imagen);
     val('#o-ent-precio', i.entrada_precio); val('#o-ent-url', i.entrada_url);
     val('#o-pal-precio', i.palco_precio); val('#o-pal-url', i.palco_url); val('#o-pal-personas', i.palco_personas);
     val('#o-pal-hasta', i.palco_hasta); val('#o-boleteria', i.boleteria); val('#o-edad', i.edad_minima); val('#o-horario', i.horario);
@@ -1629,9 +1629,14 @@
     const btn = $('#o-ok'); setBusy(btn, true);
     try {
       let id = oficialId;
-      if (!DEMO) id = await rpc('admin_guardar_oficial', { p_parche: oficialId, p_datos: datos });
+      const imagen = txt('#o-imagen');
+      if (imagen && !/^(\/src\/assets\/|https:\/\/)\S+$/.test(imagen)) { $('#o-msg').textContent = 'El afiche debe ser /src/assets/... o un enlace https://'; setBusy(btn, false); return; }
+      if (!DEMO) {
+        id = await rpc('admin_guardar_oficial', { p_parche: oficialId, p_datos: datos });
+        await rpc('admin_imagen_oficial', { p_parche: id, p_imagen: imagen });
+      }
       const info = Object.fromEntries(Object.entries(datos.info).filter(([, v]) => v !== '' && v != null && !(Array.isArray(v) && !v.length)));
-      const fila = { titulo: datos.titulo, descripcion: datos.descripcion, inicio: datos.inicio, lugar: datos.lugar, barrio: datos.barrio, cupos_max: datos.cupos_max, oficial: true, oficial_info: info, ...(lat != null ? { lat, lng } : {}) };
+      const fila = { imagen, titulo: datos.titulo, descripcion: datos.descripcion, inicio: datos.inicio, lugar: datos.lugar, barrio: datos.barrio, cupos_max: datos.cupos_max, oficial: true, oficial_info: info, ...(lat != null ? { lat, lng } : {}) };
       const p = S.parches.find(x => x.id === id);
       if (p) Object.assign(p, fila);
       else S.parches.unshift({ id: id || 'of-' + Date.now(), categoria: 'conciertos', creador_id: null, creador_nombre: 'Equipo ModoParche', costo: 0, miembros: 0, demo: false, aliado: false, lat: lat ?? 4.142, lng: lng ?? -73.6266, creado_en: new Date().toISOString(), ...fila });

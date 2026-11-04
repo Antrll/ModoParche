@@ -6,3 +6,6 @@ skills-lock.json
 respaldo-dashboard-anterior/
 supabase/
 .claude/
+.env
+.env.*
+.impeccable/

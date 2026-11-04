@@ -107,6 +107,32 @@ Correr en el SQL Editor, en este orden: `20261103130000_coordenadas_viva.sql`, `
 - **Panel admin > Parches > Oficiales:** botón "Nuevo parche oficial" y "Editar" para poner sitio, coordenadas, precios, enlaces de compra y personas por palco. Solo los admins (función `admin_guardar_oficial`); ninguna cuenta puede marcar su parche como oficial. Los oficiales aceptan hasta 20.000 cupos (los normales, 60).
 - **Eliminar parche:** quien lo organiza lo borra desde la tarjeta (ícono de basura), desde "Editar parche", desde el chat o deslizando el parche en Mis parches. Pide confirmación y les llega un aviso a quienes iban.
 
+### Mejoras de noviembre 2026
+
+Correr `20261104140000_mejoras_noviembre.sql` en el SQL Editor (después de las anteriores).
+
+| Mejora | Cómo funciona |
+| --- | --- |
+| Compartir | Botón en cada tarjeta, en el chat y en el oficial. Comparte `https://…/p/<id>`: una página (`api/p.js`) con la vista previa para WhatsApp (foto, título, cuándo y dónde) que lleva al parche. Si la persona no ha entrado, lo abre después del login. |
+| Calificar | Hasta 7 días después de un parche con check-in sale "¿Cómo estuvo?": estrellas y "Volvería a parchar" por cada persona. La base exige check-in, que la persona haya estado en ese parche y el plazo. |
+| Filtros | Hoy, Gratis, A 3 km (con GPS) y categorías, con conteo, encima de "Abiertos ahora". |
+| Foto del parche | Cualquier persona puede poner una foto (se achica a 1280 px antes de subirla al bucket `fotos`). La base solo acepta fotos de la carpeta de quien creó el parche. |
+| App instalable | `manifest.webmanifest` y `sw.js`: se instala desde el navegador (Perfil > App y avisos) y abre sin señal con lo último guardado. |
+| Avisos push | Perfil > App y avisos. Ver "Activar los avisos push" abajo. |
+| Más rápido | Leaflet (los mapas) ya no bloquea la carga: se baja cuando se abre un mapa o cuando el navegador está libre. Caché larga para imágenes en `vercel.json`. |
+| Historial de oficiales | "Oficiales anteriores" al final del inicio, con afiche y cuántos fueron. |
+| Parches grandes | En los oficiales, el chat tiene pestañas Todo, Anuncios y la localidad de cada quien (General, VIP, Palco…). Cada persona elige su localidad y se ve junto a su nombre. |
+| Afiche del oficial | `src/assets/web/oficiales/andres-cepeda.webp` (y `-og.jpg` para compartir). En el panel admin se cambia en el campo "Afiche". |
+
+#### Activar los avisos push
+
+1. Las llaves están en `.env.local` (no se sube a git ni a Vercel). La pública ya está en `dashboard.js`.
+2. Supabase > Edge Functions > Secrets: crear `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` y `PUSH_WEBHOOK_SECRET` con los valores de `.env.local`.
+3. Publicar la función: `supabase functions deploy enviar-push --no-verify-jwt` (o crearla en el editor de Edge Functions con el código de `supabase/functions/enviar-push/index.ts`).
+4. Supabase > Database > Webhooks > Create: tabla `notificaciones`, evento `INSERT`, tipo "Supabase Edge Functions", función `enviar-push`, y un encabezado `x-webhook-secret` con el valor de `PUSH_WEBHOOK_SECRET`.
+
+Mientras no esté configurado, activar los avisos guarda la suscripción pero no llega nada.
+
 #### Activar los pagos con Wompi
 
 1. Crear la cuenta de comercio en [comercios.wompi.co](https://comercios.wompi.co) y copiar, en *Desarrolladores*, la llave pública, el secreto de integridad y el secreto de eventos (primero las de prueba: `pub_test_`, `test_integrity_`, `test_events_`).
