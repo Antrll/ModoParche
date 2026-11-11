@@ -129,8 +129,13 @@ function setLoading(btn, on) {
 }
 
 // Traduce los errores de Supabase Auth a mensajes claros
+// Token de Cloudflare Turnstile (undefined si el captcha no está activo)
+const captcha = el => (window.MPCaptcha ? window.MPCaptcha.token(el) : Promise.resolve(undefined));
+
 function authError(err) {
   const m = (err && (err.message || err.error_description || '')).toLowerCase();
+  if (m.includes('captcha')) return window.MPCaptcha ? window.MPCaptcha.mensaje(err) : ['No pudimos verificarte', 'Recarga la página e intenta de nuevo.'];
+  if (m.includes('email rate limit') || m.includes('over_email_send_rate_limit')) return ['Ya te enviamos un correo', 'Espera unos minutos antes de pedir otro y revisa la carpeta de spam.'];
   if (m.includes('invalid login credentials')) return ['Correo o contraseña incorrectos', 'Revisa los datos e intenta de nuevo.'];
   if (m.includes('email not confirmed')) return ['Confirma tu correo primero', 'Abre el enlace que te enviamos al registrarte.'];
   if (m.includes('already registered') || m.includes('already been registered')) return ['Ese correo ya tiene cuenta', 'Inicia sesión o usa otro correo.'];
@@ -206,7 +211,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fmsg.textContent = 'Escribe el correo de tu cuenta.'; fmsg.className = 'forgot-msg is-error'; return; }
       if (!sb) { fmsg.textContent = 'Sin conexión con el servidor. Intenta en un momento.'; fmsg.className = 'forgot-msg is-error'; return; }
       setLoading(sendBtn, true);
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('login.html', location.href).href });
+      let error;
+      try {
+        const captchaToken = await captcha(document.getElementById('forgotBox'));
+        ({ error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('login.html', location.href).href, captchaToken }));
+      } catch (e) { error = e; }
       setLoading(sendBtn, false);
       if (error) { fmsg.textContent = authError(error).join('. '); fmsg.className = 'forgot-msg is-error'; return; }
       fmsg.textContent = `Listo. Revisa ${email} (y la carpeta de spam) y abre el enlace.`;
@@ -220,7 +229,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const email = document.getElementById('login-cred').value.trim();
     if (!sb || !email) return;
     setLoading(resend, true);
-    const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: new URL('dashboard.html', location.href).href } });
+    let error;
+    try {
+      const captchaToken = await captcha(document.getElementById('form-login'));
+      ({ error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: new URL('dashboard.html?confirmado=1', location.href).href, captchaToken } }));
+    } catch (e) { error = e; }
     setLoading(resend, false);
     resend.hidden = true;
     if (error) showStatus('login-status', 'error', ...authError(error));
@@ -282,6 +295,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Confirmar el correo: panel con el correo, botón para abrirlo y reenviar con espera
+  const BUZONES = [
+    [/@(gmail|googlemail)\.com$/i, 'https://mail.google.com/mail/u/0/#search/from%3Amodoparcheoficial%40gmail.com', 'Abrir Gmail'],
+    [/@(outlook|hotmail|live|msn)\.[a-z.]+$/i, 'https://outlook.live.com/mail/0/', 'Abrir Outlook'],
+    [/@yahoo\.[a-z.]+$/i, 'https://mail.yahoo.com/', 'Abrir Yahoo Mail'],
+    [/@(icloud|me|mac)\.com$/i, 'https://www.icloud.com/mail', 'Abrir iCloud Mail'],
+  ];
+  const panelConf = document.getElementById('confirm-mail');
+  let correoPendiente = '', esperaHasta = 0, relojEspera = 0;
+  function pintarEspera() {
+    const b = document.getElementById('confirm-reenviar');
+    const s = Math.ceil((esperaHasta - Date.now()) / 1000);
+    if (s > 0) { b.disabled = true; b.textContent = `Reenviar en ${s} s`; relojEspera = setTimeout(pintarEspera, 1000); }
+    else { b.disabled = false; b.textContent = 'Reenviar el correo'; }
+  }
+  function mostrarConfirmacion(email) {
+    if (!panelConf) { showStatus('reg-status', 'ok', 'Revisa tu correo', `Te enviamos un enlace a ${email} para activar tu cuenta.`); return; }
+    correoPendiente = email;
+    try { sessionStorage.setItem('mp_confirmar', email); } catch (e) { /* sin almacenamiento */ }
+    document.getElementById('confirm-email').textContent = email;
+    const buzon = BUZONES.find(([re]) => re.test(email));
+    const abrir = document.getElementById('confirm-abrir');
+    abrir.hidden = !buzon;
+    if (buzon) { abrir.href = buzon[1]; abrir.textContent = buzon[2]; }
+    document.getElementById('confirm-msg').textContent = '';
+    formReg.hidden = true;
+    document.querySelector('.wizard-progress')?.setAttribute('hidden', '');
+    document.getElementById('signup-switch')?.setAttribute('hidden', '');
+    panelConf.hidden = false;
+    panelConf.focus();
+    esperaHasta = Date.now() + 60000; clearTimeout(relojEspera); pintarEspera();
+  }
+  document.getElementById('confirm-reenviar')?.addEventListener('click', async () => {
+    if (!sb || !correoPendiente || Date.now() < esperaHasta) return;
+    const b = document.getElementById('confirm-reenviar'), msg = document.getElementById('confirm-msg');
+    setLoading(b, true);
+    let error;
+    try {
+      const captchaToken = await captcha(panelConf);
+      ({ error } = await sb.auth.resend({ type: 'signup', email: correoPendiente, options: { emailRedirectTo: new URL('dashboard.html?confirmado=1', location.href).href, captchaToken } }));
+    } catch (e) { error = e; }
+    setLoading(b, false);
+    msg.className = 'confirm-msg ' + (error ? 'is-error' : 'is-ok');
+    msg.textContent = error ? authError(error).join('. ') : `Listo, te lo enviamos otra vez a ${correoPendiente}.`;
+    esperaHasta = Date.now() + (error ? 15000 : 60000); clearTimeout(relojEspera); pintarEspera();
+  });
+  document.getElementById('confirm-cambiar')?.addEventListener('click', () => {
+    clearTimeout(relojEspera);
+    panelConf.hidden = true;
+    formReg.hidden = false;
+    document.querySelector('.wizard-progress')?.removeAttribute('hidden');
+    document.getElementById('signup-switch')?.removeAttribute('hidden');
+    goToStep(1);
+    const em = document.getElementById('reg-email');
+    if (em) { em.value = correoPendiente; em.focus(); em.select(); }
+  });
+  // Enlace de confirmación vencido o ya usado (Supabase vuelve con #error_code=...)
+  const hashErr = new URLSearchParams(location.hash.replace(/^#/, ''));
+  if (hashErr.get('error_code') || hashErr.get('error')) {
+    const vencido = /otp_expired|expired/i.test(hashErr.get('error_code') + ' ' + hashErr.get('error_description'));
+    showStatus('login-status', 'error', vencido ? 'El enlace ya venció' : 'No pudimos confirmar tu correo',
+      vencido ? 'Escribe tu correo arriba y toca «Reenviar el correo de confirmación». Los enlaces duran 24 horas y sirven una sola vez.' : 'Intenta entrar con tu correo y contraseña. Si no puedes, pide un correo nuevo.');
+    const r = document.getElementById('resend-confirm');
+    if (r) r.hidden = false;
+    try { const pend = sessionStorage.getItem('mp_confirmar'); const c = document.getElementById('login-cred'); if (pend && c && !c.value) c.value = pend; } catch (e) { /* nada */ }
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
   // 4. Registro con Supabase Auth
   if (formReg) {
     formReg.addEventListener('change', syncCategories);
@@ -314,11 +395,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       setLoading(btn, true);
       try {
         const email = String(fd.get('email') || '').trim();
+        const captchaToken = await captcha(formReg);
         const { data, error } = await sb.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: new URL('dashboard.html', window.location.href).href,
+            captchaToken,
+            emailRedirectTo: new URL('dashboard.html?confirmado=1', window.location.href).href,
             // Solo llenan el perfil inicial; los permisos nunca dependen de esto
             data: {
               nombre: String(fd.get('nombre') || '').trim(),
@@ -343,9 +426,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         // Supabase pide confirmar el correo antes de iniciar sesión
-        showStatus('reg-status', 'ok', 'Revisa tu correo', `Te enviamos un enlace a ${email} para activar tu cuenta.`);
         formReg.reset();
         syncCategories();
+        mostrarConfirmacion(email);
       } catch (err) {
         const [t, d] = authError(err);
         showStatus('reg-status', 'error', t, d);
@@ -372,7 +455,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btn = document.getElementById('login-submit');
       setLoading(btn, true);
       try {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        const captchaToken = await captcha(formLogin);
+        const { data, error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
         if (error) throw error;
         window.location.replace(await destino(data.user));
         return;

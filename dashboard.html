@@ -564,6 +564,19 @@
       <a class="sos-line" href="tel:155"><svg class="ic"><use href="#i-phone"/></svg><span><b>Línea 155</b><small>Orientación a mujeres víctimas de violencia</small></span></a>
       <button type="button" class="sos-opt" id="sos-enviar" data-action="sos-enviar"><svg class="ic"><use href="#i-pin"/></svg><span><b>Enviar mi ubicación por WhatsApp</b><small id="sos-contacto-txt">Aún no tienes contacto de confianza</small></span></button>
       <button type="button" class="sos-opt" id="sos-vivo" data-action="sos-vivo"><svg class="ic"><use href="#i-locate"/></svg><span><b id="sos-vivo-txt">Compartir mi ubicación en vivo</b><small id="sos-vivo-sub">Tu contacto la ve en un enlace, sin cuenta.</small></span></button>
+      <div class="sos-link" id="sos-link" hidden>
+        <p class="sos-link-tit"><svg class="ic"><use href="#i-share"/></svg>Este es el enlace que debes compartir</p>
+        <div class="sos-link-fila">
+          <input class="input tnum" id="sos-link-url" readonly aria-label="Enlace de tu ubicación en vivo" spellcheck="false">
+          <button type="button" class="btn btn--sm" id="sos-link-copiar" data-action="sos-link-copiar">Copiar</button>
+        </div>
+        <p class="sos-link-ok" id="sos-link-ok" role="status" aria-live="polite"></p>
+        <div class="sos-link-acc">
+          <button type="button" class="btn btn--sm btn--ghost" data-action="sos-link-wa">Enviar por WhatsApp</button>
+          <button type="button" class="btn btn--sm btn--ghost" data-action="sos-link-compartir" id="sos-link-compartir" hidden>Compartir…</button>
+        </div>
+        <p class="sos-link-nota">Deja ModoParche abierto (puede quedar en segundo plano) para que tu ubicación se siga actualizando. Si quieres probar el enlace tú mismo, ábrelo en otra pestaña, no en esta.</p>
+      </div>
       <button type="button" class="sos-opt" data-action="qr-escanear-id"><svg class="ic"><use href="#i-scan"/></svg><span><b>Verificar a alguien con su QR</b><small>Mira si su cédula está verificada antes de encontrarte</small></span></button>
       <details class="sos-contacto">
         <summary>Contacto de confianza <svg class="ic"><use href="#i-chev-down"/></svg></summary>

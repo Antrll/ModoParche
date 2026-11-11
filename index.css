@@ -804,10 +804,6 @@
   font-size: var(--t-lg);
   text-transform: uppercase;
 }
-.stage-art--fire {
-  width: clamp(130px, 16vw, 200px);
-  height: auto;
-}
 
 /* =====================================================================
    5. UN PARCHE PARA CADA QUIEN (PestaÃ±as)

@@ -13,7 +13,9 @@ module.exports = (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
-  res.setHeader('Referrer-Policy', 'no-referrer');
+  // OpenStreetMap bloquea (403) los mosaicos que llegan sin Referer. Con
+  // strict-origin solo se envía el dominio, nunca la ruta con el token.
+  res.setHeader('Referrer-Policy', 'strict-origin');
   res.status(200).send(`<!doctype html>
 <html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -51,7 +53,14 @@ module.exports = (req, res) => {
 <script>
   var TOKEN = ${JSON.stringify(token)}, URL_ = ${JSON.stringify(SB_URL)}, KEY = ${JSON.stringify(SB_ANON)};
   var map = L.map('map').setView([4.142, -73.6266], 13), pin = null, circulo = null, primera = true;
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+  // Mosaicos de OpenStreetMap; si fallan (bloqueo o sin red) se cambia a CARTO
+  var capa = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, referrerPolicy: 'strict-origin', attribution: '&copy; OpenStreetMap' }).addTo(map);
+  var fallos = 0;
+  capa.on('tileerror', function () {
+    if (++fallos !== 3) return;
+    map.removeLayer(capa);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+  });
   function hace(iso) {
     var s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
     return s < 60 ? 'hace ' + s + ' s' : s < 3600 ? 'hace ' + Math.round(s / 60) + ' min' : 'hace ' + Math.round(s / 3600) + ' h';
@@ -63,7 +72,7 @@ module.exports = (req, res) => {
         if (!d) { document.getElementById('t').textContent = 'Este enlace no existe o ya venció'; document.getElementById('s').textContent = 'Pídele a la persona que lo vuelva a compartir.'; return; }
         document.getElementById('t').textContent = d.nombre + (d.activa ? ' está compartiendo su ubicación' : ' dejó de compartir su ubicación');
         document.getElementById('s').textContent = d.parche ? 'Va al parche "' + d.parche.titulo + '" en ' + d.parche.lugar : '';
-        if (d.lat == null) { document.getElementById('e').textContent = 'Esperando la primera ubicación…'; return; }
+        if (d.lat == null) { document.getElementById('e').textContent = d.activa ? 'Esperando la primera ubicación… (la persona debe tener ModoParche abierto)' : 'No alcanzó a enviar su ubicación.'; return; }
         var ll = [d.lat, d.lng];
         if (!pin) { pin = L.marker(ll).addTo(map); circulo = L.circle(ll, { radius: d.precision || 30, color: '#FF5A1F', weight: 1.5, fillOpacity: .12 }).addTo(map); }
         else { pin.setLatLng(ll); circulo.setLatLng(ll).setRadius(d.precision || 30); }

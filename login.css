@@ -80,7 +80,6 @@
 }
 .bc--mark { animation: bc-in .9s var(--ease-out) both, mp-float 8s ease-in-out infinite; }
 .bc--mark { width: 46%; right: 8%; bottom: 8%; rotate: -6deg; animation-delay: .25s, 1.2s; filter: drop-shadow(0 24px 30px rgba(17,17,17,.35)); }
-.bc--fire { width: 20%; left: 8%; bottom: 6%; rotate: 8deg; filter: none; animation-delay: .4s; }
 @keyframes bc-in { from { opacity: 0; transform: translateY(30px) scale(.9); } }
 
 /* =====================================================================
@@ -359,3 +358,20 @@
 .resend-link[hidden] { display: none; }
 .auth-tabs[hidden], .biz-link[hidden] { display: none; }
 @media (max-width: 420px) { .forgot-row { flex-direction: column; } }
+
+/* =====================================================================
+   Confirmar el correo después de registrarse
+===================================================================== */
+.confirm-mail { display: grid; gap: 14px; outline: none; }
+.confirm-mail[hidden] { display: none; }
+.confirm-head { display: flex; align-items: center; gap: 12px; }
+.confirm-ic { flex: none; width: .9em; height: .9em; color: var(--orange); }
+.confirm-email { overflow-wrap: anywhere; color: var(--ink); }
+.wizard-progress[hidden], #signup-switch[hidden] { display: none; }
+.confirm-mail .confirm-pasos { display: grid; gap: 10px; padding: 16px 18px 16px 38px; margin: 0; border-radius: var(--r); background: var(--soft); font-size: .95rem; line-height: 1.45; list-style: decimal; }
+.confirm-mail .confirm-pasos li::marker { font-weight: 800; color: var(--orange-deep); }
+.confirm-msg { margin: 0; font-weight: 600; font-size: .95rem; }
+.confirm-msg:empty { display: none; }
+.confirm-msg.is-ok { color: var(--ok); }
+.confirm-msg.is-error { color: var(--danger); }
+.confirm-mail .btn[disabled] { opacity: .6; cursor: not-allowed; }

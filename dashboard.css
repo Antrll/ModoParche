@@ -1925,6 +1925,18 @@ a.of-tk:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
 .sos-tip .ic { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 @media (max-width: 520px) { .sos-form { grid-template-columns: 1fr; } }
 
+/* Enlace de ubicación en vivo: grande, a la vista y con copiar */
+.sos-link { display: grid; gap: 10px; padding: 14px; border-radius: var(--r); border: 2px dashed var(--ok); background: var(--ok-soft); color: var(--ink); }
+.sos-link-tit { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .9375rem; color: var(--ok); }
+.sos-link-tit .ic { width: 18px; height: 18px; flex: none; }
+.sos-link-fila { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.sos-link-fila .input { font-size: .875rem; font-weight: 600; background: var(--paper); text-overflow: ellipsis; }
+.sos-link-ok { min-height: 1.2em; font-size: .8125rem; font-weight: 700; color: var(--ok); }
+.sos-link-ok:empty { display: none; }
+.sos-link-acc { display: flex; flex-wrap: wrap; gap: 8px; }
+.sos-link-nota { font-size: .8125rem; line-height: 1.45; color: var(--muted); }
+.sos-link.is-copiado .sos-link-fila .input { border-color: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+
 /* Consejo de seguridad del día */
 .tip-card {
   margin-top: 14px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;

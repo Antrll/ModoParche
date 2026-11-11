@@ -55,6 +55,8 @@ Cada negocio crea su propia cuenta en `empresa.html` (datos del local, acceso y 
 | `preguntas.html` | Preguntas frecuentes con buscador y filtros. |
 | `marca.html` | Identidad de marca: logo, colores, tipografía, gráficos, stickers, insignias y voz. |
 | `paginas.css` / `paginas.js` | Estilos y comportamiento de las páginas nuevas. |
+| `mp-captcha.js` | Captcha de Cloudflare Turnstile para registro e inicio de sesión (ver «Seguridad, captcha y confirmación de correo»). |
+| `mp-tema.js` | Botón de modo claro/oscuro en la barra de todas las páginas públicas. Transición de "tinta que se riega" (View Transitions + máscara en canvas; sin soporte o con "reducir movimiento" cambia con un fundido). Elige el isotipo según el fondo real y, si una imagen no carga, usa otra versión o deja solo el texto. Guarda la elección en `mp_tema`, la misma llave del dashboard. Los colores del modo oscuro están al final de `mp-base.css`. |
 | `src/assets/web/stk/` | Stickers, insignias y trazos de la marca en WebP liviano (sin estirar). Solo se usan dentro del dashboard del usuario. |
 | `404.html` | Página de error con la marca (Vercel la muestra sola). |
 
@@ -169,6 +171,26 @@ Mientras no esté configurado, activar los avisos guarda la suscripción pero no
 **Solo modo de pruebas.** ModoParche es un proyecto académico sin ánimo de lucro: los pagos usan las llaves de prueba de Wompi y nunca se cobra dinero real. La función `wompi-checkout` rechaza las llaves de producción (`pub_prod_`) salvo que se active a propósito el secreto `PERMITIR_COBROS_REALES=si`, cosa que no se debe hacer mientras sea un prototipo.
 
 Precio: `PRECIO_VILLAVO_CENTAVOS` (por defecto `8900000` = $89.000). Mientras Wompi no esté configurado, el panel lo dice claramente y no cobra nada.
+
+### Seguridad, captcha y confirmación de correo (noviembre 2026)
+
+| Archivo | Qué hace |
+|---|---|
+| `mp-captcha.js` | Cloudflare Turnstile en registro, inicio de sesión, recuperar contraseña y reenviar confirmación (personas y negocios). Invisible salvo que Cloudflare dude. Si la Site Key está vacía, no se carga. |
+| `supabase/migrations/20261111120000_anti_spam.sql` | Límites por persona: 12 mensajes/minuto y 300/día, 6 parches/día, 30 fotos/hora, 10 enlaces de ubicación/hora. |
+| `supabase/templates/confirmar-correo.html` | Correo de confirmación con la marca, en español. |
+| `vercel.json` | Headers de seguridad: CSP, HSTS, `nosniff`, sin iframes ajenos, `Permissions-Policy` (cámara y GPS solo del sitio) y `noindex` en el admin. |
+
+Pasos en los paneles (una sola vez, en este orden):
+
+1. **Cloudflare Turnstile.** dash.cloudflare.com > Turnstile > *Add widget*. Dominios: el de Vercel (y `localhost` para probar). Modo *Managed*. Pega la **Site Key** en `SITE_KEY` dentro de `mp-captcha.js` y publica.
+2. **Supabase > Authentication > Attack Protection.** Activa *Captcha protection* > Cloudflare Turnstile y pega la **Secret Key**. Activa también *Leaked password protection*. (Si activas el captcha antes del paso 1, nadie podrá entrar.)
+3. **Supabase > Authentication > Sign In / Providers > Email.** Deja activado *Confirm email*.
+4. **Correo desde modoparcheoficial@gmail.com.** En la cuenta de Google activa la verificación en 2 pasos y crea una *contraseña de aplicación*. En Supabase > Authentication > Emails > *SMTP Settings*: host `smtp.gmail.com`, puerto `465`, usuario `modoparcheoficial@gmail.com`, contraseña = la de aplicación, remitente `ModoParche`. Sin SMTP propio Supabase solo manda unos pocos correos por hora.
+5. **Plantilla.** Authentication > Emails > *Confirm signup*: asunto «Confirma tu correo y entra al parche» y pega `supabase/templates/confirmar-correo.html`.
+6. **URL de regreso.** Authentication > URL Configuration > *Redirect URLs*: agrega `https://TU-DOMINIO/dashboard.html?confirmado=1` (o `https://TU-DOMINIO/**`).
+7. **SQL Editor:** corre `20261111120000_anti_spam.sql`.
+8. **Límites de gasto:** Vercel > Settings > Billing > *Spend Management*; Supabase > Organization > Billing > *Spend cap* encendido.
 
 ### Panel de administración
 

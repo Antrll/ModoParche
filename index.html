@@ -14,6 +14,7 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
+<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
@@ -224,7 +225,7 @@
         <p>Sales acompañado, aunque llegues solo.</p>
       </li>
       <li class="tile" data-reveal>
-        <div class="tile-face tile--ink"><img src="src/assets/web/fuego.png" alt="Llama naranja de la marca" width="520" height="638" loading="lazy"></div>
+        <div class="tile-face tile--ink"><span class="tile-burst tile-burst--ink" aria-hidden="true"><b>3</b><small>cupos</small></span></div>
         <h3>Cupos en vivo</h3>
         <p>Ves cuántos faltan antes de moverte.</p>
       </li>
@@ -281,9 +282,7 @@
         <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-4"><span class="stage-n">04</span>Sal al parche</button>
         <div class="stage-body" id="stage-4">
           <h3>Sal al parche</h3>
-          <p>Llegas, conoces gente y el plan ya estaba armado. Lo único que te toca es llegar.</p>
-          <img class="stage-art stage-art--fire" src="src/assets/web/fuego.png" alt="" width="520" height="638" loading="lazy">
-        </div>
+          <p>Llegas, conoces gente y el plan ya estaba armado. Lo único que te toca es llegar.</p>        </div>
       </li>
     </ol>
   </div>
@@ -510,6 +509,7 @@
 </button>
 
 <script src="mp-base.js" defer></script>
+<script src="mp-tema.js" defer></script>
 <script src="index.js" defer></script>
 <script src="legal.js" defer></script>
 </body>

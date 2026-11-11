@@ -6,7 +6,7 @@
    - Supabase, mapas y otros sitios nunca pasan por aquí.
    - Muestra las notificaciones push (función enviar-push).
 ===================================================================== */
-const VERSION = 'mp-v4';
+const VERSION = 'mp-v5';
 const BASICO = [
   '/dashboard', '/dashboard.css', '/dashboard.js', '/mp-mapa.js', '/mp-mapa.css', '/supabase-client.js',
   '/src/assets/web/isotipo-96.png', '/src/assets/web/isotipo-light-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2',
@@ -23,7 +23,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/p/')) return;
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/seguro/')) return;
 
   const estatico = /\.(png|jpe?g|webp|gif|svg|ico|woff2?)$/i.test(url.pathname);
   if (estatico) {

@@ -2189,6 +2189,7 @@
 
   function dbMsg(err) {
     const m = String((err && (err.message || err.error_description)) || err || '');
+    if (/DEMASIADO_RAPIDO/.test(m)) return (err && err.hint) || 'Vas muy rápido. Espera un momento.';
     if (/failed to fetch|network/i.test(m)) return 'Sin conexión. Revisa tu internet.';
     if (/jwt expired|invalid jwt/i.test(m)) return 'Tu sesión venció. Vuelve a entrar.';
     if (/PARCHE_LLENO/.test(m)) return 'Alguien tomó el último cupo antes que tú.';
@@ -2516,9 +2517,17 @@
     if (!session) {
       // Si llegó por un enlace compartido, lo abrimos después de entrar
       try { const a = new URLSearchParams(window.location.search).get('parche'); if (a) sessionStorage.setItem('mp_abrir', a); } catch (e) { /* sin almacenamiento */ }
-      window.location.replace('login.html'); return false;
+      // Enlace de confirmación vencido o ya usado: el login explica qué hacer
+      const err = /error_code=|error=/.test(location.hash) ? location.hash : '';
+      window.location.replace('login.html' + err); return false;
     }
     me = session.user;
+    if (new URLSearchParams(location.search).has('confirmado')) {
+      try { sessionStorage.removeItem('mp_confirmar'); } catch (e) { /* nada */ }
+      const u = new URL(location.href); u.searchParams.delete('confirmado');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+      setTimeout(() => toast('¡Correo confirmado!', 'Tu cuenta quedó activa. Bienvenido a tu radar.', { icon: 'i-check', ms: 6000 }), 900);
+    }
     if (me.user_metadata && me.user_metadata.tipo === 'empresa') { window.location.replace('empresa-dashboard.html'); return false; }
     try { const { data: esAdmin } = await sb.rpc('soy_admin'); if (esAdmin === true) { window.location.replace('admin.html'); return false; } } catch (e) { /* cuenta normal */ }
     sb.auth.onAuthStateChange((ev, s) => { if (ev === 'SIGNED_OUT' || (!s && ev !== 'INITIAL_SESSION')) window.location.replace('login.html'); });
@@ -3041,6 +3050,11 @@
     $('#sos-vivo').classList.toggle('is-on', !!viva);
     $('#sos-vivo-txt').textContent = viva ? 'Compartiendo tu ubicación en vivo' : 'Compartir mi ubicación en vivo';
     $('#sos-vivo-sub').textContent = viva ? 'Toca para dejar de compartir. Se apaga sola en 8 horas.' : 'Tu contacto la ve en un enlace, sin cuenta. Hasta 8 horas.';
+    $('#sos-link').hidden = !viva;
+    if (viva) {
+      $('#sos-link-url').value = linkUbicacionViva();
+      $('#sos-link-compartir').hidden = !navigator.share;
+    } else { $('#sos-link').classList.remove('is-copiado'); $('#sos-link-ok').textContent = ''; }
     $('#sos-consejo').textContent = consejoDelDia(1);
   }
   const telWa = t => { const d = String(t || '').replace(/\D/g, ''); return d.length === 10 ? '57' + d : d; };
@@ -3060,7 +3074,7 @@
     } catch (e) { msg += ' No pude sacar mi ubicación, pero quiero que sepas dónde ando.'; }
     const pa = ayudaParche && findP(ayudaParche);
     if (pa) msg += ` Voy al parche "${pa.titulo}" en ${pa.lugar} (${fmtCuando(pa.inicio)}).`;
-    if (ubicacionViva.token) msg += ` Ubicación en vivo: ${location.origin}/seguro/${ubicacionViva.token}`;
+    if (ubicacionViva.token) msg += ` Ubicación en vivo: ${linkUbicacionViva()}`;
     window.open(`https://wa.me/${telWa(perfil.contacto_tel)}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   }
   async function guardarContacto(e) {
@@ -3085,19 +3099,60 @@
     const { data, error } = await sb.rpc('iniciar_ubicacion_viva', { p_parche: ayudaParche && isUuid(ayudaParche) ? ayudaParche : null });
     if (error) { toast('No pudimos compartir tu ubicación', /iniciar_ubicacion_viva|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error), { type: 'error' }); return; }
     ubicacionViva.token = data; store.set('mp_ubicacion_viva', data);
-    seguirUbicacion();
     renderSeguridad();
-    const link = `${location.origin}/seguro/${data}`;
-    toast('Ubicación en vivo activada', 'Mándale el enlace a tu contacto de confianza.', { icon: 'i-locate', ms: 8000, action: perfil.contacto_tel ? { label: 'Enviar', act: 'sos-enviar', id: '' } : null });
-    try { await navigator.clipboard.writeText(link); } catch (e) { /* sin portapapeles */ }
+    const copiado = await copiarLinkUbicacion(true);
+    toast('Ubicación en vivo activada', copiado ? 'Copiamos el enlace. Pégalo en el chat de tu contacto de confianza.' : 'Copia el enlace del recuadro verde y mándaselo a tu contacto de confianza.', { icon: 'i-locate', ms: 8000, action: perfil.contacto_tel ? { label: 'Enviar', act: 'sos-enviar', id: '' } : null });
+    // La primera ubicación se manda ya: así el enlace muestra algo aunque cierres esta pestaña
+    try {
+      const p = await posicionAhora();
+      await guardarPosicionViva(p.lat, p.lng, p.acc);
+    } catch (e) { toast('Activa el GPS', 'Sin permiso de ubicación, tu contacto no verá dónde estás.', { type: 'error', icon: 'i-locate' }); }
+    seguirUbicacion();
+  }
+  const linkUbicacionViva = () => ubicacionViva.token ? `${location.origin}/seguro/${ubicacionViva.token}` : '';
+  async function guardarPosicionViva(lat, lng, acc) {
+    if (!ubicacionViva.token) return;
+    ubicacionViva.ultimo = Date.now();
+    const { error } = await sb.from('ubicaciones_vivas').update({ lat, lng, precision_m: Math.round(acc || 0) || null, actualizado: new Date().toISOString() }).eq('token', ubicacionViva.token);
+    if (error) console.warn('[ubicación viva]', error.message);
+  }
+  // Copia el enlace y lo deja resaltado, con aviso visible (no solo un toast que se va)
+  async function copiarLinkUbicacion(silencioso = false) {
+    const link = linkUbicacionViva(), caja = $('#sos-link'), input = $('#sos-link-url'), ok = $('#sos-link-ok');
+    if (!link) return false;
+    let hecho = false;
+    try { await navigator.clipboard.writeText(link); hecho = true; } catch (e) {
+      // Respaldo: seleccionar el texto y usar el copiado clásico
+      try { input.focus(); input.select(); hecho = document.execCommand('copy'); } catch (e2) { hecho = false; }
+    }
+    if (hecho) {
+      caja.classList.add('is-copiado');
+      ok.textContent = '✓ Enlace copiado. Ahora pégalo en WhatsApp, SMS o donde hables con tu contacto.';
+      $('#sos-link-copiar').textContent = 'Copiado';
+      setTimeout(() => { const b = $('#sos-link-copiar'); if (b) b.textContent = 'Copiar'; }, 2500);
+    } else if (!silencioso) {
+      input.focus(); input.select();
+      ok.textContent = 'Tu navegador no dejó copiar solo. Mantén presionado el enlace y elige "Copiar".';
+    }
+    return hecho;
+  }
+  async function compartirLinkUbicacion() {
+    const url = linkUbicacionViva();
+    if (!url) return;
+    try { await navigator.share({ title: 'Mi ubicación en vivo · ModoParche', text: `Soy ${perfil.primer || 'yo'}. Aquí puedes ver dónde estoy en vivo:`, url }); }
+    catch (e) { if (e && e.name !== 'AbortError') copiarLinkUbicacion(); }
+  }
+  function waLinkUbicacion() {
+    const url = linkUbicacionViva();
+    if (!url) return;
+    const msg = `Hola, soy ${perfil.primer || 'yo'} (ModoParche). Aquí puedes ver mi ubicación en vivo: ${url}`;
+    window.open(`https://wa.me/${perfil.contacto_tel ? telWa(perfil.contacto_tel) : ''}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   }
   function seguirUbicacion() {
     if (!ubicacionViva.token || !navigator.geolocation || ubicacionViva.watch != null) return;
     ubicacionViva.watch = navigator.geolocation.watchPosition(async pos => {
       if (Date.now() - ubicacionViva.ultimo < 20000) return; // cada 20 s basta
-      ubicacionViva.ultimo = Date.now();
-      const { error } = await sb.from('ubicaciones_vivas').update({ lat: pos.coords.latitude, lng: pos.coords.longitude, precision_m: Math.round(pos.coords.accuracy), actualizado: new Date().toISOString() }).eq('token', ubicacionViva.token);
-      if (error) console.warn('[ubicación viva]', error.message);
+      await guardarPosicionViva(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
     }, () => { /* sin permiso: el enlace muestra la última conocida */ }, { enableHighAccuracy: true, maximumAge: 15000 });
   }
   async function pararUbicacionViva() {
@@ -3707,6 +3762,9 @@
       case 'seguridad': abrirSeguridad(id); break;
       case 'sos-enviar': enviarUbicacion(); break;
       case 'sos-vivo': toggleUbicacionViva(); break;
+      case 'sos-link-copiar': copiarLinkUbicacion(); break;
+      case 'sos-link-wa': waLinkUbicacion(); break;
+      case 'sos-link-compartir': compartirLinkUbicacion(); break;
       case 'qr-mio': closeAllModals(); setTimeout(mostrarMiQR, 120); break;
       case 'qr-escanear-id': closeAllModals(); setTimeout(escanearIdentidad, 120); break;
       case 'qr-calificar': calificarPorQR(a); break;

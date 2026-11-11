@@ -65,8 +65,12 @@
     btn.classList.toggle('is-loading', on);
     if (on) btn.setAttribute('aria-busy', 'true'); else btn.removeAttribute('aria-busy');
   }
+  // Token de Cloudflare Turnstile (undefined si el captcha no está activo)
+  const captcha = el => (window.MPCaptcha ? window.MPCaptcha.token(el) : Promise.resolve(undefined));
   function authError(err) {
     const m = String((err && (err.message || err.error_description)) || '').toLowerCase();
+    if (m.includes('captcha')) return window.MPCaptcha ? window.MPCaptcha.mensaje(err) : ['No pudimos verificarte', 'Recarga la página e intenta de nuevo.'];
+    if (m.includes('email rate limit') || m.includes('over_email_send_rate_limit')) return ['Ya te enviamos un correo', 'Espera unos minutos antes de pedir otro y revisa la carpeta de spam.'];
     if (m.includes('invalid login credentials')) return ['Correo o contraseña incorrectos', 'Revisa los datos e intenta de nuevo.'];
     if (m.includes('email not confirmed')) return ['Confirma tu correo primero', 'Abre el enlace que te enviamos al crear la cuenta.'];
     if (m.includes('already registered') || m.includes('already been registered')) return ['Ese correo ya tiene cuenta', 'Entra con él o usa otro correo para el negocio.'];
@@ -164,9 +168,11 @@
       }
       const planElegido = plan();
       try {
+        const captchaToken = await captcha(form);
         const { data, error } = await sb.auth.signUp({
           email, password,
           options: {
+            captchaToken,
             emailRedirectTo: new URL('empresa-dashboard.html?bienvenida=1', location.href).href,
             data: {
               tipo: 'empresa',
@@ -216,7 +222,11 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fMsg.textContent = 'Escribe el correo del negocio.'; fMsg.className = 'forgot-msg is-error'; return; }
       if (!sb) { fMsg.textContent = 'Sin conexión con el servidor.'; fMsg.className = 'forgot-msg is-error'; return; }
       setLoading(e.currentTarget, true);
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('login.html', location.href).href });
+      let error;
+      try {
+        const captchaToken = await captcha(fBox);
+        ({ error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('login.html', location.href).href, captchaToken }));
+      } catch (err) { error = err; }
       setLoading($('#bz-forgot-send'), false);
       if (error) { fMsg.textContent = authError(error).join('. '); fMsg.className = 'forgot-msg is-error'; return; }
       fMsg.textContent = `Listo. Revisa ${email} y abre el enlace.`;
@@ -233,7 +243,8 @@
       const btn = $('#bz-login-submit');
       setLoading(btn, true);
       try {
-        const { data, error } = await sb.auth.signInWithPassword({ email: $('#bz-login-email').value.trim(), password: $('#bz-login-pass').value });
+        const captchaToken = await captcha(formIn);
+        const { data, error } = await sb.auth.signInWithPassword({ email: $('#bz-login-email').value.trim(), password: $('#bz-login-pass').value, options: { captchaToken } });
         if (error) throw error;
         try { const r = await sb.rpc('soy_admin'); if (r.data === true) { location.replace('admin.html'); return; } } catch (e2) { /* cuenta normal */ }
         const tipo = data.user && data.user.user_metadata && data.user.user_metadata.tipo;
