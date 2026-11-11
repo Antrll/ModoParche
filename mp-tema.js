@@ -25,6 +25,9 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const esOscuro = () => root.classList.contains('is-dark');
+  // Paneles (usuario, negocio, admin): sus colores oscuros viven en su CSS,
+  // así que no se marcan superficies fijas ni se toca el logo de la barra pública.
+  const PANEL = root.hasAttribute('data-tema-panel');
 
   function guardar(tema) {
     try { localStorage.setItem(LLAVE, tema); } catch (e) { /* modo privado o sin almacenamiento */ }
@@ -154,7 +157,8 @@
   }
 
   // Las piezas de marca.html muestran el logo a propósito sobre un fondo fijo: no se tocan.
-  const NO_TOCAR = '.nav, .logo-card, .logo-rules, .donts, [data-logo-fijo]';
+  // .logo-dk / .logo-lt: el dashboard ya trae las dos versiones y su CSS muestra la correcta.
+  const NO_TOCAR = '.nav, .logo-card, .logo-rules, .donts, [data-logo-fijo], .logo-dk, .logo-lt';
 
   function ajustarLogosPagina() {
     document.querySelectorAll('img').forEach(img => {
@@ -198,13 +202,30 @@
   /* ---------- Aplicar el tema ---------- */
   function aplicar(oscuro) {
     root.classList.toggle('is-dark', oscuro);
+    sincronizar();
+    // Avisa a la página (el dashboard marca su selector Sistema/Claro/Oscuro)
+    try { document.dispatchEvent(new CustomEvent('mp-tema', { detail: { oscuro } })); } catch (e) { /* navegador viejo */ }
+  }
+
+  // Deja el botón, los logos y la barra del navegador acordes con el tema actual,
+  // venga el cambio de este botón, de los ajustes del panel o de otra pestaña.
+  function sincronizar() {
+    const oscuro = esOscuro();
     const btn = document.querySelector('.tema-toggle');
     if (btn) {
       btn.setAttribute('aria-pressed', String(oscuro));
       btn.setAttribute('aria-label', oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
       btn.title = oscuro ? 'Modo claro' : 'Modo oscuro';
     }
-    try { elegirLogoBarra(); } catch (e) { console.warn('[tema] logo barra', e); }
+    if (PANEL) {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        if (!meta.dataset.original) meta.dataset.original = meta.content;
+        meta.content = oscuro ? '#121214' : meta.dataset.original;
+      }
+    } else {
+      try { elegirLogoBarra(); } catch (e) { console.warn('[tema] logo barra', e); }
+    }
     try { ajustarLogosPagina(); } catch (e) { console.warn('[tema] logos', e); }
   }
 
@@ -355,6 +376,19 @@
   </svg>`;
 
   function crearBoton() {
+    // Paneles: el lugar lo marca el HTML con data-tema-slot (va de primero)
+    const slot = document.querySelector('[data-tema-slot]');
+    if (slot) {
+      let b = slot.querySelector('.tema-toggle');
+      if (b) return b;
+      b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tema-toggle' + (PANEL ? ' tema-toggle--panel' : '');
+      b.innerHTML = ICONO;
+      slot.insertBefore(b, slot.firstElementChild);
+      b.addEventListener('click', e => { alternar(b, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(!esOscuro()); }); });
+      return b;
+    }
     let lugar = document.querySelector('.nav .nav-right');
     const fila = document.querySelector('.nav .nav-row');
     if (!lugar && fila) {
@@ -378,10 +412,24 @@
 
   /* ---------- Inicio ---------- */
   function init() {
-    try { marcarFijos(); } catch (e) { console.warn('[tema] superficies', e); }
-    crearBoton();
+    if (!PANEL) { try { marcarFijos(); } catch (e) { console.warn('[tema] superficies', e); } }
+    try { crearBoton(); } catch (e) { console.warn('[tema] botón', e); }
     vigilarLogosBarra();
-    aplicar(esOscuro());
+    sincronizar();
+
+    // Si otra parte de la página cambia el tema (ajustes del dashboard), el botón se entera
+    if ('MutationObserver' in window) {
+      let antes = esOscuro();
+      new MutationObserver(() => { const ahora = esOscuro(); if (ahora !== antes) { antes = ahora; sincronizar(); } })
+        .observe(root, { attributes: true, attributeFilter: ['class'] });
+    }
+    // Otra pestaña cambió el tema: se aplica aquí también
+    window.addEventListener('storage', e => {
+      if (e.key !== LLAVE) return;
+      const t = e.newValue;
+      const oscuro = t === 'oscuro' || (t !== 'claro' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (oscuro !== esOscuro()) aplicar(oscuro);
+    });
 
     // El logo de la barra cambia cuando la barra cambia de fondo (scroll, menú, tema)
     const nav = document.querySelector('.nav');
@@ -401,7 +449,7 @@
 
     // Bloques que cambian de tamaño (celular girado) pueden pasar a ser "grandes"
     let r = 0;
-    window.addEventListener('resize', () => { clearTimeout(r); r = setTimeout(() => { try { marcarFijos(); ajustarLogosPagina(); } catch (e) { /* nada */ } }, 300); });
+    window.addEventListener('resize', () => { clearTimeout(r); r = setTimeout(() => { try { if (!PANEL) marcarFijos(); ajustarLogosPagina(); } catch (e) { /* nada */ } }, 300); });
 
     if (document.startViewTransition && !reduceMotion.matches) {
       ('requestIdleCallback' in window ? requestIdleCallback : setTimeout)(prepararMascara);

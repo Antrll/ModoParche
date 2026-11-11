@@ -3907,6 +3907,8 @@
     marcarTema();
     // Si el celular cambia a oscuro (por la noche), seguimos el cambio
     try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', marcarTema); } catch (e) { /* navegador viejo */ }
+    // El botón sol/luna de la barra (mp-tema.js) avisa: se marca el selector de Ajustes
+    document.addEventListener('mp-tema', () => { try { marcarTema(); } catch (e) { /* nada */ } });
     if (!DEMO) {
       subscribeRealtime();
     } else if (sb) {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema-panel>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -22,6 +22,7 @@
 
 <!-- Leaflet (mapas) se carga la primera vez que se abre un mapa: ver loadLeaflet() -->
 <link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="mp-mapa.css">
 <link rel="stylesheet" href="mp-verificacion.css">
 <link rel="stylesheet" href="legal.css">
@@ -113,7 +114,7 @@
       <button class="tab" data-nav="mis">Mis parches <span class="tab-count tnum" id="tab-count" hidden>0</span></button>
     </nav>
 
-    <div class="top-right">
+    <div class="top-right" data-tema-slot>
       <button class="btn btn--sm top-create" data-action="crear"><svg class="ic"><use href="#i-plus"/></svg><span>Crear parche</span></button>
       <button class="sos-btn" data-action="seguridad" aria-label="Ayuda y seguridad: llamar al 123 o enviar tu ubicación"><svg class="ic"><use href="#i-shield"/></svg><span>Ayuda</span></button>
       <button class="me-chip" data-nav="perfil" id="me-chip" aria-label="Ir a mi perfil"></button>
@@ -959,6 +960,7 @@
 <script src="mp-checkin.js"></script>
 <script src="mp-verificacion.js"></script>
 <script src="dashboard.js"></script>
+<script src="mp-tema.js" defer></script>
 <script src="legal.js" defer></script>
 </body>
 </html>

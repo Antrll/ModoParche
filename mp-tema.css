@@ -1,0 +1,60 @@
+/* =====================================================================
+   ModoParche · mp-tema.css
+   Botón sol/luna y transición de tinta. Lo usan las páginas públicas y
+   los tres paneles (usuario, negocio y admin). Los colores de cada modo
+   viven en el CSS de cada página (html.is-dark).
+===================================================================== */
+/* Botón de tema: sol que se vuelve luna */
+.tema-toggle {
+  position: relative; flex: none;
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: transparent; color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s ease, transform .15s var(--ease-out, cubic-bezier(.23, 1, .32, 1));
+}
+@media (hover: hover) and (pointer: fine) {
+  .tema-toggle:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+}
+.tema-toggle:active { transform: scale(.92); }
+.tema-toggle svg { width: 24px; height: 24px; overflow: visible; }
+.tema-toggle .tema-disco,
+.tema-toggle .tema-sombra,
+.tema-toggle .tema-rayos { transform-box: fill-box; transform-origin: center; transition: transform .5s var(--ease-out, cubic-bezier(.23, 1, .32, 1)), opacity .3s ease; }
+.tema-toggle .tema-rayos { transition-delay: .08s; }
+html.is-dark .tema-toggle .tema-disco { transform: scale(1.7); }
+html.is-dark .tema-toggle .tema-sombra { transform: translate(-14px, 14px); }
+html.is-dark .tema-toggle .tema-rayos { transform: rotate(-60deg) scale(.4); opacity: 0; transition-delay: 0s; }
+@media (max-width: 520px) { .tema-toggle { width: 40px; height: 40px; } }
+@media (prefers-reduced-motion: reduce) {
+  .tema-toggle .tema-disco, .tema-toggle .tema-sombra, .tema-toggle .tema-rayos { transition: none; }
+}
+
+/* Transición de tinta: el tema nuevo entra por una mancha que crece
+   desde el botón (View Transitions + máscara generada en un canvas). */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.mp-tinta::view-transition-new(root) {
+  -webkit-mask-image: var(--mp-tinta);
+  mask-image: var(--mp-tinta);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 0 0;
+  mask-size: 0 0;
+}
+/* Sin View Transitions: cambio de color suave */
+html.mp-tema-fade, html.mp-tema-fade *, html.mp-tema-fade *::before, html.mp-tema-fade *::after {
+  transition: background-color .35s ease, color .35s ease, border-color .35s ease, fill .35s ease !important;
+}
+
+/* Durante la tinta, los colores cambian de golpe debajo de la mancha
+   (si no, se vería la barra o los campos a medio cambiar) */
+html.mp-tema-ya *, html.mp-tema-ya *::before, html.mp-tema-ya *::after { transition: none !important; }
+
+/* En los paneles el botón va en la barra superior, del tamaño de los otros íconos */
+.tema-toggle--panel { width: 38px; height: 38px; color: var(--muted, currentColor); }
+.tema-toggle--panel svg { width: 20px; height: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .tema-toggle--panel:hover { color: var(--text, var(--ink, currentColor)); }
+}
+.tema-toggle:focus-visible { outline: 3px solid var(--orange, var(--accent, #FF5A1F)); outline-offset: 2px; }

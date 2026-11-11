@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es-CO">
+<html lang="es-CO" data-tema-panel>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#111111">
+<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
 <meta name="robots" content="noindex, nofollow">
 <title>Centro de control · ModoParche</title>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
@@ -18,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="mp-mapa.css">
 <link rel="stylesheet" href="legal.css">
 </head>
@@ -126,7 +128,7 @@
         <kbd class="kbd" aria-hidden="true">/</kbd>
         <div class="search-pop" id="search-pop" role="listbox" hidden></div>
       </div>
-      <div class="topbar-right">
+      <div class="topbar-right" data-tema-slot>
         <a class="demo-chip" id="demo-chip" href="login.html" hidden><span>Datos de ejemplo</span><b>Entrar de verdad</b></a>
         <span class="live-chip" id="live-chip" title="Conexión en tiempo real"><span class="live-dot" aria-hidden="true"></span><span id="live-text">Conectando</span></span>
         <button class="btn btn--icon-sm" data-action="refrescar" id="refresh-btn" title="Actualizar datos"><svg class="ic"><use href="#i-refresh"/></svg><span id="refresh-txt">Actualizar</span></button>
@@ -578,6 +580,7 @@
 <script src="supabase-client.js"></script>
 <script src="mp-mapa.js"></script>
 <script src="admin.js"></script>
+<script src="mp-tema.js" defer></script>
 <script src="legal.js" defer></script>
 </body>
 </html>
