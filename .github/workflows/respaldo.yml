@@ -1,0 +1,74 @@
+# =====================================================================
+# ModoParche · Respaldo automático de la base de datos (Supabase)
+#
+# Cada lunes a las 3:00 a. m. (hora de Colombia) y cuando lo corras a
+# mano (Actions > Respaldo de la base > Run workflow):
+#   1. Saca roles, estructura y datos con la CLI de Supabase.
+#   2. Los comprime y los CIFRA con AES-256 (el repo es público: sin la
+#      clave nadie puede abrir el archivo).
+#   3. Lo guarda como artefacto por 30 días.
+#
+# Secretos (GitHub > Settings > Secrets and variables > Actions):
+#   SUPABASE_DB_URL  Supabase > Connect > Session pooler (URI con la contraseña de la base)
+#   RESPALDO_CLAVE   una frase larga que solo sepa el equipo (guárdala aparte)
+#
+# Ojo: las tareas programadas de GitHub solo corren desde la rama
+# principal (main). Lleva este archivo a main para que se active.
+# Restaurar: ver README > "Respaldos de la base".
+# =====================================================================
+name: Respaldo de la base
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: respaldo-base
+  cancel-in-progress: false
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Revisar que estén los secretos
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$CLAVE" ]; then
+            echo "::error::Faltan los secretos SUPABASE_DB_URL o RESPALDO_CLAVE."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+
+      - name: Sacar y cifrar el respaldo
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          set -euo pipefail
+          FECHA=$(date -u +%F)
+          mkdir -p r
+          supabase db dump --db-url "$DB" -f r/roles.sql --role-only
+          supabase db dump --db-url "$DB" -f r/esquema.sql
+          supabase db dump --db-url "$DB" -f r/datos.sql --data-only --use-copy
+          tar -czf "respaldo-$FECHA.tgz" -C r .
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$CLAVE" \
+              --symmetric --cipher-algo AES256 -o "respaldo-modoparche-$FECHA.tgz.gpg" "respaldo-$FECHA.tgz"
+          rm -rf r "respaldo-$FECHA.tgz"
+          ls -lh respaldo-modoparche-*.gpg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-modoparche-${{ github.run_id }}
+          path: respaldo-modoparche-*.tgz.gpg
+          retention-days: 30
+          if-no-files-found: error

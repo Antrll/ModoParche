@@ -170,7 +170,7 @@ Mientras no esté configurado, activar los avisos guarda la suscripción pero no
 
 **Solo modo de pruebas.** ModoParche es un proyecto académico sin ánimo de lucro: los pagos usan las llaves de prueba de Wompi y nunca se cobra dinero real. La función `wompi-checkout` rechaza las llaves de producción (`pub_prod_`) salvo que se active a propósito el secreto `PERMITIR_COBROS_REALES=si`, cosa que no se debe hacer mientras sea un prototipo.
 
-Precio: `PRECIO_VILLAVO_CENTAVOS` (por defecto `8900000` = $89.000). Mientras Wompi no esté configurado, el panel lo dice claramente y no cobra nada.
+Precio: `PRECIO_VILLAVO_CENTAVOS` (por defecto `7990000` = $79.900). Mientras Wompi no esté configurado, el panel lo dice claramente y no cobra nada.
 
 ### Seguridad, captcha y confirmación de correo (noviembre 2026)
 
@@ -191,6 +191,25 @@ Pasos en los paneles (una sola vez, en este orden):
 6. **URL de regreso.** Authentication > URL Configuration > *Redirect URLs*: agrega `https://TU-DOMINIO/dashboard.html?confirmado=1` (o `https://TU-DOMINIO/**`).
 7. **SQL Editor:** corre `20261111120000_anti_spam.sql`.
 8. **Límites de gasto:** Vercel > Settings > Billing > *Spend Management*; Supabase > Organization > Billing > *Spend cap* encendido.
+
+### Cuenta, comunidad y seguridad (noviembre 2026, parte 2)
+
+Corre en el SQL Editor `supabase/migrations/20261112120000_cuenta_y_comunidad.sql` (después de `anti_spam`). Trae:
+
+- **Verificación en dos pasos del equipo:** el admin pide un código de 6 números (Google Authenticator, Authy…). La primera vez muestra el QR para inscribirlo. La base exige la sesión con código para todas las acciones del panel.
+- **Cédula obligatoria** en el registro con correo (solo números, 5 a 10 dígitos, sin empezar en 0), nombre solo con letras y celular colombiano. Lo valida la app y también la base. Las cuentas que ya existían sin cédula, y las que entran con Google, la escriben una sola vez en el dashboard.
+- **Bloquear personas** (desde «Reportar»), lista para desbloquear en el perfil y **cerrar sesión en todos los dispositivos**.
+- **Chat:** tapa groserías fuertes, bloquea enlaces que no sean de sitios conocidos y avisa por push (máximo uno cada 10 min por parche).
+- **Recordatorio 1 hora antes** del parche (pg_cron cada 5 min).
+- **¿Ya llegó?** El enlace `/seguro` avisa al contacto si el parche empezó hace 30 min y la persona no ha marcado su llegada.
+- **Errores en producción:** `mp-errores.js` los guarda y el admin los ve en Bitácora > Errores de la app.
+
+Pasos en los paneles:
+
+1. **Supabase > Authentication > Multi-Factor:** deja activado *TOTP*.
+2. **Login con Google:** en Google Cloud Console crea un *OAuth Client ID* (tipo Web) con la URL de redirección `https://quxqqxnowlwiahorifpy.supabase.co/auth/v1/callback`. En Supabase > Authentication > Sign In / Providers > Google pega el Client ID y el Secret. Mientras no esté activo, el botón dice que Google todavía no está disponible.
+3. **Vercel > Analytics:** toca *Enable* (Web Analytics). El script ya está en todas las páginas.
+4. **Respaldos:** en GitHub > Settings > Secrets and variables > Actions crea `SUPABASE_DB_URL` (Supabase > Connect > *Session pooler*) y `RESPALDO_CLAVE` (una frase larga que guardes aparte). Lleva `.github/workflows/respaldo.yml` a la rama `main`: desde ahí corre cada lunes. Para restaurar: descarga el artefacto, `gpg -d respaldo-modoparche-FECHA.tgz.gpg > r.tgz`, `tar xzf r.tgz` y en una base vacía corre `roles.sql`, `esquema.sql` y `datos.sql` con `psql`. Las fotos del almacenamiento y los usuarios de Auth no van en este respaldo.
 
 ### Panel de administración
 

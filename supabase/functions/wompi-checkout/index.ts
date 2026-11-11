@@ -11,7 +11,7 @@
 // Secretos (Supabase > Edge Functions > Secrets, o `supabase secrets set`):
 //   WOMPI_PUBLIC_KEY        pub_test_... o pub_prod_...
 //   WOMPI_INTEGRITY_SECRET  test_integrity_... o prod_integrity_...
-//   PRECIO_VILLAVO_CENTAVOS opcional (por defecto 8900000 = $89.000 COP)
+//   PRECIO_VILLAVO_CENTAVOS opcional (por defecto 7990000 = $79.900 COP)
 // SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY ya vienen.
 //
 // Desplegar: supabase functions deploy wompi-checkout
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     return json({ error: 'COBROS_REALES_DESACTIVADOS' }, 403);
   }
   const API = PUBLIC_KEY.startsWith('pub_prod_') ? 'https://production.wompi.co/v1' : 'https://sandbox.wompi.co/v1';
-  const PRECIOS: Record<string, number> = { villavo: Number(Deno.env.get('PRECIO_VILLAVO_CENTAVOS') ?? 8900000) };
+  const PRECIOS: Record<string, number> = { villavo: Number(Deno.env.get('PRECIO_VILLAVO_CENTAVOS') ?? 7990000) };
 
   const url = Deno.env.get('SUPABASE_URL')!;
   const anon = Deno.env.get('SUPABASE_ANON_KEY')!;

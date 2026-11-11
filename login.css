@@ -375,3 +375,9 @@
 .confirm-msg.is-ok { color: var(--ok); }
 .confirm-msg.is-error { color: var(--danger); }
 .confirm-mail .btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+/* Entrar con Google */
+.btn-google { gap: 10px; margin: 6px 0 4px; }
+.btn-google svg { width: 20px; height: 20px; flex: none; }
+.auth-o { display: flex; align-items: center; gap: 12px; margin: 14px 0 16px; color: var(--muted); font-size: var(--t-sm); font-weight: 600; }
+.auth-o::before, .auth-o::after { content: ""; flex: 1; height: 1px; background: var(--soft-2); }

@@ -15,6 +15,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#111111">
 <script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
+<script src="/mp-errores.js"></script>
+<script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
@@ -43,10 +45,13 @@
     <a href="index.html" class="logo" aria-label="ModoParche, inicio">
       <span class="logo-mark"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b><span class="logo-biz">Negocios</span>
     </a>
-    <a href="comercio.html" class="auth-back">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-      Ver planes
-    </a>
+    <div class="nav-right">
+      <button type="button" class="tema-toggle" aria-pressed="false" aria-label="Cambiar a modo oscuro" title="Modo oscuro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><mask id="mp-tema-luna"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle class="tema-sombra" cx="30" cy="-6" r="5" fill="#000"/></mask><circle class="tema-disco" cx="12" cy="12" r="5" fill="currentColor" mask="url(#mp-tema-luna)"/><g class="tema-rayos" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.2M12 20.3v2.2M1.5 12h2.2M20.3 12h2.2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/></g></svg></button>
+      <a href="comercio.html" class="auth-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        Ver planes
+      </a>
+    </div>
   </div>
 </header>
 
@@ -131,7 +136,7 @@
               </div>
               <div class="field">
                 <label for="bz-nit">NIT <span class="field-hint">(opcional)</span></label>
-                <input type="text" id="bz-nit" name="nit" inputmode="numeric" maxlength="20" pattern="[0-9.\-]{5,20}" placeholder="900.000.000-0" data-error="Usa solo números, puntos y guion.">
+                <input type="text" id="bz-nit" name="nit" inputmode="numeric" maxlength="12" data-solo="nit" pattern="[0-9]{6,10}(-[0-9])?" placeholder="900123456-7" data-error="NIT con solo números y, si quieres, el guion y el dígito de verificación (ej. 900123456-7).">
               </div>
             </div>
 
@@ -180,13 +185,13 @@
               </div>
               <div class="field">
                 <label for="bz-tel">WhatsApp del negocio</label>
-                <input type="tel" id="bz-tel" name="telefono" required inputmode="numeric" autocomplete="tel" pattern="[0-9 +()-]{7,15}" placeholder="300 000 0000" data-error="Ingresa un número de WhatsApp válido.">
+                <input type="tel" id="bz-tel" name="telefono" required inputmode="numeric" autocomplete="tel" maxlength="10" data-solo="numeros" pattern="(3[0-9]{9}|60[0-9]{8})" placeholder="3001234567" data-error="Escribe un celular (10 números que empiezan por 3) o un fijo de 10 números que empieza por 60.">
               </div>
             </div>
 
             <div class="field">
               <label for="bz-email">Correo del negocio</label>
-              <input type="email" id="bz-email" name="email" required autocomplete="email" inputmode="email" placeholder="negocio@correo.com" data-error="Escribe un correo válido.">
+              <input type="email" id="bz-email" name="email" required autocomplete="email" inputmode="email" maxlength="120" spellcheck="false" pattern="[^@\s]+@[^@\s]+\.[A-Za-z]{2,}" placeholder="negocio@correo.com" data-error="Escribe un correo válido (ej. negocio@correo.com).">
             </div>
 
             <div class="field">
@@ -229,7 +234,7 @@
               <label class="plan-opt plan-opt--star">
                 <input type="radio" name="plan" value="villavo">
                 <span class="plan-opt-body">
-                  <span class="plan-opt-top"><b>Parche Villavo</b><em>$89.000 / mes</em></span>
+                  <span class="plan-opt-top"><b>Parche Villavo</b><em>$79.900 / mes</em></span>
                   <span class="plan-opt-text">Parches ilimitados con foto, promos relámpago destacadas y métricas. Prototipo académico: el pago es de prueba y no se cobra dinero real.</span>
                   <span class="plan-opt-flag">Sin límite de parches</span>
                 </span>

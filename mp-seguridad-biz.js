@@ -72,7 +72,7 @@
         return;
       }
       mostrar(r.data || {});
-    });
+    }).catch(function () { $('#qrid-msg').textContent = 'Sin conexión. Revisa el internet e intenta de nuevo.'; });
   }
 
   document.addEventListener('click', function (e) {

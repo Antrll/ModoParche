@@ -37,12 +37,16 @@ module.exports = (req, res) => {
   .maps { background: #fff; color: #111; }
   .estado { font-size: 13px; color: rgba(255,255,255,.7); }
   .apagada { padding: 40px 20px; text-align: center; }
+  #a { margin-top: 6px; padding: 10px 12px; border-radius: 12px; font-size: 14px; font-weight: 700; line-height: 1.4; }
+  #a.alerta { background: #ff6a4a; color: #111; }
+  #a.ok { background: #1f7a4a; color: #fff; }
 </style>
 </head><body>
 <header>
   <small>ModoParche · Ubicación en vivo</small>
   <h1 id="t">Cargando…</h1>
   <p id="s"></p>
+  <p id="a" role="alert" hidden></p>
 </header>
 <div id="map" role="img" aria-label="Mapa con la ubicación"></div>
 <footer>
@@ -72,6 +76,12 @@ module.exports = (req, res) => {
         if (!d) { document.getElementById('t').textContent = 'Este enlace no existe o ya venció'; document.getElementById('s').textContent = 'Pídele a la persona que lo vuelva a compartir.'; return; }
         document.getElementById('t').textContent = d.nombre + (d.activa ? ' está compartiendo su ubicación' : ' dejó de compartir su ubicación');
         document.getElementById('s').textContent = d.parche ? 'Va al parche "' + d.parche.titulo + '" en ' + d.parche.lugar : '';
+        // ¿Ya llegó? Si el parche empezó hace más de 30 min y no ha marcado su llegada, se avisa
+        var alerta = document.getElementById('a');
+        var tarde = d.parche && d.parche.inicio ? Math.round((Date.now() - new Date(d.parche.inicio).getTime()) / 60000) : -1;
+        if (d.llego) { alerta.hidden = false; alerta.className = 'ok'; alerta.textContent = 'Ya llegó al parche.'; }
+        else if (d.activa && tarde >= 30) { alerta.hidden = false; alerta.className = 'alerta'; alerta.textContent = 'Aún no confirma que llegó. El parche empezó hace ' + (tarde < 120 ? tarde + ' min' : Math.round(tarde / 60) + ' h') + '. Escríbele o llámale; si no responde y te preocupa, llama al 123.'; }
+        else alerta.hidden = true;
         if (d.lat == null) { document.getElementById('e').textContent = d.activa ? 'Esperando la primera ubicación… (la persona debe tener ModoParche abierto)' : 'No alcanzó a enviar su ubicación.'; return; }
         var ll = [d.lat, d.lng];
         if (!pin) { pin = L.marker(ll).addTo(map); circulo = L.circle(ll, { radius: d.precision || 30, color: '#FF5A1F', weight: 1.5, fillOpacity: .12 }).addTo(map); }

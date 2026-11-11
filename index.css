@@ -540,6 +540,13 @@
   color: var(--ink);
   max-width: 30ch;
 }
+/* La diferencia de ModoParche: etiqueta naranja de la marca antes del texto */
+.spec-head .spec-dif { font-size: 1rem; line-height: 1.5; max-width: 34ch; }
+.spec-dif b {
+  display: inline-block; margin-right: 6px; padding: 1px 10px;
+  border-radius: var(--r-pill); background: var(--orange); color: #111;
+  font-size: .8125rem; font-weight: 800; letter-spacing: .02em; vertical-align: 1px;
+}
 
 .tiles {
   grid-column: 4 / 13;

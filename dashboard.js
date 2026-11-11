@@ -1326,7 +1326,8 @@
     const swipeIc = `<span class="msg-swipe-ic" aria-hidden="true">${ic('i-reply')}</span>`;
     if (m.tipo === 'bot') return `<div class="msg msg--bot" data-key="${esc(k)}">${swipeIc}<span class="bot-ic">${ic('i-bot')}</span><div class="bubble"><small>Bot del parche</small>${esc(m.texto)}${t}</div>${replyBtn}</div>`;
     const mine = m.autor === 'me';
-    const rep = !mine && m.id != null && /^\d+$/.test(String(m.id)) ? `<button class="msg-rep" data-action="reportar" data-tipo="mensaje" data-id="${m.id}" aria-label="Reportar este mensaje" title="Reportar mensaje">${ic('i-flag')}</button>` : '';
+    if (!mine && bloqueados.has(m.autor)) return ''; // personas que bloqueaste
+    const rep = !mine && m.id != null && /^\d+$/.test(String(m.id)) ? `<button class="msg-rep" data-action="reportar" data-tipo="mensaje" data-id="${m.id}" data-autor="${esc(String(m.autor))}" aria-label="Reportar este mensaje" title="Reportar mensaje">${ic('i-flag')}</button>` : '';
     const pc = state.chatId && findP(state.chatId);
     const loc = pc && pc.oficial && pc.locs[m.autor] ? `<em class="msg-loc">${esc(pc.locs[m.autor])}</em>` : '';
     return `<div class="msg ${mine ? 'msg--me' : ''}" data-key="${esc(k)}">${swipeIc}${avHTML(m.autor, 'av--sm')}<div class="bubble">${mine ? '' : `<small>${esc(personById(m.autor)?.nombre || 'Parcero')}${sello(m.autor)}${loc}</small>`}${quoteHTML(citaDe(m, list))}${esc(m.texto)}${t}</div>${replyBtn}${rep}</div>`;
@@ -2129,10 +2130,14 @@
   const modalStack = [];
   /* ---------- Reportar: llega al equipo de ModoParche ---------- */
   let reportTarget = null;
-  function openReport(tipo, id) {
-    reportTarget = { tipo, id };
+  function openReport(tipo, id, autor) {
+    // A quién se puede bloquear: la persona reportada o quien escribió el mensaje
+    const persona = tipo === 'persona' ? id : tipo === 'mensaje' ? autor : null;
+    reportTarget = { tipo, id, persona: isUuid(persona) ? persona : null };
     const form = $('#report-form'); form.reset();
     $('#report-msg').textContent = '';
+    $('#report-bloquear-row').hidden = !reportTarget.persona;
+    $('#report-solo-bloquear').hidden = !reportTarget.persona;
     const quien = tipo === 'persona' ? (personById(id)?.nombre || 'esta persona') : '';
     $('#report-title').textContent = tipo === 'mensaje' ? 'Reportar mensaje' : tipo === 'parche' ? 'Reportar parche' : `Reportar a ${quien}`;
     openModal('modal-report');
@@ -2150,8 +2155,135 @@
       $('#report-msg').textContent = /DEMASIADOS/.test(m) ? 'Ya enviaste muchos reportes hoy. Intenta mañana.' : /A_TI_MISMO/.test(m) ? 'No te puedes reportar a ti mismo.' : /PGRST202|Could not find/.test(m) ? 'Los reportes todavía no están activos. Intenta más tarde.' : 'No pudimos enviar el reporte. Intenta de nuevo.';
       return;
     }
+    const tambien = reportTarget.persona && $('#report-bloquear').checked && await bloquear(reportTarget.persona, false);
     closeModal('modal-report');
-    toast('Reporte enviado', 'Gracias por cuidar la comunidad. El equipo lo revisa pronto.', { icon: 'i-flag', ms: 5200 });
+    toast('Reporte enviado', tambien ? 'Y bloqueaste a esta persona. Gracias por cuidar la comunidad.' : 'Gracias por cuidar la comunidad. El equipo lo revisa pronto.', { icon: 'i-flag', ms: 5200 });
+  }
+
+  /* ---------- Insignia en el ícono de la app (PWA instalada) ---------- */
+  let insignia = 0;
+  function marcarInsignia(n) {
+    insignia += n;
+    try { if (navigator.setAppBadge) navigator.setAppBadge(insignia).catch(() => {}); } catch (e) { /* no soportado */ }
+  }
+  function limpiarInsignia() {
+    insignia = 0;
+    try { if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {}); } catch (e) { /* no soportado */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) limpiarInsignia(); });
+
+  /* ---------- Bloquear personas ---------- */
+  const bloqueados = new Set();
+  async function cargarBloqueados() {
+    if (DEMO || !sb) return;
+    const { data, error } = await sb.from('bloqueos').select('bloqueado');
+    if (error) { if (!/bloqueos|PGRST205|42P01/.test(error.message)) console.warn('[bloqueos]', error.message); return; }
+    bloqueados.clear(); (data || []).forEach(r => bloqueados.add(r.bloqueado));
+  }
+  async function bloquear(uid, avisar = true) {
+    if (!isUuid(uid)) return false;
+    if (DEMO || !sb) { bloqueados.add(uid); if (avisar) toast('Bloqueo de ejemplo', 'En el modo demo no se guarda.', { icon: 'i-info' }); return true; }
+    const { error } = await sb.from('bloqueos').insert({ bloqueado: uid });
+    if (error && !/23505|duplicate/i.test(`${error.code} ${error.message}`)) {
+      toast('No pudimos bloquear', /bloqueos|PGRST205|42P01/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error), { type: 'error' });
+      return false;
+    }
+    bloqueados.add(uid);
+    if (state.chatId) { try { renderChatMsgs(); } catch (e) { /* nada */ } }
+    if (avisar) toast('Persona bloqueada', 'Ya no ve tus parches y tú no ves sus mensajes. Puedes deshacerlo en tu perfil.', { icon: 'i-shield', ms: 5200 });
+    return true;
+  }
+  async function soloBloquear() {
+    if (!reportTarget || !reportTarget.persona) return;
+    const b = $('#report-solo-bloquear'); b.disabled = true;
+    const ok = await bloquear(reportTarget.persona);
+    b.disabled = false;
+    if (ok) closeModal('modal-report');
+  }
+  async function verBloqueados() {
+    const lista = $('#bloq-list'), vacio = $('#bloq-vacio');
+    lista.innerHTML = '<li class="bloq-cargando">Cargando…</li>'; vacio.hidden = true;
+    openModal('modal-bloqueos');
+    let filas = [];
+    if (DEMO || !sb) filas = [...bloqueados].map(id => ({ id, nombre: personById(id)?.nombre || 'Parcero' }));
+    else {
+      const { data, error } = await sb.rpc('mis_bloqueados');
+      if (error) { lista.innerHTML = `<li class="bloq-cargando">${/mis_bloqueados|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : esc(dbMsg(error))}</li>`; return; }
+      filas = data || [];
+    }
+    vacio.hidden = filas.length > 0;
+    lista.innerHTML = filas.map(f => `<li><span>${avHTML(f.id, 'av--sm')}<b>${esc(f.nombre)}</b></span><button type="button" class="btn btn--ghost btn--xs" data-action="desbloquear" data-id="${esc(f.id)}">Desbloquear</button></li>`).join('');
+  }
+  async function desbloquear(uid, btn) {
+    if (btn) btn.disabled = true;
+    if (!DEMO && sb) {
+      const { error } = await sb.from('bloqueos').delete().eq('bloqueado', uid);
+      if (error) { if (btn) btn.disabled = false; toast('No pudimos desbloquear', dbMsg(error), { type: 'error' }); return; }
+    }
+    bloqueados.delete(uid);
+    const li = btn && btn.closest('li'); if (li) li.remove();
+    if (!$('#bloq-list').children.length) $('#bloq-vacio').hidden = false;
+    if (state.chatId) { try { renderChatMsgs(); } catch (e) { /* nada */ } }
+    toast('Desbloqueaste a esta persona', '', { icon: 'i-check', ms: 2600 });
+  }
+
+  /* ---------- Cerrar sesión en todos los dispositivos ---------- */
+  function askLogoutTodos() {
+    $('#confirm-title').textContent = '¿Cerrar sesión en todos lados?';
+    $('#confirm-text').textContent = 'Sales de ModoParche en todos tus celulares y computadores, también en este. Tendrás que volver a entrar con tu correo y contraseña.';
+    $('#confirm-ok').textContent = 'Sí, cerrar en todos';
+    $('#confirm-ok').onclick = async () => {
+      const b = $('#confirm-ok'); b.disabled = true;
+      if (!DEMO && sb) {
+        const { error } = await sb.auth.signOut({ scope: 'global' });
+        if (error) { b.disabled = false; closeModal('modal-confirm'); toast('No pudimos cerrar las sesiones', dbMsg(error), { type: 'error' }); return; }
+      }
+      try { localStorage.removeItem('mp_ubicacion_viva'); } catch (e) { /* nada */ }
+      window.location.replace('login.html');
+    };
+    openModal('modal-confirm');
+  }
+
+  /* ---------- Completar el registro (entró con Google) ---------- */
+  let completarGoogle = false;
+  async function revisarRegistro() {
+    if (DEMO || !sb) return;
+    const { data, error } = await sb.rpc('estado_registro');
+    if (error || !data || (!data.falta && !data.falta_cedula)) return; // sin activar o todo completo
+    completarGoogle = !!data.falta;
+    $('#comp-google').hidden = !completarGoogle;
+    $('#comp-google-2').hidden = !completarGoogle;
+    $('#comp-sub').textContent = completarGoogle
+      ? 'Entraste con Google. Para usar ModoParche confirma estos datos una sola vez.'
+      : 'Ahora la cédula es obligatoria para cuidar la comunidad. Escríbela una sola vez; nadie más la ve.';
+    $('#comp-nombre').value = (data.nombre || perfil.nombre || '').slice(0, 80);
+    const max = new Date(); max.setFullYear(max.getFullYear() - 18);
+    $('#comp-fecha').max = max.toISOString().slice(0, 10);
+    const ced = $('#comp-cedula');
+    ced.oninput = () => { const v = ced.value.replace(/\D+/g, '').slice(0, 10); if (v !== ced.value) { ced.value = v; $('#comp-msg').textContent = 'La cédula va solo con números, sin puntos ni espacios.'; } };
+    openModal('modal-completar');
+  }
+  async function completarRegistro(e) {
+    e.preventDefault();
+    const msg = $('#comp-msg'), b = $('#comp-ok');
+    const nombre = $('#comp-nombre').value.trim(), fecha = $('#comp-fecha').value, cedula = $('#comp-cedula').value.trim();
+    if (!/^[1-9]\d{4,9}$/.test(cedula)) { msg.textContent = 'Escribe tu cédula solo con números: de 5 a 10 dígitos, sin empezar en 0.'; $('#comp-cedula').focus(); return; }
+    if (completarGoogle) {
+      if (!/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]{3,80}$/.test(nombre)) { msg.textContent = 'Escribe tu nombre solo con letras.'; return; }
+      if (!fecha) { msg.textContent = 'Escribe tu fecha de nacimiento.'; return; }
+      if (!$('#comp-terminos').checked || !$('#comp-datos').checked) { msg.textContent = 'Necesitamos que aceptes los términos y el tratamiento de datos.'; return; }
+    }
+    b.disabled = true; msg.textContent = '';
+    const { error } = await sb.rpc('completar_registro', completarGoogle
+      ? { p_cedula: cedula, p_fecha: fecha, p_terminos: true, p_datos: true, p_anuncios: $('#comp-anuncios').checked, p_nombre: nombre }
+      : { p_cedula: cedula });
+    b.disabled = false;
+    if (error) { msg.textContent = (error.hint) || (/23505|duplicate/.test(`${error.code} ${error.message}`) ? 'Esa cédula ya tiene una cuenta.' : dbMsg(error)); return; }
+    if (!completarGoogle) { closeModal('modal-completar'); toast('Cédula guardada', 'Cuando quieras, verifícala en tu perfil para ganar el sello.', { icon: 'i-shield' }); return; }
+    perfil.nombre = nombre; perfil.primer = nombre.split(' ')[0];
+    try { savePerfil(); } catch (e2) { /* nada */ }
+    closeModal('modal-completar');
+    toast(`¡Bienvenido, ${perfil.primer}!`, 'Tu cuenta quedó lista.', { icon: 'i-check' });
   }
 
   function openModal(id) {
@@ -2490,6 +2622,10 @@
         if (state.chatId === p.id) renderChatMsgs();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
+        // Ícono de la app con aviso de novedades (si el navegador lo permite)
+        if (document.hidden) marcarInsignia(1);
+        // Chat abierto: no hace falta avisar de lo que ya estás leyendo
+        if (r.icono === 'i-chat' && state.chatId === r.parche_id) return;
         // Las de mesa y verificación ya tienen su propio aviso
         if (r.icono !== 'i-bolt' && r.icono !== 'i-users' && r.icono !== 'i-shield') toast('Novedad en tus parches', String(r.texto).replace(/<\/?b>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'), { icon: 'i-live' });
       })
@@ -3794,7 +3930,10 @@
       case 'ver-mapa': flyToParche(id); break;
       case 'chat': openChat(id); break;
       case 'chat-back': $('#mis-wrap').classList.remove('is-chat'); state.chatId = null; replyTo = null; renderMis(); break;
-      case 'reportar': openReport(a.dataset.tipo, id); break;
+      case 'reportar': openReport(a.dataset.tipo, id, a.dataset.autor); break;
+      case 'ver-bloqueados': verBloqueados(); break;
+      case 'desbloquear': desbloquear(id, a); break;
+      case 'logout-todos': askLogoutTodos(); break;
       case 'go-inicio': go('inicio'); break;
       case 'logout': logout(); break;
       case 'mis-datos': descargarMisDatos(a); break;
@@ -3814,6 +3953,8 @@
     // En captura: los popups de Leaflet frenan la propagación del clic
     document.addEventListener('click', onClick, true);
     $('#report-form')?.addEventListener('submit', sendReport);
+    $('#report-solo-bloquear')?.addEventListener('click', soloBloquear);
+    $('#completar-form')?.addEventListener('submit', completarRegistro);
     $('#form-mesa')?.addEventListener('submit', submitMesa);
     $('#mesa-hora')?.addEventListener('input', () => syncMesa());
     $('#mesa-personas')?.addEventListener('input', () => { $('#mesa-error').textContent = ''; syncMesa(); });
@@ -3904,6 +4045,9 @@
     initApp();
     consejoPeriodico();
     if (!DEMO && ubicacionViva.token) seguirUbicacion();
+    cargarBloqueados().then(() => { if (state.chatId) renderChatMsgs(); }).catch(() => {});
+    revisarRegistro().catch(() => {});
+    limpiarInsignia();
     marcarTema();
     // Si el celular cambia a oscuro (por la noche), seguimos el cambio
     try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', marcarTema); } catch (e) { /* navegador viejo */ }

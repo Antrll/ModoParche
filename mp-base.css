@@ -312,6 +312,37 @@ ul[class], ol[class] { list-style: none; }
 .pass-toggle[aria-pressed="true"] .i-show { display: none; }
 .pass-toggle[aria-pressed="true"] .i-hide { display: block; }
 
+/* Ojos que se abren al mostrar la contraseña (mp-base.js los dibuja):
+   cerrados = línea con pestañas; abiertos = ojo con iris naranja que sigue lo que escribes */
+.pass-toggle--ojos { width: 52px; }
+.pass-toggle--ojos svg.ojos { width: 34px; height: 19px; overflow: visible; }
+.ojos .ojo-blanco { fill: #fff; stroke: var(--ink); stroke-width: 1.6; }
+.ojos .ojo-iris { fill: var(--orange); }
+.ojos .ojo-pupila { fill: #111; }
+.ojos .ojo-brillo { fill: #fff; }
+.ojos .ojo-mira { transform: translate(var(--mx, 0px), .3px); transition: transform .18s var(--ease-out); }
+.ojos .ojo-abierto {
+  transform-box: fill-box; transform-origin: center;
+  transform: scaleY(.08); opacity: 0;
+  transition: transform .34s var(--ease-out), opacity .12s ease;
+}
+.ojos .ojo-cerrado {
+  fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round;
+  transition: opacity .15s ease;
+}
+.pass-toggle--ojos[aria-pressed="true"] .ojo-abierto { transform: scaleY(1); opacity: 1; }
+.pass-toggle--ojos[aria-pressed="true"] .ojo-cerrado { opacity: 0; }
+/* Al abrir: un parpadeo, y luego parpadean solos de vez en cuando */
+.pass-toggle--ojos.is-parpadeo[aria-pressed="true"] .ojo-abierto { animation: mp-parpadeo .5s var(--ease-out) .12s, mp-parpadeo-solo 4.6s ease-in-out .8s infinite; }
+@keyframes mp-parpadeo { 0%, 100% { transform: scaleY(1); } 45% { transform: scaleY(.08); } }
+@keyframes mp-parpadeo-solo { 0%, 90%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.08); } }
+@media (hover: hover) and (pointer: fine) { .pass-toggle--ojos:hover .ojo-cerrado { transform: translateY(-.6px); } }
+.pass-toggle--ojos:active svg { transform: scale(.94); }
+@media (prefers-reduced-motion: reduce) {
+  .ojos .ojo-abierto, .ojos .ojo-mira { transition: none; animation: none !important; }
+}
+
+
 /* Checkbox */
 .check {
   display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500;
@@ -829,3 +860,10 @@ html.is-dark .tile-face img[src*="estrella-punteada"] { mix-blend-mode: normal; 
 .mp-captcha:empty { display: none; }
 .mp-captcha { display: flex; justify-content: center; margin: 4px 0 12px; min-height: 0; }
 .mp-captcha iframe { max-width: 100%; }
+
+/* Aviso breve cuando un campo quita caracteres que no aplican (data-solo) */
+.field-filtro { margin: 6px 0 0; font-size: var(--t-sm); font-weight: 600; color: var(--orange-deep); }
+.field-filtro:empty { display: none; }
+
+/* Modo oscuro: los botones naranjas llevan texto oscuro (crema sobre naranja no se lee) */
+html.is-dark :is(.btn, .btn-primary):not(.btn--ink, .btn--paper, .btn--ghost):not(.nav--orange:not(.is-scrolled) *, .mp-fijo *, body.menu-open .nav *) { --btn-fg: #111111; }

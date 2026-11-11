@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#111111">
 <script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
+<script src="/mp-errores.js"></script>
+<script defer src="/_vercel/insights/script.js"></script>
 <meta name="robots" content="noindex, nofollow">
 <title>Centro de control · ModoParche</title>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
@@ -80,7 +82,7 @@
   <aside class="sidebar" id="sidebar" aria-label="Navegación del panel">
     <div class="brand">
       <a class="brand-link" href="#resumen" aria-label="Ir al resumen">
-        <img class="brand-iso" src="src/assets/web/isotipo-negro-96.png" alt="" width="40" height="40">
+        <img class="brand-iso" src="src/assets/web/isotipo-96.png" alt="" width="40" height="40">
         <span class="brand-name"><b>Modo<i>Parche</i></b><small><svg class="ic"><use href="#i-shield"/></svg>Admin</small></span>
       </a>
       <button class="icon-btn menu-close" id="menu-close" aria-label="Cerrar menú"><svg class="ic"><use href="#i-close"/></svg></button>
@@ -129,6 +131,7 @@
         <div class="search-pop" id="search-pop" role="listbox" hidden></div>
       </div>
       <div class="topbar-right" data-tema-slot>
+        <button type="button" class="tema-toggle tema-toggle--panel" aria-pressed="false" aria-label="Cambiar a modo oscuro" title="Modo oscuro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><mask id="mp-tema-luna"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle class="tema-sombra" cx="30" cy="-6" r="5" fill="#000"/></mask><circle class="tema-disco" cx="12" cy="12" r="5" fill="currentColor" mask="url(#mp-tema-luna)"/><g class="tema-rayos" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.2M12 20.3v2.2M1.5 12h2.2M20.3 12h2.2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/></g></svg></button>
         <a class="demo-chip" id="demo-chip" href="login.html" hidden><span>Datos de ejemplo</span><b>Entrar de verdad</b></a>
         <span class="live-chip" id="live-chip" title="Conexión en tiempo real"><span class="live-dot" aria-hidden="true"></span><span id="live-text">Conectando</span></span>
         <button class="btn btn--icon-sm" data-action="refrescar" id="refresh-btn" title="Actualizar datos"><svg class="ic"><use href="#i-refresh"/></svg><span id="refresh-txt">Actualizar</span></button>
@@ -447,6 +450,11 @@
         </div>
         <div class="filters"><div class="tabs" role="tablist" id="log-tabs"></div></div>
         <ol class="timeline" id="timeline"></ol>
+        <section class="panel errores-panel" aria-labelledby="h-errores">
+          <header class="errores-head"><h2 id="h-errores">Errores de la app (7 días)</h2><button class="btn btn--icon-sm" data-action="ver-errores"><svg class="ic"><use href="#i-refresh"/></svg><span>Revisar</span></button></header>
+          <p class="sub">Lo que falló en el navegador de la gente. Sin datos personales: página, mensaje y navegador.</p>
+          <ul class="errores-list" id="errores-list"><li class="empty">Toca «Revisar» para cargarlos.</li></ul>
+        </section>
       </section>
 
       <!-- ============================ EQUIPO ============================ -->

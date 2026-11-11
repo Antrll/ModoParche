@@ -114,16 +114,80 @@
   }
 
   /* ---------- Mostrar / ocultar contraseña ---------- */
+  // Un par de ojos: cerrados (párpados naranja) mientras la clave está oculta,
+  // se abren con un parpadeo al mostrarla y las pupilas siguen lo que escribes.
+  function svgOjos() {
+    const ojo = cx => `
+      <g class="ojo-abierto">
+        <circle class="ojo-blanco" cx="${cx}" cy="10" r="7"/>
+        <g class="ojo-mira"><circle class="ojo-iris" cx="${cx}" cy="10" r="3.6"/><circle class="ojo-pupila" cx="${cx}" cy="10" r="1.9"/><circle class="ojo-brillo" cx="${cx + 1.3}" cy="8.6" r=".95"/></g>
+      </g>
+      <path class="ojo-cerrado" d="M${cx - 6} 9 q6 5.4 12 0 M${cx - 4.6} 11.6 l-1.4 2.2 M${cx} 12.6 v2.5 M${cx + 4.6} 11.6 l1.4 2.2"/>`;
+    return `<svg class="ojos" viewBox="0 0 36 20" aria-hidden="true" focusable="false">${ojo(9)}${ojo(27)}</svg>`;
+  }
+
   function initPasswords() {
     $$('.pass-toggle').forEach(btn => {
       const input = btn.parentElement.querySelector('input');
       if (!input) return;
+      try { btn.innerHTML = svgOjos(); btn.classList.add('pass-toggle--ojos'); } catch (e) { /* deja el ícono que traía */ }
+
+      // Las pupilas miran hacia donde va el cursor dentro del campo
+      const mirar = () => {
+        if (input.type === 'password') return;
+        const largo = Math.max(1, input.value.length);
+        const pos = typeof input.selectionStart === 'number' ? input.selectionStart : largo;
+        const x = (Math.min(pos, 24) / 24) * 3.4 - 2.6; // de izquierda (-2.6) a derecha (+0.8)
+        btn.style.setProperty('--mx', x.toFixed(2) + 'px');
+      };
+      ['input', 'keyup', 'click', 'focus'].forEach(ev => input.addEventListener(ev, mirar));
+      input.addEventListener('blur', () => btn.style.setProperty('--mx', '0px'));
+
       btn.addEventListener('click', () => {
         const show = input.type === 'password';
         input.type = show ? 'text' : 'password';
         btn.setAttribute('aria-pressed', String(show));
         btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        btn.classList.remove('is-parpadeo');
+        if (show && !reduceMotion) { void btn.offsetWidth; btn.classList.add('is-parpadeo'); }
+        if (show) mirar(); else btn.style.setProperty('--mx', '0px');
       });
+    });
+  }
+
+  /* ---------- Campos que solo aceptan cierto tipo de caracteres ----------
+     data-solo="numeros": cédula, celular, NIT (quita puntos, espacios, letras;
+     sirve al pegar "1.121.234.567"). data-solo="letras": nombres (sin números
+     ni símbolos raros). Si se quitó algo, se avisa un momento bajo el campo. */
+  const FILTROS = {
+    numeros: { re: /\D+/g, aviso: 'Solo números, sin puntos ni espacios.' },
+    letras: { re: /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+/g, aviso: 'Solo letras y espacios.' },
+    usuario: { re: /[^A-Za-z0-9._@]+/g, aviso: 'Solo letras, números, punto y guion bajo.' },
+    nit: { re: /[^0-9-]+/g, aviso: 'Solo números y el guion del dígito de verificación.' },
+  };
+  function initSoloCaracteres() {
+    $$('input[data-solo]').forEach(input => {
+      const f = FILTROS[input.dataset.solo];
+      if (!f) return;
+      let reloj = 0;
+      const limpiar = () => {
+        const antes = input.value;
+        let v = antes.replace(f.re, '');
+        if (input.dataset.solo === 'letras') v = v.replace(/ {2,}/g, ' ').replace(/^ +/, '');
+        if (input.maxLength > 0) v = v.slice(0, input.maxLength);
+        if (v === antes) return;
+        const pos = Math.max(0, (input.selectionStart || v.length) - (antes.length - v.length));
+        input.value = v;
+        try { input.setSelectionRange(pos, pos); } catch (e) { /* tipo sin cursor */ }
+        const field = fieldOf(input);
+        if (!field) return;
+        let nota = field.querySelector('.field-filtro');
+        if (!nota) { nota = document.createElement('p'); nota.className = 'field-filtro'; nota.setAttribute('aria-live', 'polite'); field.appendChild(nota); }
+        nota.textContent = f.aviso;
+        clearTimeout(reloj); reloj = setTimeout(() => { nota.textContent = ''; }, 2200);
+      };
+      input.addEventListener('input', limpiar);
+      input.addEventListener('blur', () => { if (input.dataset.solo === 'letras') input.value = input.value.trim(); });
     });
   }
 
@@ -209,6 +273,7 @@
     initMedia();
     initTop();
     initPasswords();
+    initSoloCaracteres();
     initLiveValidation();
     initDemoForms();
     initYear();

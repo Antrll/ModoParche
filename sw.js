@@ -6,9 +6,9 @@
    - Supabase, mapas y otros sitios nunca pasan por aquí.
    - Muestra las notificaciones push (función enviar-push).
 ===================================================================== */
-const VERSION = 'mp-v5';
+const VERSION = 'mp-v6';
 const BASICO = [
-  '/dashboard', '/dashboard.css', '/dashboard.js', '/mp-mapa.js', '/mp-mapa.css', '/supabase-client.js',
+  '/dashboard', '/offline', '/dashboard.css', '/dashboard.js', '/mp-mapa.js', '/mp-mapa.css', '/supabase-client.js',
   '/src/assets/web/isotipo-96.png', '/src/assets/web/isotipo-light-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2',
 ];
 
@@ -38,13 +38,22 @@ self.addEventListener('fetch', e => {
   e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
     if (res.ok && (req.mode === 'navigate' || /\.(js|css)$/i.test(url.pathname))) { const copia = res.clone(); caches.open(VERSION).then(c => c.put(req, copia)); }
     return res;
-  }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || (req.mode === 'navigate' ? caches.match('/dashboard') : Response.error()))));
+  }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => {
+    if (hit) return hit;
+    if (req.mode !== 'navigate') return Response.error();
+    // Sin red: el panel guardado si iba al panel; si no, la pantalla de sin conexión
+    return (url.pathname.startsWith('/dashboard') ? caches.match('/dashboard') : Promise.resolve(null))
+      .then(p => p || caches.match('/offline'))
+      .then(p => p || new Response('Sin conexión', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
+  })));
 });
 
 /* ---------- Notificaciones push ---------- */
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data && e.data.text() }; }
+  // Punto de aviso en el ícono de la app instalada (si el sistema lo permite)
+  try { if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge().catch(() => {}); } catch (err) { /* no soportado */ }
   e.waitUntil(self.registration.showNotification(d.title || 'ModoParche', {
     body: d.body || 'Hay novedades en tus parches.',
     icon: '/src/assets/Branding/favicon/android-chrome-192x192.png',

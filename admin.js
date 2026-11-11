@@ -72,7 +72,7 @@
   const catCode = c => (CATS[c] || c || '?').slice(0, 2);
   const PLANES = {
     basico: { nombre: 'Parche básico', precio: 0, txt: 'Gratis · 2 parches al mes' },
-    villavo: { nombre: 'Parche Villavo', precio: 89000, txt: '$89.000 / mes · ilimitado' },
+    villavo: { nombre: 'Parche Villavo', precio: 79900, txt: '$79.900 / mes · ilimitado' },
     sedes: { nombre: 'Varias sedes', precio: 0, txt: 'A la medida · varias sedes' },
   };
   const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -1170,6 +1170,22 @@
       : '<li class="empty empty--ok">Sin movimientos todavía.</li>';
     animateIn($('#view-registro'));
   }
+  /* ---------- Errores de la app (mp-errores.js → errores_cliente) ---------- */
+  async function verErrores() {
+    const ul = $('#errores-list');
+    if (DEMO) { ul.innerHTML = '<li class="empty">En el ejemplo no hay errores reales.</li>'; return; }
+    ul.innerHTML = '<li class="empty">Cargando…</li>';
+    const { data, error } = await sb().rpc('admin_errores', { p_limite: 100 });
+    if (error) {
+      const falta = /admin_errores|PGRST202/.test(error.message);
+      ul.innerHTML = `<li class="empty">${falta ? 'Falta correr la migración 20261112120000_cuenta_y_comunidad.sql.' : esc(errMsg(error))}</li>`;
+      return;
+    }
+    const filas = data || [];
+    ul.innerHTML = filas.length ? filas.map(e => `<li class="err"><div class="err-top"><b>${esc(e.mensaje)}</b><span class="pill">${int(e.veces)} ${Number(e.veces) === 1 ? 'vez' : 'veces'}</span></div>
+      <small>${esc(e.pagina)} · ${esc(fmtRel(e.creado_en))}${e.usuario ? ' · ' + esc(e.usuario) : ''}</small>${e.detalle ? `<pre>${esc(e.detalle)}</pre>` : ''}</li>`).join('')
+      : '<li class="empty empty--ok">Sin errores en los últimos 7 días.</li>';
+  }
   function anotar(accion, objetivo, detalle) {
     S.registro.unshift({ id: Date.now(), admin_id: ME.id, admin_nombre: ME.nombre, accion, objetivo, detalle, creado_en: new Date().toISOString() });
   }
@@ -1799,6 +1815,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       switch (a.dataset.action) {
         case 'logout': salir(); break;
         case 'refrescar': refrescarTodo(true); break;
+        case 'ver-errores': verErrores(); break;
         case 'ir-anuncio': location.hash = '#anuncios'; setTimeout(() => $('#an-texto').focus(), 300); break;
         case 'cerrar-drawer': closeDrawer(); break;
         case 'suspender': accionSuspender(id, a.dataset.on === '1', a); break;
@@ -1967,6 +1984,75 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
   }
   function hideBoot() { const b = $('#boot'); b.classList.add('is-out'); setTimeout(() => { b.hidden = true; }, 420); }
 
+  /* ---------- Verificación en dos pasos (TOTP) para el equipo ----------
+     Con la contraseña sola no se entra: hace falta el código de 6 números de
+     una app (Google Authenticator, Microsoft Authenticator, Authy…).
+     La base también lo exige (private.exigir_admin / exigir_staff piden aal2
+     cuando la cuenta ya tiene un factor). */
+  async function verificacionDosPasos(c) {
+    if (!c.auth.mfa) return true; // librería vieja: la base igual protege
+    let aal;
+    try { ({ data: aal } = await c.auth.mfa.getAuthenticatorAssuranceLevel()); } catch (e) { aal = null; }
+    if (aal && aal.currentLevel === 'aal2') return true;
+    let factores = [];
+    try { const { data } = await c.auth.mfa.listFactors(); factores = (data && data.totp) || []; } catch (e) { factores = []; }
+    const verificado = factores.find(f => f.status === 'verified');
+    if (verificado) return pedirCodigo(c, verificado.id, false);
+    // Limpia intentos de inscripción a medias para poder empezar de nuevo
+    for (const f of factores.filter(f => f.status !== 'verified')) { try { await c.auth.mfa.unenroll({ factorId: f.id }); } catch (e) { /* nada */ } }
+    let alta;
+    try {
+      const r = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'ModoParche admin ' + new Date().toISOString().slice(0, 10) });
+      if (r.error) throw r.error;
+      alta = r.data;
+    } catch (e) {
+      // MFA apagado en el proyecto: se avisa y se deja entrar para no dejar al equipo afuera
+      const m = String(e && e.message || e);
+      console.warn('[2FA]', m);
+      toast('Verificación en dos pasos no disponible', 'Actívala en Supabase > Authentication > Multi-Factor (TOTP).', { error: true });
+      return true;
+    }
+    return pedirCodigo(c, alta.id, true, alta.totp);
+  }
+
+  function pedirCodigo(c, factorId, nuevo, totp) {
+    return new Promise(resolve => {
+      const qr = nuevo && totp ? `<div class="mfa-qr"><img src="${esc(totp.qr_code)}" alt="Código QR para tu app de autenticación" width="180" height="180"></div>
+        <details class="mfa-secreto"><summary>¿No puedes escanear? Escribe esta clave</summary><code>${esc(totp.secret)}</code></details>` : '';
+      setBoot(`<b>${nuevo ? 'Activa la verificación en dos pasos' : 'Verificación en dos pasos'}</b><br>${nuevo
+        ? 'Escanea el QR con Google Authenticator, Microsoft Authenticator o Authy y escribe el código de 6 números que aparece.'
+        : 'Abre tu app de autenticación y escribe el código de 6 números de ModoParche.'}${qr}
+        <form class="mfa-form" id="mfa-form" autocomplete="off">
+          <input class="input mfa-codigo" id="mfa-codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" aria-label="Código de 6 números" required>
+          <p class="mfa-error" id="mfa-error" role="alert"></p>
+        </form>`,
+        '<button class="btn primary" type="submit" form="mfa-form" id="mfa-ok">Verificar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+      const input = $('#mfa-codigo'), err = $('#mfa-error'), ok = $('#mfa-ok');
+      setTimeout(() => input && input.focus(), 60);
+      input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 6); if (input.value.length === 6) $('#mfa-form').requestSubmit(); });
+      let intentos = 0;
+      $('#mfa-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const code = input.value.trim();
+        if (!/^\d{6}$/.test(code)) { err.textContent = 'Escribe los 6 números.'; return; }
+        ok.disabled = true; err.textContent = '';
+        const r = await c.auth.mfa.challengeAndVerify({ factorId, code }).catch(x => ({ error: x }));
+        ok.disabled = false;
+        if (r.error) {
+          intentos++;
+          const m = String(r.error.message || '');
+          err.textContent = /expired|vencid/i.test(m) ? 'Ese código ya cambió. Escribe el que aparece ahora.'
+            : /rate|too many/i.test(m) || intentos >= 5 ? 'Demasiados intentos. Espera un minuto.'
+            : 'Código incorrecto. Revisa que la hora de tu celular esté en automático.';
+          input.select();
+          return;
+        }
+        setBoot('Listo. Entrando al centro de control…');
+        resolve(true);
+      });
+    });
+  }
+
   async function bootRemoto() {
     const c = sb();
     if (!c) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" onclick="location.reload()">Reintentar</button><a class="btn" href="admin.html?demo=1">Ver con datos de ejemplo</a>'); return false; }
@@ -1987,6 +2073,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       return false;
     }
     c.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.replace('login.html'); });
+    if (!(await verificacionDosPasos(c))) return false;
     const { data: rol, error: eRol } = await c.rpc('mi_rol');
     if (eRol) {
       const falta = /PGRST202|42883|Could not find the function/i.test(`${eRol.code} ${eRol.message}`);

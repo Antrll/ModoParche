@@ -79,6 +79,26 @@ function wzPrev(currentStep) { goToStep(currentStep - 1); }
 
 /* ---------- Edad mínima y versión de los documentos legales ---------- */
 const TERMINOS_VERSION = '1.0';
+// Cédula de ciudadanía colombiana: solo números, 5 a 10 dígitos, sin empezar en 0
+const RE_CEDULA = /^[1-9]\d{4,9}$/;
+const RE_NOMBRE = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'-]{2,}( +[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'-]{2,})+$/;
+const RE_CELULAR = /^3\d{9}$/;
+const RE_CORREO = /^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/;
+const RE_INSTAGRAM = /^@?[A-Za-z0-9._]{1,30}$/;
+
+// Devuelve el primer dato malo (con su paso y mensaje) o null si todo está bien
+function validarDatosRegistro() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const nombre = v('reg-nombre'), cedula = v('reg-cedula'), tel = v('reg-tel'), correo = v('reg-email'), ig = v('reg-ig');
+  if (!RE_NOMBRE.test(nombre)) return { paso: 1, campo: 'reg-nombre', titulo: 'Revisa tu nombre', texto: 'Escribe tu nombre y apellido, solo con letras.' };
+  if (!cedula) return { paso: 1, campo: 'reg-cedula', titulo: 'Falta tu cédula', texto: 'La cédula es obligatoria. Solo la ve el equipo de ModoParche.' };
+  if (!RE_CEDULA.test(cedula)) return { paso: 1, campo: 'reg-cedula', titulo: 'Revisa tu cédula', texto: 'Solo números: de 5 a 10 dígitos, sin puntos, espacios ni letras, y sin empezar en 0.' };
+  if (tel && !RE_CELULAR.test(tel)) return { paso: 1, campo: 'reg-tel', titulo: 'Revisa tu celular', texto: 'Debe tener 10 números y empezar por 3 (ej. 3001234567).' };
+  if (!RE_CORREO.test(correo)) return { paso: 1, campo: 'reg-email', titulo: 'Revisa tu correo', texto: 'Escribe un correo válido, por ejemplo nombre@correo.com.' };
+  if (ig && !RE_INSTAGRAM.test(ig)) return { paso: 2, campo: 'reg-ig', titulo: 'Revisa tu Instagram', texto: 'Solo letras, números, punto o guion bajo (máximo 30).' };
+  return null;
+}
+
 function esMayorDeEdad(iso) {
   if (!iso) return false;
   const n = new Date(iso + 'T12:00:00'), hoy = new Date();
@@ -295,6 +315,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Entrar o crear cuenta con Google (Supabase OAuth). Después del regreso, el
+  // dashboard pide una sola vez cédula, fecha de nacimiento y autorizaciones.
+  document.querySelectorAll('[data-google]').forEach(btn => btn.addEventListener('click', async () => {
+    const status = btn.closest('#view-signup') ? 'reg-status' : 'login-status';
+    if (!sb) { noClient(status); return; }
+    setLoading(btn, true);
+    try {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: new URL('dashboard.html', location.href).href, queryParams: { prompt: 'select_account' } },
+      });
+      if (error) throw error;
+      // El navegador se va a Google; si vuelve atrás, el botón queda listo otra vez
+      setTimeout(() => setLoading(btn, false), 4000);
+    } catch (err) {
+      setLoading(btn, false);
+      const m = String(err && err.message || '');
+      if (/provider is not enabled|unsupported provider|validation_failed/i.test(m)) showStatus(status, 'error', 'Google todavía no está activo', 'Por ahora entra o crea tu cuenta con tu correo.');
+      else showStatus(status, 'error', ...authError(err));
+    }
+  }));
+
   // Confirmar el correo: panel con el correo, botón para abrirlo y reenviar con espera
   const BUZONES = [
     [/@(gmail|googlemail)\.com$/i, 'https://mail.google.com/mail/u/0/#search/from%3Amodoparcheoficial%40gmail.com', 'Abrir Gmail'],
@@ -382,6 +424,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         goToStep(2);
         return;
       }
+      // Revalida los datos por si alguien saltó pasos o editó el HTML
+      const malo = validarDatosRegistro();
+      if (malo) { showStatus('reg-status', 'error', malo.titulo, malo.texto); goToStep(malo.paso); document.getElementById(malo.campo)?.focus(); return; }
       if (!sb) { noClient('reg-status'); return; }
 
       const fd = new FormData(formReg);

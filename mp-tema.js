@@ -376,7 +376,17 @@
   </svg>`;
 
   function crearBoton() {
-    // Paneles: el lugar lo marca el HTML con data-tema-slot (va de primero)
+    // El botón ya viene en el HTML (así no mueve la barra al cargar): solo se activa
+    const existente = document.querySelector('.tema-toggle');
+    if (existente) {
+      if (!existente.querySelector('svg')) existente.innerHTML = ICONO;
+      if (!existente.dataset.listo) {
+        existente.dataset.listo = '1';
+        existente.addEventListener('click', e => { alternar(existente, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(!esOscuro()); }); });
+      }
+      return existente;
+    }
+    // Respaldo: si una página no lo trae, se crea. Paneles: el lugar lo marca data-tema-slot
     const slot = document.querySelector('[data-tema-slot]');
     if (slot) {
       let b = slot.querySelector('.tema-toggle');

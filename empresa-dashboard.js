@@ -43,7 +43,7 @@
   const CENTRO = { lat: 4.1420, lng: -73.6266 };
   const PLANES = {
     basico: { nombre: 'Parche básico', precio: 'Gratis', limite: 2, puntos: ['2 parches al mes', 'Perfil de negocio en el radar', 'Conteo de cupos llenados'] },
-    villavo: { nombre: 'Parche Villavo', precio: '$89.000 / mes', limite: Infinity, puntos: ['Parches ilimitados con foto', 'Promos relámpago destacadas', 'Prioridad en tu categoría', 'Métricas de quién llega'] },
+    villavo: { nombre: 'Parche Villavo', precio: '$79.900 / mes', limite: Infinity, puntos: ['Parches ilimitados con foto', 'Promos relámpago destacadas', 'Prioridad en tu categoría', 'Métricas de quién llega'] },
     sedes: { nombre: 'Varias sedes', precio: 'A la medida', limite: Infinity, puntos: ['Todo lo de Parche Villavo', 'Una cuenta por sede', 'Acompañamiento del equipo'] },
   };
   const CAT_NEG = { comida: 'Comida y Antojos', rumba: 'Rumba y Bares', chill: 'Planes Chill', conciertos: 'Conciertos y Toques', cultura: 'Cultura y Talleres', deportes: 'Deporte y Bienestar', pueblear: 'Turismo y Aventura', gaming: 'Gaming', rio: 'Planes Chill', pet: 'Planes Chill' };
@@ -372,7 +372,7 @@
         const p = pid && findParche(pid);
         if (!p) return;
         if (pl.eventType === 'INSERT' && pl.new.usuario_id !== ME.id) {
-          cacheNombres([pl.new.usuario_id]).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
+          cacheNombres([pl.new.usuario_id]).catch(() => {}).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
           tone('in');
         }
         recargarPronto();
@@ -1557,7 +1557,7 @@
         if (window.MPMapa.distancia(r, { lat: P.lat, lng: P.lng }) < 40) return;
         const mover = await confirmar('¿Movemos el pin del local?', `Encontramos "${campos.direccion}" en el mapa a ${(window.MPMapa.distancia(r, { lat: P.lat, lng: P.lng }) / 1000).toFixed(1).replace('.', ',')} km de donde está tu pin.`, 'Sí, moverlo');
         if (mover) moverLocal(r.lat, r.lng);
-      });
+      }).catch(() => { /* sin red: el pin se puede mover a mano en el mapa */ });
     }
     Object.assign(P, { nombre: campos.nombre, corto: initialsOf(campos.nombre), cat: campos.categoria, categoria, tema: TEMAS[categoria] || P.tema, telRaw: tel, tel: fmtTel(tel), barrio: campos.barrio, direccion: campos.direccion, desc: campos.descripcion || P.desc });
     loc().parches.forEach(p => { if (p.tipo !== 'comunidad') p.organizador = P.nombre; });
@@ -2268,7 +2268,7 @@
   // Al soltar el pin, mostramos la dirección real de ese punto
   function mostrarDireccionPin(lat, lng) {
     if (!window.MPMapa) return;
-    window.MPMapa.inverso(lat, lng).then(r => { if (r && r.texto) $('#ubic-meta').textContent = `${r.texto} · ${lat.toFixed(4)}, ${lng.toFixed(4)}`; });
+    window.MPMapa.inverso(lat, lng).then(r => { if (r && r.texto) $('#ubic-meta').textContent = `${r.texto} · ${lat.toFixed(4)}, ${lng.toFixed(4)}`; }).catch(() => { /* sin dirección: quedan las coordenadas */ });
   }
 
   /* ---------- QR de llegada para la puerta ---------- */
@@ -2526,7 +2526,7 @@
     // Si el local no tiene punto en el mapa, lo buscamos con su dirección
     setTimeout(ubicarLocalAuto, 1500);
     // Estado actual de los anuncios (link de baja)
-    if (REMOTE()) SB().from('perfiles').select('recibe_anuncios').eq('id', ME.id).maybeSingle().then(({ data }) => { if (data) $('#bz-anuncios-sw').checked = !!data.recibe_anuncios; });
+    if (REMOTE()) SB().from('perfiles').select('recibe_anuncios').eq('id', ME.id).maybeSingle().then(({ data }) => { if (data) $('#bz-anuncios-sw').checked = !!data.recibe_anuncios; }).catch(() => {});
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

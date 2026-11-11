@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#FF5A1F">
 <title>Mi panel · ModoParche</title>
 <script>(function(){var t='sistema';try{t=localStorage.getItem('mp_tema')||'sistema';}catch(e){}var d=t==='oscuro'||(t!=='claro'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('is-dark');})();</script>
+<script src="/mp-errores.js"></script>
+<script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
@@ -115,6 +117,7 @@
     </nav>
 
     <div class="top-right" data-tema-slot>
+      <button type="button" class="tema-toggle tema-toggle--panel" aria-pressed="false" aria-label="Cambiar a modo oscuro" title="Modo oscuro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><mask id="mp-tema-luna"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle class="tema-sombra" cx="30" cy="-6" r="5" fill="#000"/></mask><circle class="tema-disco" cx="12" cy="12" r="5" fill="currentColor" mask="url(#mp-tema-luna)"/><g class="tema-rayos" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.2M12 20.3v2.2M1.5 12h2.2M20.3 12h2.2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/></g></svg></button>
       <button class="btn btn--sm top-create" data-action="crear"><svg class="ic"><use href="#i-plus"/></svg><span>Crear parche</span></button>
       <button class="sos-btn" data-action="seguridad" aria-label="Ayuda y seguridad: llamar al 123 o enviar tu ubicación"><svg class="ic"><use href="#i-shield"/></svg><span>Ayuda</span></button>
       <button class="me-chip" data-nav="perfil" id="me-chip" aria-label="Ir a mi perfil"></button>
@@ -378,6 +381,14 @@
         <div class="pv-row">
           <span><b>Descargar mis datos</b><small>Todo lo que tenemos de tu cuenta, en un archivo.</small></span>
           <button type="button" class="btn btn--ghost btn--xs" data-action="mis-datos"><svg class="ic"><use href="#i-arrow"/></svg> Descargar</button>
+        </div>
+        <div class="pv-row">
+          <span><b>Personas que bloqueaste</b><small>No ven tus parches ni pueden unirse, y tú no ves sus mensajes.</small></span>
+          <button type="button" class="btn btn--ghost btn--xs" data-action="ver-bloqueados">Ver</button>
+        </div>
+        <div class="pv-row">
+          <span><b>Cerrar sesión en todos lados</b><small>Sales de ModoParche en todos tus celulares y computadores. Útil si perdiste uno.</small></span>
+          <button type="button" class="btn btn--ghost btn--xs" data-action="logout-todos"><svg class="ic"><use href="#i-logout"/></svg> Cerrar</button>
         </div>
         <div class="pv-row">
           <span><b>Borrar mi cuenta</b><small>Se borran tu perfil, tus datos y los parches que creaste. No se puede deshacer.</small></span>
@@ -722,12 +733,59 @@
       </fieldset>
       <label class="sr-only" for="report-detalle">Detalles</label>
       <textarea class="input" id="report-detalle" maxlength="500" rows="3" placeholder="Detalles (opcional): qué pasó, cuándo, en qué parche"></textarea>
+      <label class="report-bloquear" id="report-bloquear-row" hidden>
+        <input type="checkbox" id="report-bloquear">
+        <span><b>También bloquear a esta persona</b><small>No verá tus parches ni podrá unirse, y tú dejas de ver sus mensajes.</small></span>
+      </label>
       <p class="report-msg" id="report-msg" role="alert"></p>
       <div class="form-actions form-actions--split">
         <button class="btn btn--ghost" type="button" data-close>Cancelar</button>
         <button class="btn btn--danger" type="submit" id="report-send">Enviar reporte</button>
       </div>
+      <button class="btn btn--ghost btn--block report-solo-bloquear" type="button" id="report-solo-bloquear" hidden>Solo bloquear, sin reportar</button>
       <p class="report-sos">Si estás en peligro ahora mismo, llama a la línea <b>123</b>.</p>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: personas bloqueadas -->
+<div class="modal" id="modal-bloqueos" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="bloq-title">
+    <div class="bloqueos">
+      <h2 class="modal-title" id="bloq-title">Personas que bloqueaste</h2>
+      <ul class="bloq-list" id="bloq-list" aria-live="polite"></ul>
+      <p class="bloq-vacio" id="bloq-vacio" hidden>No has bloqueado a nadie. Puedes hacerlo desde «Reportar» en el chat o en la lista de asistentes.</p>
+      <div class="form-actions"><button class="btn btn--ghost" type="button" data-close>Listo</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: completar el registro (cuentas que entraron con Google) -->
+<div class="modal" id="modal-completar" hidden>
+  <div class="modal-backdrop"></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="comp-title">
+    <form class="completar" id="completar-form" novalidate>
+      <h2 class="modal-title" id="comp-title">Un último paso</h2>
+      <p class="report-sub" id="comp-sub">Para usar ModoParche confirma estos datos una sola vez.</p>
+      <div class="comp-google" id="comp-google">
+        <label class="comp-field"><span>Tu nombre</span><input class="input" id="comp-nombre" maxlength="80" autocomplete="name"></label>
+      </div>
+      <label class="comp-field"><span>Cédula de ciudadanía</span>
+        <input class="input tnum" id="comp-cedula" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="Ej. 1121234567" required>
+        <small>Solo números, sin puntos. Nadie más la ve. Luego podrás verificarla en tu perfil y ganar el sello de verificado.</small>
+      </label>
+      <div class="comp-google" id="comp-google-2">
+        <label class="comp-field"><span>Fecha de nacimiento</span><input class="input" type="date" id="comp-fecha" autocomplete="bday"><small>Solo para mayores de 18. No se muestra a nadie.</small></label>
+        <label class="report-bloquear"><input type="checkbox" id="comp-terminos"><span>Leí y acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos de uso</a>.</span></label>
+        <label class="report-bloquear"><input type="checkbox" id="comp-datos"><span>Autorizo el tratamiento de mis datos según la <a href="privacidad.html" target="_blank" rel="noopener">Política de privacidad</a> (Ley 1581 de 2012).</span></label>
+        <label class="report-bloquear"><input type="checkbox" id="comp-anuncios"><span>Quiero recibir novedades de ModoParche. <small>Opcional.</small></span></label>
+      </div>
+      <p class="report-msg" id="comp-msg" role="alert"></p>
+      <div class="form-actions form-actions--split">
+        <button class="btn btn--ghost" type="button" data-action="logout">Salir</button>
+        <button class="btn" type="submit" id="comp-ok">Entrar a mi radar</button>
+      </div>
     </form>
   </div>
 </div>

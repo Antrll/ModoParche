@@ -22,8 +22,31 @@
     return;
   }
 
+  // Con mala señal una petición puede quedarse colgada para siempre ("cargando…"
+  // eterno). Se corta a los 20 s (60 s para subir fotos) y la app muestra el
+  // error normal ("Sin conexión. Revisa tu internet.").
+  function fetchConLimite(url, opciones) {
+    if (typeof AbortController === 'undefined') return fetch(url, opciones);
+    var ctrl = new AbortController();
+    var externo = opciones && opciones.signal;
+    if (externo) {
+      if (externo.aborted) ctrl.abort();
+      else externo.addEventListener('abort', function () { ctrl.abort(); }, { once: true });
+    }
+    var largo = /\/storage\/v1\/object|\/functions\/v1\//.test(String(url)) ? 60000 : 20000;
+    var reloj = setTimeout(function () { ctrl.abort(); }, largo);
+    var o = Object.assign({}, opciones, { signal: ctrl.signal });
+    return fetch(url, o).then(function (r) { clearTimeout(reloj); return r; }, function (e) {
+      clearTimeout(reloj);
+      // Mensaje que los manejadores de la app ya reconocen como "sin conexión"
+      if (e && e.name === 'AbortError' && !(externo && externo.aborted)) throw new TypeError('Failed to fetch (tiempo de espera agotado)');
+      throw e;
+    });
+  }
+
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    global: { fetch: fetchConLimite },
   });
   window.mpSupabase = sb;
 
