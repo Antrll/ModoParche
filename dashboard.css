@@ -2156,3 +2156,45 @@ html.is-dark .create-panel .form-actions { background: rgba(24,24,27,.94); }
 
 /* Modo oscuro: el texto sobre naranja y oliva sigue oscuro para que se lea */
 html.is-dark { --on-orange: #111111; }
+
+/* =====================================================================
+   Perfil por secciones: cuenta, vínculos, dispositivos
+===================================================================== */
+.pgroup {
+  grid-column: 1 / -1; margin: 14px 4px -4px;
+  font-family: var(--font-body); font-size: .8125rem; font-weight: 800;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.profile > .pgroup:first-child { margin-top: 0; }
+.fact-mail { position: relative; }
+.fact-act { margin-top: 4px; font-size: .8125rem; }
+.mail-change { display: grid; gap: 8px; margin: -4px 0 16px; padding: 14px; border-radius: var(--r-sm); background: var(--soft); }
+.mail-change[hidden] { display: none; }
+.mail-change label { font-weight: 700; font-size: .875rem; }
+.mail-change-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.mail-change .field-msg { margin: 0; font-size: .8125rem; color: var(--muted); }
+.mail-change .field-msg.is-error, .field-msg.is-error { color: var(--danger); font-weight: 600; }
+@media (max-width: 520px) { .mail-change-row { grid-template-columns: 1fr; } }
+
+.link-card, .devices-card { display: grid; gap: 4px; }
+.link-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.link-ic { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--soft); flex: none; }
+.link-ic svg { width: 20px; height: 20px; }
+.link-ic--ig { color: #d62976; }
+.link-row small a { color: var(--orange-deep); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.link-card .mail-change { margin: 6px 0 4px; }
+
+.devices { display: grid; gap: 2px; margin: 4px 0 8px; padding: 0; list-style: none; }
+.device { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.device:first-child { border-top: 0; }
+.device-ic { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--soft); color: var(--ink); }
+.device-ic .ic { width: 20px; height: 20px; }
+.device.is-actual .device-ic { background: var(--ok-soft); color: var(--ok); }
+.device-txt { display: grid; gap: 2px; min-width: 0; }
+.device-txt b { font-size: .9375rem; }
+.device-txt b em { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-style: normal; font-size: .6875rem; font-weight: 800; vertical-align: 2px; }
+.device-txt small { color: var(--muted); font-size: .8125rem; overflow-wrap: anywhere; }
+.devices-msg { padding: 10px 0; color: var(--muted); font-size: .875rem; }
+/* Insignias a todo el ancho: sin hueco al lado de la tarjeta de verificación */
+.badges-card { grid-column: 1 / -1; }
+.badges-card .badges { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }

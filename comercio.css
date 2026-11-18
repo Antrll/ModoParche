@@ -68,7 +68,7 @@
   max-width: 520px;
 }
 .biz-facts div {
-  background: #1a1a1e;
+  background: color-mix(in srgb, var(--ink) 94%, var(--paper));
   padding: 20px 22px;
   display: grid;
   gap: 6px;
@@ -393,7 +393,7 @@
 }
 .biz-join-copy { position: relative; z-index: 2; display: grid; gap: 18px; justify-items: start; }
 .biz-join-copy h2 { font-size: var(--t-xl); line-height: .9; }
-.biz-join-copy > p { color: rgba(255,255,255,.86); max-width: 44ch; }
+.biz-join-copy > p { color: color-mix(in srgb, var(--paper) 86%, transparent); max-width: 44ch; }
 .biz-join-steps { display: grid; gap: 10px; width: 100%; counter-reset: paso; }
 .biz-join-steps li {
   counter-increment: paso;
@@ -402,7 +402,7 @@
   gap: 14px;
   align-items: center;
   padding: 14px 16px;
-  background: #1c1c1f;
+  background: color-mix(in srgb, var(--ink) 93%, var(--paper));
   border-radius: var(--r);
 }
 .biz-join-steps li::before {
@@ -418,7 +418,7 @@
   border-radius: 50%;
 }
 .biz-join-steps b { display: block; }
-.biz-join-steps span { font-size: var(--t-sm); color: rgba(255,255,255,.78); }
+.biz-join-steps span { font-size: var(--t-sm); color: color-mix(in srgb, var(--paper) 78%, transparent); }
 .biz-join-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 6px; }
 .biz-join-actions .link { color: var(--paper); }
 

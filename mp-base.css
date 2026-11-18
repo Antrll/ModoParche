@@ -517,7 +517,7 @@ body.menu-open .nav .lm--naranja { opacity: 0; }
   -webkit-tap-highlight-color: transparent;
 }
 @media (hover: hover) and (pointer: fine) { .nav-login:hover { background: rgba(17,17,17,.07); } }
-.nav--ink:not(.is-scrolled) .nav-login:hover { background: rgba(255,255,255,.12); }
+.nav--ink:not(.is-scrolled) .nav-login:hover { background: color-mix(in srgb, var(--paper) 12%, transparent); }
 .nav-login:active { transform: scale(.96); }
 
 .nav .btn { min-height: 46px; padding: 0 20px; font-size: var(--t-sm); }
@@ -590,7 +590,7 @@ body.menu-open .nav .lm--naranja { opacity: 0; }
 .mobile-menu-foot { position: relative; }
 .mobile-menu-foot .btn--ghost { color: var(--paper); }
 .mobile-menu-foot { display: grid; gap: 14px; }
-.mobile-menu-foot p { color: rgba(255,255,255,.78); font-size: var(--t-sm); }
+.mobile-menu-foot p { color: color-mix(in srgb, var(--paper) 78%, transparent); font-size: var(--t-sm); }
 body.menu-open { overflow: hidden; }
 body.menu-open .nav { --nav-bg: var(--ink); --nav-fg: var(--paper); }
 body.menu-open .nav .logo b { color: var(--orange); }
@@ -607,7 +607,7 @@ body.menu-open .nav .logo b { color: var(--orange); }
 .foot-mark { display: block; width: 100%; height: auto; margin-bottom: clamp(48px, 6vw, 72px); color: var(--paper); }
 .foot-mark text { font-family: var(--font-display); text-transform: uppercase; fill: var(--paper); }
 .foot-legal { display: flex; gap: 18px; flex-wrap: wrap; }
-.foot-legal a { color: rgba(255,255,255,.78); transition: color .2s ease; }
+.foot-legal a { color: color-mix(in srgb, var(--paper) 78%, transparent); transition: color .2s ease; }
 .foot-legal a:hover { color: var(--paper); }
 .foot-mark .o { fill: var(--orange); }
 
@@ -617,7 +617,7 @@ body.menu-open .nav .logo b { color: var(--orange); }
 }
 .foot-col { grid-column: span 2; display: grid; align-content: start; gap: 12px; }
 .foot-col h2 { font-family: var(--font-body); text-transform: none; font-size: var(--t-sm); font-weight: 700; letter-spacing: 0; color: var(--orange); margin-bottom: 4px; line-height: 1.3; }
-.foot-col a, .foot-col p { color: rgba(255,255,255,.86); font-size: var(--t-sm); width: fit-content; }
+.foot-col a, .foot-col p { color: color-mix(in srgb, var(--paper) 86%, transparent); font-size: var(--t-sm); width: fit-content; }
 .foot-col a { position: relative; transition: color .2s ease; }
 .foot-col a:hover { color: var(--paper); }
 .foot-col a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: var(--orange); transform: scaleX(0); transform-origin: left; transition: transform .4s var(--ease-out); }
@@ -629,7 +629,7 @@ body.menu-open .nav .logo b { color: var(--orange); }
 
 .foot-bottom {
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-  padding-top: 24px; font-size: var(--t-sm); color: rgba(255,255,255,.78);
+  padding-top: 24px; font-size: var(--t-sm); color: color-mix(in srgb, var(--paper) 78%, transparent);
 }
 .foot-top {
   display: inline-flex; align-items: center; gap: 10px;
@@ -814,11 +814,8 @@ html.is-dark {
   --shadow-lift: 0 2px 4px rgba(0,0,0,.4), 0 22px 44px -18px rgba(0,0,0,.85);
 }
 html.is-dark .mp-fijo,
-html.is-dark .tile-face,
-html.is-dark .nav--orange:not(.is-scrolled),
-html.is-dark .nav--ink:not(.is-scrolled),
-html.is-dark body.menu-open .nav,
-html.is-dark .mobile-menu {
+html.is-dark .tile--peach,
+html.is-dark .nav--orange:not(.is-scrolled) {
   --ink: #111111;
   --paper: #ffffff;
   --soft: #f4f4f5;
@@ -838,7 +835,7 @@ html.is-dark, html.is-dark .mp-fijo {
 }
 html.is-dark .field input:hover, html.is-dark .field select:hover, html.is-dark .field textarea:hover { background: var(--soft); }
 html.is-dark .field.has-error input, html.is-dark .field.has-error select, html.is-dark .field.has-error textarea { background: #2a1712; }
-@media (hover: hover) and (pointer: fine) { html.is-dark .nav.is-scrolled .nav-login:hover { background: rgba(255,255,255,.08); } }
+@media (hover: hover) and (pointer: fine) { html.is-dark .nav.is-scrolled .nav-login:hover { background: color-mix(in srgb, var(--paper) 08%, transparent); } }
 html.is-dark .nav.is-scrolled { box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 10px 30px -22px rgba(0,0,0,.9); }
 /* La estrella punteada se pinta con multiply (desaparece sobre oscuro) */
 html.is-dark .tile-face img[src*="estrella-punteada"] { mix-blend-mode: normal; }
@@ -867,3 +864,10 @@ html.is-dark .tile-face img[src*="estrella-punteada"] { mix-blend-mode: normal; 
 
 /* Modo oscuro: los botones naranjas llevan texto oscuro (crema sobre naranja no se lee) */
 html.is-dark :is(.btn, .btn-primary):not(.btn--ink, .btn--paper, .btn--ghost):not(.nav--orange:not(.is-scrolled) *, .mp-fijo *, body.menu-open .nav *) { --btn-fg: #111111; }
+
+/* Modo oscuro: texto naranja sobre los bloques que pasaron de negro a crema */
+html.is-dark .mp-naranja-texto { color: #b83709 !important; }
+/* Lo naranja y lo oliva conservan su tinta oscura (el color se hereda ya calculado del padre) */
+html.is-dark .mp-fijo, html.is-dark .sw--olive { color: #111111; }
+/* El logotipo sobre la barra que pasó de negro a crema */
+html.is-dark .nav--ink:not(.is-scrolled) .logo b { color: #b83709; }

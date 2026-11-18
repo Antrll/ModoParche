@@ -19,8 +19,6 @@
 
   const root = document.documentElement;
   const LLAVE = 'mp_tema';
-  const INK = [17, 17, 17];
-  const INK_OSCURO = [243, 241, 236]; // --ink en modo oscuro
   const NARANJA = [255, 90, 31];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -82,24 +80,30 @@
   }
 
   /* ---------- Superficies que conservan su color (.mp-fijo) ---------- */
-  // Todo lo naranja y los bloques negros grandes se quedan como en modo claro,
-  // así el texto sobre naranja sigue siendo negro y los capítulos negros no se vuelven crema.
+  // Solo lo naranja se queda como en modo claro (el texto sobre naranja sigue
+  // negro). Todo lo demás se invierte: lo negro pasa a claro y lo blanco a oscuro.
+  // Texto naranja sobre un bloque que era negro: en modo oscuro ese bloque queda
+  // crema y el naranja de marca no se lee (2,8:1). Se marca para usar el naranja
+  // profundo solo en el texto; los fondos naranjas no se tocan.
+  const TINTA = [17, 17, 17], TINTA_OSCURO = [243, 241, 236];
+  function marcarNaranjaSobreTinta() {
+    const candidatos = document.body ? document.body.querySelectorAll('*') : [];
+    for (const el of candidatos) {
+      if (el.classList.contains('mp-naranja-texto') || el.closest('svg, .nav, .mp-fijo')) continue;
+      if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+      if (!cerca(rgba(getComputedStyle(el).color), NARANJA, 4)) continue;
+      const f = fondoDetras(el);
+      if (cerca(f, TINTA, 3) || cerca(f, TINTA_OSCURO, 3)) el.classList.add('mp-naranja-texto');
+    }
+  }
+
   function marcarFijos() {
-    const ancho = window.innerWidth;
     const candidatos = document.body ? document.body.querySelectorAll('*') : [];
     for (const el of candidatos) {
       if (el.closest('.nav, .tema-toggle') || el.tagName === 'SCRIPT' || el.tagName === 'svg' || el.closest('svg')) continue;
       if (el.classList.contains('mp-fijo')) continue;
-      const cs = getComputedStyle(el);
-      const c = rgba(cs.backgroundColor);
-      if (!c || c[3] < 0.5) continue;
-      if (cerca(c, NARANJA, 4)) { el.classList.add('mp-fijo'); continue; }
-      if (cerca(c, INK, 3) || cerca(c, INK_OSCURO, 3)) {
-        const r = el.getBoundingClientRect();
-        // Capítulos anchos y tarjetas-ilustración grandes; los botones y etiquetas sí se invierten
-        const grande = (r.width >= ancho * 0.6 && r.height >= 120) || (r.width >= 200 && r.height >= 200);
-        if (grande || /^(SECTION|FOOTER|ASIDE)$/.test(el.tagName)) el.classList.add('mp-fijo');
-      }
+      const c = rgba(getComputedStyle(el).backgroundColor);
+      if (c && c[3] >= 0.5 && cerca(c, NARANJA, 4)) el.classList.add('mp-fijo');
     }
   }
 
@@ -422,7 +426,7 @@
 
   /* ---------- Inicio ---------- */
   function init() {
-    if (!PANEL) { try { marcarFijos(); } catch (e) { console.warn('[tema] superficies', e); } }
+    if (!PANEL) { try { marcarFijos(); marcarNaranjaSobreTinta(); } catch (e) { console.warn('[tema] superficies', e); } }
     try { crearBoton(); } catch (e) { console.warn('[tema] botón', e); }
     vigilarLogosBarra();
     sincronizar();

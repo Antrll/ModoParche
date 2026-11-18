@@ -19,7 +19,7 @@
 (function () {
   'use strict';
 
-  var SITE_KEY = ''; // ← Site Key PÚBLICA de Turnstile (empieza por 0x4…). Nunca la Secret Key.
+  var SITE_KEY = '0x4AAAAAAGGL8UVTzHlcNCVe'; // ← Site Key PÚBLICA de Turnstile (empieza por 0x4…). Nunca la Secret Key.
 
   var cargando = null;
   function cargar() {

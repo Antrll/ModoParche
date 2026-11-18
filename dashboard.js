@@ -1834,6 +1834,10 @@
     if (!editingPhoto) crop = Object.assign({}, FOTO_VACIA, perfil.mostrar_foto_real ? perfil.foto_encuadre : {});
     renderPhoto();
     $('#p-tel').value = perfil.tel || ''; $('#p-city').value = perfil.ciudad; $('#p-pass').value = '';
+    // Cuentas vinculadas y dispositivos (se piden aparte y no frenan el resto)
+    try { pintarVinculos(); } catch (e) { /* nada */ }
+    if (identidades === null) cargarIdentidades().then(pintarVinculos).catch(() => {});
+    if (state.view === 'perfil') cargarSesiones().catch(() => {});
     renderInsignias();
     renderVerify();
     renderRating();
@@ -2227,6 +2231,146 @@
     toast('Desbloqueaste a esta persona', '', { icon: 'i-check', ms: 2600 });
   }
 
+  /* ---------- Perfil: correo, cuentas vinculadas y dispositivos ---------- */
+  function toggleBloque(id, foco) {
+    const b = $('#' + id); if (!b) return;
+    b.hidden = !b.hidden;
+    if (!b.hidden) setTimeout(() => $('#' + foco)?.focus(), 40);
+  }
+  const RE_MAIL = /^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/;
+  async function cambiarCorreo(btn) {
+    const inp = $('#p-mail-nuevo'), msg = $('#mail-change-msg');
+    const nuevo = inp.value.trim().toLowerCase();
+    if (!RE_MAIL.test(nuevo)) { msg.textContent = 'Escribe un correo válido, por ejemplo nombre@correo.com.'; msg.classList.add('is-error'); inp.focus(); return; }
+    if (nuevo === String(perfil.mail || '').toLowerCase()) { msg.textContent = 'Ese ya es tu correo.'; msg.classList.add('is-error'); return; }
+    if (DEMO || !sb) { msg.textContent = 'En el modo demo no se cambia el correo.'; return; }
+    btn.disabled = true; msg.classList.remove('is-error'); msg.textContent = 'Enviando…';
+    const { error } = await sb.auth.updateUser({ email: nuevo }, { emailRedirectTo: new URL('dashboard.html?correo=1', location.href).href });
+    btn.disabled = false;
+    if (error) {
+      const m = String(error.message || '');
+      msg.classList.add('is-error');
+      msg.textContent = /already|registered|exists/i.test(m) ? 'Ese correo ya tiene una cuenta en ModoParche.'
+        : /rate|seconds/i.test(m) ? 'Ya te mandamos un enlace hace poco. Espera un minuto.' : dbMsg(error);
+      return;
+    }
+    msg.textContent = `Listo. Abre el enlace que te llegó a ${nuevo} (y a tu correo actual, si te llega allí también). El cambio queda hecho al confirmar.`;
+    inp.value = '';
+  }
+
+  // Google: Supabase vincula la identidad a esta misma cuenta
+  let identidades = null;
+  async function cargarIdentidades() {
+    if (DEMO || !sb || !sb.auth.getUserIdentities) { identidades = []; return; }
+    try { const { data } = await sb.auth.getUserIdentities(); identidades = (data && data.identities) || []; } catch (e) { identidades = []; }
+  }
+  function pintarVinculos() {
+    const g = (identidades || []).find(i => i.provider === 'google');
+    const btnG = $('#link-google-btn'), subG = $('#link-google-sub');
+    if (btnG) {
+      btnG.textContent = g ? 'Desvincular' : 'Vincular';
+      btnG.dataset.estado = g ? 'vinculada' : 'libre';
+      subG.textContent = g ? `Vinculada${g.identity_data && g.identity_data.email ? ' con ' + g.identity_data.email : ''}. Puedes entrar con Google.` : 'Entra con un toque usando tu cuenta de Google.';
+    }
+    const ig = String(perfil.instagram || '').replace(/^@/, '');
+    const btnI = $('#link-ig-btn'), subI = $('#link-ig-sub');
+    if (btnI) {
+      btnI.textContent = ig ? 'Cambiar' : 'Agregar';
+      subI.innerHTML = ig ? `<a href="https://www.instagram.com/${encodeURIComponent(ig)}/" target="_blank" rel="noopener noreferrer">@${esc(ig)}</a> · se ve en tu perfil de parcero.` : 'Muestra tu usuario para que tu parche te encuentre.';
+      $('#p-ig').value = ig ? '@' + ig : '';
+    }
+  }
+  async function vincularGoogle(btn) {
+    if (DEMO || !sb) { toast('Modo demo', 'Vincular Google funciona con tu cuenta real.', { icon: 'i-info' }); return; }
+    const vinculada = btn.dataset.estado === 'vinculada';
+    btn.disabled = true;
+    try {
+      if (vinculada) {
+        if ((identidades || []).length < 2) { toast('No se puede desvincular', 'Es tu única forma de entrar. Crea una contraseña primero en «Datos de la cuenta».', { type: 'error' }); return; }
+        const g = identidades.find(i => i.provider === 'google');
+        const { error } = await sb.auth.unlinkIdentity(g);
+        if (error) throw error;
+        await cargarIdentidades(); pintarVinculos();
+        toast('Google desvinculado', 'Ya no puedes entrar con Google. Usa tu correo y contraseña.', { icon: 'i-check' });
+      } else {
+        const { error } = await sb.auth.linkIdentity({ provider: 'google', options: { redirectTo: new URL('dashboard.html?vinculado=google', location.href).href } });
+        if (error) throw error; // si sale bien, el navegador se va a Google
+      }
+    } catch (err) {
+      const m = String(err && err.message || '');
+      toast('No pudimos vincular Google', /manual linking|linking is disabled/i.test(m) ? 'Falta activar «Manual linking» en Supabase (Authentication > Sign In / Providers).'
+        : /provider is not enabled|unsupported provider/i.test(m) ? 'El ingreso con Google todavía no está activo.'
+        : /already|identity_already_exists/i.test(m) ? 'Esa cuenta de Google ya está unida a otra cuenta de ModoParche.' : dbMsg(err), { type: 'error' });
+    } finally { btn.disabled = false; }
+  }
+  async function guardarInstagram(btn) {
+    const inp = $('#p-ig'), msg = $('#ig-msg');
+    const ig = inp.value.trim().replace(/^@+/, '');
+    if (ig && !/^[A-Za-z0-9._]{1,30}$/.test(ig)) { msg.textContent = 'Solo letras, números, punto o guion bajo (máximo 30).'; msg.classList.add('is-error'); return; }
+    btn.disabled = true; msg.classList.remove('is-error'); msg.textContent = '';
+    if (!DEMO && sb) {
+      const { error } = await sb.from('perfiles_privados').update({ instagram: ig || null }).eq('id', me.id);
+      if (error) { btn.disabled = false; msg.classList.add('is-error'); msg.textContent = dbMsg(error); return; }
+    }
+    btn.disabled = false;
+    perfil.instagram = ig; savePerfil(); pintarVinculos();
+    $('#ig-edit').hidden = true;
+    toast(ig ? 'Instagram guardado' : 'Quitaste tu Instagram', ig ? `@${ig}` : '', { icon: 'i-check', ms: 2600 });
+  }
+
+  // Dispositivos: las sesiones reales de Supabase (auth.sessions)
+  function nombreDispositivo(ua) {
+    ua = String(ua || '');
+    const nav = /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /SamsungBrowser/.test(ua) ? 'Samsung Internet'
+      : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Navegador';
+    const so = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android'
+      : /Windows/.test(ua) ? 'Windows' : /Mac OS X|Macintosh/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'otro sistema';
+    const icono = /iPhone|Android(?!.*Tablet)|Mobile/.test(ua) ? 'i-celu' : 'i-monitor';
+    return { txt: `${nav} en ${so}`, icono };
+  }
+  function fmtUltimaVez(iso) {
+    const d = new Date(iso); if (isNaN(d)) return '';
+    const hora = d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+    const hoy = new Date(); const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+    const mismo = (a, b) => a.toDateString() === b.toDateString();
+    if (Date.now() - d.getTime() < 5 * 60000) return 'Activo ahora';
+    if (mismo(d, hoy)) return `Hoy, ${hora}`;
+    if (mismo(d, ayer)) return `Ayer, ${hora}`;
+    return `${d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}, ${hora}`;
+  }
+  let sesionesCargadas = 0;
+  async function cargarSesiones(forzar = false) {
+    const ul = $('#devices'); if (!ul) return;
+    if (!forzar && Date.now() - sesionesCargadas < 30000) return;
+    sesionesCargadas = Date.now();
+    if (DEMO || !sb) {
+      const ua = navigator.userAgent, d = nombreDispositivo(ua);
+      ul.innerHTML = `<li class="device is-actual"><span class="device-ic">${ic(d.icono)}</span><span class="device-txt"><b>${esc(d.txt)}</b><small>Este dispositivo · Activo ahora</small></span></li>`;
+      return;
+    }
+    const { data, error } = await sb.rpc('mis_sesiones');
+    if (error) {
+      ul.innerHTML = `<li class="devices-msg">${/mis_sesiones|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : esc(dbMsg(error))}</li>`;
+      return;
+    }
+    const filas = data || [];
+    ul.innerHTML = filas.length ? filas.map(s => {
+      const d = nombreDispositivo(s.user_agent);
+      const donde = s.ip ? ` · IP ${esc(s.ip)}` : '';
+      return `<li class="device ${s.actual ? 'is-actual' : ''}"><span class="device-ic">${ic(d.icono)}</span>
+        <span class="device-txt"><b>${esc(d.txt)}${s.actual ? ' <em>Este dispositivo</em>' : ''}</b><small>${esc(fmtUltimaVez(s.ultima_vez))}${donde} · Desde ${esc(new Date(s.creada).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }))}</small></span>
+        ${s.actual ? '' : `<button type="button" class="btn btn--ghost btn--xs" data-action="sesion-cerrar" data-id="${esc(s.id)}">Cerrar</button>`}</li>`;
+    }).join('') : '<li class="devices-msg">No encontramos sesiones abiertas.</li>';
+  }
+  async function cerrarSesionDe(id, btn) {
+    if (!isUuid(id) || !sb) return;
+    btn.disabled = true;
+    const { error } = await sb.rpc('cerrar_sesion_dispositivo', { p_sesion: id });
+    if (error) { btn.disabled = false; toast('No pudimos cerrar esa sesión', dbMsg(error), { type: 'error' }); return; }
+    btn.closest('li')?.remove();
+    toast('Sesión cerrada', 'Ese dispositivo tendrá que volver a entrar con tu contraseña.', { icon: 'i-check' });
+  }
+
   /* ---------- Cerrar sesión en todos los dispositivos ---------- */
   function askLogoutTodos() {
     $('#confirm-title').textContent = '¿Cerrar sesión en todos lados?';
@@ -2435,6 +2579,7 @@
       contacto_nombre: (priv && priv.contacto_nombre) || '', contacto_tel: (priv && priv.contacto_tel) || '',
       recibe_anuncios: !!p.recibe_anuncios,
       cedula_verificada: !!(priv && priv.cedula_verificada), cedula_verificada_en: (priv && priv.cedula_verificada_en) || null,
+      instagram: (priv && priv.instagram) || '',
     });
   }
 
@@ -2658,6 +2803,15 @@
       window.location.replace('login.html' + err); return false;
     }
     me = session.user;
+    // Vuelve de confirmar el correo nuevo o de vincular Google
+    { const q = new URLSearchParams(location.search);
+      if (q.has('correo') || q.has('vinculado')) {
+        const u = new URL(location.href); u.searchParams.delete('correo'); u.searchParams.delete('vinculado');
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
+        setTimeout(() => q.has('correo')
+          ? toast('Correo actualizado', 'Desde ahora entras con ' + (me.email || 'tu correo nuevo') + '.', { icon: 'i-check', ms: 6000 })
+          : toast('Google vinculado', 'Ya puedes entrar con un toque usando Google.', { icon: 'i-check', ms: 6000 }), 900);
+      } }
     if (new URLSearchParams(location.search).has('confirmado')) {
       try { sessionStorage.removeItem('mp_confirmar'); } catch (e) { /* nada */ }
       const u = new URL(location.href); u.searchParams.delete('confirmado');
@@ -3934,6 +4088,13 @@
       case 'ver-bloqueados': verBloqueados(); break;
       case 'desbloquear': desbloquear(id, a); break;
       case 'logout-todos': askLogoutTodos(); break;
+      case 'correo-cambiar': toggleBloque('mail-change', 'p-mail-nuevo'); break;
+      case 'correo-guardar': cambiarCorreo(a); break;
+      case 'google-vincular': vincularGoogle(a); break;
+      case 'ig-editar': toggleBloque('ig-edit', 'p-ig'); break;
+      case 'ig-guardar': guardarInstagram(a); break;
+      case 'sesiones-recargar': cargarSesiones(true); break;
+      case 'sesion-cerrar': cerrarSesionDe(id, a); break;
       case 'go-inicio': go('inicio'); break;
       case 'logout': logout(); break;
       case 'mis-datos': descargarMisDatos(a); break;
