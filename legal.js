@@ -25,7 +25,7 @@
     correo: 'modoparcheoficial@gmail.com',
     correoDatos: 'modoparcheoficial@gmail.com',
     instagram: '@modoparcheoficial',
-    sitio: 'modoparche-hazel.vercel.app',
+    sitio: 'modoparche.vercel.app',
     version: '1.0',
     vigencia: '30 de octubre de 2026',
     edadMinima: '18',

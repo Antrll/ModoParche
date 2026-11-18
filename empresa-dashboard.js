@@ -638,7 +638,7 @@
     fuego: '<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><path d="M10 60c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 95c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 130c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/><path d="M10 165c25-22 45 22 70 0s45 22 70 0 45 22 70 0"/></svg>',
     dia: `<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="34"/>${Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, c = Math.cos(a), s = Math.sin(a); return `<path d="M${(110 + c * 52).toFixed(1)} ${(110 + s * 52).toFixed(1)}L${(110 + c * 100).toFixed(1)} ${(110 + s * 100).toFixed(1)}"/>`; }).join('')}</svg>`,
   };
-  const siteBase = () => /^https?:/.test(location.protocol) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://modoparche-hazel.vercel.app/';
+  const siteBase = () => /^https?:/.test(location.protocol) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://modoparche.vercel.app/';
   const localURL = L => `${siteBase()}dashboard.html?local=${L.perfil.idMP}`;
 
   function qrMatrix(text) {

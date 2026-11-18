@@ -2,6 +2,14 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:ruta*",
+      "has": [{ "type": "host", "value": "modoparche-hazel.vercel.app" }],
+      "destination": "https://modoparche.vercel.app/:ruta*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/p/:id", "destination": "/api/p?id=:id" },
     { "source": "/seguro/:t", "destination": "/api/seguro?t=:t" }

@@ -2073,7 +2073,7 @@ a.of-tk:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
 ===================================================================== */
 html.is-dark {
   color-scheme: dark;
-  --ink: #f4f4f5;
+  --ink: #ffffff;
   --paper: #18181b;
   --bg: #0e0e10;
   --soft: #232327;

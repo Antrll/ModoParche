@@ -85,7 +85,7 @@
   // Texto naranja sobre un bloque que era negro: en modo oscuro ese bloque queda
   // crema y el naranja de marca no se lee (2,8:1). Se marca para usar el naranja
   // profundo solo en el texto; los fondos naranjas no se tocan.
-  const TINTA = [17, 17, 17], TINTA_OSCURO = [243, 241, 236];
+  const TINTA = [17, 17, 17], TINTA_OSCURO = [255, 255, 255];
   function marcarNaranjaSobreTinta() {
     const candidatos = document.body ? document.body.querySelectorAll('*') : [];
     for (const el of candidatos) {
