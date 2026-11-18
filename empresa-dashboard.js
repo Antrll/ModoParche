@@ -41,11 +41,20 @@
   let ME = null;
   const REMOTE = () => !DEMO && !!ME;
   const CENTRO = { lat: 4.1420, lng: -73.6266 };
+  // Cobro por resultados: sin mensualidad. Las tarifas son las mismas de la base
+  // (private.tarifa_cliente y private.comision_pct).
   const PLANES = {
-    basico: { nombre: 'Parche básico', precio: 'Gratis', limite: 2, puntos: ['2 parches al mes', 'Perfil de negocio en el radar', 'Conteo de cupos llenados'] },
-    villavo: { nombre: 'Parche Villavo', precio: '$79.900 / mes', limite: Infinity, puntos: ['Parches ilimitados con foto', 'Promos relámpago destacadas', 'Prioridad en tu categoría', 'Métricas de quién llega'] },
-    sedes: { nombre: 'Varias sedes', precio: 'A la medida', limite: Infinity, puntos: ['Todo lo de Parche Villavo', 'Una cuenta por sede', 'Acompañamiento del equipo'] },
+    basico: { nombre: 'Parche básico', precio: 'Gratis', limite: 2, cliente: 0, pct: 0,
+      puntos: ['2 parches al mes', 'Perfil de negocio en el radar', 'Conteo de cupos llenados', '0% de comisión y sin cobro por cliente', 'Validación básica con código QR'] },
+    villavo: { nombre: 'Parche Villavo', precio: '10% o $2.500 / cliente', limite: Infinity, cliente: 2500, pct: 10,
+      puntos: ['Parches ilimitados con foto destacada', 'Promos relámpago destacadas en el radar', 'Prioridad cuando filtran tu categoría', 'Métricas de quién llega, qué día y a qué hora', '10% en paquetes cerrados redimidos', '$2.500 por cliente validado en consumo libre', '$0 fijos: sin mensualidad ni permanencia'] },
+    sedes: { nombre: 'Varias sedes', precio: '8% o $2.000 / cliente', limite: Infinity, cliente: 2000, pct: 8,
+      puntos: ['8% en paquetes cerrados redimidos', '$2.000 por cliente validado en consumo libre', 'Parches ilimitados en todas tus sedes', 'Panel central con acceso por sede', 'Métricas comparativas sede por sede', 'Acompañamiento directo del equipo'] },
   };
+  const tarifas = plan => { const p = PLANES[plan] || PLANES.basico; return { cliente: p.cliente, pct: p.pct }; };
+  // Datáfono virtual de Wompi para pagar el estado de cuenta (monto abierto)
+  const DATAFONO_WOMPI = 'https://checkout.wompi.co/l/VPOS_saHurm';
+
   const CAT_NEG = { comida: 'Comida y Antojos', rumba: 'Rumba y Bares', chill: 'Planes Chill', conciertos: 'Conciertos y Toques', cultura: 'Cultura y Talleres', deportes: 'Deporte y Bienestar', pueblear: 'Turismo y Aventura', gaming: 'Gaming', rio: 'Planes Chill', pet: 'Planes Chill' };
 
   const day0 = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -276,6 +285,7 @@
       tipo: relampago ? 'relampago' : 'oficial', titulo: r.titulo, organizador: loc().perfil.nombre,
       inicio: Date.parse(r.inicio), dur: (m.durs && m.durs[r.id]) || (relampago ? 60 : 240),
       cupos: r.cupos_max, consumo: r.costo || 0, promo: r.promo || r.descripcion || '', categoria: r.categoria,
+      modalidad: r.modalidad === 'paquete' ? 'paquete' : 'mesa', precioPaquete: r.precio_paquete || null,
       lat: r.lat, lng: r.lng, imagen: r.imagen || '', cuponId: (m.cupRel && m.cupRel[r.id]) || null, cancelado: false,
       // La llegada viene de la base (QR, GPS o marcada en la puerta)
       asistentes: miembros.filter(x => x.usuario_id !== ME.id).map(x => ({
@@ -449,7 +459,7 @@
   }
   const parchesDelMes = () => loc().parches.filter(p => p.creado && p.creadoTs >= new Date(new Date(NOW()).getFullYear(), new Date(NOW()).getMonth(), 1).getTime()).length;
   // Un plan pago vencido cuenta como básico (igual que en la base)
-  const limitePlan = () => { const P = loc().perfil; return P.plan === 'villavo' && P.planVence && P.planVence < NOW() ? PLANES.basico.limite : (PLANES[P.plan] || PLANES.villavo).limite; };
+  const limitePlan = () => (PLANES[loc().perfil.plan] || PLANES.basico).limite;
 
   const loc = () => S.locales[S.actual];
   const allLocales = () => Object.values(S.locales);
@@ -1456,25 +1466,103 @@
     $('#reviews').innerHTML = [...Lc.resenas].sort((a, b) => b.fecha - a.fecha).map(r => `<li class="review"><div class="review-top">${stars(r.estrellas)}<b>${esc(r.autor)}</b><small>${esc(fmtDia(r.fecha))}</small></div><p>${esc(r.texto)}</p><p class="on">En ${esc(r.parche)}</p></li>`).join('')
       || '<li><p class="empty">Las reseñas aparecen cuando los parceros califican tus parches.</p></li>';
     renderPlan();
+    cargarCobros().catch(() => {});
   }
 
   function renderPlan() {
-    const P = loc().perfil, cur = P.plan || 'villavo', lim = limitePlan(), usados = parchesDelMes();
-    const vence = P.planVence && cur === 'villavo' ? P.planVence : null;
-    const quedan = vence ? Math.ceil((vence - NOW()) / DAY) : null;
+    const P = loc().perfil, cur = PLANES[P.plan] ? P.plan : 'basico', lim = limitePlan(), usados = parchesDelMes();
     $('#plan-meta').textContent = lim === Infinity ? 'Parches sin límite' : `${usados} de ${lim} parches este mes`;
+    const t = tarifas(cur);
     $('#plan-box').innerHTML = `<div class="plan-now plan-now--${cur}">
         <span class="plan-now-k">Plan actual</span>
         <b>${esc(PLANES[cur].nombre)}</b><span class="plan-now-p">${esc(PLANES[cur].precio)}${cur === 'sedes' && P.sedes > 1 ? ` · ${P.sedes} sedes` : ''}</span>
-        ${vence ? `<span class="plan-vence ${quedan <= 5 ? 'is-soon' : ''}">${ic('i-clock')}${quedan > 0 ? `Pagado hasta el ${esc(fmtDiaMes(vence))} (${quedan} ${quedan === 1 ? 'día' : 'días'})` : 'Venció: renuévalo para seguir sin límite'}</span>` : ''}
         ${lim !== Infinity ? `<span class="track" role="img" aria-label="${usados} de ${lim} parches usados"><i class="in" style="width:${clamp(usados / lim, 0, 1) * 100}%"></i></span>` : ''}
-        <ul>${PLANES[cur].puntos.map(t => `<li>${ic('i-check')}${esc(t)}</li>`).join('')}</ul>
+        <ul>${PLANES[cur].puntos.map(x => `<li>${ic('i-check')}${esc(x)}</li>`).join('')}</ul>
       </div>
-      ${cur === 'villavo' && vence ? `<button class="btn primary btn--block" data-action="pagar-plan">${ic('i-card')}Renovar 30 días más</button>` : ''}
       <p class="mini-title">Cambiar de plan</p>
-      <div class="plan-switch" role="group" aria-label="Cambiar de plan">${Object.entries(PLANES).map(([k, v]) => `<button class="plan-opt-b ${k === cur ? 'is-on' : ''}" data-action="cambiar-plan" data-plan="${k}" aria-pressed="${k === cur}"><b>${esc(v.nombre)}</b><small>${esc(k === 'villavo' && cur !== 'villavo' ? 'Pagar ' + v.precio : v.precio)}</small></button>`).join('')}</div>
-      <p class="hint">Parche Villavo se paga en línea con Wompi (tarjeta, PSE, Nequi o Bancolombia), se activa apenas el pago queda aprobado y <b>no se renueva solo</b>: cada pago cubre 30 días. Como ModoParche es un prototipo académico, el pago es <b>de prueba</b> y no se cobra dinero real. Varias sedes lo ajustamos contigo.</p>
-      ${vence ? `<button class="btn ghost btn--sm plan-retracto" data-action="retracto">${ic('i-undo')}Me arrepiento de la compra</button>` : ''}`;
+      <div class="plan-switch" role="group" aria-label="Cambiar de plan">${Object.entries(PLANES).map(([k, v]) => `<button class="plan-opt-b ${k === cur ? 'is-on' : ''}" data-action="cambiar-plan" data-plan="${k}" aria-pressed="${k === cur}"><b>${esc(v.nombre)}</b><small>${esc(v.precio)}</small></button>`).join('')}</div>
+      <p class="hint">${t.cliente
+        ? `Sin mensualidad: pagas <b>${t.pct}%</b> por cada paquete redimido y <b>${money(t.cliente)}</b> por cada persona que llega a tu mesa. Si nadie llega, $0. Todo queda en «Cobros por resultados».`
+        : 'Con Parche básico no pagas comisión ni cobro por cliente. Si quieres parches ilimitados y prioridad en el radar, pásate a Parche Villavo: sigues sin mensualidad.'}</p>`;
+  }
+
+  /* ---------- Cobros por resultados (mi_cuenta_cobros) ---------- */
+  const ESTADOS_LIQ = { pendiente: 'Por pagar', pagada: 'Pagada', sin_cobro: 'Sin cobro', anulada: 'Anulada' };
+  const VALIDO_POR = { qr: 'QR del cliente', gps: 'GPS del cliente', organizador: 'marcado en la puerta', local: 'marcado por el local' };
+  const fmtPeriodo = iso => { const d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); return new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(d); };
+  let cobrosCargados = 0;
+  function cuentaDemo() {
+    const P = loc().perfil, t = tarifas(P.plan), hoy = NOW();
+    const fila = (min, tipo, cliente, titulo, personas, base, por) => ({ id: min, tipo, cliente, titulo, personas, base_cop: base, validado_por: por,
+      codigo: Math.abs(min * 7919).toString(16).slice(0, 6).toUpperCase(),
+      monto_cop: tipo === 'paquete' ? Math.round(base * t.pct / 100) : t.cliente * personas, creado_en: new Date(hoy - min * 60000).toISOString() });
+    const detalle = [fila(95, 'mesa', 'Valentina P.', 'Noche de crossover', 1, null, 'qr'), fila(1440, 'reserva', 'Kevin O.', 'Mesa de 6: botella de la casa', 4, null, 'local'),
+      fila(2900, 'paquete', 'Mafe P.', 'Cata de café de origen', 1, 35000, 'gps'), fila(4300, 'mesa', 'Andrés F.', 'Noche de crossover', 1, null, 'organizador')];
+    const total = detalle.reduce((a, x) => a + x.monto_cop, 0), clientes = detalle.reduce((a, x) => a + x.personas, 0);
+    const d0 = new Date(hoy), mesPasado = new Date(d0.getFullYear(), d0.getMonth() - 1, 1);
+    return { plan: P.plan, tarifa_cliente: t.cliente, comision_pct: t.pct, en_mora: false, demo: true,
+      mes: { periodo: new Date(d0.getFullYear(), d0.getMonth(), 1).toISOString().slice(0, 10), clientes, total, detalle },
+      liquidaciones: t.cliente ? [{ id: 1, periodo: mesPasado.toISOString().slice(0, 10), clientes: 31, total: 31 * t.cliente, referencia: 'MP-DEMO-7F3A2C', estado: 'pendiente', vence: new Date(hoy + 9 * DAY).toISOString().slice(0, 10) }] : [] };
+  }
+  async function cargarCobros(forzar = false) {
+    const box = $('#cobros-box'); if (!box) return;
+    if (!forzar && NOW() - cobrosCargados < 30000) return;
+    cobrosCargados = NOW();
+    let d;
+    if (!REMOTE()) d = cuentaDemo();
+    else {
+      let r;
+      try { r = await SB().rpc('mi_cuenta_cobros'); } catch (e) { r = { error: e }; }
+      if (r.error) {
+        cobrosCargados = 0;
+        box.innerHTML = `<p class="meta">${/mi_cuenta_cobros|PGRST202/.test(r.error.message || '') ? 'Falta activar el cobro por resultados en la base de datos (migración 20261118120000_cobro_por_resultados.sql).' : esc(errorDB(r.error).join('. '))}</p>`;
+        return;
+      }
+      d = r.data;
+    }
+    try { pintarCobros(d); } catch (e) { console.error(e); box.innerHTML = '<p class="meta">No pudimos mostrar tus cobros. Toca «Actualizar».</p>'; }
+  }
+  function pintarCobros(d) {
+    const box = $('#cobros-box'), mes = d.mes || { clientes: 0, total: 0, detalle: [] };
+    const liqs = d.liquidaciones || [], pend = liqs.filter(l => l.estado === 'pendiente'), viejas = liqs.filter(l => l.estado !== 'pendiente');
+    const tarifa = d.tarifa_cliente ? `${d.comision_pct}% por paquete · ${money(d.tarifa_cliente)} por cliente en mesa` : 'Plan básico: $0 por cliente y 0% de comisión';
+    const vencida = l => new Date(l.vence + 'T23:59:59').getTime() < NOW();
+    box.innerHTML = `
+      ${d.en_mora ? `<div class="cobro-alerta">${ic('i-alert')}<div><b>Tienes un pago vencido.</b><p>Mientras tanto tus parches no salen en el radar. Págalo abajo y avísanos para reactivarlos.</p></div></div>` : ''}
+      <div class="cobro-resumen">
+        <div><span>Este mes · ${esc(fmtPeriodo(mes.periodo || new Date(NOW()).toISOString()))}</span><b class="num">${money(mes.total || 0)}</b><small>${int(mes.clientes || 0)} ${Number(mes.clientes) === 1 ? 'cliente validado' : 'clientes validados'}</small></div>
+        <div><span>Tu tarifa</span><b class="cobro-tarifa">${esc(tarifa)}</b><small>Sin mensualidad. Si nadie llega, $0.</small></div>
+      </div>
+      ${pend.map(l => `<div class="liq">
+        <div class="liq-top"><b>Estado de cuenta de ${esc(fmtPeriodo(l.periodo))}</b><span class="pill ${vencida(l) ? 'neg' : 'warn'}">${vencida(l) ? 'Vencido' : 'Paga antes del ' + esc(fmtDiaMes(new Date(l.vence + 'T12:00:00').getTime()))}</span></div>
+        <p class="liq-total num">${money(l.total)} <small>· ${int(l.clientes)} clientes</small></p>
+        <p class="liq-ref">Referencia: <code>${esc(l.referencia)}</code> <button type="button" class="text-btn" data-action="copiar-ref" data-ref="${esc(l.referencia)}">Copiar</button></p>
+        <ol class="liq-pasos"><li>Toca «Pagar con Wompi» y escribe el valor exacto: <b>${money(l.total)}</b>.</li><li>En la descripción del pago pon la referencia <b>${esc(l.referencia)}</b>.</li><li>Al terminar toca «Ya pagué» y escribe el número de transacción que te da Wompi.</li></ol>
+        ${l.reportada_en ? `<p class="liq-ok">${ic('i-check')}Avisaste el pago (${esc(l.pago_ref || '')}). El equipo lo confirma pronto.</p>` : ''}
+        <div class="liq-acts"><a class="btn primary" href="${DATAFONO_WOMPI}" target="_blank" rel="noopener">${ic('i-card')}Pagar con Wompi</a><button type="button" class="btn" data-action="liq-reportar" data-id="${esc(l.id)}">Ya pagué</button></div>
+      </div>`).join('')}
+      <p class="mini-title">Clientes validados este mes</p>
+      ${(mes.detalle || []).length ? `<ul class="cobro-lista">${mes.detalle.map(c => `<li>
+          <span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}${c.personas > 1 ? ` y ${c.personas - 1} más` : ''}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))} · ${esc(VALIDO_POR[c.validado_por] || 'validado')} · código ${esc(c.codigo)}</small></span>
+          <span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}<small>${c.tipo === 'paquete' ? `${d.comision_pct}% de ${money(c.base_cop || 0)}` : `${c.personas} × ${money(d.tarifa_cliente)}`}</small></span>
+        </li>`).join('')}</ul>` : '<p class="meta">Todavía nadie ha llegado este mes por ModoParche. Cuando alguien llegue y lo validen (QR, GPS o en la puerta), aparece aquí.</p>'}
+      ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span></li>`).join('')}</ul>` : ''}
+      ${d.demo ? '<p class="meta">Panel de ejemplo: estos cobros no son reales.</p>' : ''}`;
+  }
+  async function reportarPago(id) {
+    const v = window.prompt('Ya pagué\n\nEscribe el número de transacción que te dio Wompi. El equipo lo revisa y marca tu estado de cuenta como pagado.', '');
+    if (v === null) return;
+    const ref = v.trim().slice(0, 60);
+    if (ref.length < 4) { toast('Falta el número', 'Escríbelo como aparece en el comprobante de Wompi.', { error: true }); return; }
+    if (!REMOTE()) { toast('Panel de ejemplo', 'En tu cuenta real el aviso le llega al equipo.'); return; }
+    const { error } = await SB().rpc('reportar_pago_liquidacion', { p_id: Number(id), p_ref: ref });
+    if (error) { const [t, dd] = errorDB(error); toast(t, dd, { error: true }); return; }
+    toast('Aviso enviado', 'El equipo confirma tu pago. Gracias por estar al día.');
+    cargarCobros(true);
+  }
+  async function copiarRef(ref) {
+    try { await navigator.clipboard.writeText(ref); toast('Referencia copiada', ref); }
+    catch (e) { toast('Cópiala a mano', ref, { error: true }); }
   }
 
   async function guardarNegocio(campos) {
@@ -1483,31 +1571,30 @@
     if (error) { const [t, d] = errorDB(error); toast(t, d, { error: true }); return false; }
     return true;
   }
-  // El plan ya no se cambia directo en la base: subir es pagando, bajar es con cambiar_a_basico()
+  // Cambiar de plan: inmediato y sin pagos por adelantado (elegir_plan en la base)
   async function cambiarPlan(plan) {
     const P = loc().perfil;
     if (!PLANES[plan] || plan === P.plan) return;
-    if (plan === 'villavo') { abrirPago(); return; }
-    if (plan === 'sedes') {
-      const ok = await confirmar('Varias sedes', 'Este plan lo ajustamos según cuántos locales tengas. Te llevamos a escribirle al equipo con los datos de tu negocio.', 'Escribir al equipo');
-      if (ok) location.href = `mailto:modoparcheoficial@gmail.com?subject=${encodeURIComponent('Plan Varias sedes · ' + P.nombre)}&body=${encodeURIComponent(`Hola, quiero el plan Varias sedes.\nNegocio: ${P.nombre}\nNIT: ${P.nit}\nWhatsApp: ${P.telRaw || ''}\nNúmero de sedes: `)}`;
-      return;
-    }
-    // Plan pagado y vigente: no se cobra solo, así que no hay nada que cancelar.
-    // Conserva los días que ya pagó (como dice pagos.html).
-    if (P.plan === 'villavo' && P.planVence && P.planVence > NOW()) {
-      await confirmar('No tienes que cancelar nada', `Parche Villavo no se renueva solo. Lo conservas hasta el ${fmtDiaMes(P.planVence)} y ese día pasas solo a Parche básico, sin cobros. Si pagaste hace menos de 5 días hábiles, puedes pedir la devolución con "Me arrepiento de la compra".`, 'Entendido');
-      return;
-    }
-    const ok = await confirmar('Cambiar a Parche básico', 'Con Parche básico puedes publicar 2 parches al mes. Lo que ya publicaste se queda.', 'Sí, cambiar');
+    const t = tarifas(plan);
+    const textos = {
+      basico: 'Con Parche básico publicas 2 parches al mes y no pagas comisión ni cobro por cliente. Lo que ya publicaste se queda.',
+      villavo: `Parches ilimitados y prioridad en el radar. Sin mensualidad: pagas ${t.pct}% por paquete redimido y ${money(t.cliente)} por cliente que llega a tu mesa.`,
+      sedes: `Tarifa preferencial: ${t.pct}% por paquete y ${money(t.cliente)} por cliente. Después te escribimos para crear el acceso de cada sede.`,
+    };
+    const ok = await confirmar(`Cambiar a ${PLANES[plan].nombre}`, textos[plan], 'Sí, cambiar');
     if (!ok) return;
     if (REMOTE()) {
-      const { error } = await SB().rpc('cambiar_a_basico');
-      if (error) { const [t, d] = errorDB(error); toast(t, d, { error: true }); return; }
+      let { error } = await SB().rpc('elegir_plan', { p_plan: plan, p_sedes: plan === 'sedes' ? Math.max(2, P.sedes || 2) : null });
+      // Base sin el modelo nuevo: bajar a básico sigue funcionando con la función vieja
+      if (error && /elegir_plan|PGRST202/.test(error.message || '') && plan === 'basico') ({ error } = await SB().rpc('cambiar_a_basico'));
+      if (error) {
+        const [tt, dd] = /elegir_plan|PGRST202/.test(error.message || '') ? ['Falta activar los planes nuevos', 'El equipo debe correr la migración del cobro por resultados.'] : errorDB(error);
+        toast(tt, dd, { error: true }); return;
+      }
     }
-    P.plan = 'basico'; P.planVence = null; P.planPendiente = null; save();
-    renderShell(); renderPlan();
-    toast('Plan actualizado', 'Ahora tienes Parche básico.');
+    P.plan = plan; P.planVence = null; P.planPendiente = null; if (plan === 'sedes') P.sedes = Math.max(2, P.sedes || 2);
+    save(); renderShell(); renderPlan(); cargarCobros(true);
+    toast('Plan actualizado', `Ahora tienes ${PLANES[plan].nombre}.`);
   }
   async function moverLocal(lat, lng) {
     const P = loc().perfil;
@@ -1644,9 +1731,28 @@
     'p-fecha': v => !v ? 'Elige la fecha.' : v < dayKey(NOW()) ? 'Esa fecha ya pasó.' : '',
     'p-hora': v => { if (!v) return 'Elige la hora.'; const f = $('#p-fecha').value; return f === dayKey(NOW()) && at(new Date(f + 'T12:00:00').getTime(), v) < NOW() ? 'Esa hora ya pasó.' : ''; },
     'p-cupos': v => { const n = Number(v); if (!Number.isInteger(n) || n < 2) return 'Mínimo 2 cupos.'; if (n > 60) return 'Máximo 60 por parche.'; const p = editId && findParche(editId); return p && n < confirmados(p) ? `Ya hay ${confirmados(p)} confirmados.` : ''; },
-    'p-consumo': v => v === '' || Number(v) < 0 ? 'Usa 0 si no hay consumo mínimo.' : '',
+    'p-consumo': v => pMod === 'paquete'
+      ? (!/^\d+$/.test(String(v)) || Number(v) < 1000 ? 'El paquete debe costar mínimo $1.000.' : Number(v) > 5000000 ? 'Máximo $5.000.000.' : '')
+      : (v === '' || Number(v) < 0 ? 'Usa 0 si no hay consumo mínimo.' : ''),
     'p-promo': v => v.trim().length < 10 ? 'Cuenta qué pasa ese día (mínimo 10 caracteres).' : '',
   };
+  /* Tipo de cobro del parche: consumo libre en mesa (tarifa por persona que llega)
+     o paquete cerrado (comisión sobre el precio, se paga en el local) */
+  let pMod = 'mesa';
+  function setModalidad(m) {
+    pMod = m === 'paquete' ? 'paquete' : 'mesa';
+    $$('#p-modalidad button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mod === pMod)));
+    $('#p-consumo-label').textContent = pMod === 'paquete' ? 'Precio del paquete (COP)' : 'Consumo por persona (COP)';
+    pintarModHint();
+  }
+  function pintarModHint() {
+    const t = tarifas(loc().perfil.plan), v = Number($('#p-consumo').value) || 0;
+    $('#p-mod-hint').innerHTML = t.cliente === 0
+      ? 'Con <b>Parche básico</b> no pagas nada por cliente ni comisión.'
+      : pMod === 'paquete'
+        ? `Combos, catas, talleres, boletas o covers. El cliente lo aparta en la app y lo <b>paga en tu local</b>. Pagas <b>${t.pct}%</b>${v >= 1000 ? ` (${money(Math.round(v * t.pct / 100))})` : ''} por cada paquete redimido.`
+        : `El cliente reserva y paga su consumo en tu caja. Pagas <b>${money(t.cliente)}</b> por cada persona que llegue y se siente. Si nadie llega, $0.`;
+  }
   function openParche(id = null, fecha = null) {
     closeMenus();
     editId = id;
@@ -1661,7 +1767,8 @@
     $('#p-hora').value = p ? hhmm(p.inicio) : (h && h.abierto ? h.open : '19:00');
     if (!p && fecha === dayKey(NOW()) && at(NOW(), $('#p-hora').value) < NOW()) $('#p-hora').value = hhmm(Math.ceil((NOW() + 30 * MIN) / (30 * MIN)) * 30 * MIN);
     $('#p-cupos').value = p ? p.cupos : 20;
-    $('#p-consumo').value = p ? p.consumo : 30000;
+    $('#p-consumo').value = p ? (p.modalidad === 'paquete' && p.precioPaquete ? p.precioPaquete : p.consumo) : 30000;
+    setModalidad(p ? p.modalidad : 'mesa');
     $('#p-promo').value = p ? p.promo : '';
     $('#p-cat').value = (p && p.categoria) || P.cat || 'comida';
     setFoto(p && p.imagen ? { url: p.imagen } : null);
@@ -1723,7 +1830,8 @@
     const bad = Object.keys(RULES_P).filter(id => !setField($('#' + id), RULES_P[id]($('#' + id).value)));
     if (bad.length) { $('#' + bad[0]).focus(); return; }
     const inicio = at(new Date($('#p-fecha').value + 'T12:00:00').getTime(), $('#p-hora').value);
-    const datos = { titulo: $('#p-titulo').value.trim(), inicio, cupos: Number($('#p-cupos').value), consumo: Number($('#p-consumo').value), promo: $('#p-promo').value.trim(), lat: dlgPos.lat, lng: dlgPos.lng, categoria: $('#p-cat').value };
+    const datos = { titulo: $('#p-titulo').value.trim(), inicio, cupos: Number($('#p-cupos').value), consumo: Number($('#p-consumo').value), promo: $('#p-promo').value.trim(), lat: dlgPos.lat, lng: dlgPos.lng, categoria: $('#p-cat').value,
+      modalidad: pMod, precioPaquete: pMod === 'paquete' ? Number($('#p-consumo').value) : null };
     if (REMOTE()) {
       const btn = $('#p-submit');
       btn.disabled = true; btn.classList.add('is-busy');
@@ -1735,10 +1843,18 @@
           titulo: datos.titulo.slice(0, 60), categoria: datos.categoria, descripcion: datos.promo.slice(0, 400), inicio: new Date(inicio).toISOString(),
           lugar: P.nombre.length >= 3 ? P.nombre.slice(0, 80) : `Local ${P.nombre}`, barrio: String(P.barrio || '').slice(0, 40), lat: datos.lat, lng: datos.lng,
           costo: datos.consumo, presupuesto: datos.consumo, cupos_max: datos.cupos, imagen, promo: datos.promo.slice(0, 200),
+          modalidad: datos.modalidad, precio_paquete: datos.precioPaquete,
         };
-        const res = editId
-          ? await SB().from('parches').update(row).eq('id', editId).select('id').single()
-          : await SB().from('parches').insert(row).select('id').single();
+        const guardar = r => editId
+          ? SB().from('parches').update(r).eq('id', editId).select('id').single()
+          : SB().from('parches').insert(r).select('id').single();
+        let res = await guardar(row);
+        // Base sin el modelo de cobro todavía: se publica igual, sin el tipo de cobro
+        if (res.error && /modalidad|precio_paquete/.test(res.error.message || '')) {
+          const { modalidad, precio_paquete, ...sinCobro } = row;
+          res = await guardar(sinCobro);
+          if (!res.error) toast('Falta activar el cobro por resultados', 'El parche se publicó, pero el tipo de cobro se guarda cuando el equipo active la migración.', { error: true });
+        }
         if (res.error) throw res.error;
         await cargarParchesRemotos();
         toast(editId ? 'Parche actualizado' : 'Parche publicado', editId ? 'Los confirmados ya ven los cambios.' : `${datos.titulo} ya está en el radar${imagen ? ' con su foto' : ''}.`);
@@ -1890,7 +2006,7 @@
       { ok: L.cupones.length > 0, txt: 'Crea tu primer cupón', sub: 'Tú eliges el regalo, la regla y cuántos entregas.', act: 'nuevo-cupon', ic: 'i-ticket' },
       { ok: (L.mesas || []).length > 0, txt: 'Lanza una promo de Modo Mesa', sub: 'Para los grupos que ya vienen juntos.', act: 'nueva-mesa', ic: 'i-table' },
     ];
-    if (P.planPendiente === 'villavo' && P.plan === 'basico') pasos.unshift({ ok: false, txt: 'Activa Parche Villavo', sub: 'Lo elegiste al registrarte. Paga en línea y se activa de una.', act: 'pagar-plan', ic: 'i-card' });
+    if (P.planPendiente && P.planPendiente !== P.plan) pasos.unshift({ ok: false, txt: `Activa ${(PLANES[P.planPendiente] || PLANES.villavo).nombre}`, sub: 'Lo elegiste al registrarte. Sin mensualidad: solo pagas por clientes que llegan.', act: 'pagar-plan', ic: 'i-card' });
     const listos = pasos.filter(p => p.ok).length;
     if (listos === pasos.length) { slot.innerHTML = ''; return; }
     slot.innerHTML = `<section class="setup" aria-labelledby="h-setup">
@@ -1972,7 +2088,7 @@
   const ESTADOS_MESA = { pendiente: ['Por confirmar', 'warn'], confirmada: ['Confirmada', 'pos'], rechazada: ['Rechazada', ''], cancelada: ['La cancelaron', ''], llego: ['Llegaron', 'pos'], no_llego: ['No llegaron', 'neg'] };
   const diasMesaTxt = dias => { const d = [...(dias || [])].sort(); if (d.length === 7) return 'Todos los días'; if (d.join() === '1,2,3,4,5') return 'Lunes a viernes'; return d.map(x => DIAS[x].slice(0, 3)).join(', '); };
   const mesaDeFila = r => ({ id: r.id, titulo: r.titulo, beneficio: r.beneficio, descripcion: r.descripcion || '', min: r.min_personas, max: r.max_personas, dias: r.dias || [], desde: String(r.hora_desde).slice(0, 5), hasta: String(r.hora_hasta).slice(0, 5), cupos: r.mesas_por_dia, activa: r.activa, vence: r.vence || '' });
-  const reservaDeFila = r => ({ id: r.id, promoId: r.promo_id, persona: persona(r.usuario_id), personas: r.personas, llegada: Date.parse(r.llegada), nota: r.nota || '', estado: r.estado, codigo: r.codigo, creado: Date.parse(r.creado_en) || NOW() });
+  const reservaDeFila = r => ({ id: r.id, promoId: r.promo_id, persona: persona(r.usuario_id), personas: r.personas, llegada: Date.parse(r.llegada), nota: r.nota || '', estado: r.estado, codigo: r.codigo, creado: Date.parse(r.creado_en) || NOW(), llegaron: r.llegaron || null, llegadaMetodo: r.llegada_metodo || null });
 
   async function cargarMesas() {
     if (!REMOTE()) return;
@@ -2003,7 +2119,9 @@
         ? `<button class="btn primary btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="confirmada">${ic('i-check')}Confirmar</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="rechazada">No puedo</button>`
         : r.estado === 'confirmada' && hoyOPasada
           ? `<button class="btn btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="llego">${ic('i-door')}Llegaron</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="no_llego">No llegaron</button>`
-          : '';
+          : r.estado === 'llego'
+            ? `<label class="mesa-llegaron">Llegaron <select class="input" data-mesa-llegaron="${r.id}" aria-label="Cuántas personas llegaron">${Array.from({ length: r.personas }, (_, k) => k + 1).map(n => `<option value="${n}" ${n === (r.llegaron || r.personas) ? 'selected' : ''}>${n}</option>`).join('')}</select> de ${r.personas}</label>${r.llegadaMetodo === 'gps' ? '<small class="mesa-gps">Marcó su llegada con GPS</small>' : ''}`
+            : '';
       return `<li class="row mesa-row">${avatar(r.persona)}
         <span class="row-main"><b>${esc(r.persona.nombre)} · ${r.personas} personas</b><small>${esc(m ? m.titulo : 'Promo de mesa')} · ${esc(fmtCuando(r.llegada))} · <span class="code">${esc(r.codigo)}</span>${r.nota ? ` · ${esc(r.nota)}` : ''}</small></span>
         <span class="pill ${cls}">${esc(txt)}</span>
@@ -2108,6 +2226,20 @@
     save();
     toast('Promo borrada', m.titulo);
     render();
+  }
+  // Cuántas personas de la reserva llegaron: es lo que se cobra en consumo libre
+  async function llegaronReserva(id, cuantos, sel) {
+    const r = (loc().reservas || []).find(x => x.id === id);
+    if (!r || !(cuantos >= 1)) return;
+    if (REMOTE()) {
+      sel.disabled = true;
+      const { error } = await SB().rpc('negocio_mesa_llegaron', { p_id: id, p_cuantos: cuantos });
+      sel.disabled = false;
+      if (error) { sel.value = String(r.llegaron || r.personas); toast('No se pudo cambiar', /negocio_mesa_llegaron|PGRST202/.test(error.message || '') ? 'Falta activar el cobro por resultados en la base de datos.' : (error.hint || error.message), { error: true }); return; }
+    }
+    r.llegaron = cuantos; save();
+    toast('Listo', `${cuantos} de ${r.personas} personas llegaron. Así queda en tus cobros.`);
+    cobrosCargados = 0;
   }
   async function estadoReserva(id, estado) {
     const r = (loc().reservas || []).find(x => x.id === id);
@@ -2343,9 +2475,10 @@
         case 'logout': logout(); break;
         case 'editar-perfil': openPerfil(); break;
         case 'cambiar-plan': cambiarPlan(a.dataset.plan); break;
-        case 'pagar-plan': abrirPago(); break;
-        case 'retracto': pedirRetracto(); break;
-        case 'pagar': pagar(); break;
+        case 'pagar-plan': cambiarPlan('villavo'); break;
+        case 'cobros-recargar': cargarCobros(true); break;
+        case 'liq-reportar': reportarPago(a.dataset.id); break;
+        case 'copiar-ref': copiarRef(a.dataset.ref); break;
         case 'cerrar-pago': siguiendoPago = null; $('#dlg-pago').close(); break;
         case 'editar-horarios': openHorarios(); break;
         case 'horario-copiar': copiarLunes(); break;
@@ -2425,6 +2558,7 @@
     // Cupones
     $('#validator').addEventListener('submit', e => { e.preventDefault(); validar($('#code-input').value); });
     document.addEventListener('change', e => { const sw = e.target.closest('[data-cupon]'); if (sw) toggleCupon(sw.dataset.cupon, sw.checked); });
+    document.addEventListener('change', e => { const sel = e.target.closest('[data-mesa-llegaron]'); if (sel) llegaronReserva(sel.dataset.mesaLlegaron, Number(sel.value), sel); });
     ['k-nombre', 'k-beneficio', 'k-regla', 'k-vigencia', 'k-limite', 'k-prefijo'].forEach(id => $('#' + id).addEventListener('input', updPreview));
 
     // Asistentes
@@ -2461,6 +2595,8 @@
     // Diálogos
     $('#form-parche').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitParche(e); });
     $('#form-parche').addEventListener('focusout', e => { const id = e.target.id; if (RULES_P[id] && e.target.value) setField(e.target, RULES_P[id](e.target.value)); });
+    $('#p-modalidad').addEventListener('click', e => { const b = e.target.closest('[data-mod]'); if (b) { setModalidad(b.dataset.mod); setField($('#p-consumo'), ''); } });
+    $('#p-consumo').addEventListener('input', pintarModHint);
     $('#form-relampago').addEventListener('submit', e => { if (e.submitter && e.submitter.value === 'cancel') return; submitRelampago(e); });
     $$('#r-dur button').forEach(b => b.addEventListener('click', () => { relDur = Number(b.dataset.min); updRelSummary(); }));
     $('#r-cupon').addEventListener('change', updRelSummary);
@@ -2517,10 +2653,15 @@
         burst(window.innerWidth / 2, window.innerHeight / 3, 46, ['#ff751f', '#86895d', '#15110e']);
       }, 400);
     }
-    // Volvió de Wompi (PSE, Bancolombia): seguimos el pago
-    if (qs.get('pago') && REMOTE()) { abrirPago(); seguirPago(qs.get('pago'), qs.get('id'), null); }
-    // Eligió un plan pago al registrarse: abrimos el pago
-    else if (REMOTE() && P.plan === 'basico' && (qs.get('pagar') === 'villavo' || (qs.has('bienvenida') && P.planPendiente === 'villavo'))) setTimeout(abrirPago, 900);
+    // Eligió Villavo o Varias sedes al registrarse: se activa de una (sin pagos por adelantado)
+    if (REMOTE() && P.planPendiente && P.planPendiente !== P.plan && PLANES[P.planPendiente]) {
+      const elegido = P.planPendiente;
+      SB().rpc('elegir_plan', { p_plan: elegido, p_sedes: elegido === 'sedes' ? Math.max(2, P.sedes || 2) : null }).then(({ error }) => {
+        if (error) { console.warn('[plan]', error.message); return; }
+        P.plan = elegido; P.planPendiente = null; save(); renderShell();
+        toast(`${PLANES[elegido].nombre} activo`, 'Sin mensualidad: solo pagas por clientes que llegan.');
+      }).catch(() => {});
+    }
     else if (qs.has('bienvenida') && !P.horarios) setTimeout(openHorarios, 1200);
     if (['bienvenida', 'pago', 'pagar', 'id', 'env'].some(k => qs.has(k)) && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
     // Si el local no tiene punto en el mapa, lo buscamos con su dirección

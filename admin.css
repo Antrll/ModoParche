@@ -1044,3 +1044,17 @@ html:not(.is-dark) .sidebar .side-live b { color: var(--accent-ink); }
 html.is-dark .ret .cell[data-l="1"], html.is-dark .ret .cell[data-l="2"],
 html.is-dark .ret .cell[data-l="3"], html.is-dark .ret .cell[data-l="4"] { color: #111; }
 html.is-dark .logo:not(.logo--fuego):not(.logo--dia) { background: var(--night); }
+
+/* Cobros: liquidaciones de los negocios */
+.title-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.liq-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.liq-lista { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.liq-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-soft); }
+.liq-main { display: grid; gap: 3px; min-width: 0; }
+.liq-main small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.liq-main code { font-family: var(--mono); font-weight: 700; }
+.liq-aviso { color: var(--positive) !important; font-weight: 600; }
+.liq-mora { color: var(--negative) !important; font-weight: 600; }
+.liq-monto { font: 400 24px/1 var(--brand); }
+.liq-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 760px) { .liq-row { grid-template-columns: 1fr auto; } .liq-acts { grid-column: 1 / -1; justify-content: flex-start; } .liq-kpis { grid-template-columns: 1fr; } }

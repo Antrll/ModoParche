@@ -42,6 +42,7 @@
     <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="1"/><circle cx="4.8" cy="12" r="1"/><circle cx="4.8" cy="17.5" r="1"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14.5 4.5h4v15h-4M10 8.5 6.5 12l3.5 3.5M6.5 12h9"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
     <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9.5 6.5 5.5 5.5-5.5 5.5"/></symbol>
@@ -93,6 +94,7 @@
       <a class="nav-item" href="#resumen" data-route="resumen"><svg class="ic"><use href="#i-overview"/></svg><span>Resumen</span><kbd>1</kbd></a>
       <a class="nav-item" href="#personas" data-route="personas"><svg class="ic"><use href="#i-users"/></svg><span>Personas</span><b class="nav-count" id="count-personas"></b><kbd>2</kbd></a>
       <a class="nav-item" href="#negocios" data-route="negocios"><svg class="ic"><use href="#i-store"/></svg><span>Negocios</span><b class="nav-count" id="count-negocios"></b><kbd>3</kbd></a>
+      <a class="nav-item" href="#cobros" data-route="cobros"><svg class="ic"><use href="#i-card"/></svg><span>Cobros</span></a>
       <a class="nav-item" href="#parches" data-route="parches"><svg class="ic"><use href="#i-calendar"/></svg><span>Parches</span><b class="nav-count" id="count-parches"></b><kbd>4</kbd></a>
       <a class="nav-item" href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-map"/></svg><span>Mapa en vivo</span><kbd>5</kbd></a>
       <p class="group-label">Cuidado de la comunidad</p>
@@ -444,6 +446,16 @@
       </section>
 
       <!-- ============================ BITÁCORA ============================ -->
+      <section class="view" id="view-cobros" aria-labelledby="h-cobros" hidden>
+        <div class="title-row">
+          <div><h1 id="h-cobros" class="display">Cobros</h1><p class="sub">Estados de cuenta de los negocios: cobro por resultados, sin mensualidades. Se arman solos el día 1 de cada mes. Los negocios pagan con el datáfono de Wompi y aquí los marcas como pagados.</p></div>
+          <div class="title-acts"><button class="btn" data-action="liq-recargar"><svg class="ic"><use href="#i-refresh"/></svg>Actualizar</button><button class="btn primary" data-action="liq-generar" data-solo-admin>Armar liquidaciones</button></div>
+        </div>
+        <div class="kpis liq-kpis" id="liq-resumen"></div>
+        <div class="filters"><div class="tabs" role="tablist" id="liq-tabs"></div></div>
+        <ul class="liq-lista" id="liq-list"></ul>
+      </section>
+
       <section class="view" id="view-registro" aria-labelledby="h-registro" hidden>
         <div class="title-row">
           <div><h1 id="h-registro" class="display">Bitácora</h1><p class="sub">Todo lo que hace el equipo admin queda aquí, con quién y cuándo. No se puede borrar desde la app.</p></div>

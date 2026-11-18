@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pagos, retracto y devoluciones - ModoParche</title>
-<meta name="description" content="Precios de los planes para negocios, sin costos ocultos, derecho de retracto, cancelación y devoluciones en ModoParche.">
+<title>Cobros, pagos y devoluciones - ModoParche</title>
+<meta name="description" content="Cobro por resultados para negocios: sin mensualidad, solo por clientes que llegan. Cómo se calcula, cómo se paga y devoluciones.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
-<meta property="og:title" content="Pagos, retracto y devoluciones - ModoParche">
-<meta property="og:description" content="Precios de los planes para negocios, sin costos ocultos, derecho de retracto, cancelación y devoluciones en ModoParche.">
+<meta property="og:title" content="Cobros, pagos y devoluciones - ModoParche">
+<meta property="og:description" content="Cobro por resultados para negocios: sin mensualidad, solo por clientes que llegan. Cómo se calcula, cómo se paga y devoluciones.">
 <meta property="og:url" content="https://modoparche.vercel.app/pagos">
 <meta property="og:image" content="https://modoparche.vercel.app/src/assets/web/banner.jpg">
 <meta property="og:locale" content="es_CO">
@@ -87,10 +87,10 @@
       <p>En esta página</p>
         <a href="#gratis">1. Para personas: gratis</a>
         <a href="#planes">2. Planes para negocios</a>
-        <a href="#compra">3. Cómo es la compra</a>
-        <a href="#retracto">4. Derecho de retracto</a>
-        <a href="#cancelar">5. Cancelar el plan</a>
-        <a href="#devoluciones">6. Devoluciones</a>
+        <a href="#calculo">3. Cómo se calcula el cobro</a>
+        <a href="#estado">4. Estado de cuenta y pago</a>
+        <a href="#cancelar">5. Cambiar de plan o cancelar</a>
+        <a href="#devoluciones">6. Reclamos y devoluciones</a>
         <a href="#reversion">7. Reversión del pago</a>
         <a href="#promos">8. Promociones de los negocios</a>
     </nav>
@@ -98,50 +98,51 @@
       <section id="gratis" aria-labelledby="h-gratis">
         <h2 id="h-gratis"><span class="n">1.</span>Para personas: gratis</h2>
         <p>Crear tu cuenta, ver el radar, abrir parches, unirte y usar el chat <strong>no cuesta nada</strong>. ModoParche no te cobra comisiones.</p>
-        <p>El costo que aparece en un parche (cover, entrada, consumo) lo define quien lo organiza y se paga directamente en el lugar. Ese dinero no pasa por ModoParche.</p>
+        <p>El costo que aparece en un parche (cover, entrada, consumo o el precio de un paquete) lo define el negocio u organizador y <strong>se paga directamente en el lugar</strong>. Si apartas un paquete en la app, lo pagas en el local al llegar. Ese dinero no pasa por ModoParche.</p>
       </section>
 
       <section id="planes" aria-labelledby="h-planes">
         <h2 id="h-planes"><span class="n">2.</span>Planes para negocios</h2>
-        <div class="legal-note"><p><strong>Prototipo académico: no se cobra dinero real.</strong> ModoParche es un proyecto universitario sin ánimo de lucro. Los planes y precios de abajo muestran cómo funcionaría el servicio, pero el pago corre en el <strong>modo de pruebas</strong> de la pasarela: solo acepta tarjetas y cuentas de prueba, nunca descuenta dinero y no genera factura. Si algún día ModoParche cobra de verdad, lo anunciaremos con anticipación y actualizaremos esta página.</p></div>
-        <div class="legal-table-wrap"><table class="legal-table"><thead><tr><th>Plan</th><th>Precio</th><th>Incluye</th></tr></thead><tbody>
-        <tr><td>Parche básico</td><td><strong>Gratis</strong></td><td>2 parches al mes, perfil en el radar, conteo de cupos.</td></tr>
-        <tr><td>Parche Villavo</td><td><strong>$79.900 al mes</strong></td><td>Parches ilimitados con foto, promos relámpago, prioridad en tu categoría y métricas.</td></tr>
-        <tr><td>Varias sedes</td><td>Cotización por escrito</td><td>Todo lo de Parche Villavo para varias sedes, con acompañamiento.</td></tr>
+        <p>No hay mensualidades fijas: <strong>solo ganamos si tu negocio recibe clientes</strong>.</p>
+        <div class="legal-table-wrap"><table class="legal-table"><thead><tr><th>Plan</th><th>Cobro</th><th>Incluye</th></tr></thead><tbody>
+        <tr><td>Parche básico</td><td><strong>Gratis</strong>. 0% de comisión y $0 por cliente.</td><td>2 parches al mes, perfil en el radar, conteo de cupos y validación con QR.</td></tr>
+        <tr><td>Parche Villavo</td><td><strong>10%</strong> por paquete redimido o <strong>$2.500</strong> por cliente validado en mesa.</td><td>Parches ilimitados con foto, promos relámpago destacadas, prioridad en tu categoría y métricas de llegada.</td></tr>
+        <tr><td>Varias sedes</td><td><strong>8%</strong> por paquete redimido o <strong>$2.000</strong> por cliente validado en mesa.</td><td>Todo lo de Parche Villavo en todas tus sedes, panel central, métricas por sede y acompañamiento del equipo.</td></tr>
         </tbody></table></div>
-        <div class="legal-note legal-note--ok"><p><strong>Sin costos ocultos.</strong> El precio que ves es el precio final que pagas cada mes, con todos los impuestos incluidos. No cobramos inscripción, permanencia mínima ni cargos por cancelar. Si algún día cambia un precio, te avisamos con 30 días de anticipación y puedes cancelar antes sin pagar el nuevo valor.</p></div>
-        <p>Los pagos se hacen por medio de <span data-legal="pasarela"></span>. ModoParche no ve ni guarda los datos de tu tarjeta. Mientras sea un prototipo académico, los pagos son de prueba y no hay comprobante ni factura reales.</p>
+        <div class="legal-note legal-note--ok"><p><strong>Sin costos ocultos.</strong> No cobramos inscripción, mensualidad, permanencia mínima ni cargos por cancelar. Si en un mes no llega nadie por ModoParche, tu cobro de ese mes es <strong>$0</strong>. Si algún día cambia una tarifa, te avisamos con 30 días de anticipación y puedes cambiar de plan antes.</p></div>
       </section>
 
-      <section id="compra" aria-labelledby="h-compra">
-        <h2 id="h-compra"><span class="n">3.</span>Cómo es la compra</h2>
-        <ul><li>El plan gratis viene elegido por defecto. Nunca marcamos por ti un plan pago ni una casilla de compra.</li>
-        <li>Antes de pagar ves el plan, el precio final, cada cuánto se cobra y cómo cancelar.</li>
-        <li>No hay pruebas gratis que se conviertan solas en cobro sin avisarte. Si alguna vez ofrecemos una, te avisamos antes del primer cobro.</li>
-        <li><strong>No hay renovación automática.</strong> Cada pago cubre 30 días. Antes de que venzan te avisamos y, si no vuelves a pagar, pasas solo al plan gratis. Nunca guardamos tu tarjeta para cobrarte después.</li>
-        <li>El pago se hace en la ventana de la pasarela (tarjeta, PSE, Nequi o Bancolombia) y el plan se activa solo cuando el pago queda aprobado.</li>
-        <li>Puedes volver al plan gratis cuando quieras, con un clic, desde tu panel.</li></ul>
+      <section id="calculo" aria-labelledby="h-calculo">
+        <h2 id="h-calculo"><span class="n">3.</span>Cómo se calcula el cobro</h2>
+        <p>Cada parche que publicas es de uno de dos tipos, y tú lo eliges al crearlo:</p>
+        <ul>
+          <li><strong>Paquete cerrado</strong> (combos, catas, talleres, boletas o covers): el cliente lo aparta en la app y lo paga en tu local. Pagas el porcentaje de tu plan sobre el precio del paquete, <strong>solo por cada paquete redimido</strong>.</li>
+          <li><strong>Consumo libre en mesa</strong> (gastrobares, miradores, restaurantes a la carta, cafeterías): el cliente reserva su cupo o beneficio y paga su cuenta en tu caja. Pagas la tarifa fija de tu plan <strong>por cada persona que llegó</strong>. Las reservas del Modo Mesa se cobran igual.</li>
+        </ul>
+        <p><strong>Qué cuenta como cliente validado.</strong> Solo las llegadas verificadas: tu equipo escanea el QR del cliente o lo marca en la puerta, o el cliente marca su llegada con el QR del parche o con el GPS cerca de tu local. Si alguien aparta o reserva y no llega, no pagas nada.</p>
+        <p><strong>No fiscalizamos tus ventas.</strong> No pedimos cuentas de caja: el cobro sale únicamente de las llegadas verificadas. Cada cliente queda en tu panel con hora, fecha, forma de validación y código, para que revises cada peso.</p>
       </section>
 
-      <section id="retracto" aria-labelledby="h-retracto">
-        <h2 id="h-retracto"><span class="n">4.</span>Derecho de retracto</h2>
-        <p>Como la compra es por internet, tienes <strong>5 días hábiles</strong> desde tu primer pago para arrepentirte, sin dar explicaciones (artículo 47 de la Ley 1480 de 2011).</p>
-        <p>Para hacerlo, toca <strong>"Me arrepiento de la compra"</strong> en Perfil y plan de tu panel (abre el correo ya escrito) o escríbenos a <a data-legal="correo" data-legal-mail href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a> con el asunto "Retracto", el nombre del negocio y el correo de la cuenta. Te devolvemos <strong>el 100 % de lo pagado</strong> por el mismo medio de pago en máximo <strong>30 días calendario</strong>, y tu cuenta vuelve al plan gratis.</p>
+      <section id="estado" aria-labelledby="h-estado">
+        <h2 id="h-estado"><span class="n">4.</span>Estado de cuenta y pago</h2>
+        <ul>
+          <li>El <strong>día 1 de cada mes</strong> armamos tu estado de cuenta del mes anterior, con el total y el detalle de cada cliente. Lo ves en <strong>Perfil y plan &gt; Cobros por resultados</strong> y te avisamos en la app.</li>
+          <li>Tienes hasta el <strong>día 15</strong> de ese mes para pagarlo.</li>
+          <li>Pagas con el datáfono virtual de <span data-legal="pasarela"></span> (tarjeta, PSE, Nequi o Bancolombia): escribes el valor exacto y la referencia de tu estado de cuenta. ModoParche no ve ni guarda los datos de tu tarjeta.</li>
+          <li>Después de pagar, tocas <strong>"Ya pagué"</strong> y escribes el número de transacción. El equipo lo confirma y el estado de cuenta queda pagado.</li>
+          <li>Si se vence sin pago, tus parches dejan de salir en el radar hasta que te pongas al día. No cobramos intereses ni multas.</li>
+        </ul>
       </section>
 
       <section id="cancelar" aria-labelledby="h-cancelar">
-        <h2 id="h-cancelar"><span class="n">5.</span>Cancelar el plan</h2>
-        <p>Como no hay cobro automático, no tienes que cancelar nada: si no renuevas, el plan termina solo al cumplir los 30 días pagados. Si eliges el plan gratis antes, igual conservas Parche Villavo hasta esa fecha. No hay multa ni permanencia, y no pierdes tu cuenta ni tus parches.</p>
+        <h2 id="h-cancelar"><span class="n">5.</span>Cambiar de plan o cancelar</h2>
+        <p>Cambias de plan cuando quieras desde tu panel y el cambio es inmediato. Los clientes que ya llegaron antes del cambio se cobran con la tarifa que tenías en ese momento. Para dejar de pagar basta con pasarte a Parche básico: no hay multa ni permanencia, y no pierdes tu cuenta ni tus parches. Si cierras la cuenta, solo queda pendiente lo que ya se generó por clientes que llegaron.</p>
       </section>
 
       <section id="devoluciones" aria-labelledby="h-devoluciones">
-        <h2 id="h-devoluciones"><span class="n">6.</span>Devoluciones</h2>
-        <p>Te devolvemos el dinero completo cuando:</p>
-        <ul><li>Ejerces el derecho de retracto dentro de los 5 días hábiles.</li>
-        <li>Te cobramos dos veces, por un valor distinto o algo que no pediste.</li>
-        <li>El servicio pago no funcionó por una falla nuestra durante el periodo cobrado (en este caso devolvemos la parte proporcional).</li></ul>
-        <p>Pasado el retracto, cancelar no genera devolución de los días que quedan del mes ya pagado, pero tampoco se cobra el siguiente.</p>
-        <p>Respondemos cada solicitud en máximo 15 días hábiles y, si procede, devolvemos el dinero en máximo 30 días calendario.</p>
+        <h2 id="h-devoluciones"><span class="n">6.</span>Reclamos y devoluciones</h2>
+        <p>Si en tu estado de cuenta aparece un cliente que no llegó, uno repetido o un valor que no corresponde, escríbenos a <a data-legal="correo" data-legal-mail href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a> con la referencia del estado de cuenta y el código del cliente, dentro de los 15 días siguientes. Si tienes razón, anulamos ese cobro.</p>
+        <p>Te devolvemos el dinero cuando pagaste de más, te cobramos dos veces o pagaste un cobro que luego se anuló. Respondemos cada solicitud en máximo 15 días hábiles y, si procede, devolvemos el dinero en máximo 30 días calendario por el mismo medio de pago.</p>
       </section>
 
       <section id="reversion" aria-labelledby="h-reversion">

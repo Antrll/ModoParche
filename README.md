@@ -155,7 +155,23 @@ Correr `20261104150000_seguridad_y_comunidad.sql` en el SQL Editor (después de 
 
 Mientras no esté configurado, activar los avisos guarda la suscripción pero no llega nada.
 
-#### Activar los pagos con Wompi
+#### Cobro por resultados (noviembre 2026)
+
+Sin mensualidades: los negocios solo pagan por clientes que llegan. Migración: `supabase/migrations/20261118120000_cobro_por_resultados.sql`.
+
+| Plan | Paquete cerrado (combos, boletas, covers) | Consumo libre en mesa (y Modo Mesa) |
+|---|---|---|
+| Parche básico | 0% | $0 por cliente (máx. 2 parches al mes) |
+| Parche Villavo | 10% por paquete redimido | $2.500 por persona que llega |
+| Varias sedes | 8% por paquete redimido | $2.000 por persona que llega |
+
+- Cada parche de negocio elige su tipo al crearlo. El cliente **paga en el local**; ModoParche no recibe dinero de terceros.
+- Solo cuentan las llegadas validadas: QR o marca del local, o el cliente con el QR del parche o el GPS (`mesa_llegue` en el Modo Mesa). Cada llegada crea una fila en `cobros` con hora, método y código.
+- El día 1 de cada mes `private.generar_liquidaciones()` (pg_cron) arma el estado de cuenta de cada negocio en `liquidaciones`. El negocio paga con el datáfono virtual de Wompi (`https://checkout.wompi.co/l/VPOS_saHurm`, monto abierto) escribiendo el valor y la referencia, y toca «Ya pagué». El admin lo confirma en **Cobros**.
+- Si una liquidación vence (día 15) sin pagar, los parches de ese negocio dejan de salir en el radar hasta que se marque pagada.
+- Las funciones `wompi-checkout` y `wompi-webhook` (pago del plan mensual) ya no se usan.
+
+#### Pagos con Wompi del plan mensual (modelo anterior)
 
 1. Crear la cuenta de comercio en [comercios.wompi.co](https://comercios.wompi.co) y copiar, en *Desarrolladores*, la llave pública, el secreto de integridad y el secreto de eventos (primero las de prueba: `pub_test_`, `test_integrity_`, `test_events_`).
 2. Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):

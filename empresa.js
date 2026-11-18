@@ -200,8 +200,8 @@
           },
         });
         if (error) throw error;
-        if (data.session) { location.replace('empresa-dashboard.html?bienvenida=1' + (planElegido === 'villavo' ? '&pagar=villavo' : '')); return; }
-        showStatus('bz-status', 'ok', '¡Cuenta creada! Revisa tu correo', `Te enviamos un enlace a ${email}. Ábrelo para activar el panel de tu negocio.${planElegido === 'villavo' ? ' Al entrar te mostramos el pago de Parche Villavo.' : ''}`);
+        if (data.session) { location.replace('empresa-dashboard.html?bienvenida=1'); return; }
+        showStatus('bz-status', 'ok', '¡Cuenta creada! Revisa tu correo', `Te enviamos un enlace a ${email}. Ábrelo para activar el panel de tu negocio.${planElegido !== 'basico' ? ' Tu plan queda activo al entrar: sin mensualidad, solo pagas por clientes que llegan.' : ''}`);
         btn.disabled = true;
       } catch (err) {
         const [t, d] = authError(err);

@@ -71,9 +71,9 @@
   };
   const catCode = c => (CATS[c] || c || '?').slice(0, 2);
   const PLANES = {
-    basico: { nombre: 'Parche básico', precio: 0, txt: 'Gratis · 2 parches al mes' },
-    villavo: { nombre: 'Parche Villavo', precio: 79900, txt: '$79.900 / mes · ilimitado' },
-    sedes: { nombre: 'Varias sedes', precio: 0, txt: 'A la medida · varias sedes' },
+    basico: { nombre: 'Parche básico', precio: 0, txt: 'Gratis · 2 parches al mes · $0 por cliente' },
+    villavo: { nombre: 'Parche Villavo', precio: 0, txt: '10% por paquete o $2.500 por cliente · ilimitado' },
+    sedes: { nombre: 'Varias sedes', precio: 0, txt: '8% por paquete o $2.000 por cliente · varias sedes' },
   };
   const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   const DIAS_L = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -801,10 +801,10 @@
   /* =====================================================================
      7. NAVEGACIÓN Y BÚSQUEDA
   ===================================================================== */
-  const ROUTES = ['resumen', 'personas', 'negocios', 'parches', 'mapa', 'reportes', 'moderacion', 'reputacion', 'anuncios', 'registro', 'equipo'];
-  const TITLES = { resumen: 'Centro de control', personas: 'Personas', negocios: 'Negocios', parches: 'Parches', mapa: 'Mapa en vivo', moderacion: 'Moderación', anuncios: 'Anuncios', registro: 'Bitácora', reportes: 'Reportes', reputacion: 'Reputación', equipo: 'Equipo y roles' };
+  const ROUTES = ['resumen', 'personas', 'negocios', 'parches', 'mapa', 'reportes', 'moderacion', 'reputacion', 'anuncios', 'registro', 'equipo', 'cobros'];
+  const TITLES = { resumen: 'Centro de control', personas: 'Personas', negocios: 'Negocios', parches: 'Parches', mapa: 'Mapa en vivo', moderacion: 'Moderación', anuncios: 'Anuncios', registro: 'Bitácora', reportes: 'Reportes', reputacion: 'Reputación', cobros: 'Cobros', equipo: 'Equipo y roles' };
   let current = null;
-  const RENDER = { resumen: renderResumen, personas: renderPersonas, negocios: renderNegocios, parches: renderParches, mapa: renderMapa, moderacion: renderModeracion, anuncios: renderAnuncios, registro: renderRegistro, reportes: renderReportes, reputacion: renderReputacion, equipo: renderEquipo };
+  const RENDER = { resumen: renderResumen, personas: renderPersonas, negocios: renderNegocios, parches: renderParches, mapa: renderMapa, moderacion: renderModeracion, anuncios: renderAnuncios, registro: renderRegistro, reportes: renderReportes, reputacion: renderReputacion, cobros: renderCobros, equipo: renderEquipo };
   function go(route, { force = false } = {}) {
     if (!ROUTES.includes(route) || (route === 'anuncios' && !ES_ADMIN())) route = 'resumen';
     const changed = route !== current;
@@ -1185,6 +1185,64 @@
     ul.innerHTML = filas.length ? filas.map(e => `<li class="err"><div class="err-top"><b>${esc(e.mensaje)}</b><span class="pill">${int(e.veces)} ${Number(e.veces) === 1 ? 'vez' : 'veces'}</span></div>
       <small>${esc(e.pagina)} · ${esc(fmtRel(e.creado_en))}${e.usuario ? ' · ' + esc(e.usuario) : ''}</small>${e.detalle ? `<pre>${esc(e.detalle)}</pre>` : ''}</li>`).join('')
       : '<li class="empty empty--ok">Sin errores en los últimos 7 días.</li>';
+  }
+  /* ---------- Cobros por resultados: liquidaciones de los negocios ---------- */
+  const ESTADO_LIQ = { pendiente: ['Por pagar', 'warn'], pagada: ['Pagada', 'pos'], sin_cobro: ['Sin cobro', ''], anulada: ['Anulada', ''] };
+  let liqs = null, liqTab = 'pendiente';
+  async function renderCobros() {
+    const ul = $('#liq-list'), resumen = $('#liq-resumen');
+    if (!ul) return;
+    if (liqs === null) {
+      if (DEMO) {
+        const hoy = Date.now(), mes = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().slice(0, 10);
+        liqs = [
+          { id: 1, negocio: 'Discoteca Los Capachos', plan: 'villavo', periodo: mes, clientes: 64, total_cop: 160000, referencia: 'MP-DEMO-7F3A2C', estado: 'pendiente', vence: new Date(hoy + 9 * 864e5).toISOString().slice(0, 10), pago_ref: '123456-1700', reportada_en: new Date(hoy - 3600e3).toISOString(), en_mora: false },
+          { id: 2, negocio: 'Café Origen Llanero', plan: 'villavo', periodo: mes, clientes: 22, total_cop: 77000, referencia: 'MP-DEMO-1B9C04', estado: 'pendiente', vence: new Date(hoy - 2 * 864e5).toISOString().slice(0, 10), en_mora: true },
+          { id: 3, negocio: 'Mirador Buenavista', plan: 'sedes', periodo: mes, clientes: 140, total_cop: 280000, referencia: 'MP-DEMO-A4E7D2', estado: 'pagada', vence: mes, pagada_en: new Date(hoy - 5 * 864e5).toISOString(), en_mora: false },
+        ];
+      } else {
+        ul.innerHTML = '<li class="empty">Cargando…</li>';
+        const { data, error } = await sb().rpc('admin_liquidaciones');
+        if (error) { ul.innerHTML = `<li class="empty">${/admin_liquidaciones|PGRST202/.test(error.message) ? 'Falta correr la migración 20261118120000_cobro_por_resultados.sql.' : esc(errMsg(error))}</li>`; return; }
+        liqs = data || [];
+      }
+    }
+    const pend = liqs.filter(l => l.estado === 'pendiente'), mora = pend.filter(l => l.en_mora), reportadas = pend.filter(l => l.reportada_en);
+    resumen.innerHTML = `<div class="kpi"><span class="kpi-label">Por cobrar</span><b class="kpi-value">${money(pend.reduce((a, l) => a + l.total_cop, 0))}</b><span class="kpi-sub">${int(pend.length)} estados de cuenta</span></div>
+      <div class="kpi"><span class="kpi-label">Avisaron que pagaron</span><b class="kpi-value">${int(reportadas.length)}</b><span class="kpi-sub">Revisa en Wompi y márcalas</span></div>
+      <div class="kpi"><span class="kpi-label">En mora</span><b class="kpi-value">${int(mora.length)}</b><span class="kpi-sub">Sus parches no salen en el radar</span></div>`;
+    const tabs = [['pendiente', 'Por pagar'], ['pagada', 'Pagadas'], ['todo', 'Todas']];
+    $('#liq-tabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" aria-selected="${liqTab === k}" data-liqtab="${k}">${l}</button>`).join('');
+    const rows = liqs.filter(l => liqTab === 'todo' || l.estado === liqTab);
+    ul.innerHTML = rows.length ? rows.map(l => { const [txt, cls] = ESTADO_LIQ[l.estado] || [l.estado, '']; return `<li class="liq-row">
+        <div class="liq-main"><b>${esc(l.negocio)}</b><small>${esc(new Date(l.periodo + 'T12:00:00').toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }))} · ${int(l.clientes)} clientes · ${esc((PLANES[l.plan] || {}).nombre || l.plan)} · ref <code>${esc(l.referencia)}</code></small>
+          ${l.reportada_en ? `<small class="liq-aviso">Avisó el pago: ${esc(l.pago_ref || '')} · ${esc(fmtRel(l.reportada_en))}</small>` : ''}
+          ${l.en_mora ? '<small class="liq-mora">Vencida: sus parches están ocultos del radar</small>' : ''}</div>
+        <b class="liq-monto">${money(l.total_cop)}</b>
+        <span class="pill ${cls}">${esc(txt)}</span>
+        <span class="liq-acts">${l.estado === 'pendiente' ? `<button class="btn btn--sm primary" data-action="liq-pagada" data-id="${l.id}" data-solo-admin>Marcar pagada</button><button class="btn btn--sm" data-action="liq-anular" data-id="${l.id}" data-solo-admin>Anular</button>` : l.estado === 'pagada' ? `<button class="btn btn--sm" data-action="liq-reabrir" data-id="${l.id}" data-solo-admin>Reabrir</button>` : ''}</span>
+      </li>`; }).join('') : '<li class="empty empty--ok">No hay estados de cuenta aquí.</li>';
+  }
+  async function marcarLiquidacion(id, estado) {
+    const l = (liqs || []).find(x => String(x.id) === String(id)); if (!l) return;
+    const textos = { pagada: ['Marcar como pagada', `Confirma que en Wompi ves el pago de ${money(l.total_cop)} con la referencia ${l.referencia}.`], anulada: ['Anular estado de cuenta', 'Úsalo solo si hubo un error en los cobros. El negocio no tendrá que pagarlo.'], pendiente: ['Reabrir', 'Vuelve a quedar por pagar.'] }[estado];
+    const ok = await confirmar(textos[0], textos[1], 'Sí, continuar');
+    if (!ok) return;
+    if (!DEMO) {
+      const { error } = await sb().rpc('admin_marcar_liquidacion', { p_id: Number(id), p_estado: estado, p_nota: '' });
+      if (error) { toast('No se pudo', errMsg(error), { error: true }); return; }
+    }
+    l.estado = estado; if (estado === 'pagada') { l.en_mora = false; l.pagada_en = new Date().toISOString(); }
+    anotar(estado === 'pagada' ? 'liquidacion_pagada' : estado === 'anulada' ? 'liquidacion_anulada' : 'liquidacion_reabierta', l.negocio, `${l.referencia} · ${money(l.total_cop)}`);
+    toast('Listo', `${l.negocio}: ${(ESTADO_LIQ[estado] || [estado])[0].toLowerCase()}.`);
+    renderCobros();
+  }
+  async function generarLiquidaciones() {
+    if (DEMO) { toast('Datos de ejemplo', 'En la cuenta real se arman las del mes cerrado.'); return; }
+    const { data, error } = await sb().rpc('admin_generar_liquidaciones');
+    if (error) { toast('No se pudo', errMsg(error), { error: true }); return; }
+    liqs = null; await renderCobros();
+    toast('Liquidaciones al día', data ? `Se armaron ${data}.` : 'No había meses cerrados por liquidar.');
   }
   function anotar(accion, objetivo, detalle) {
     S.registro.unshift({ id: Date.now(), admin_id: ME.id, admin_nombre: ME.nombre, accion, objetivo, detalle, creado_en: new Date().toISOString() });
@@ -1791,6 +1849,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
         if (location.hash === g.dataset.go) go(r, { force: true }); else location.hash = g.dataset.go;
         return;
       }
+      { const lt = t.closest('[data-liqtab]'); if (lt) { liqTab = lt.dataset.liqtab; renderCobros(); return; } }
       if (t.closest('[data-ptab],[data-ntab],[data-patab],[data-mtab],[data-ltab],[data-cat],[data-rtab],[data-ctab],[data-motivo]')) $('#view-' + current).classList.remove('quiet');
       const tb = t.closest('[data-ptab],[data-ntab],[data-patab],[data-mtab],[data-ltab],[data-rtab],[data-ctab]');
       if (tb) {
@@ -1815,6 +1874,11 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       switch (a.dataset.action) {
         case 'logout': salir(); break;
         case 'refrescar': refrescarTodo(true); break;
+        case 'liq-pagada': marcarLiquidacion(a.dataset.id, 'pagada'); break;
+        case 'liq-anular': marcarLiquidacion(a.dataset.id, 'anulada'); break;
+        case 'liq-reabrir': marcarLiquidacion(a.dataset.id, 'pendiente'); break;
+        case 'liq-generar': generarLiquidaciones(); break;
+        case 'liq-recargar': liqs = null; renderCobros(); break;
         case 'ver-errores': verErrores(); break;
         case 'ir-anuncio': location.hash = '#anuncios'; setTimeout(() => $('#an-texto').focus(), 300); break;
         case 'cerrar-drawer': closeDrawer(); break;

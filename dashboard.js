@@ -221,7 +221,8 @@
   const inside = p => p.unido || isMine(p);
   const distKm = p => haversine(origin(), [p.lat, p.lng]);
   const fmtKm = km => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace('.', ',')} km`;
-  const precio = p => Math.max(Number(p.costo) || 0, Number(p.presupuesto) || 0);
+  const esPaquete = p => p.modalidad === 'paquete' && Number(p.precioPaquete) > 0;
+  const precio = p => esPaquete(p) ? Number(p.precioPaquete) : Math.max(Number(p.costo) || 0, Number(p.presupuesto) || 0);
   const isPast = p => p.inicio < Date.now() - 3 * HOUR;
   // Un parche oficial sin sitio confirmado no se pone en el mapa
   const sinLugar = p => p.oficial && /^por confirmar$/i.test(String(p.lugar || '').trim());
@@ -264,7 +265,9 @@
     return `<span class="av ${cls}" style="--av:${bg};--avc:${fg}" title="${esc(person.nombre)}">${esc(initial(person.nombre))}</span>`;
   }
 
-  const priceTag = p => `<span class="tag tag--price tnum">${precio(p) === 0 ? 'Gratis' : money(precio(p))}</span>`;
+  const priceTag = p => esPaquete(p)
+    ? `<span class="tag tag--price tnum" title="Lo apartas aquí y lo pagas en el local">Paquete ${money(precio(p))}</span>`
+    : `<span class="tag tag--price tnum">${precio(p) === 0 ? 'Gratis' : money(precio(p))}</span>`;
 
   function joinButton(p, { small = false } = {}) {
     const sz = small ? ' btn--sm' : ' btn--sm';
@@ -687,6 +690,25 @@
     pendiente: ['Esperando al local', ''], confirmada: ['Confirmada', 'is-ok'], rechazada: ['No disponible', 'is-off'],
     cancelada: ['Cancelada', 'is-off'], llego: ['Llegaron', 'is-ok'], no_llego: ['No llegaron', 'is-off'],
   };
+  // Se puede marcar la llegada desde 1 hora antes hasta 4 horas después de la reserva
+  const puedeLlegar = r => ['pendiente', 'confirmada'].includes(r.estado) && Date.now() > r.llegada - HOUR && Date.now() < r.llegada + 4 * HOUR;
+  async function mesaLlegue(id, btn) {
+    const r = (state.misMesas || []).find(x => String(x.id) === String(id));
+    if (!r) return;
+    if (DEMO || !sb) { r.estado = 'llego'; renderMesas(); toast('Llegada marcada', 'En el modo demo no se guarda.', { icon: 'i-check' }); return; }
+    if (!navigator.geolocation) { toast('Sin GPS', `Muestra tu código ${r.codigo} en la entrada.`, { type: 'error' }); return; }
+    btn.disabled = true;
+    try {
+      const pos = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(ok, mal, { enableHighAccuracy: true, timeout: 15000, maximumAge: 20000 }));
+      const { error } = await sb.rpc('mesa_llegue', { p_reserva: r.id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude, p_precision: pos.coords.accuracy });
+      if (error) throw error;
+      r.estado = 'llego'; renderMesas();
+      toast('¡Llegaste!', `Le avisamos a ${r.negocio.nombre}. Disfruta tu mesa.`, { icon: 'i-check' });
+    } catch (err) {
+      const m = String((err && (err.hint || err.message)) || '');
+      toast('No pudimos marcar tu llegada', err && err.code === 1 ? 'Permite la ubicación o muestra tu código en la entrada.' : /mesa_llegue|PGRST202/.test(m) ? `Muestra tu código ${r.codigo} en la entrada.` : (err.hint || dbMsg(err)), { type: 'error' });
+    } finally { btn.disabled = false; }
+  }
   function renderMesas() {
     const block = $('#mesa-block');
     if (!block) return;
@@ -701,7 +723,8 @@
         <div><b>${esc(r.titulo)}</b><small>${esc(r.negocio.nombre)} · ${esc(fmtCuando(r.llegada))} · ${r.personas} personas</small></div>
         <span class="mesa-pill ${cls}">${esc(txt)}</span>
         <span class="mesa-code tnum" title="Muéstralo al llegar">${esc(r.codigo)}</span>
-        ${viva ? `<button class="btn btn--ghost btn--xs" data-action="mesa-cancelar" data-id="${esc(r.id)}">Cancelar</button>` : '<span></span>'}
+        ${puedeLlegar(r) ? `<button class="btn btn--xs" data-action="mesa-llegue" data-id="${esc(r.id)}">${ic('i-locate')} Ya llegué</button>`
+          : viva ? `<button class="btn btn--ghost btn--xs" data-action="mesa-cancelar" data-id="${esc(r.id)}">Cancelar</button>` : '<span></span>'}
       </li>`;
     }).join('');
     $('#mesa-list').innerHTML = promos.map(m => {
@@ -1199,7 +1222,7 @@
     if (!salir && isFull(p)) { toast('Parche lleno', 'Ya no quedan cupos en este plan.', { type: 'error' }); return; }
     p.unido = !salir; // interfaz optimista
     if (!isRemote(p)) p.chat.push({ tipo: 'sys', texto: `${ME().nombre} ${salir ? 'se abrió del parche' : 'le cayó al parche'}`, ts: Date.now() });
-    toast(salir ? 'Te abriste del parche' : '¡Le caíste al parche!', salir ? `Liberaste tu cupo en ${p.titulo}.` : `Ya puedes escribir en el chat de ${p.titulo}.`, { icon: salir ? 'i-logout' : 'i-bolt', action: salir ? null : { label: 'Chat', act: 'chat', id } });
+    toast(salir ? 'Te abriste del parche' : (esPaquete(p) ? '¡Apartaste tu paquete!' : '¡Le caíste al parche!'), salir ? `Liberaste tu cupo en ${p.titulo}.` : esPaquete(p) ? `Lo pagas en el local (${money(precio(p))}). Al llegar, tu QR lo redime.` : `Ya puedes escribir en el chat de ${p.titulo}.`, { icon: salir ? 'i-logout' : 'i-bolt', action: salir ? null : { label: 'Chat', act: 'chat', id } });
     save(); refresh();
     if (liveMap && liveMap.closePopup) { const m = liveMarkers.get(id); if (m && m.isPopupOpen()) m.getPopup().update(); }
     if (state.chatId === id) renderChat();
@@ -2590,6 +2613,7 @@
       id: r.id, titulo: r.titulo, categoria: r.categoria, descripcion: r.descripcion,
       inicio: Date.parse(r.inicio), lugar: r.lugar, barrio: r.barrio, lat: r.lat, lng: r.lng,
       costo: r.costo, presupuesto: r.presupuesto, cuposMax: r.cupos_max,
+      modalidad: r.modalidad === 'paquete' ? 'paquete' : 'mesa', precioPaquete: r.precio_paquete || null,
       confirmados: miembros.filter(m => m.usuario_id !== me.id).map(m => m.usuario_id), // solo cuentas reales
       unido: !!mia, propio, creadorId: propio ? 'me' : r.creador_id, creadorNombre: r.creador_nombre,
       checkin: !!(mia && mia.checkin), demo: r.demo, chat: prev ? prev.chat : [],
@@ -4045,6 +4069,7 @@
       case 'qr-escanear': abrirEscaner(id); break;
       case 'mesa-reservar': closeAllModals(); abrirMesa(id); break;
       case 'mesa-cancelar': cancelarMesa(id); break;
+      case 'mesa-llegue': mesaLlegue(id, a); break;
       case 'mesa-mapa': mesaEnMapa(id); break;
       case 'join': toggleJoin(id); break;
       case 'responder': setReply(a.dataset.key); break;

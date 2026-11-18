@@ -298,7 +298,7 @@ select.input { padding-right: 32px; appearance: none; background: var(--surface)
 .day.is-today { background: var(--accent-50); border-color: var(--accent-200); }
 .day-head { padding: 0 2px; display: flex; align-items: baseline; justify-content: space-between; gap: 4px; color: var(--muted); font-size: var(--fs-small); }
 .day-head b { font: 400 22px/1 var(--brand); color: var(--text); }
-.day.is-today .day-head b { color: var(--accent); }
+.day.is-today .day-head b { color: var(--accent-ink); }
 .day-items { display: grid; align-content: start; gap: 6px; min-width: 0; }
 .chip-p { display: grid; gap: 2px; width: 100%; padding: 6px 6px 6px 7px; border: 0; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--surface); text-align: left; font-size: var(--fs-small); line-height: 15px; transition: transform var(--t-press) var(--ease-out); }
 .chip-p:hover { transform: translateY(-1px); }
@@ -1488,3 +1488,47 @@ html.is-dark { --on-accent: #15110e; }
 /* El saludo naranja conserva su tinta oscura, como en modo claro */
 html.is-dark .hello { --text: #15110e; --on-text: #ffffff; --muted: #4a2208; --surface: #ffffff; }
 html.is-dark .kpi--lead { background: var(--night); color: #fff; box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* =====================================================================
+   Cobro por resultados: tipo de parche, plan y estado de cuenta
+===================================================================== */
+.mod-hint { margin-top: 6px; line-height: 1.45; }
+.mod-hint b { color: var(--text); }
+.plan-opt-b small { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.plan-opt-b.is-on small { color: inherit; opacity: .8; }
+.cobros-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#cobros-box { display: grid; gap: 12px; }
+.cobro-alerta { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.cobro-alerta .ic { width: 20px; height: 20px; margin-top: 2px; }
+.cobro-alerta p { margin: 2px 0 0; font-size: 13px; }
+.cobro-resumen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cobro-resumen > div { display: grid; gap: 4px; padding: 14px; border-radius: 12px; background: var(--raised); }
+.cobro-resumen span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.cobro-resumen b { font: 400 30px/1 var(--brand); }
+.cobro-resumen b.cobro-tarifa { font: 700 15px/1.3 var(--font); }
+.cobro-resumen small { font-size: 12px; color: var(--muted); }
+.liq { display: grid; gap: 8px; padding: 16px; border-radius: 14px; border: 2px solid var(--accent); background: var(--accent-50); }
+.liq-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.liq-total { font: 400 34px/1 var(--brand); margin: 0; }
+.liq-total small { font: 600 13px var(--font); color: var(--muted); }
+.liq-ref { margin: 0; font-size: 13px; }
+.liq-ref code { font-family: var(--mono); font-weight: 700; padding: 2px 6px; border-radius: 6px; background: var(--surface); }
+.liq-pasos { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.liq-pasos b { color: var(--text); }
+.liq-ok { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 600; color: var(--positive); }
+.liq-ok .ic { width: 16px; height: 16px; }
+.liq-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.cobro-lista, .liq-hist { display: grid; margin: 0; padding: 0; list-style: none; }
+.cobro-lista li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); }
+.cobro-lista li:first-child { border-top: 0; }
+.cobro-txt { display: grid; gap: 2px; min-width: 0; }
+.cobro-txt b { font-size: 14px; }
+.cobro-txt small { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.cobro-monto { display: grid; justify-items: end; font-weight: 700; }
+.cobro-monto small { font-size: 11px; font-weight: 500; color: var(--muted); }
+.liq-hist li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+.liq-hist li:first-child { border-top: 0; }
+@media (max-width: 560px) { .cobro-resumen { grid-template-columns: 1fr; } }
+.mesa-llegaron { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.mesa-llegaron select.input { height: 32px; width: auto; padding: 0 28px 0 10px; }
+.mesa-gps { display: block; font-size: 11px; color: var(--muted); }

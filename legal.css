@@ -103,3 +103,4 @@
 html.is-dark .mp-cookies { background: #ffffff; color: #111111; box-shadow: 0 22px 44px -18px rgba(0,0,0,.8); }
 html.is-dark .mp-cookies a { color: #111111; }
 html.is-dark .mp-cookies b { color: #b83709; }
+html.is-dark .legal-note--ok { background: #12301f; }
