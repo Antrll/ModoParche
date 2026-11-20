@@ -7,3 +7,9 @@ node_modules/
 Thumbs.db
 *.log
 respaldo-dashboard-anterior/
+
+# Descargas de datos personales (Ley 1581): nunca a git
+mis-datos-*.json
+
+# Datos de prueba con nombres reales (no se suben al repo público)
+supabase/pruebas/

@@ -29,6 +29,8 @@ El panel (`dashboard.html`) es para usuarios con cuenta. El login y el registro 
 2. Pega y corre (**Run**), en este orden, los archivos de `supabase/migrations/`:
    - `20261022230000_dashboard_usuarios.sql`: tablas, seguridad, triggers y parches de ejemplo.
    - `20261023120000_coordenadas_reales.sql`: deja 8 parches de ejemplo en coordenadas reales de Villavicencio.
+   - `20261027120000_cuentas_negocio.sql`: activa las cuentas de negocio (tabla `negocios`, plan elegido, sello de aliado en sus parches y límite de 2 parches al mes en el plan básico).
+   - `20261028120000_sin_personas_simuladas.sql`: quita los confirmados y mensajes de personas de ejemplo. Desde aquí los cupos y el chat solo cuentan cuentas reales.
 3. En **Authentication > URL Configuration** agrega la URL del sitio (por ejemplo la de Vercel) en *Site URL* y en *Redirect URLs*, para que el enlace de confirmación del correo vuelva al dashboard.
 
 El script se puede correr más de una vez. Crea perfiles, parches, chat, rutas, notificaciones, calificaciones y parceros frecuentes con seguridad por filas (RLS). Las tablas viejas del prototipo (`parches`, `parche_miembros`, `usuarios`, `intereses_usuario`) quedan renombradas como `legacy_*` y sin acceso público. No se borra ningún dato.
@@ -39,9 +41,258 @@ El script se puede correr más de una vez. Crea perfiles, parches, chat, rutas, 
 | --- | --- |
 | `supabase-client.js` | Crea el cliente de Supabase con la llave pública (anon). |
 | `login.js` | Registro en 3 pasos e inicio de sesión con Supabase Auth. |
-| `dashboard.js` | Explorar, mapa en tiempo real con GPS del usuario, mis parches con chat, perfil y constructor de avatar; lee y guarda en Supabase y escucha cambios en tiempo real. |
+| `dashboard.js` | Inicio con las funciones principales, mapa en tiempo real con GPS, mis parches con chat y vaca, y perfil con foto opcional (sin avatares). Lee y guarda en Supabase y escucha cambios en tiempo real. De los parches de ejemplo de la base solo muestra 2. |
 | `supabase/migrations/` | Esquema, seguridad, triggers y parches de ejemplo de Villavicencio. |
+
+### Cuentas de negocio
+
+Cada negocio crea su propia cuenta en `empresa.html` (datos del local, acceso y plan: Parche básico, Parche Villavo o Varias sedes). No hace falta que un administrador la cree. Entra a `empresa-dashboard.html`, que solo muestra su propio local. Los parches que publica (con foto opcional) se guardan en Supabase y aparecen en el radar de los usuarios con el sello de aliado.
+
+| Página | Qué es |
+| --- | --- |
+| `empresa.html` / `empresa.js` | Crear cuenta de negocio en 3 pasos y entrar como negocio. |
+| `empresa-dashboard.html` | Panel del negocio. `?demo=1` abre un local de ejemplo. |
+| `preguntas.html` | Preguntas frecuentes con buscador y filtros. |
+| `marca.html` | Identidad de marca: logo, colores, tipografía, gráficos, stickers, insignias y voz. |
+| `paginas.css` / `paginas.js` | Estilos y comportamiento de las páginas nuevas. |
+| `mp-captcha.js` | Captcha de Cloudflare Turnstile para registro e inicio de sesión (ver «Seguridad, captcha y confirmación de correo»). |
+| `mp-tema.js` | Botón de modo claro/oscuro en la barra de todas las páginas públicas. Transición de "tinta que se riega" (View Transitions + máscara en canvas; sin soporte o con "reducir movimiento" cambia con un fundido). Elige el isotipo según el fondo real y, si una imagen no carga, usa otra versión o deja solo el texto. Guarda la elección en `mp_tema`, la misma llave del dashboard. Los colores del modo oscuro están al final de `mp-base.css`. |
+| `src/assets/web/stk/` | Stickers, insignias y trazos de la marca en WebP liviano (sin estirar). Solo se usan dentro del dashboard del usuario. |
+| `404.html` | Página de error con la marca (Vercel la muestra sola). |
+
+`login.html#crear` abre directo el registro de personas; `empresa.html#entrar` abre el acceso de negocios.
 
 ### Modo demo
 
-`dashboard.html?demo=1` abre el panel con datos de ejemplo guardados solo en el navegador, sin cuenta ni conexión a la base de datos.
+`dashboard.html?demo=1` abre el panel con 2 parches de ejemplo guardados solo en el navegador, sin cuenta ni conexión a la base de datos. `#mapa`, `#mis` y `#perfil` abren esa sección directo.
+
+### Verificación, Modo Mesa, llegada al parche y pagos (noviembre 2026)
+
+Correr en el SQL Editor, en este orden, después de las migraciones anteriores:
+
+1. `20261101120000_verificacion_identidad.sql`: bucket privado `documentos_identidad`, políticas por carpeta `cedulas/{usuario_id}/`, columnas `cedula_frontal_path`, `cedula_trasera_path` y `cedula_verificada` (en `perfiles_privados`, porque la tabla `usuarios` del prototipo quedó como `legacy_usuarios`), sello público `perfiles.verificado`, función `verificar_mi_cedula()` y candado: sin cédula verificada no se abren parches.
+2. `20261101130000_negocios_mesa_checkin_pagos.sql`: horarios y cupones del negocio en la base (una cuenta nueva arranca sin ninguno), planes protegidos (solo suben pagando), tabla `pagos`, Modo Mesa (`mesa_promos`, `mesa_reservas`), check-in verificado por QR o GPS y tiempo real.
+
+| Archivo | Qué hace |
+| --- | --- |
+| `mp-verificacion.js` / `.css` | Modal "Verifica tu cédula": compresión en `<canvas>` a 80–100 KB (WebP o JPEG, máx. 1200 px), lectura del código del respaldo (BarcodeDetector, ZXing-js y Tesseract.js por CDN) y subida al bucket privado. Se pide solo al abrir un parche o al pedir la insignia. |
+| `mp-checkin.js` | QR de llegada que cambia cada 30 s (qrcode-generator) y escáner con la cámara (html5-qrcode). |
+| `mp-mapa.js` / `.css` | Buscador de lugares y direcciones en todos los mapas (Photon y Nominatim de OpenStreetMap, gratis), dirección del pin al soltarlo, ubicación del local a partir de su dirección y GPS que espera la mejor precisión. |
+| `supabase/functions/wompi-checkout` | Crea el cobro y la firma de integridad de Wompi (el secreto nunca llega al navegador) y confirma transacciones. |
+| `supabase/functions/wompi-webhook` | Recibe los eventos de Wompi, revisa la firma y sube el plan por 30 días. |
+
+### Gestos y animaciones del panel (noviembre 2026)
+
+Correr en el SQL Editor después de las anteriores: `20261103120000_calificaciones_cero_y_respuestas.sql`. Hace dos cosas:
+
+- **Calificaciones desde 0.** Una cuenta nueva arranca en 0 (antes 5,0) y solo sube cuando alguien la califica. Las cuentas sin calificaciones quedan en 0. El perfil muestra "0,0 · Aún nadie te ha calificado".
+- **Responder mensajes.** Columna `mensajes.responde_a`. Si la migración no se ha corrido, el chat sigue funcionando y la respuesta sale sin la cita guardada.
+
+| Gesto | Dónde | Cómo funciona |
+| --- | --- | --- |
+| Swipe to reply | Chat | Desliza un mensaje a la derecha para responderlo. En computador, botón de responder al pasar el mouse. Tocar la cita lleva al mensaje original. |
+| Reveal actions | Mis parches | Desliza un parche a la izquierda: Mapa, Salir (o Editar y Cancelar si es tuyo). La primera vez la fila se asoma para enseñar el gesto. |
+| Icon expand | Buscador del inicio | El ícono se despliega en buscador. `/` lo abre y `Esc` lo cierra. |
+| Gooey drop y swipe to dismiss | Avisos | Caen como una gota desde la barra superior y se cierran deslizándolos de lado. Con el mouse encima no se cierran solos. |
+| Hold to confirm | Botón "Caerle" | Mantén presionado hasta que se llene para confirmar asistencia. Con teclado: mantener Enter o Espacio. Con lector de pantalla confirma directo. |
+| Pull to refresh | Celular | Jala hacia abajo desde arriba: el logo gira, el anillo se llena y recarga los parches. |
+| Ripple ring | Botones | Un anillo sale del punto que tocas (negro sobre superficies naranjas). |
+
+Todo usa `transform` y `opacity`, respeta "reducir movimiento" del sistema y vibra levemente en celulares que lo permiten. El código está en la sección 14 de `dashboard.js` y la 13 de `dashboard.css`.
+
+### Parches oficiales y eliminar parche (noviembre 2026)
+
+Correr en el SQL Editor, en este orden: `20261103130000_coordenadas_viva.sql`, `20261104120000_parches_oficiales.sql` y `20261104130000_cepeda_boleteria.sql` (datos reales de La Tiquetera: Coliseo Las Malocas, General $100.000, VIP $160.000, Platino menores $255.000, palcos para 10 de $3.100.000 a $4.200.000).
+
+- **Parche oficial del mes.** Cada mes el equipo arma al menos un parche grande (conciertos y festivales). Sale primero en el inicio, en grande, con cuenta regresiva y dos boletos: **Comprar entrada** y **Comprar palco**. Los botones abren la boletería oficial en otra pestaña: ModoParche no vende boletas ni recibe ese dinero. Sin enlace, el boleto dice "Pronto a la venta". Si el sitio está "Por confirmar", no sale en el mapa.
+- **Primer oficial:** Andrés Cepeda, sábado 28 de noviembre de 2026, 7:00 p. m., 1.000 cupos. Sitio, precios y enlaces quedan por confirmar.
+- **Panel admin > Parches > Oficiales:** botón "Nuevo parche oficial" y "Editar" para poner sitio, coordenadas, precios, enlaces de compra y personas por palco. Solo los admins (función `admin_guardar_oficial`); ninguna cuenta puede marcar su parche como oficial. Los oficiales aceptan hasta 20.000 cupos (los normales, 60).
+- **Eliminar parche:** quien lo organiza lo borra desde la tarjeta (ícono de basura), desde "Editar parche", desde el chat o deslizando el parche en Mis parches. Pide confirmación y les llega un aviso a quienes iban.
+
+### Mejoras de noviembre 2026
+
+Correr `20261104140000_mejoras_noviembre.sql` en el SQL Editor (después de las anteriores).
+
+| Mejora | Cómo funciona |
+| --- | --- |
+| Compartir | Botón en cada tarjeta, en el chat y en el oficial. Comparte `https://…/p/<id>`: una página (`api/p.js`) con la vista previa para WhatsApp (foto, título, cuándo y dónde) que lleva al parche. Si la persona no ha entrado, lo abre después del login. |
+| Calificar | Hasta 7 días después de un parche con check-in sale "¿Cómo estuvo?": estrellas y "Volvería a parchar" por cada persona. La base exige check-in, que la persona haya estado en ese parche y el plazo. |
+| Filtros | Hoy, Gratis, A 3 km (con GPS) y categorías, con conteo, encima de "Abiertos ahora". |
+| Foto del parche | Cualquier persona puede poner una foto (se achica a 1280 px antes de subirla al bucket `fotos`). La base solo acepta fotos de la carpeta de quien creó el parche. |
+| App instalable | `manifest.webmanifest` y `sw.js`: se instala desde el navegador (Perfil > App y avisos) y abre sin señal con lo último guardado. |
+| Avisos push | Perfil > App y avisos. Ver "Activar los avisos push" abajo. |
+| Más rápido | Leaflet (los mapas) ya no bloquea la carga: se baja cuando se abre un mapa o cuando el navegador está libre. Caché larga para imágenes en `vercel.json`. |
+| Historial de oficiales | "Oficiales anteriores" al final del inicio, con afiche y cuántos fueron. |
+| Parches grandes | En los oficiales, el chat tiene pestañas Todo, Anuncios y la localidad de cada quien (General, VIP, Palco…). Cada persona elige su localidad y se ve junto a su nombre. |
+| Afiche del oficial | `src/assets/web/oficiales/andres-cepeda.webp` (y `-og.jpg` para compartir). En el panel admin se cambia en el campo "Afiche". |
+
+### Seguridad y comunidad (noviembre 2026)
+
+Correr `20261104150000_seguridad_y_comunidad.sql` en el SQL Editor (después de `20261104140000_mejoras_noviembre.sql`).
+
+| Función | Dónde | Cómo funciona |
+| --- | --- | --- |
+| Ayuda (123) | Botón rojo "Ayuda" arriba y escudo en cada chat | Llamar al 123 (Policía) o a la Línea 155, enviar tu ubicación por WhatsApp a tu contacto de confianza, compartir tu ubicación en vivo y verificar a alguien con QR. |
+| Emergencia para negocios | Botón "Emergencia" en el panel de empresas (`mp-seguridad-biz.js`) | 123, Línea 155 y "Verificar cliente" con su QR. |
+| Consejos de seguridad | Inicio, chat de parches próximos, aviso cada 12 h y panel de empresas | Cambian cada día. |
+| QR de identidad | Perfil > "Mi QR de identidad" y "Verificar a alguien" | Cambia cada 30 s. Quien lo escanea ve nombre, foto (si la muestras), cédula verificada sí/no, calificación y parches con llegada. Nunca el número de cédula. |
+| Ubicación en vivo | Ayuda > Compartir mi ubicación en vivo | Enlace `/seguro/<token>` (`api/seguro.js`) que tu contacto abre sin cuenta. Se actualiza cada 20 s, dura máximo 8 horas y se puede apagar. |
+| Lista de espera | Parches llenos: "Avísame si se libera" | Cuando alguien se sale, la primera persona de la lista recibe un aviso. |
+| Invitar parceros | Chat > Invitar parceros | Lista de personas con las que has compartido parches; les llega una notificación. |
+| Transporte | Chat > Transporte | Ofrecer puestos (carro, moto o taxi compartido) o irte con alguien. El conductor recibe aviso. |
+| Encuestas | Chat > Encuesta | 2 a 5 opciones, resultados en vivo, se puede cambiar el voto. |
+| Álbum | Chat > Álbum | Fotos del parche, solo para quienes están dentro. Máximo 30 por persona. |
+| Para ti | Inicio | Recomienda según tus gustos, tus parceros, la distancia y el día. |
+| Clics a la boletería | Panel admin > Parches > Oficiales | Cuántas personas tocaron "Comprar entrada" y "Comprar palco". |
+| Modo oscuro | Perfil > Como el celular / Claro / Oscuro | Sin parpadeo al cargar; el parche oficial y el saludo conservan sus colores. |
+
+#### Activar los avisos push
+
+1. Las llaves están en `.env.local` (no se sube a git ni a Vercel). La pública ya está en `dashboard.js`.
+2. Supabase > Edge Functions > Secrets: crear `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` y `PUSH_WEBHOOK_SECRET` con los valores de `.env.local`.
+3. Publicar la función: `supabase functions deploy enviar-push --no-verify-jwt` (o crearla en el editor de Edge Functions con el código de `supabase/functions/enviar-push/index.ts`).
+4. Supabase > Database > Webhooks > Create: tabla `notificaciones`, evento `INSERT`, tipo "Supabase Edge Functions", función `enviar-push`, y un encabezado `x-webhook-secret` con el valor de `PUSH_WEBHOOK_SECRET`.
+
+Mientras no esté configurado, activar los avisos guarda la suscripción pero no llega nada.
+
+#### Cobro por resultados (noviembre 2026)
+
+Sin mensualidades: los negocios solo pagan por clientes que llegan. Migración: `supabase/migrations/20261118120000_cobro_por_resultados.sql`.
+
+| Plan | Paquete cerrado (combos, boletas, covers) | Consumo libre en mesa (y Modo Mesa) |
+|---|---|---|
+| Parche básico | 0% | $0 por cliente (máx. 2 parches al mes) |
+| Parche Villavo | 10% por paquete redimido | $2.500 por persona que llega |
+| Varias sedes | 8% por paquete redimido | $2.000 por persona que llega |
+
+- Cada parche de negocio elige su tipo al crearlo. El cliente **paga en el local**; ModoParche no recibe dinero de terceros.
+- Solo cuentan las llegadas validadas: QR o marca del local, o el cliente con el QR del parche o el GPS (`mesa_llegue` en el Modo Mesa). Cada llegada crea una fila en `cobros` con hora, método y código.
+- El día 1 de cada mes `private.generar_liquidaciones()` (pg_cron) arma el estado de cuenta de cada negocio en `liquidaciones`. El negocio paga con el datáfono virtual de Wompi (`https://checkout.wompi.co/l/VPOS_saHurm`, monto abierto) escribiendo el valor y la referencia, y toca «Ya pagué». El admin lo confirma en **Cobros**.
+- Si una liquidación vence (día 15) sin pagar, los parches de ese negocio dejan de salir en el radar hasta que se marque pagada.
+- **Pago con un clic del estado de cuenta** (`20261119120000_pago_liquidaciones_wompi.sql`): «Pagar con Wompi» abre el widget oficial con el valor y la referencia ya puestos (los firma `wompi-checkout` con el valor de la base) y `wompi-webhook` marca el estado de cuenta como pagado solo. Si no está configurado, el botón abre el datáfono como respaldo.
+
+Activar el pago en línea (una sola vez):
+
+1. En Wompi > Desarrolladores (Producción) **genera llaves nuevas** si alguna vez se compartieron. La llave privada `prv_prod_` no se usa en ModoParche.
+2. Supabase > Edge Functions > **Secrets**: `WOMPI_PUBLIC_KEY` (pub_prod_…), `WOMPI_INTEGRITY_SECRET` (prod_integrity_…), `WOMPI_EVENTS_SECRET` (prod_events_…), `WOMPI_ENTORNO=prod` y `PERMITIR_COBROS_REALES=si`.
+3. Despliega las funciones: `npx supabase functions deploy wompi-checkout` y `npx supabase functions deploy wompi-webhook --no-verify-jwt` (o desde el editor del panel, apagando *Verify JWT* en el webhook).
+4. Wompi > Desarrolladores > **URL de eventos** (Producción): `https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/wompi-webhook`.
+5. Corre la migración `20261119120000_pago_liquidaciones_wompi.sql`.
+
+#### Mejoras del cobro (`20261120120000_mejoras_cobro.sql`)
+
+- **Comprobante:** «Ver detalle» / «Comprobante» abre el estado de cuenta listo para imprimir o guardar en PDF (`mi_liquidacion_detalle`).
+- **Recordatorios:** pg_cron `modo-parche-recordar-cobros` (9:00 a. m.) avisa 5 días antes, el día del vencimiento, al día siguiente y a la semana (notificación push).
+- **Reclamos:** el negocio toca «¿No llegó? Reclamar» en un cobro (hasta 15 días); el equipo lo aprueba o lo mantiene en Admin > Cobros. Si se aprueba, se descuenta del estado de cuenta o queda como saldo a favor.
+- **Plazo de 48 horas:** pasado ese tiempo (o si el cobro ya está en un estado de cuenta) una llegada no se puede desmarcar; se corrige con un reclamo.
+- **Abonos:** se puede pagar una parte (desde $20.000). Con la mitad pagada, el local tiene 15 días más antes de salir del radar.
+- **QR fijo del local:** en Perfil y plan; se imprime y se pega en la entrada. Marca la reserva o el parche de hoy de quien lo escanea (`llegue_por_qr_local`). Si la persona comparte su ubicación y está a más de 500 m, no vale.
+- **Cupón de bienvenida:** nueva regla de cupón que se entrega solo con la primera llegada validada. El beneficio de una mesa aparece como «se activa al llegar».
+- **Calificar el local:** solo quien tiene una llegada validada en los últimos 14 días (`calificar_local`); las reseñas reales llegan al panel del negocio.
+- **Alertas para el equipo:** locales con menos del 20 % de llegadas, muchas llegadas desmarcadas o muchos reclamos (`admin_anomalias`).
+- **Exportar para el contador:** CSV (abre en Excel) de los estados de cuenta en el admin y de los clientes del mes en el panel del negocio.
+- **Aliados destacados:** pagan a tiempo, tienen buena nota y reciben llegadas reales. Llevan insignia y suben en «Para ti».
+- **Referidos:** `empresa.html?ref=CODIGO`. Cuando el local invitado paga su primer estado de cuenta, los dos reciben $10.000 de saldo a favor, que se descuenta solo.
+
+Después de correr la migración, vuelve a desplegar `wompi-checkout`, que ahora acepta abonos.
+
+#### Amigos y mensajes directos (`20261121120000_amigos.sql`)
+
+- En **Mis parches > Amigos**: solicitudes, lista de amigos con el último mensaje y los no leídos, y sugerencias con la gente con la que ya compartiste un parche.
+- Solo se puede agregar a alguien con quien compartiste un parche (máximo 30 solicitudes al día). Bloquear corta la amistad y los mensajes.
+- Los mensajes directos pasan por el mismo filtro del chat (enlaces raros y groserías), tienen freno anti-spam (20 por minuto), llegan en tiempo real y mandan aviso push.
+
+#### Modos de color
+
+El botón de la barra pasa por **claro → mixto → oscuro**. En el panel de usuario también se elige en Perfil > Apariencia.
+
+- **Claro:** casi toda la app clara. Los bloques negros grandes del diseño (capítulos, footer, cookies) pasan a gris claro.
+- **Mixto:** el diseño de marca original, con blanco, negro y naranja. En los paneles, el contenido es claro y las barras son oscuras.
+- **Oscuro:** casi toda la app oscura. Los bloques negros se quedan oscuros y no se vuelven blancos.
+- `mp-tema.js` marca esos bloques con `.mp-tinta-bloque`, midiéndolos con el diseño original. Lo naranja (`.mp-fijo`) y las muestras del manual de marca (`[data-tinta-fija]`) conservan sus colores en los tres modos.
+
+#### Datos de prueba (no se suben al repositorio)
+
+`supabase/pruebas/capachos_debe_5000.sql` arma un estado de cuenta de $5.000 para Capachos, con las llegadas de dos usuarios, para ver el pago con Wompi. `capachos_deshacer.sql` lo borra. La carpeta está en `.gitignore` porque tiene nombres reales.
+
+#### Pagos con Wompi del plan mensual (modelo anterior)
+
+1. Crear la cuenta de comercio en [comercios.wompi.co](https://comercios.wompi.co) y copiar, en *Desarrolladores*, la llave pública, el secreto de integridad y el secreto de eventos (primero las de prueba: `pub_test_`, `test_integrity_`, `test_events_`).
+2. Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):
+   ```bash
+   supabase link --project-ref quxqqxnowlwiahorifpy
+   supabase secrets set WOMPI_PUBLIC_KEY=pub_test_xxx WOMPI_INTEGRITY_SECRET=test_integrity_xxx WOMPI_EVENTS_SECRET=test_events_xxx
+   supabase functions deploy wompi-checkout
+   supabase functions deploy wompi-webhook --no-verify-jwt
+   ```
+3. En Wompi > *Desarrolladores* > *URL de eventos*: `https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/wompi-webhook`.
+4. Probar con las tarjetas de prueba de Wompi (por ejemplo 4242 4242 4242 4242).
+
+**Solo modo de pruebas.** ModoParche es un proyecto académico sin ánimo de lucro: los pagos usan las llaves de prueba de Wompi y nunca se cobra dinero real. La función `wompi-checkout` rechaza las llaves de producción (`pub_prod_`) salvo que se active a propósito el secreto `PERMITIR_COBROS_REALES=si`, cosa que no se debe hacer mientras sea un prototipo.
+
+Precio: `PRECIO_VILLAVO_CENTAVOS` (por defecto `7990000` = $79.900). Mientras Wompi no esté configurado, el panel lo dice claramente y no cobra nada.
+
+### Seguridad, captcha y confirmación de correo (noviembre 2026)
+
+| Archivo | Qué hace |
+|---|---|
+| `mp-captcha.js` | Cloudflare Turnstile en registro, inicio de sesión, recuperar contraseña y reenviar confirmación (personas y negocios). Invisible salvo que Cloudflare dude. Si la Site Key está vacía, no se carga. |
+| `supabase/migrations/20261111120000_anti_spam.sql` | Límites por persona: 12 mensajes/minuto y 300/día, 6 parches/día, 30 fotos/hora, 10 enlaces de ubicación/hora. |
+| `supabase/templates/confirmar-correo.html` | Correo de confirmación con la marca, en español. |
+| `vercel.json` | Headers de seguridad: CSP, HSTS, `nosniff`, sin iframes ajenos, `Permissions-Policy` (cámara y GPS solo del sitio) y `noindex` en el admin. |
+
+Pasos en los paneles (una sola vez, en este orden):
+
+1. **Cloudflare Turnstile.** dash.cloudflare.com > Turnstile > *Add widget*. Dominios: el de Vercel (y `localhost` para probar). Modo *Managed*. Pega la **Site Key** en `SITE_KEY` dentro de `mp-captcha.js` y publica.
+2. **Supabase > Authentication > Attack Protection.** Activa *Captcha protection* > Cloudflare Turnstile y pega la **Secret Key**. Activa también *Leaked password protection*. (Si activas el captcha antes del paso 1, nadie podrá entrar.)
+3. **Supabase > Authentication > Sign In / Providers > Email.** Deja activado *Confirm email*.
+4. **Correo desde modoparcheoficial@gmail.com.** En la cuenta de Google activa la verificación en 2 pasos y crea una *contraseña de aplicación*. En Supabase > Authentication > Emails > *SMTP Settings*: host `smtp.gmail.com`, puerto `465`, usuario `modoparcheoficial@gmail.com`, contraseña = la de aplicación, remitente `ModoParche`. Sin SMTP propio Supabase solo manda unos pocos correos por hora.
+5. **Plantilla.** Authentication > Emails > *Confirm signup*: asunto «Confirma tu correo y entra al parche» y pega `supabase/templates/confirmar-correo.html`.
+6. **URL de regreso.** Authentication > URL Configuration > *Redirect URLs*: agrega `https://TU-DOMINIO/dashboard.html?confirmado=1` (o `https://TU-DOMINIO/**`).
+7. **SQL Editor:** corre `20261111120000_anti_spam.sql`.
+8. **Límites de gasto:** Vercel > Settings > Billing > *Spend Management*; Supabase > Organization > Billing > *Spend cap* encendido.
+
+### Cuenta, comunidad y seguridad (noviembre 2026, parte 2)
+
+Corre en el SQL Editor `supabase/migrations/20261112120000_cuenta_y_comunidad.sql` (después de `anti_spam`). Trae:
+
+- **Verificación en dos pasos del equipo:** el admin pide un código de 6 números (Google Authenticator, Authy…). La primera vez muestra el QR para inscribirlo. La base exige la sesión con código para todas las acciones del panel.
+- **Cédula obligatoria** en el registro con correo (solo números, 5 a 10 dígitos, sin empezar en 0), nombre solo con letras y celular colombiano. Lo valida la app y también la base. Las cuentas que ya existían sin cédula, y las que entran con Google, la escriben una sola vez en el dashboard.
+- **Bloquear personas** (desde «Reportar»), lista para desbloquear en el perfil y **cerrar sesión en todos los dispositivos**.
+- **Chat:** tapa groserías fuertes, bloquea enlaces que no sean de sitios conocidos y avisa por push (máximo uno cada 10 min por parche).
+- **Recordatorio 1 hora antes** del parche (pg_cron cada 5 min).
+- **¿Ya llegó?** El enlace `/seguro` avisa al contacto si el parche empezó hace 30 min y la persona no ha marcado su llegada.
+- **Errores en producción:** `mp-errores.js` los guarda y el admin los ve en Bitácora > Errores de la app.
+
+Pasos en los paneles:
+
+1. **Supabase > Authentication > Multi-Factor:** deja activado *TOTP*.
+2. **Login con Google:** en Google Cloud Console crea un *OAuth Client ID* (tipo Web) con la URL de redirección `https://quxqqxnowlwiahorifpy.supabase.co/auth/v1/callback`. En Supabase > Authentication > Sign In / Providers > Google pega el Client ID y el Secret. Mientras no esté activo, el botón dice que Google todavía no está disponible.
+3. **Vercel > Analytics:** toca *Enable* (Web Analytics). El script ya está en todas las páginas.
+4. **Respaldos:** en GitHub > Settings > Secrets and variables > Actions crea `SUPABASE_DB_URL` (Supabase > Connect > *Session pooler*) y `RESPALDO_CLAVE` (una frase larga que guardes aparte). Lleva `.github/workflows/respaldo.yml` a la rama `main`: desde ahí corre cada lunes. Para restaurar: descarga el artefacto, `gpg -d respaldo-modoparche-FECHA.tgz.gpg > r.tgz`, `tar xzf r.tgz` y en una base vacía corre `roles.sql`, `esquema.sql` y `datos.sql` con `psql`. Las fotos del almacenamiento y los usuarios de Auth no van en este respaldo.
+
+### Panel de administración
+
+`admin.html` es el centro de control del equipo: métricas de toda la plataforma (con gráficas de 30 días, embudo, mapa de calor de horarios, categorías, ciudades y gustos), personas, negocios, parches, mapa en vivo, moderación de chats, anuncios y bitácora. Se actualiza en tiempo real.
+
+- **Se entra por el mismo login** (`login.html`). Si la cuenta es admin, la manda sola a `admin.html`.
+- **Los admins solo se crean desde la base de datos.** La tabla `admins` no tiene permiso de escritura desde la app; quién es admin nunca depende de datos que el usuario pueda editar.
+- Activar: correr `supabase/migrations/20261029120000_panel_admin.sql` en el SQL Editor. Crea la tabla, los permisos, las funciones del panel y los 2 primeros admins.
+- Crear otro admin: `select private.crear_admin('correo@dominio.com', 'ContraseñaSegura123', 'Nombre');`
+- Volver admin a una cuenta existente: `select private.crear_admin('correo@existente.com', null, 'Nombre');`
+- Quitar el rol: `delete from public.admins where id = (select id from auth.users where email = 'correo@dominio.com');`
+- Todo lo que hace un admin (suspender, retirar parches, borrar mensajes, cambiar planes, anuncios) queda en la bitácora.
+- `admin.html?demo=1` abre el panel con datos de ejemplo, sin tocar la base (`&rol=moderador` lo muestra como lo ve un moderador). Atajos: `/` busca, `1`–`9` cambian de sección.
+
+#### Panel admin v2 (`20261030120000_admin_v2.sql`)
+
+| Función | Qué hace |
+| --- | --- |
+| Roles | **Admin** hace todo. **Moderador** resuelve reportes, borra mensajes, deja notas, advierte y anula calificaciones; no ve cédulas ni teléfonos, no suspende, no verifica, no cambia planes ni edita parches. Se asignan solo desde SQL: `select private.crear_admin('correo', 'Clave123', 'Nombre', 'moderador');` |
+| Reportes | Botón de bandera en el chat (mensaje), en la lista de asistentes (persona) y en la cabecera del chat (parche). Llegan en vivo al admin; al resolver, quien reportó recibe un aviso. Máximo 15 reportes al día por cuenta y sin duplicados. |
+| Verificar negocios | Sello que solo da un admin. Se ve en los parches del negocio en el panel de usuarios. |
+| Notas y advertencias | En la ficha de cada cuenta. Las notas solo las ve el equipo; las advertencias le llegan a la persona y no se pueden borrar. |
+| Rango de fechas e informe | 7, 30, 90 días, 12 meses o fechas propias, comparado con el periodo anterior. "Informe PDF" abre un informe listo para imprimir o guardar como PDF. |
+| Reputación | Calificaciones con "pelea cruzada" o "racha de castigo" marcadas; se pueden anular y la reputación se recalcula. |
+| Retención | Tabla por semana de registro: qué parte de la gente vuelve a usar la app. |
+| Editar parches | Cualquier parche o ejemplo (título, fecha, lugar, cupos, costo, categoría). En el chat se avisa que el equipo hizo el cambio. |

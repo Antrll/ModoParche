@@ -1,0 +1,47 @@
+<!--
+  ModoParche · Plantilla "Confirm signup" de Supabase
+  Dónde va: Supabase > Authentication > Emails > Confirm signup
+  Asunto sugerido: Confirma tu correo y entra al parche 🔥
+  {{ .ConfirmationURL }} y {{ .Email }} los reemplaza Supabase.
+  Correo con tablas y estilos en línea para que se vea bien en Gmail y Outlook.
+-->
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Confirma tu correo</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;">
+      <tr><td style="background:#FF5A1F;padding:28px 32px;font-family:Impact,'Arial Black',Arial,sans-serif;font-size:30px;line-height:1;letter-spacing:.5px;color:#111111;text-transform:uppercase;">
+        Modo<span style="color:#ffffff;">Parche</span>
+      </td></tr>
+      <tr><td style="padding:32px;font-family:Arial,Helvetica,sans-serif;color:#111111;">
+        <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;">Confirma tu correo</h1>
+        <p style="margin:0 0 20px;font-size:16px;line-height:1.55;color:#38383f;">
+          Ya casi. Toca el botón para activar tu cuenta de ModoParche con <b style="color:#111111;">{{ .Email }}</b> y entrar a tu radar de parches en Villavicencio.
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:999px;background:#111111;">
+          <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:999px;">Confirmar mi correo</a>
+        </td></tr></table>
+        <p style="margin:24px 0 8px;font-size:13px;line-height:1.5;color:#38383f;">
+          ¿El botón no funciona? Copia y pega este enlace en tu navegador:
+        </p>
+        <p style="margin:0 0 24px;font-size:12px;line-height:1.5;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#b83709;">{{ .ConfirmationURL }}</a></p>
+        <p style="margin:0;padding:14px 16px;border-radius:12px;background:#fff1ea;font-size:13px;line-height:1.5;color:#4a2208;">
+          El enlace dura 24 horas y sirve una sola vez. Si no creaste una cuenta en ModoParche, ignora este correo: nadie podrá usar tu dirección sin confirmarla.
+        </p>
+      </td></tr>
+      <tr><td style="padding:20px 32px 28px;border-top:1px solid #e9e9eb;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#6b6b73;">
+        ModoParche · Villavicencio, Meta · <a href="mailto:modoparcheoficial@gmail.com" style="color:#6b6b73;">modoparcheoficial@gmail.com</a><br>
+        Nunca te pediremos tu contraseña por correo.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

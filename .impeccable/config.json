@@ -1,0 +1,194 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          "dashboard.html"
+        ],
+        "createdAt": "2026-10-27T20:17:02.666Z",
+        "reason": "Inter es la fuente de cuerpo de la marca en todo el sitio"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "dashboard.css"
+        ],
+        "createdAt": "2026-10-27T20:17:08.199Z",
+        "reason": "Solo el punto azul del GPS en el mapa"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "dashboard.html"
+        ],
+        "createdAt": "2026-10-27T20:17:08.366Z",
+        "reason": "Las tarjetas usan padding con clamp() que el escáner no calcula"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          "empresa-dashboard.html"
+        ],
+        "createdAt": "2026-10-27T20:28:51.827Z",
+        "reason": "Inter es la fuente de cuerpo de la marca en todo el sitio"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-29T17:59:48.994Z",
+        "reason": "Claude: Inter es la fuente de texto de todo el sitio y de los otros dos paneles; Gagalin da la personalidad"
+      },
+      {
+        "rule": "undersized-ui-text",
+        "value": "*",
+        "files": [
+          "admin.html"
+        ],
+        "createdAt": "2026-10-29T17:59:49.122Z",
+        "reason": "Claude: falso positivo del escaneo estático; 'Hola,' es .5em de un título de 40-78px, se ve a 20-39px"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "admin.html"
+        ],
+        "createdAt": "2026-10-29T17:59:49.243Z",
+        "reason": "Claude: live-chip centra el texto en 34px de alto y el diálogo tiene 22px de relleno en su cabecera; verificado en capturas"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "admin.html"
+        ],
+        "createdAt": "2026-10-29T17:59:49.364Z",
+        "reason": "Claude: el usuario pidió el panel full animado; la cinta muestra datos reales, se pausa al pasar el mouse y se apaga con movimiento reducido"
+      },
+      {
+        "rule": "buried-raster",
+        "value": "*",
+        "files": [
+          "login.html"
+        ],
+        "createdAt": "2026-11-11T19:39:08.096Z",
+        "reason": "Claude verified: hidden alternates of the nav isotype (.lm) swapped by background"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "login.html"
+        ],
+        "createdAt": "2026-11-11T19:39:08.212Z",
+        "reason": "Existing brand marquee; pauses on hover and stops under prefers-reduced-motion"
+      },
+      {
+        "rule": "buried-raster",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-11T19:39:08.341Z",
+        "reason": "Claude verified: hidden alternates of the nav isotype (.lm) swapped by background"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-11T19:39:08.457Z",
+        "reason": "Existing brand marquee; pauses on hover and stops under prefers-reduced-motion"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-11T20:18:32.689Z",
+        "reason": "Claude verified in screenshots: full-bleed sections inset text with .wrap margins; burst/stage art is centered shapes"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-11T20:18:32.806Z",
+        "reason": "Claude verified rendered: white on orange is display text >=24px (passes AA large); active tabs sit on a ::before pill"
+      },
+      {
+        "rule": "buried-raster",
+        "value": "*",
+        "files": [
+          "empresa.html"
+        ],
+        "createdAt": "2026-11-11T20:18:32.920Z",
+        "reason": "Claude verified: hidden alternates of the nav isotype (.lm) swapped by background"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "empresa.html"
+        ],
+        "createdAt": "2026-11-11T20:18:33.039Z",
+        "reason": "Existing brand marquee; pauses on hover and stops under prefers-reduced-motion"
+      },
+      {
+        "rule": "aphoristic-cadence",
+        "value": "*",
+        "files": [
+          "dashboard.html"
+        ],
+        "createdAt": "2026-11-11T20:18:33.159Z",
+        "reason": "Claude verified: false positive from adjacent button label + row title text (Cerrar / Borrar mi cuenta), not prose"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "dashboard.html"
+        ],
+        "createdAt": "2026-11-11T20:23:33.657Z",
+        "reason": "Claude verified rendered: 'Parche' is the logotype (exempt), toast text sits on a dark goo blob, active tab sits on a ::before pill"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "dashboard.html"
+        ],
+        "createdAt": "2026-11-11T20:23:33.778Z",
+        "reason": "Blue #1f6feb ping is the map 'you are here' location dot, a platform convention, not decoration"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "empresa.html"
+        ],
+        "createdAt": "2026-11-11T20:23:33.891Z",
+        "reason": "Claude verified rendered: active auth tab text sits on a ::before pill the static scan misses"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "empresa.html"
+        ],
+        "createdAt": "2026-11-11T20:23:34.009Z",
+        "reason": "Claude verified: .biz-live-cover holds only a centered image, no text"
+      }
+    ]
+  }
+}
