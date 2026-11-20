@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FF5A1F">
 <title>Mi panel · ModoParche</title>
-<script>(function(){var t='sistema';try{t=localStorage.getItem('mp_tema')||'sistema';}catch(e){}var d=t==='oscuro'||(t!=='claro'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('is-dark');})();</script>
+<script>(function(){var t='sistema';try{t=localStorage.getItem('mp_tema')||'sistema';}catch(e){}var d=t==='oscuro'||(t!=='claro'&&t!=='mixto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('is-dark');else if(t==='mixto')document.documentElement.classList.add('is-mixto');})();</script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
@@ -256,6 +256,7 @@
         <span class="seg-pill" aria-hidden="true"></span>
         <button class="seg-btn" data-mis="unido" role="tab">Me uní</button>
         <button class="seg-btn" data-mis="propios" role="tab">Los que armé</button>
+        <button class="seg-btn" data-mis="amigos" role="tab">Amigos <span class="seg-count tnum" id="amigos-count" hidden>0</span></button>
       </div>
     </div>
 
@@ -297,7 +298,7 @@
         </div>
         <div class="tema" role="group" aria-label="Apariencia">
           <button type="button" class="tema-btn" data-action="tema" data-tema="sistema" aria-pressed="true">Como el celular</button>
-          <button type="button" class="tema-btn" data-action="tema" data-tema="claro" aria-pressed="false">Claro</button>
+          <button type="button" class="tema-btn" data-action="tema" data-tema="claro" aria-pressed="false">Claro</button><button type="button" class="tema-btn" data-action="tema" data-tema="mixto" aria-pressed="false">Mixto</button>
           <button type="button" class="tema-btn" data-action="tema" data-tema="oscuro" aria-pressed="false">Oscuro</button>
         </div>
 

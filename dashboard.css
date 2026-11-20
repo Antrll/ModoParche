@@ -623,7 +623,7 @@ select.input {
 .msg time { display: block; margin-top: 4px; font-size: .6875rem; color: var(--muted); }
 .msg--me { align-self: flex-end; flex-direction: row-reverse; }
 .msg--me .bubble { background: var(--ink); color: var(--paper); border-radius: 18px 18px 6px 18px; }
-.msg--me time { color: rgba(255,255,255,.6); text-align: right; }
+.msg--me time { color: color-mix(in srgb, var(--paper) 62%, transparent); text-align: right; }
 .msg--sys { align-self: center; max-width: 90%; }
 .msg--sys .bubble { background: transparent; box-shadow: none; padding: 4px 12px; font-size: .8125rem; color: var(--muted); text-align: center; }
 .msg--alert .bubble { background: var(--orange-soft); color: var(--orange-deep); border-radius: var(--r-pill); }
@@ -1465,9 +1465,9 @@ html.is-gesturing, html.is-gesturing * { -webkit-user-select: none; user-select:
 }
 .msg-quote b { display: block; font-size: .75rem; font-weight: 800; color: var(--orange-deep); margin: 0; }
 .msg-quote span { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.msg--me .msg-quote { background: rgba(255,255,255,.1); }
+.msg--me .msg-quote { background: color-mix(in srgb, var(--paper) 10%, transparent); }
 .msg--me .msg-quote b { color: var(--orange); }
-.msg--me .msg-quote span { color: rgba(255,255,255,.75); }
+.msg--me .msg-quote span { color: color-mix(in srgb, var(--paper) 75%, transparent); }
 .msg.is-flash .bubble { animation: msgFlash 1.2s ease; }
 @keyframes msgFlash { 0%, 100% { box-shadow: 0 1px 2px rgba(17,17,17,.06); } 18%, 60% { box-shadow: 0 0 0 3px var(--orange); } }
 
@@ -2198,3 +2198,86 @@ html.is-dark { --on-orange: #111111; }
 /* Insignias a todo el ancho: sin hueco al lado de la tarjeta de verificación */
 .badges-card { grid-column: 1 / -1; }
 .badges-card .badges { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+/* Mejoras del cobro: aliado destacado, calificar el local, beneficio de mesa */
+.tag--top { background: var(--ink); color: var(--paper); }
+.tag--top .ic { fill: var(--orange); }
+.rate-card--local { align-items: start; }
+.loc-stars { display: flex; gap: 4px; margin: 10px 0 8px; }
+.loc-stars button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 12px; background: transparent; color: var(--muted); cursor: pointer; }
+.loc-stars button .ic { width: 26px; height: 26px; fill: currentColor; }
+.loc-stars button.is-on { color: var(--orange-deep); }
+.loc-stars button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.loc-texto { width: 100%; min-height: 56px; resize: vertical; font: inherit; }
+.loc-acts { display: grid; gap: 8px; justify-items: center; }
+.mesa-mia-ben { display: block; margin-top: 2px; font-size: .75rem; color: var(--muted); }
+.mesa-mia-ben.is-on { color: var(--ok); font-weight: 700; }
+.mesa-mia-ben .ic { width: 12px; height: 12px; vertical-align: -1px; fill: currentColor; }
+@media (max-width: 640px) { .rate-card--local .loc-acts { grid-column: 1 / -1; grid-auto-flow: column; justify-content: start; } }
+
+/* =====================================================================
+   AMIGOS Y MENSAJES DIRECTOS
+===================================================================== */
+.seg-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--orange); color: #111111; font-size: .6875rem; font-weight: 800; vertical-align: 1px; }
+.amigos-sec { padding: 10px 4px 2px; }
+.amigos-sec:first-child { padding-top: 0; }
+.amigos-sec h3 { display: flex; align-items: center; gap: 8px; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.amigos-sec h3 span { color: var(--ink); }
+.amigo-row .mis-item { grid-template-columns: 48px minmax(0, 1fr) auto; }
+.amigo-av .av { width: 48px; height: 48px; font-size: 1.05rem; }
+.amigo-txt { min-width: 0; }
+.amigo-txt b { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: .9375rem; line-height: 1.25; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.amigo-txt small { display: block; margin-top: 2px; color: var(--muted); font-size: .8125rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.amigo-txt small.is-new { color: var(--ink); font-weight: 700; }
+.amigo-dot { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--orange); color: #111111; font-size: .75rem; font-weight: 800; }
+.amigo-t { font-size: .75rem; color: var(--muted); white-space: nowrap; }
+.amigo-sol { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px; border-radius: var(--r); background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--line); }
+.amigo-acts { display: flex; align-items: center; gap: 6px; }
+.amigo-acts .btn { white-space: nowrap; }
+.amigos-vacio { padding: 14px 16px; border-radius: var(--r); background: var(--soft); font-size: .875rem; line-height: 1.5; }
+.dm-head-av .av { width: 40px; height: 40px; }
+.dm-dia { display: flex; justify-content: center; margin: 6px 0; }
+.dm-dia span { padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--muted); font-size: .75rem; font-weight: 700; }
+.msg.is-pend .bubble { opacity: .7; }
+.chat-empty { margin: auto; display: grid; justify-items: center; gap: 8px; max-width: 30ch; text-align: center; color: var(--muted); font-size: .875rem; }
+.chat-empty .ic { width: 28px; height: 28px; color: var(--orange); }
+@media (max-width: 760px) {
+  .view-head .seg-btn { padding: 0 8px; font-size: .8125rem; }
+  .amigo-sol { grid-template-columns: 44px minmax(0, 1fr); }
+  .amigo-sol .amigo-acts { grid-column: 2; }
+  .amigo-av .av { width: 44px; height: 44px; }
+  .amigo-row .mis-item { grid-template-columns: 44px minmax(0, 1fr) auto; }
+}
+
+/* =====================================================================
+   MODO MIXTO: contenido claro con la barra de arriba oscura
+   (la barra de abajo del celular ya es oscura)
+===================================================================== */
+html.is-mixto .top {
+  --ink: #ffffff; --paper: #18181b; --bg: #0e0e10; --soft: #232327; --line: #2e2e33; --muted: #b9b9c2;
+  background: rgba(17,17,17,.94); color: #ffffff;
+}
+html.is-mixto .top .logo-lt { display: none !important; }
+html.is-mixto .top .logo-dk { display: block !important; }
+html.is-mixto .top.is-scrolled { box-shadow: 0 10px 30px -24px rgba(0,0,0,.8); }
+
+/* =====================================================================
+   MODO CLARO: lo que era negro pasa a claro (el mixto lo deja negro)
+===================================================================== */
+html:not(.is-dark):not(.is-mixto) .oficial { background: #f1f1f3; color: #111111; box-shadow: inset 0 0 0 1px #e4e4e7, var(--shadow-soft); }
+html:not(.is-dark):not(.is-mixto) .oficial::before { background: radial-gradient(closest-side, rgba(255,90,31,.18), transparent 70%); }
+html:not(.is-dark):not(.is-mixto) .of-desc { color: #45454d; }
+html:not(.is-dark):not(.is-mixto) .of-title span { color: #b83709; }
+html:not(.is-dark):not(.is-mixto) .of-count { background: rgba(17,17,17,.06); color: #111111; }
+html:not(.is-dark):not(.is-mixto) .oficial .of-tk-go::before, html:not(.is-dark):not(.is-mixto) .oficial .of-tk-go::after { background: #f1f1f3; }
+html:not(.is-dark):not(.is-mixto) .of-tk--palco { background: #ffffff; box-shadow: inset 0 0 0 1px #e4e4e7; }
+html:not(.is-dark):not(.is-mixto) .of-tk.is-off { background: rgba(17,17,17,.06); color: #111111; }
+html:not(.is-dark):not(.is-mixto) .of-tk.is-off .of-tk-go { border-top-color: rgba(17,17,17,.2); color: #45454d; }
+html:not(.is-dark):not(.is-mixto) .of-tk.is-off b { color: #111111; }
+html:not(.is-dark):not(.is-mixto) a.of-tk:focus-visible { outline-color: #111111; }
+html:not(.is-dark):not(.is-mixto) .of-poster { box-shadow: 0 18px 40px -22px rgba(17,17,17,.55); }
+html:not(.is-dark):not(.is-mixto) .qk--ink { background: #f1f1f3; color: #111111; box-shadow: inset 0 0 0 1px #e4e4e7; }
+@media (max-width: 760px) {
+  html:not(.is-dark):not(.is-mixto) .bottom-nav { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); background: rgba(255,255,255,.9); color: #55555c; box-shadow: 0 0 0 1px #e4e4e7, 0 18px 40px -18px rgba(17,17,17,.35); }
+  html:not(.is-dark):not(.is-mixto) .bn.is-active { color: #111111; }
+}

@@ -169,7 +169,51 @@ Sin mensualidades: los negocios solo pagan por clientes que llegan. Migración: 
 - Solo cuentan las llegadas validadas: QR o marca del local, o el cliente con el QR del parche o el GPS (`mesa_llegue` en el Modo Mesa). Cada llegada crea una fila en `cobros` con hora, método y código.
 - El día 1 de cada mes `private.generar_liquidaciones()` (pg_cron) arma el estado de cuenta de cada negocio en `liquidaciones`. El negocio paga con el datáfono virtual de Wompi (`https://checkout.wompi.co/l/VPOS_saHurm`, monto abierto) escribiendo el valor y la referencia, y toca «Ya pagué». El admin lo confirma en **Cobros**.
 - Si una liquidación vence (día 15) sin pagar, los parches de ese negocio dejan de salir en el radar hasta que se marque pagada.
-- Las funciones `wompi-checkout` y `wompi-webhook` (pago del plan mensual) ya no se usan.
+- **Pago con un clic del estado de cuenta** (`20261119120000_pago_liquidaciones_wompi.sql`): «Pagar con Wompi» abre el widget oficial con el valor y la referencia ya puestos (los firma `wompi-checkout` con el valor de la base) y `wompi-webhook` marca el estado de cuenta como pagado solo. Si no está configurado, el botón abre el datáfono como respaldo.
+
+Activar el pago en línea (una sola vez):
+
+1. En Wompi > Desarrolladores (Producción) **genera llaves nuevas** si alguna vez se compartieron. La llave privada `prv_prod_` no se usa en ModoParche.
+2. Supabase > Edge Functions > **Secrets**: `WOMPI_PUBLIC_KEY` (pub_prod_…), `WOMPI_INTEGRITY_SECRET` (prod_integrity_…), `WOMPI_EVENTS_SECRET` (prod_events_…), `WOMPI_ENTORNO=prod` y `PERMITIR_COBROS_REALES=si`.
+3. Despliega las funciones: `npx supabase functions deploy wompi-checkout` y `npx supabase functions deploy wompi-webhook --no-verify-jwt` (o desde el editor del panel, apagando *Verify JWT* en el webhook).
+4. Wompi > Desarrolladores > **URL de eventos** (Producción): `https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/wompi-webhook`.
+5. Corre la migración `20261119120000_pago_liquidaciones_wompi.sql`.
+
+#### Mejoras del cobro (`20261120120000_mejoras_cobro.sql`)
+
+- **Comprobante:** «Ver detalle» / «Comprobante» abre el estado de cuenta listo para imprimir o guardar en PDF (`mi_liquidacion_detalle`).
+- **Recordatorios:** pg_cron `modo-parche-recordar-cobros` (9:00 a. m.) avisa 5 días antes, el día del vencimiento, al día siguiente y a la semana (notificación push).
+- **Reclamos:** el negocio toca «¿No llegó? Reclamar» en un cobro (hasta 15 días); el equipo lo aprueba o lo mantiene en Admin > Cobros. Si se aprueba, se descuenta del estado de cuenta o queda como saldo a favor.
+- **Plazo de 48 horas:** pasado ese tiempo (o si el cobro ya está en un estado de cuenta) una llegada no se puede desmarcar; se corrige con un reclamo.
+- **Abonos:** se puede pagar una parte (desde $20.000). Con la mitad pagada, el local tiene 15 días más antes de salir del radar.
+- **QR fijo del local:** en Perfil y plan; se imprime y se pega en la entrada. Marca la reserva o el parche de hoy de quien lo escanea (`llegue_por_qr_local`). Si la persona comparte su ubicación y está a más de 500 m, no vale.
+- **Cupón de bienvenida:** nueva regla de cupón que se entrega solo con la primera llegada validada. El beneficio de una mesa aparece como «se activa al llegar».
+- **Calificar el local:** solo quien tiene una llegada validada en los últimos 14 días (`calificar_local`); las reseñas reales llegan al panel del negocio.
+- **Alertas para el equipo:** locales con menos del 20 % de llegadas, muchas llegadas desmarcadas o muchos reclamos (`admin_anomalias`).
+- **Exportar para el contador:** CSV (abre en Excel) de los estados de cuenta en el admin y de los clientes del mes en el panel del negocio.
+- **Aliados destacados:** pagan a tiempo, tienen buena nota y reciben llegadas reales. Llevan insignia y suben en «Para ti».
+- **Referidos:** `empresa.html?ref=CODIGO`. Cuando el local invitado paga su primer estado de cuenta, los dos reciben $10.000 de saldo a favor, que se descuenta solo.
+
+Después de correr la migración, vuelve a desplegar `wompi-checkout`, que ahora acepta abonos.
+
+#### Amigos y mensajes directos (`20261121120000_amigos.sql`)
+
+- En **Mis parches > Amigos**: solicitudes, lista de amigos con el último mensaje y los no leídos, y sugerencias con la gente con la que ya compartiste un parche.
+- Solo se puede agregar a alguien con quien compartiste un parche (máximo 30 solicitudes al día). Bloquear corta la amistad y los mensajes.
+- Los mensajes directos pasan por el mismo filtro del chat (enlaces raros y groserías), tienen freno anti-spam (20 por minuto), llegan en tiempo real y mandan aviso push.
+
+#### Modos de color
+
+El botón de la barra pasa por **claro → mixto → oscuro**. En el panel de usuario también se elige en Perfil > Apariencia.
+
+- **Claro:** casi toda la app clara. Los bloques negros grandes del diseño (capítulos, footer, cookies) pasan a gris claro.
+- **Mixto:** el diseño de marca original, con blanco, negro y naranja. En los paneles, el contenido es claro y las barras son oscuras.
+- **Oscuro:** casi toda la app oscura. Los bloques negros se quedan oscuros y no se vuelven blancos.
+- `mp-tema.js` marca esos bloques con `.mp-tinta-bloque`, midiéndolos con el diseño original. Lo naranja (`.mp-fijo`) y las muestras del manual de marca (`[data-tinta-fija]`) conservan sus colores en los tres modos.
+
+#### Datos de prueba (no se suben al repositorio)
+
+`supabase/pruebas/capachos_debe_5000.sql` arma un estado de cuenta de $5.000 para Capachos, con las llegadas de dos usuarios, para ver el pago con Wompi. `capachos_deshacer.sql` lo borra. La carpeta está en `.gitignore` porque tiene nombres reales.
 
 #### Pagos con Wompi del plan mensual (modelo anterior)
 

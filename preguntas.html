@@ -14,7 +14,7 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
+<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">

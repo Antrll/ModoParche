@@ -1009,12 +1009,12 @@ html.is-dark .kpi--lead { background: var(--night); color: #fff; box-shadow: ins
 
 /* Barra lateral: clara en modo claro (como el panel de negocios) y negra en
    modo oscuro, así el cambio de tema se nota en todo el panel. */
-html:not(.is-dark) .sidebar {
+html:not(.is-dark):not(.is-mixto) .sidebar {
   --night: #ffffff; --night-2: #f3f3f4; --night-3: #e9e9eb; --night-line: #e4e4e7; --night-muted: #66666e;
   --sb-ink: #111111; --sb-text: #2b2b30;
   box-shadow: 1px 0 0 var(--rule);
 }
-html:not(.is-dark) .sidebar .nav-item[aria-current="page"] kbd { border-color: rgba(17,17,17,.3); }
+html:not(.is-dark):not(.is-mixto) .sidebar .nav-item[aria-current="page"] kbd { border-color: rgba(17,17,17,.3); }
 
 /* Verificación en dos pasos (pantalla de arranque) */
 .mfa-qr { display: grid; place-items: center; margin: 16px auto 8px; padding: 10px; width: 200px; border-radius: 16px; background: #fff; }
@@ -1058,3 +1058,47 @@ html.is-dark .logo:not(.logo--fuego):not(.logo--dia) { background: var(--night);
 .liq-monto { font: 400 24px/1 var(--brand); }
 .liq-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 760px) { .liq-row { grid-template-columns: 1fr auto; } .liq-acts { grid-column: 1 / -1; justify-content: flex-start; } .liq-kpis { grid-template-columns: 1fr; } }
+
+/* Cobros: alertas, reclamos y abonos */
+.cobro-alertas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0 8px; }
+.cobro-bloque header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.cobro-bloque h2, .cobro-h { font-size: 17px; margin: 0; }
+.cobro-h { margin: 22px 0 10px; }
+.cobro-bloque .liq-row { grid-template-columns: minmax(0, 1fr) auto; }
+.cobro-bloque .rec-row .pill, .cobro-bloque .rec-row .liq-acts { grid-column: 1 / -1; justify-self: start; justify-content: flex-start; }
+.rec-motivo { color: var(--text) !important; font-style: italic; }
+.liq-abonado { display: block; font: 600 12px var(--font); color: var(--positive); margin-top: 4px; }
+@media (max-width: 960px) { .cobro-alertas { grid-template-columns: 1fr; } }
+
+/* =====================================================================
+   MODO MIXTO: contenido claro con la barra de arriba oscura
+===================================================================== */
+html.is-mixto .topbar {
+  --surface: #1a1a1d; --raised: #242428; --border: #303036; --rule: #26262b; --control: #45454c;
+  --text: #ffffff; --muted: #b4b4bc; --faint: #9d9da6;
+  background: rgba(17,17,17,.94); color: #ffffff; box-shadow: none;
+}
+html.is-mixto .topbar .input, html.is-mixto .topbar input { background-color: var(--raised); color: #ffffff; }
+
+/* =====================================================================
+   MODO CLARO: el bloque de bienvenida y el KPI destacado pasan a claro
+   (el modo mixto los deja negros, como se diseñaron)
+===================================================================== */
+html:not(.is-dark):not(.is-mixto) .hero { background: #f1f1f3; color: #111111; box-shadow: inset 0 0 0 1px #e4e4e7; }
+html:not(.is-dark):not(.is-mixto) .hero::before { background: radial-gradient(closest-side, rgba(255,90,31,.28), rgba(255,90,31,0)); }
+html:not(.is-dark):not(.is-mixto) .hero::after { background-image: radial-gradient(rgba(17,17,17,.08) 1px, transparent 1.2px); }
+html:not(.is-dark):not(.is-mixto) :is(.hero-kicker, .hero-title .ln:first-child > span) { color: #55555c; }
+html:not(.is-dark):not(.is-mixto) .hero-dot { background: #9a9aa2; }
+html:not(.is-dark):not(.is-mixto) :is(.hero-title .hl, .hero-sub .n) { color: #b83709; }
+html:not(.is-dark):not(.is-mixto) .hero-sub { color: #3b3b42; }
+html:not(.is-dark):not(.is-mixto) .hero-sub b { color: #111111; }
+html:not(.is-dark):not(.is-mixto) .hero-ghost { color: #111111; box-shadow: inset 0 0 0 2px rgba(17,17,17,.3); }
+html:not(.is-dark):not(.is-mixto) .hero-ghost:hover { background: rgba(17,17,17,.06); box-shadow: inset 0 0 0 2px #111111; }
+html:not(.is-dark):not(.is-mixto) .hero-ring text { fill: #b83709; }
+html:not(.is-dark):not(.is-mixto) .hero-iso { filter: drop-shadow(0 14px 20px rgba(17,17,17,.18)); }
+html:not(.is-dark):not(.is-mixto) .kpi--lead { background: #f1f1f3; color: #111111; box-shadow: inset 0 0 0 1px #e4e4e7; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead :is(.kpi-label, .kpi-sub) { color: #55555c; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead .kpi-value { color: #b83709; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead .delta { background: rgba(17,17,17,.06); color: #111111; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead .delta.is-up { background: rgba(14,111,49,.12); color: #0e6f31; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead .delta.is-down { background: rgba(181,43,6,.1); color: #b52b06; }

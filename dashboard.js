@@ -290,7 +290,7 @@
   function coverHTML(p) {
     const cat = catById(p.categoria);
     const tags = `<div class="card-tags">
-        ${p.aliado ? `<span class="tag tag--ally">${ic('i-crown')} Aliado</span>${p.verificado ? `<span class="tag tag--verif">${ic('i-check')} Verificado</span>` : ''}` : `<span class="tag">${ic(cat.icon)} ${esc(cat.label)}</span>`}
+        ${esDestacado(p) ? `<span class="tag tag--top">${ic('i-star')} Destacado</span>` : ''}${p.aliado ? `<span class="tag tag--ally">${ic('i-crown')} Aliado</span>${p.verificado ? `<span class="tag tag--verif">${ic('i-check')} Verificado</span>` : ''}` : `<span class="tag">${ic(cat.icon)} ${esc(cat.label)}</span>`}
         ${p.promo ? `<span class="tag tag--promo">${esc(p.promo)}</span>` : ''}
         ${priceTag(p)}
       </div>`;
@@ -575,7 +575,7 @@
     const slot = $('#calificar-slot');
     if (!slot) return;
     const x = porCalificar()[0];
-    if (!x) { slot.innerHTML = ''; return; }
+    if (!x) { slot.innerHTML = cardCalificarLocal(); return; }
     const n = x.gente.length;
     slot.innerHTML = `<div class="rate-card">
       <span class="rate-ic">${ic('i-star')}</span>
@@ -709,6 +709,82 @@
       toast('No pudimos marcar tu llegada', err && err.code === 1 ? 'Permite la ubicación o muestra tu código en la entrada.' : /mesa_llegue|PGRST202/.test(m) ? `Muestra tu código ${r.codigo} en la entrada.` : (err.hint || dbMsg(err)), { type: 'error' });
     } finally { btn.disabled = false; }
   }
+  /* ---------- Llegada con el QR fijo del local (dashboard.html?llegue=<local>&k=<clave>) ---------- */
+  async function llegarPorQRLocal(negocio, clave) {
+    if (DEMO || !sb) { toast('Llegada al local', 'En el modo demo no se guarda.', { icon: 'i-check' }); return; }
+    toast('Validando tu llegada…', 'Un momento.', { icon: 'i-locate', ms: 2500 });
+    // La ubicación es opcional: si la da, el servidor revisa que esté cerca del local
+    let lat = null, lng = null;
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(ok, mal, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }));
+        lat = pos.coords.latitude; lng = pos.coords.longitude;
+      } catch (e) { /* sin permiso: sigue sin ubicación */ }
+    }
+    const { data, error } = await sb.rpc('llegue_por_qr_local', { p_negocio: negocio, p_clave: clave, p_lat: lat, p_lng: lng });
+    if (error) {
+      const m = String(error.message || '');
+      toast('No pudimos marcar tu llegada', /llegue_por_qr_local|PGRST202/.test(m) ? 'Este QR aún no está activo. Muestra tu código en la entrada.' : (error.hint || dbMsg(error)), { type: 'error', ms: 7000 });
+      return;
+    }
+    const d = data || {};
+    if (d.tipo === 'mesa') {
+      const r = (state.misMesas || []).find(x => x.negocio && x.negocio.id === negocio && ['pendiente', 'confirmada'].includes(x.estado));
+      if (r) r.estado = 'llego';
+      renderMesas();
+    } else if (d.parche) {
+      const p = findP(d.parche); if (p) p.checkin = true;
+      refresh();
+    }
+    toast(d.nuevo === false ? 'Tu llegada ya estaba marcada' : '¡Llegaste!', `${d.local || 'El local'} ya sabe que estás. ${d.tipo === 'mesa' ? 'Pide tu beneficio de la mesa.' : 'Disfruta el parche.'}`, { icon: 'i-check', ms: 6000 });
+  }
+
+  /* ---------- Calificar un local: solo si tu llegada quedó registrada ---------- */
+  let localesPorCalificar = [];
+  async function cargarLocalesPorCalificar() {
+    if (DEMO || !sb) return;
+    const { data, error } = await sb.rpc('locales_por_calificar');
+    if (!error && Array.isArray(data)) { localesPorCalificar = data; if (state.view === 'inicio') renderCalificar(); }
+  }
+  function cardCalificarLocal() {
+    const x = localesPorCalificar[0];
+    if (!x) return '';
+    return `<div class="rate-card rate-card--local" data-cobro="${esc(x.cobro_id)}">
+      <span class="rate-ic">${ic('i-star')}</span>
+      <div><p class="eyebrow">Fuiste a ${esc(x.negocio)}</p><h3>¿Cómo te atendieron?</h3><p>Tu llegada quedó registrada${x.titulo ? ` en «${esc(x.titulo)}»` : ''}. Solo califican quienes de verdad fueron.</p>
+        <div class="loc-stars" role="radiogroup" aria-label="Estrellas para ${esc(x.negocio)}">${[1, 2, 3, 4, 5].map(n => `<button type="button" role="radio" aria-checked="false" aria-label="${n} ${n === 1 ? 'estrella' : 'estrellas'}" data-action="loc-estrella" data-v="${n}">${ic('i-star')}</button>`).join('')}</div>
+        <textarea class="input loc-texto" maxlength="280" rows="2" placeholder="Cuéntale a otros parceros (opcional)" aria-label="Comentario"></textarea></div>
+      <div class="loc-acts"><button class="btn btn--ink btn--sm" data-action="loc-calificar">${ic('i-star')} Enviar</button><button class="link-btn" data-action="loc-omitir">Ahora no</button></div>
+    </div>`;
+  }
+  function estrellaLocal(btn) {
+    const v = Number(btn.dataset.v), box = btn.closest('.loc-stars');
+    box.dataset.v = v;
+    box.querySelectorAll('button').forEach(b => { const on = Number(b.dataset.v) <= v; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(Number(b.dataset.v) === v)); });
+  }
+  async function enviarCalificacionLocal(btn) {
+    const card = btn.closest('.rate-card--local'), estrellas = Number(card.querySelector('.loc-stars').dataset.v || 0);
+    if (!estrellas) { toast('Elige las estrellas', 'Toca de 1 a 5 estrellas.', { type: 'error' }); return; }
+    btn.disabled = true;
+    const { error } = await sb.rpc('calificar_local', { p_cobro: Number(card.dataset.cobro), p_estrellas: estrellas, p_texto: card.querySelector('.loc-texto').value.trim().slice(0, 280) });
+    btn.disabled = false;
+    if (error && !/YA_CALIFICASTE/.test(error.message || '')) { toast('No se envió', error.hint || dbMsg(error), { type: 'error' }); return; }
+    localesPorCalificar.shift();
+    renderCalificar();
+    toast('¡Gracias!', 'Tu calificación ayuda a que los buenos locales se noten.', { icon: 'i-star' });
+  }
+
+  /* ---------- Aliados destacados: pagan a tiempo y la gente sí llega ---------- */
+  let destacados = new Set();
+  const esDestacado = p => !!(p && p.aliado && p.creadorId && destacados.has(p.creadorId));
+  async function cargarDestacados() {
+    if (DEMO) { destacados = new Set(); return; }
+    const { data, error } = await sb.rpc('aliados_destacados');
+    if (error || !Array.isArray(data)) return;
+    destacados = new Set(data.map(x => x.negocio_id));
+    if (destacados.size) refresh();
+  }
+
   function renderMesas() {
     const block = $('#mesa-block');
     if (!block) return;
@@ -720,7 +796,7 @@
       const viva = ['pendiente', 'confirmada'].includes(r.estado) && r.llegada > Date.now();
       return `<li class="mesa-mia">
         <span class="mesa-mia-ic">${ic('i-table')}</span>
-        <div><b>${esc(r.titulo)}</b><small>${esc(r.negocio.nombre)} · ${esc(fmtCuando(r.llegada))} · ${r.personas} personas</small></div>
+        <div><b>${esc(r.titulo)}</b><small>${esc(r.negocio.nombre)} · ${esc(fmtCuando(r.llegada))} · ${r.personas} personas</small>${r.beneficio ? `<small class="mesa-mia-ben ${r.estado === 'llego' ? 'is-on' : ''}">${ic('i-tag')} ${r.estado === 'llego' ? 'Activo: pídelo ya — ' : 'Se activa cuando marques tu llegada — '}${esc(r.beneficio)}</small>` : ''}</div>
         <span class="mesa-pill ${cls}">${esc(txt)}</span>
         <span class="mesa-code tnum" title="Muéstralo al llegar">${esc(r.codigo)}</span>
         ${puedeLlegar(r) ? `<button class="btn btn--xs" data-action="mesa-llegue" data-id="${esc(r.id)}">${ic('i-locate')} Ya llegué</button>`
@@ -1278,6 +1354,265 @@
   /* =====================================================================
      9. MIS PARCHES + CHAT
   ===================================================================== */
+  /* =====================================================================
+     AMIGOS Y MENSAJES DIRECTOS (Mis parches > Amigos)
+     Solo se agrega a gente con la que compartiste un parche. Los mensajes
+     pasan por el mismo filtro del chat y llegan en tiempo real.
+  ===================================================================== */
+  const amigos = { datos: null, cargando: false, dmId: null, conv: new Map() };
+  const AMIGOS_DEMO = () => ({
+    amigos: [
+      { id: 'demo-a1', nombre: 'Valentina Pardo', verificado: true, ultimo: '¿Vamos el viernes al crossover?', ultimo_mio: false, ultimo_en: new Date(Date.now() - 40 * 60000).toISOString(), sin_leer: 2 },
+      { id: 'demo-a2', nombre: 'Kevin Ortiz', verificado: false, ultimo: 'Dale, nos vemos allá', ultimo_mio: true, ultimo_en: new Date(Date.now() - 26 * HOUR).toISOString(), sin_leer: 0 },
+    ],
+    recibidas: [{ id: 'demo-a3', nombre: 'Mafe Peña', verificado: true }],
+    enviadas: [],
+    sugeridos: [{ id: 'demo-a4', nombre: 'Andrés Forero', verificado: false, veces: 2 }, { id: 'demo-a5', nombre: 'Laura Moreno', verificado: true, veces: 1 }],
+  });
+  const amigoNombre = id => {
+    const d = amigos.datos || {};
+    const x = [].concat(d.amigos || [], d.recibidas || [], d.sugeridos || [], d.enviadas || []).find(y => y.id === id);
+    return (x && x.nombre) || (personById(id) || {}).nombre || 'Parcero';
+  };
+  const amigoAv = (id, cls = '') => avHTML(personById(id) || { nombre: amigoNombre(id) }, cls);
+  const amigoSello = x => x && x.verificado ? `<span class="sello" title="Cédula verificada">${ic('i-check')}</span>` : '';
+  const sinLeerTotal = () => ((amigos.datos && amigos.datos.amigos) || []).reduce((a, x) => a + (Number(x.sin_leer) || 0), 0) + (((amigos.datos && amigos.datos.recibidas) || []).length);
+
+  async function cargarAmigos(forzar = false) {
+    if (amigos.cargando || (amigos.datos && !forzar)) return;
+    amigos.cargando = true;
+    try {
+      if (DEMO || !sb) { amigos.datos = amigos.datos || AMIGOS_DEMO(); return; }
+      const { data, error } = await sb.rpc('mis_amigos');
+      if (error) { amigos.datos = { error: /mis_amigos|PGRST202/.test(error.message || '') ? 'falta' : dbMsg(error), amigos: [], recibidas: [], enviadas: [], sugeridos: [] }; return; }
+      amigos.datos = data || { amigos: [], recibidas: [], enviadas: [], sugeridos: [] };
+      const d = amigos.datos;
+      await cachePeople([].concat(d.amigos, d.recibidas, d.sugeridos).map(x => x.id));
+    } finally {
+      amigos.cargando = false;
+      pintarBadgeAmigos();
+      if (state.view === 'mis' && state.misTab === 'amigos') renderAmigos();
+    }
+  }
+  function pintarBadgeAmigos() {
+    const n = sinLeerTotal(), b = $('#amigos-count');
+    if (b) { b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n); }
+  }
+
+  function filaAmigo(x, i) {
+    const activo = amigos.dmId === x.id;
+    const ult = x.ultimo ? `${x.ultimo_mio ? 'Tú: ' : ''}${x.ultimo}` : 'Escríbele el primer mensaje';
+    return `<li class="mis-row amigo-row"><button class="mis-item ${activo ? 'is-active' : ''}" data-action="dm" data-id="${esc(x.id)}" style="--d:${i * 50}ms">
+      <span class="amigo-av">${amigoAv(x.id)}</span>
+      <span class="amigo-txt"><b>${esc(x.nombre)}${amigoSello(x)}</b><small class="${x.sin_leer ? 'is-new' : ''}">${esc(String(ult).slice(0, 70))}</small></span>
+      ${x.sin_leer ? `<span class="amigo-dot tnum" aria-label="${x.sin_leer} sin leer">${x.sin_leer > 9 ? '9+' : x.sin_leer}</span>` : x.ultimo_en ? `<time class="amigo-t">${esc(fmtCorto(Date.parse(x.ultimo_en)))}</time>` : ''}
+    </button></li>`;
+  }
+  const fmtCorto = ts => Date.now() - ts < 24 * HOUR ? fmtHora(ts) : new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' }).format(ts);
+
+  function renderAmigos() {
+    const list = $('#mis-list'), d = amigos.datos;
+    if (!d) { list.innerHTML = '<li class="mis-empty"><p class="muted">Cargando tus amigos…</p></li>'; cargarAmigos(); renderDM(); return; }
+    if (d.error) {
+      list.innerHTML = `<li class="mis-empty">${emptyHTML({ art: 'parceros', title: 'Amigos aún no está activo', text: d.error === 'falta' ? 'Falta una actualización de la base de datos. Vuelve pronto.' : d.error, cta: '' })}</li>`;
+      renderDM(); return;
+    }
+    const enviadas = new Set((d.enviadas || []).map(x => x.id));
+    let html = '';
+    if ((d.recibidas || []).length) {
+      html += `<li class="amigos-sec"><h3>Solicitudes <span class="tnum">${d.recibidas.length}</span></h3></li>` + d.recibidas.map(x => `<li class="amigo-sol">
+        <span class="amigo-av">${amigoAv(x.id)}</span>
+        <span class="amigo-txt"><b>${esc(x.nombre)}${amigoSello(x)}</b><small>Quiere ser tu amigo</small></span>
+        <span class="amigo-acts"><button class="btn btn--xs" data-action="amigo-aceptar" data-id="${esc(x.id)}">Aceptar</button><button class="icon-btn icon-btn--sm" data-action="amigo-rechazar" data-id="${esc(x.id)}" aria-label="Rechazar a ${esc(x.nombre)}">${ic('i-close')}</button></span>
+      </li>`).join('');
+    }
+    html += `<li class="amigos-sec"><h3>Tus amigos${(d.amigos || []).length ? ` <span class="tnum">${d.amigos.length}</span>` : ''}</h3></li>`;
+    html += (d.amigos || []).length ? d.amigos.map(filaAmigo).join('')
+      : `<li class="amigos-vacio"><p><b>Aún no tienes amigos aquí.</b> Agrega a la gente con la que ya fuiste a un parche y escríbanse para armar el próximo.</p></li>`;
+    const sug = (d.sugeridos || []).concat((d.enviadas || []).filter(x => !(d.sugeridos || []).some(s => s.id === x.id)));
+    if (sug.length) {
+      html += `<li class="amigos-sec"><h3>Gente con la que ya parchaste</h3></li>` + sug.map(x => `<li class="amigo-sol">
+        <span class="amigo-av">${amigoAv(x.id)}</span>
+        <span class="amigo-txt"><b>${esc(x.nombre)}${amigoSello(x)}</b><small>${x.veces ? `${x.veces} ${Number(x.veces) === 1 ? 'parche juntos' : 'parches juntos'}` : 'Solicitud enviada'}</small></span>
+        <span class="amigo-acts">${enviadas.has(x.id)
+          ? `<button class="btn btn--ghost btn--xs" data-action="amigo-cancelar" data-id="${esc(x.id)}">Enviada · Cancelar</button>`
+          : `<button class="btn btn--xs" data-action="amigo-agregar" data-id="${esc(x.id)}">${ic('i-plus')} Agregar</button>`}</span>
+      </li>`).join('');
+    } else if (!(d.amigos || []).length) {
+      html += `<li class="amigos-vacio"><p class="muted">Cuando vayas a un parche, la gente que conociste aparece aquí para agregarla.</p></li>`;
+    }
+    list.innerHTML = html;
+    if (!amigos.dmId && !isMobile() && (d.amigos || []).length) { abrirDM(d.amigos[0].id, { quiet: true }); return; }
+    renderDM();
+  }
+
+  /* ---------- Conversación ---------- */
+  async function abrirDM(id, { quiet = false } = {}) {
+    amigos.dmId = id;
+    state.chatId = null;
+    if (state.view !== 'mis' || state.misTab !== 'amigos') { state.misTab = 'amigos'; go('mis'); }
+    $$('#mis-list .mis-item').forEach(b => b.classList.toggle('is-active', b.dataset.id === id));
+    if (!quiet || isMobile()) $('#mis-wrap').classList.toggle('is-chat', isMobile());
+    renderDM();
+    await cargarConversacion(id);
+    const x = ((amigos.datos && amigos.datos.amigos) || []).find(y => y.id === id);
+    if (x && x.sin_leer) {
+      x.sin_leer = 0; pintarBadgeAmigos();
+      $$('#mis-list .mis-item').forEach(b => { if (b.dataset.id === id) { const dot = b.querySelector('.amigo-dot'); if (dot) dot.remove(); } });
+      if (!DEMO && sb) sb.rpc('marcar_leidos_dm', { p_de: id }).then(() => {}, () => {});
+    }
+  }
+  async function cargarConversacion(id) {
+    if (DEMO || !sb) {
+      if (!amigos.conv.has(id)) {
+        const t = Date.now();
+        amigos.conv.set(id, id === 'demo-a1'
+          ? [{ id: 1, yo: false, texto: '¡Qué más! ¿Te animas al crossover del viernes?', ts: t - 50 * 60000 }, { id: 2, yo: false, texto: '¿Vamos el viernes al crossover?', ts: t - 40 * 60000 }]
+          : [{ id: 3, yo: false, texto: 'Buenísimo el parche de ayer', ts: t - 27 * HOUR }, { id: 4, yo: true, texto: 'Dale, nos vemos allá', ts: t - 26 * HOUR }]);
+      }
+      if (amigos.dmId === id) renderDMMsgs();
+      return;
+    }
+    const { data, error } = await sb.from('mensajes_directos').select('id, autor_id, para_id, texto, creado_en')
+      .or(`and(autor_id.eq.${me.id},para_id.eq.${id}),and(autor_id.eq.${id},para_id.eq.${me.id})`)
+      .order('creado_en', { ascending: false }).limit(120);
+    if (error) { if (amigos.dmId === id) { const box = $('#dm-msgs'); if (box) box.innerHTML = `<p class="chat-empty">${esc(dbMsg(error))}</p>`; } return; }
+    amigos.conv.set(id, (data || []).reverse().map(r => ({ id: r.id, yo: r.autor_id === me.id, texto: r.texto, ts: Date.parse(r.creado_en) })));
+    if (amigos.dmId === id) renderDMMsgs();
+  }
+  function dmMsgsHTML(id) {
+    const msgs = amigos.conv.get(id);
+    if (!msgs) return '<p class="chat-empty">Cargando…</p>';
+    if (!msgs.length) return `<p class="chat-empty">${ic('i-chat')}<span>Escríbele a ${esc(amigoNombre(id).split(' ')[0])}. Solo ustedes dos ven esta conversación.</span></p>`;
+    let dia = '';
+    return msgs.map(m => {
+      const d = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).format(m.ts);
+      const sep = d !== dia ? `<div class="dm-dia"><span>${esc(cap(d))}</span></div>` : '';
+      dia = d;
+      return sep + `<div class="msg ${m.yo ? 'msg--me' : ''} ${m.pend ? 'is-pend' : ''}">${m.yo ? '' : amigoAv(String(amigos.dmId), 'av--sm')}<div class="bubble">${esc(m.texto)}<time>${fmtHora(m.ts)}${m.pend ? ' · enviando' : ''}</time></div></div>`;
+    }).join('');
+  }
+  function renderDM() {
+    const box = $('#chat');
+    const id = amigos.dmId, x = id && ((amigos.datos && amigos.datos.amigos) || []).find(y => y.id === id);
+    if (!id || !x) {
+      box.innerHTML = `<div class="chat-placeholder"><img src="${STK('parceros')}" alt=""><h3>Tus amigos</h3><p>Escríbele a la gente con la que parchas para armar el próximo plan.</p></div>`;
+      return;
+    }
+    const keep = $('#dm-input')?.value || '';
+    box.innerHTML = `
+      <div class="chat-head">
+        <div class="chat-head-top">
+          <button class="icon-btn chat-back" data-action="dm-back" aria-label="Volver a tus amigos">${ic('i-back')}</button>
+          <span class="dm-head-av">${amigoAv(id)}</span>
+          <div><h2>${esc(x.nombre)}${amigoSello(x)}</h2><p>Amigos en ModoParche</p></div>
+          <div class="chat-head-actions">
+            <button class="icon-btn" data-action="reportar" data-tipo="persona" data-id="${esc(id)}" aria-label="Reportar a ${esc(x.nombre)}" title="Reportar">${ic('i-flag')}</button>
+            <button class="icon-btn icon-btn--danger" data-action="amigo-quitar" data-id="${esc(id)}" aria-label="Quitar de amigos" title="Quitar de amigos">${ic('i-trash')}</button>
+          </div>
+        </div>
+      </div>
+      <div class="chat-msgs" id="dm-msgs">${dmMsgsHTML(id)}</div>
+      <div class="chat-foot">
+        <form class="chat-form" id="dm-form" autocomplete="off">
+          <label class="sr-only" for="dm-input">Mensaje para ${esc(x.nombre)}</label>
+          <input class="input" id="dm-input" maxlength="1000" placeholder="Escríbele a ${esc(x.nombre.split(' ')[0])}..." value="${esc(keep)}">
+          <button class="icon-btn" type="submit" aria-label="Enviar">${ic('i-send')}</button>
+        </form>
+      </div>`;
+    scrollDM(false);
+  }
+  function renderDMMsgs() {
+    const box = $('#dm-msgs');
+    if (!box) { renderDM(); return; }
+    box.innerHTML = dmMsgsHTML(amigos.dmId);
+    scrollDM();
+  }
+  function scrollDM(smooth = true) {
+    const box = $('#dm-msgs');
+    if (box) requestAnimationFrame(() => box.scrollTo({ top: box.scrollHeight, behavior: smooth && !reduceMotion ? 'smooth' : 'auto' }));
+  }
+  async function enviarDM(texto) {
+    const id = amigos.dmId, t = String(texto || '').trim();
+    if (!id || !t) return;
+    const msgs = amigos.conv.get(id) || [];
+    const m = { id: null, yo: true, texto: t.slice(0, 1000), ts: Date.now(), pend: !DEMO };
+    msgs.push(m); amigos.conv.set(id, msgs);
+    renderDMMsgs();
+    const x = ((amigos.datos && amigos.datos.amigos) || []).find(y => y.id === id);
+    if (x) { x.ultimo = m.texto; x.ultimo_mio = true; x.ultimo_en = new Date().toISOString(); }
+    if (DEMO || !sb) return;
+    const { data, error } = await sb.from('mensajes_directos').insert({ para_id: id, texto: m.texto }).select('id, texto').single();
+    if (error) {
+      msgs.splice(msgs.indexOf(m), 1); renderDMMsgs();
+      const msg = String(error.message || '');
+      toast('No se envió', /row-level|permission/i.test(msg) ? 'Solo puedes escribirle a tus amigos.' : error.hint || dbMsg(error), { type: 'error' });
+      const inp = $('#dm-input'); if (inp && !inp.value) inp.value = m.texto;
+      return;
+    }
+    m.id = data.id; m.texto = data.texto; m.pend = false; // el filtro pudo tapar groserías
+    renderDMMsgs();
+  }
+  // Mensaje que llega en vivo
+  async function dmEntrante(r) {
+    if (!r || r.autor_id === me.id) return;
+    const msgs = amigos.conv.get(r.autor_id);
+    if (msgs && !msgs.some(m => m.id === r.id)) msgs.push({ id: r.id, yo: false, texto: r.texto, ts: Date.parse(r.creado_en) });
+    const x = ((amigos.datos && amigos.datos.amigos) || []).find(y => y.id === r.autor_id);
+    if (!x) { cargarAmigos(true); return; }
+    x.ultimo = r.texto; x.ultimo_mio = false; x.ultimo_en = r.creado_en;
+    const viendo = amigos.dmId === r.autor_id && state.view === 'mis' && state.misTab === 'amigos' && document.visibilityState === 'visible';
+    if (viendo) { renderDMMsgs(); sb.rpc('marcar_leidos_dm', { p_de: r.autor_id }).then(() => {}, () => {}); }
+    else {
+      x.sin_leer = (Number(x.sin_leer) || 0) + 1;
+      toast(x.nombre, String(r.texto).slice(0, 90), { icon: 'i-chat', action: null });
+    }
+    amigos.datos.amigos.sort((a, b) => (Date.parse(b.ultimo_en) || 0) - (Date.parse(a.ultimo_en) || 0));
+    pintarBadgeAmigos();
+    if (state.view === 'mis' && state.misTab === 'amigos') {
+      const keep = $('#dm-input')?.value;
+      renderAmigos();
+      if (keep && $('#dm-input')) $('#dm-input').value = keep;
+    }
+  }
+
+  /* ---------- Solicitudes ---------- */
+  async function accionAmigo(accion, id, btn) {
+    const d = amigos.datos; if (!d) return;
+    const nombre = amigoNombre(id).split(' ')[0];
+    if (accion === 'quitar' && !confirm(`¿Quitar a ${amigoNombre(id)} de tus amigos?\n\nYa no podrán escribirse. Si quieres que no te vuelva a encontrar, mejor bloquéala desde tu perfil.`)) return;
+    if (btn) btn.disabled = true;
+    let error = null, res = null;
+    if (!DEMO && sb) {
+      const r = accion === 'agregar' ? await sb.rpc('solicitar_amistad', { p_usuario: id })
+        : accion === 'aceptar' || accion === 'rechazar' ? await sb.rpc('responder_amistad', { p_usuario: id, p_aceptar: accion === 'aceptar' })
+          : await sb.rpc('eliminar_amistad', { p_usuario: id });
+      error = r.error; res = r.data;
+    }
+    if (btn) btn.disabled = false;
+    if (error) { toast('No se pudo', error.hint || dbMsg(error), { type: 'error' }); return; }
+    const sacar = arr => (arr || []).filter(x => x.id !== id);
+    const quien = [].concat(d.recibidas || [], d.sugeridos || [], d.amigos || [], d.enviadas || []).find(x => x.id === id) || { id, nombre: amigoNombre(id) };
+    if (accion === 'aceptar' || res === 'aceptada' || res === 'ya_amigos') {
+      d.recibidas = sacar(d.recibidas); d.sugeridos = sacar(d.sugeridos); d.enviadas = sacar(d.enviadas);
+      if (!d.amigos.some(x => x.id === id)) d.amigos.unshift({ ...quien, ultimo: null, sin_leer: 0 });
+      toast(`${nombre} es tu amigo`, 'Ya pueden escribirse.', { icon: 'i-users' });
+    } else if (accion === 'agregar') {
+      d.enviadas = sacar(d.enviadas).concat([{ id, nombre: quien.nombre }]);
+      toast('Solicitud enviada', `Le avisamos a ${nombre}.`, { icon: 'i-users' });
+    } else if (accion === 'rechazar') {
+      d.recibidas = sacar(d.recibidas);
+    } else if (accion === 'cancelar') {
+      d.enviadas = sacar(d.enviadas);
+    } else if (accion === 'quitar') {
+      d.amigos = sacar(d.amigos); amigos.conv.delete(id);
+      if (amigos.dmId === id) { amigos.dmId = null; $('#mis-wrap').classList.remove('is-chat'); }
+      toast('Listo', `${amigoNombre(id)} ya no está en tus amigos.`);
+    }
+    pintarBadgeAmigos();
+    renderAmigos();
+  }
+
   const typing = { on: false };
   function misList() {
     const l = state.misTab === 'propios'
@@ -1288,6 +1623,9 @@
   function renderMis() {
     $$('#mis-seg .seg-btn').forEach(b => { const on = b.dataset.mis === state.misTab; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on); });
     requestAnimationFrame(() => movePill($('#mis-seg')));
+    $('#t-mis').textContent = state.misTab === 'amigos' ? 'Amigos' : 'Mis parches';
+    if (state.misTab === 'amigos') { renderAmigos(); return; }
+    amigos.dmId = null;
     const list = misList();
     $('#mis-list').innerHTML = list.length ? list.map((p, i) => `
       <li class="mis-row" data-id="${p.id}">
@@ -2790,6 +3128,7 @@
         if (r.encuesta_id && !(p.encuestas || {})[r.encuesta_id]) extrasPronto(p.id);
         if (state.chatId === p.id) renderChatMsgs();
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_directos', filter: `para_id=eq.${me.id}` }, ({ new: r }) => { dmEntrante(r); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
         // Ícono de la app con aviso de novedades (si el navegador lo permite)
         if (document.hidden) marcarInsignia(1);
@@ -2821,7 +3160,7 @@
     try { session = (await sb.auth.getSession()).data.session; } catch (e) { /* sin sesión */ }
     if (!session) {
       // Si llegó por un enlace compartido, lo abrimos después de entrar
-      try { const a = new URLSearchParams(window.location.search).get('parche'); if (a) sessionStorage.setItem('mp_abrir', a); } catch (e) { /* sin almacenamiento */ }
+      try { const q0 = new URLSearchParams(window.location.search), a = q0.get('parche'); if (a) sessionStorage.setItem('mp_abrir', a); if (q0.get('llegue') && q0.get('k')) sessionStorage.setItem('mp_llegue', JSON.stringify([q0.get('llegue'), q0.get('k')])); } catch (e) { /* sin almacenamiento */ }
       // Enlace de confirmación vencido o ya usado: el login explica qué hacer
       const err = /error_code=|error=/.test(location.hash) ? location.hash : '';
       window.location.replace('login.html' + err); return false;
@@ -3873,6 +4212,7 @@
       const d = daysFromToday(dayKey(p.inicio));
       if (d === 0) { s += 1.5; por.push('Es hoy'); } else if (d === 1) s += 1;
       if (precio(p) === 0) s += .5;
+      if (esDestacado(p)) { s += 1.5; por.push('Aliado destacado: la gente sí llega'); }
       return { p, s, por };
     }).filter(x => x.s >= 2).sort((a, b) => b.s - a.s).slice(0, 3);
   }
@@ -3894,19 +4234,20 @@
 
   /* ---------- Modo oscuro: sistema, claro u oscuro ---------- */
   function aplicarTema(t, avisar = false) {
-    const tema = ['claro', 'oscuro'].includes(t) ? t : 'sistema';
+    const tema = ['claro', 'mixto', 'oscuro'].includes(t) ? t : 'sistema';
     try { localStorage.setItem('mp_tema', tema); } catch (e) { /* sin almacenamiento */ }
     marcarTema();
-    if (avisar) toast(tema === 'oscuro' ? 'Modo oscuro' : tema === 'claro' ? 'Modo claro' : 'Igual que tu celular', '', { icon: 'i-check', ms: 1800 });
+    if (avisar) toast({ oscuro: 'Modo oscuro', claro: 'Modo claro', mixto: 'Modo mixto' }[tema] || 'Igual que tu celular', '', { icon: 'i-check', ms: 1800 });
   }
   function marcarTema() {
     let t = 'sistema';
     try { t = localStorage.getItem('mp_tema') || 'sistema'; } catch (e) { /* nada */ }
-    $$('[data-tema]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === t)));
+    $$('.tema-btn[data-tema]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === t)));
     const oscuro = t === 'oscuro' || (t === 'sistema' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('is-dark', oscuro);
+    document.documentElement.classList.toggle('is-mixto', t === 'mixto');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', oscuro ? '#121214' : '#FF5A1F');
+    if (meta) meta.setAttribute('content', oscuro ? '#121214' : t === 'mixto' ? '#111111' : '#FF5A1F');
   }
 
   /* ---------- App instalable (PWA) y avisos push ---------- */
@@ -4025,7 +4366,7 @@
     const tb = t.closest('[data-time]');
     if (tb) { state.time = tb.dataset.time; renderTimeSeg(); renderLiveMap(); return; }
     const mis = t.closest('[data-mis]');
-    if (mis) { state.misTab = mis.dataset.mis; state.chatId = null; renderMis(); return; }
+    if (mis) { state.misTab = mis.dataset.mis; state.chatId = null; amigos.dmId = null; $('#mis-wrap').classList.remove('is-chat'); renderMis(); return; }
     const cp = t.closest('[data-cat-pick]');
     if (cp) { F('categoria').value = cp.dataset.catPick; F('categoria').dispatchEvent(new Event('change', { bubbles: true })); syncCreateUI(); return; }
     const qd = t.closest('[data-qdate]');
@@ -4070,6 +4411,16 @@
       case 'mesa-reservar': closeAllModals(); abrirMesa(id); break;
       case 'mesa-cancelar': cancelarMesa(id); break;
       case 'mesa-llegue': mesaLlegue(id, a); break;
+      case 'dm': abrirDM(id); break;
+      case 'dm-back': $('#mis-wrap').classList.remove('is-chat'); amigos.dmId = null; renderAmigos(); break;
+      case 'amigo-agregar': accionAmigo('agregar', id, a); break;
+      case 'amigo-aceptar': accionAmigo('aceptar', id, a); break;
+      case 'amigo-rechazar': accionAmigo('rechazar', id, a); break;
+      case 'amigo-cancelar': accionAmigo('cancelar', id, a); break;
+      case 'amigo-quitar': accionAmigo('quitar', id, a); break;
+      case 'loc-estrella': estrellaLocal(a); break;
+      case 'loc-calificar': enviarCalificacionLocal(a); break;
+      case 'loc-omitir': localesPorCalificar.shift(); renderCalificar(); break;
       case 'mesa-mapa': mesaEnMapa(id); break;
       case 'join': toggleJoin(id); break;
       case 'responder': setReply(a.dataset.key); break;
@@ -4181,6 +4532,7 @@
 
     document.addEventListener('submit', e => {
       if (e.target.id === 'tr-form') { e.preventDefault(); ofrecerViaje(e.target); return; }
+      if (e.target.id === 'dm-form') { e.preventDefault(); const di = $('#dm-input'); enviarDM(di.value); di.value = ''; di.focus(); return; }
       if (e.target.id !== 'chat-form') return;
       e.preventDefault();
       const inp = $('#chat-input');
@@ -4228,6 +4580,17 @@
     if (!abrir) { try { abrir = sessionStorage.getItem('mp_abrir'); sessionStorage.removeItem('mp_abrir'); } catch (e) { abrir = null; } }
     if (abrir && findP(abrir)) setTimeout(() => openChat(abrir), 400);
     if (qs.has('crear')) setTimeout(() => abrirCrear(), 500);
+    { let ll = qs.get('llegue') && qs.get('k') ? [qs.get('llegue'), qs.get('k')] : null;
+      if (!ll) { try { ll = JSON.parse(sessionStorage.getItem('mp_llegue') || 'null'); } catch (e) { ll = null; } }
+      try { sessionStorage.removeItem('mp_llegue'); } catch (e) { /* nada */ }
+      if (ll && /^[0-9a-f-]{36}$/i.test(ll[0])) {
+        const u = new URL(location.href); u.searchParams.delete('llegue'); u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + u.search + u.hash);
+        setTimeout(() => llegarPorQRLocal(ll[0], String(ll[1]).slice(0, 64)), 600);
+      } }
+    cargarLocalesPorCalificar().catch(() => {});
+    cargarAmigos().catch(() => {});
+    if (qs.get('amigos') !== null || window.location.hash === '#amigos') { state.misTab = 'amigos'; go('mis'); }
+    cargarDestacados().catch(() => {});
     initApp();
     consejoPeriodico();
     if (!DEMO && ubicacionViva.token) seguirUbicacion();

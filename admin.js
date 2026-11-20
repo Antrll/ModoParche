@@ -1208,7 +1208,8 @@
       }
     }
     const pend = liqs.filter(l => l.estado === 'pendiente'), mora = pend.filter(l => l.en_mora), reportadas = pend.filter(l => l.reportada_en);
-    resumen.innerHTML = `<div class="kpi"><span class="kpi-label">Por cobrar</span><b class="kpi-value">${money(pend.reduce((a, l) => a + l.total_cop, 0))}</b><span class="kpi-sub">${int(pend.length)} estados de cuenta</span></div>
+    renderAlertasCobro().catch(() => {});
+    resumen.innerHTML = `<div class="kpi"><span class="kpi-label">Por cobrar</span><b class="kpi-value">${money(pend.reduce((a, l) => a + l.total_cop - (l.pagado_cop || 0), 0))}</b><span class="kpi-sub">${int(pend.length)} estados de cuenta</span></div>
       <div class="kpi"><span class="kpi-label">Avisaron que pagaron</span><b class="kpi-value">${int(reportadas.length)}</b><span class="kpi-sub">Revisa en Wompi y márcalas</span></div>
       <div class="kpi"><span class="kpi-label">En mora</span><b class="kpi-value">${int(mora.length)}</b><span class="kpi-sub">Sus parches no salen en el radar</span></div>`;
     const tabs = [['pendiente', 'Por pagar'], ['pagada', 'Pagadas'], ['todo', 'Todas']];
@@ -1218,15 +1219,83 @@
         <div class="liq-main"><b>${esc(l.negocio)}</b><small>${esc(new Date(l.periodo + 'T12:00:00').toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }))} · ${int(l.clientes)} clientes · ${esc((PLANES[l.plan] || {}).nombre || l.plan)} · ref <code>${esc(l.referencia)}</code></small>
           ${l.reportada_en ? `<small class="liq-aviso">Avisó el pago: ${esc(l.pago_ref || '')} · ${esc(fmtRel(l.reportada_en))}</small>` : ''}
           ${l.en_mora ? '<small class="liq-mora">Vencida: sus parches están ocultos del radar</small>' : ''}</div>
-        <b class="liq-monto">${money(l.total_cop)}</b>
+        <b class="liq-monto">${money(l.total_cop)}${l.pagado_cop && l.estado === 'pendiente' ? `<small class="liq-abonado">abonó ${money(l.pagado_cop)}</small>` : ''}</b>
         <span class="pill ${cls}">${esc(txt)}</span>
         <span class="liq-acts">${l.estado === 'pendiente' ? `<button class="btn btn--sm primary" data-action="liq-pagada" data-id="${l.id}" data-solo-admin>Marcar pagada</button><button class="btn btn--sm" data-action="liq-anular" data-id="${l.id}" data-solo-admin>Anular</button>` : l.estado === 'pagada' ? `<button class="btn btn--sm" data-action="liq-reabrir" data-id="${l.id}" data-solo-admin>Reabrir</button>` : ''}</span>
       </li>`; }).join('') : '<li class="empty empty--ok">No hay estados de cuenta aquí.</li>';
   }
+  /* ---------- Reclamos de cobros y alertas de llegadas raras ---------- */
+  let reclamos = null, anomalias = null;
+  const TIPO_COBRO = { paquete: 'Paquete', mesa: 'Mesa (parche)', reserva: 'Reserva de mesa' };
+  async function renderAlertasCobro() {
+    const boxR = $('#rec-list'), boxA = $('#anom-list');
+    if (!boxR || !boxA) return;
+    if (reclamos === null || anomalias === null) {
+      if (DEMO) {
+        const hoy = Date.now();
+        reclamos = [{ id: 1, negocio: 'Discoteca Los Capachos', motivo: 'Llegaron 2 personas, no 4. El mesero marcó mal.', estado: 'pendiente', creado_en: new Date(hoy - 5 * 3600e3).toISOString(), tipo: 'reserva', personas: 4, monto_cop: 10000, cliente: 'Kevin O.', validado_por: 'local', llegada: new Date(hoy - 30 * 3600e3).toISOString(), liquidacion_estado: null }];
+        anomalias = [{ negocio: 'Bar La Terraza', esperados: 38, llegaron: 3, ratio: 0.08, anulados: 4, cobros: 7, reclamos: 1, motivo: 'Casi nadie llega: 3 de 38 · 4 llegadas desmarcadas de 7' }];
+      } else {
+        const [r1, r2] = await Promise.all([sb().rpc('admin_reclamos'), sb().rpc('admin_anomalias')]);
+        const falta = e => /PGRST202|admin_reclamos|admin_anomalias/.test((e && e.message) || '');
+        if (r1.error || r2.error) {
+          const e = r1.error || r2.error;
+          boxR.innerHTML = `<li class="empty">${falta(e) ? 'Falta correr la migración 20261120120000_mejoras_cobro.sql.' : esc(errMsg(e))}</li>`;
+          boxA.innerHTML = '';
+          return;
+        }
+        reclamos = r1.data || []; anomalias = r2.data || [];
+      }
+    }
+    const pend = reclamos.filter(r => r.estado === 'pendiente');
+    $('#rec-meta').textContent = pend.length ? `${pend.length} por revisar` : 'Al día';
+    boxR.innerHTML = reclamos.length ? reclamos.slice(0, 40).map(r => `<li class="liq-row rec-row">
+        <div class="liq-main"><b>${esc(r.negocio)}</b><small>${esc(TIPO_COBRO[r.tipo] || r.tipo)} · ${esc(r.cliente || 'Cliente')}${r.personas > 1 ? ` (${int(r.personas)} personas)` : ''} · validado por ${esc(r.validado_por)} · ${esc(fmtRel(r.llegada))}</small>
+          <small class="rec-motivo">«${esc(r.motivo)}»</small>${r.respuesta ? `<small>Respuesta: ${esc(r.respuesta)}</small>` : ''}</div>
+        <b class="liq-monto">${money(r.monto_cop)}</b>
+        <span class="pill ${r.estado === 'aprobado' ? 'pos' : r.estado === 'rechazado' ? 'neg' : 'warn'}">${esc({ pendiente: 'Por revisar', aprobado: 'Aprobado', rechazado: 'Rechazado' }[r.estado] || r.estado)}</span>
+        <span class="liq-acts">${r.estado === 'pendiente' ? `<button class="btn btn--sm primary" data-action="rec-aprobar" data-id="${r.id}" data-solo-admin>Anular cobro</button><button class="btn btn--sm" data-action="rec-rechazar" data-id="${r.id}" data-solo-admin>Mantener</button>` : ''}</span>
+      </li>`).join('') : '<li class="empty empty--ok">Ningún negocio ha reclamado cobros.</li>';
+    $('#anom-meta').textContent = anomalias.length ? `${anomalias.length} para revisar` : 'Todo normal';
+    boxA.innerHTML = anomalias.length ? anomalias.map(x => `<li class="liq-row anom-row">
+        <div class="liq-main"><b>${esc(x.negocio)}</b><small class="liq-mora">${esc(x.motivo)}</small>
+          <small>Últimos 30 días: ${int(x.llegaron)} llegadas de ${int(x.esperados)} esperadas${x.ratio != null ? ` (${Math.round(x.ratio * 100)}%)` : ''} · ${int(x.anulados)} desmarcadas · ${int(x.reclamos)} reclamos</small></div>
+        <span class="pill warn">Revisar</span>
+      </li>`).join('') : '<li class="empty empty--ok">Ningún negocio tiene llegadas raras en los últimos 30 días.</li>';
+  }
+  async function resolverReclamo(id, aprobar) {
+    const r = (reclamos || []).find(x => String(x.id) === String(id)); if (!r) return;
+    const res = await confirmar(aprobar
+      ? { title: 'Anular el cobro', text: `Se anula el cobro de <b>${money(r.monto_cop)}</b> a <b>${esc(r.negocio)}</b>. Si ya estaba en un estado de cuenta, se descuenta; si ya lo pagó, queda como saldo a favor.`, ok: 'Anular cobro', tone: 'ok', motivo: { label: 'Respuesta al negocio (opcional)' } }
+      : { title: 'Mantener el cobro', text: `El cobro de <b>${money(r.monto_cop)}</b> sigue. Cuéntale al negocio por qué.`, ok: 'Mantener', motivo: { label: 'Respuesta al negocio', placeholder: 'Ej: el cliente escaneó el QR dentro del local a las 9:12 p. m.' } });
+    if (!res) return;
+    if (!DEMO) {
+      const { error } = await sb().rpc('admin_resolver_reclamo', { p_id: Number(id), p_aprobar: aprobar, p_nota: res.motivo || '' });
+      if (error) { toast('No se pudo', errMsg(error), { error: true }); return; }
+    }
+    r.estado = aprobar ? 'aprobado' : 'rechazado'; r.respuesta = res.motivo || null;
+    anotar(aprobar ? 'reclamo_aprobado' : 'reclamo_rechazado', r.negocio, `${money(r.monto_cop)} · ${r.motivo}`);
+    toast(aprobar ? 'Cobro anulado' : 'Cobro mantenido', `Le avisamos a ${r.negocio}.`);
+    liqs = null; renderCobros();
+  }
+  // Exportación para el contador: CSV con punto y coma (Excel en español lo abre en columnas)
+  function exportarLiquidacionesCSV() {
+    if (!liqs || !liqs.length) { toast('Sin datos', 'No hay estados de cuenta para exportar.'); return; }
+    const celda = v => { const s = v == null ? '' : String(v); return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const fecha = v => v ? new Date(String(v).length === 10 ? v + 'T12:00:00' : v).toLocaleDateString('es-CO') : '';
+    const filas = [['Referencia', 'Negocio', 'NIT', 'Plan', 'Periodo', 'Clientes', 'Total (COP)', 'Descuento (COP)', 'Pagado (COP)', 'Saldo (COP)', 'Estado', 'Vence', 'Pagada el', 'Ref. de pago', 'Nota']];
+    for (const l of liqs) filas.push([l.referencia, l.negocio, l.nit || '', (PLANES[l.plan] || {}).nombre || l.plan, String(l.periodo).slice(0, 7), l.clientes, l.total_cop, l.descuento_cop || 0, l.pagado_cop || (l.estado === 'pagada' ? l.total_cop : 0), l.estado === 'pendiente' ? l.total_cop - (l.pagado_cop || 0) : 0, (ESTADO_LIQ[l.estado] || [l.estado])[0], fecha(l.vence), fecha(l.pagada_en), l.pago_ref || '', l.nota || '']);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + filas.map(f => f.map(celda).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = `modoparche-liquidaciones-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    anotar('exportar_liquidaciones', 'CSV', `${liqs.length} filas`);
+  }
   async function marcarLiquidacion(id, estado) {
     const l = (liqs || []).find(x => String(x.id) === String(id)); if (!l) return;
     const textos = { pagada: ['Marcar como pagada', `Confirma que en Wompi ves el pago de ${money(l.total_cop)} con la referencia ${l.referencia}.`], anulada: ['Anular estado de cuenta', 'Úsalo solo si hubo un error en los cobros. El negocio no tendrá que pagarlo.'], pendiente: ['Reabrir', 'Vuelve a quedar por pagar.'] }[estado];
-    const ok = await confirmar(textos[0], textos[1], 'Sí, continuar');
+    const ok = await confirmar({ title: textos[0], text: esc(textos[1]), ok: 'Sí, continuar', tone: estado === 'anulada' ? 'danger' : 'ok' });
     if (!ok) return;
     if (!DEMO) {
       const { error } = await sb().rpc('admin_marcar_liquidacion', { p_id: Number(id), p_estado: estado, p_nota: '' });
@@ -1878,7 +1947,10 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
         case 'liq-anular': marcarLiquidacion(a.dataset.id, 'anulada'); break;
         case 'liq-reabrir': marcarLiquidacion(a.dataset.id, 'pendiente'); break;
         case 'liq-generar': generarLiquidaciones(); break;
-        case 'liq-recargar': liqs = null; renderCobros(); break;
+        case 'liq-recargar': liqs = null; reclamos = null; anomalias = null; renderCobros(); break;
+        case 'liq-csv': exportarLiquidacionesCSV(); break;
+        case 'rec-aprobar': resolverReclamo(a.dataset.id, true); break;
+        case 'rec-rechazar': resolverReclamo(a.dataset.id, false); break;
         case 'ver-errores': verErrores(); break;
         case 'ir-anuncio': location.hash = '#anuncios'; setTimeout(() => $('#an-texto').focus(), 300); break;
         case 'cerrar-drawer': closeDrawer(); break;

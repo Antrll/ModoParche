@@ -58,3 +58,20 @@ html.mp-tema-ya *, html.mp-tema-ya *::before, html.mp-tema-ya *::after { transit
   .tema-toggle--panel:hover { color: var(--text, var(--ink, currentColor)); }
 }
 .tema-toggle:focus-visible { outline: 3px solid var(--orange, var(--accent, #FF5A1F)); outline-offset: 2px; }
+
+/* Durante la tinta las barras de los paneles quedan opacas: la transición no
+   dibuja el desenfoque (backdrop-filter) y en el celular la barra se veía
+   transparente, como si se ocultara. */
+html.mp-tema-ya .top, html.mp-tema-ya .topbar, html.mp-tema-ya .bottom-nav {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+html.mp-tema-ya:not(.is-dark):not(.is-mixto) .top, html.mp-tema-ya:not(.is-dark):not(.is-mixto) .topbar { background-color: #fafafa !important; }
+html.mp-tema-ya.is-mixto .top, html.mp-tema-ya.is-mixto .topbar { background-color: #111111 !important; }
+html.mp-tema-ya.is-dark .top { background-color: #0e0e10 !important; }
+html.mp-tema-ya.is-dark .topbar { background-color: #121214 !important; }
+
+/* Modo mixto: círculo mitad lleno (se esconden el sol y la luna) */
+.tema-toggle .tema-medio { opacity: 0; transform: scale(.5) rotate(-90deg); transform-box: fill-box; transform-origin: center; transition: transform .5s var(--ease-out, cubic-bezier(.23, 1, .32, 1)), opacity .3s ease; }
+html.is-mixto .tema-toggle .tema-medio { opacity: 1; transform: none; }
+html.is-mixto .tema-toggle .tema-disco, html.is-mixto .tema-toggle .tema-rayos { opacity: 0; transform: scale(.4); }
+@media (prefers-reduced-motion: reduce) { .tema-toggle .tema-medio { transition: none; } }

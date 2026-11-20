@@ -106,6 +106,9 @@
     // Plan desde el enlace (?plan=basico|villavo|sedes)
     const qp = new URLSearchParams(location.search).get('plan');
     if (qp && PLANES[qp]) { const r = $(`input[name="plan"][value="${qp}"]`); if (r) r.checked = true; }
+    // Invitación de otro local (?ref=CODIGO): se aplica al entrar al panel por primera vez
+    const ref = (new URLSearchParams(location.search).get('ref') || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20);
+    if (ref.length >= 6) { try { localStorage.setItem('mp-ref', ref); } catch (e) { /* sin almacenamiento */ } }
     if (/^#entrar/.test(location.hash)) setView('entrar', { updateHash: false });
     syncPreview();
 

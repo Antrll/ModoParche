@@ -1532,3 +1532,63 @@ html.is-dark .kpi--lead { background: var(--night); color: #fff; box-shadow: ins
 .mesa-llegaron { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
 .mesa-llegaron select.input { height: 32px; width: auto; padding: 0 28px 0 10px; }
 .mesa-gps { display: block; font-size: 11px; color: var(--muted); }
+.liq-pasos-1 { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.liq-pasos-1 b { color: var(--text); }
+.liq-estado { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; }
+.liq-estado:empty { display: none; }
+.liq-estado .pay-spin { width: 14px; height: 14px; flex: none; }
+.liq-estado.is-ok { color: var(--positive); }
+.liq-estado.is-error { color: var(--negative); }
+.liq-estado.is-info { color: var(--muted); }
+
+/* ---------- Mejoras del cobro: abonos, reclamos, QR del local, referidos ---------- */
+.liq-hist li { grid-template-columns: 1fr auto auto auto; }
+.liq-hist .text-btn { font-size: 13px; }
+.liq-track { height: 6px; }
+.liq-abono { border-top: 1px dashed var(--rule); padding-top: 8px; }
+.liq-abono summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); }
+.liq-abono-f { display: grid; gap: 6px; margin-top: 8px; }
+.liq-abono-f label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.liq-abono-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.liq-abono-row .input { flex: 1 1 140px; min-width: 0; height: 40px; }
+.liq-abono .hint { margin: 0; font-size: 12px; }
+.mini-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.mini-head .text-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.mini-head .text-btn .ic { width: 15px; height: 15px; }
+.cobro-rec { justify-self: start; margin-top: 2px; font-size: 12px; }
+button.cobro-rec { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; border: 0; background: none; padding: 0; min-height: 0; box-shadow: none; cursor: pointer; }
+button.cobro-rec:hover { color: var(--negative); }
+.mesa-ben-estado { display: flex; align-items: center; gap: 5px; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.mesa-ben-estado .ic { width: 14px; height: 14px; flex: none; }
+.mesa-ben-estado.is-on { color: var(--positive); font-weight: 700; }
+.qrlocal { display: grid; grid-template-columns: 168px 1fr; gap: 18px; align-items: start; }
+.qrlocal-qr { display: block; padding: 10px; border-radius: 14px; background: #ffffff; border: 1px solid var(--rule); }
+.qrlocal-qr svg { display: block; width: 100%; height: auto; }
+.qrlocal p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+.qrlocal-pts { display: grid; gap: 4px; margin: 0 0 12px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.qrlocal-pts li { display: flex; gap: 6px; align-items: flex-start; }
+.qrlocal-pts .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--positive); }
+@media (max-width: 560px) { .qrlocal { grid-template-columns: 1fr; } .qrlocal-qr { width: min(220px, 100%); } }
+#referidos-box p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
+.ref-code { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.ref-code code { font: 700 18px var(--mono); letter-spacing: .06em; padding: 6px 12px; border-radius: 10px; background: var(--raised); }
+
+/* =====================================================================
+   MODO MIXTO: contenido claro con la barra lateral y la de arriba oscuras
+===================================================================== */
+html.is-mixto :is(.topbar, .sidebar) {
+  --ground: #121214; --surface: #1a1a1d; --raised: #242428; --border: #303036; --rule: #26262b; --control: #45454c;
+  --text: #ffffff; --muted: #b9b3ad; --faint: #a29c96;
+  --accent-50: #2a1a10; --accent-100: #3a2213; --accent-200: #5a3218; --accent-ink: #ffb07a;
+  color: #ffffff;
+}
+html.is-mixto .topbar { background: rgba(17,17,17,.94); box-shadow: none; }
+html.is-mixto .sidebar { background: #111111; box-shadow: none; }
+html.is-mixto :is(.topbar, .sidebar) :is(.input, input) { background-color: var(--raised); color: #ffffff; }
+html.is-dark .notice--olive { background: #24251c; border-color: #3a3c2b; color: #e6e8cf; }
+html.is-dark .notice--olive .ic { color: #c4c79b; }
+
+/* Modo claro: el KPI destacado pasa a claro (el mixto lo deja negro) */
+html:not(.is-dark):not(.is-mixto) .kpi--lead { background: #f1f1f3; color: #111111; box-shadow: inset 0 0 0 1px #e4e4e7; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead :is(.kpi-label, .delta, .kpi-value small) { color: #55555c; }
+html:not(.is-dark):not(.is-mixto) .kpi--lead .kpi-value { color: #b83709; }

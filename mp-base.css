@@ -814,7 +814,6 @@ html.is-dark {
   --shadow-lift: 0 2px 4px rgba(0,0,0,.4), 0 22px 44px -18px rgba(0,0,0,.85);
 }
 html.is-dark .mp-fijo,
-html.is-dark .tile--peach,
 html.is-dark .nav--orange:not(.is-scrolled) {
   --ink: #111111;
   --paper: #ffffff;
@@ -865,9 +864,57 @@ html.is-dark .tile-face img[src*="estrella-punteada"] { mix-blend-mode: normal; 
 /* Modo oscuro: los botones naranjas llevan texto oscuro (crema sobre naranja no se lee) */
 html.is-dark :is(.btn, .btn-primary):not(.btn--ink, .btn--paper, .btn--ghost):not(.nav--orange:not(.is-scrolled) *, .mp-fijo *, body.menu-open .nav *) { --btn-fg: #111111; }
 
-/* Modo oscuro: texto naranja sobre los bloques que pasaron de negro a crema */
-html.is-dark .mp-naranja-texto { color: #b83709 !important; }
+/* =====================================================================
+   BLOQUES DE TINTA (.mp-tinta-bloque, los marca mp-tema.js)
+   Los bloques negros grandes del diseño (capítulos, footer, cookies...):
+   - Modo claro: gris muy claro con texto oscuro (casi toda la página clara).
+   - Modo oscuro: gris oscuro con texto blanco (no se vuelven blancos).
+   - Modo mixto: negros, como se diseñaron.
+===================================================================== */
+html:not(.is-dark):not(.is-mixto) :is(.mp-tinta-bloque:not(.nav.is-scrolled), .mp-cookies, .hero-marquee) {
+  color-scheme: light;
+  --ink: #efeff1;
+  --paper: #111111;
+  --soft: #e3e3e7;
+  --soft-2: #d6d6db;
+  --muted: #45454d;
+  --orange-deep: #b83709;
+  --orange-soft: #fff1ea;
+  --gray-border: #d4d4d8;
+}
+html.is-dark :is(.mp-tinta-bloque:not(.nav.is-scrolled), .mp-cookies, .hero-marquee) {
+  --ink: #1f1f23;
+  --paper: #ffffff;
+  --soft: #2a2a2f;
+  --soft-2: #36363c;
+  --muted: #b9b9c2;
+  --orange-deep: #ff8a5c;
+  --orange-soft: #2b1b13;
+  --gray-border: #33333a;
+}
+:is(.mp-tinta-bloque, .mp-cookies, .hero-marquee, .mp-tinta-papel) { --bg-color: var(--paper); --text-main: var(--ink); --text-muted: var(--muted); --gray-light: var(--soft); }
+/* Paneles blancos dentro de un bloque de tinta: colores de la página */
+html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .mp-tinta-papel {
+  color-scheme: light;
+  --ink: #111111; --paper: #ffffff; --soft: #f4f4f5; --soft-2: #e9e9eb; --muted: #38383f;
+  --orange-deep: #b83709; --orange-soft: #fff1ea; --gray-border: #e5e7eb;
+}
+html.is-dark .mp-tinta-bloque .mp-tinta-papel {
+  --ink: #ffffff; --paper: #161618; --soft: #202024; --soft-2: #2e2e33; --muted: #b9b9c2;
+  --orange-deep: #ff8a5c; --orange-soft: #2b1b13; --gray-border: #2e2e33;
+}
+/* Modo claro: el naranja de marca sobre el bloque que pasó a gris claro */
+html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .mp-naranja-texto { color: #b83709 !important; }
 /* Lo naranja y lo oliva conservan su tinta oscura (el color se hereda ya calculado del padre) */
 html.is-dark .mp-fijo, html.is-dark .sw--olive { color: #111111; }
 /* El logotipo sobre la barra que pasó de negro a crema */
 html.is-dark .nav--ink:not(.is-scrolled) .logo b { color: #b83709; }
+
+/* Muestras de marca (marca.html): siempre con sus colores reales, en cualquier modo */
+[data-tinta-fija] {
+  color-scheme: light;
+  --ink: #111111; --paper: #ffffff; --soft: #f4f4f5; --soft-2: #e9e9eb; --muted: #38383f;
+  --orange-deep: #b83709; --orange-soft: #fff1ea; --olive-deep: #55583a; --olive-soft: #eef0e3;
+  --ok: #0e6f31; --danger: #b52b06; --gray-border: #e5e7eb;
+  --bg-color: var(--paper); --text-main: var(--ink); --text-muted: var(--muted); --gray-light: var(--soft);
+}

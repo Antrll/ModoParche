@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#111111">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
+<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <meta name="robots" content="noindex, nofollow">
@@ -448,10 +448,15 @@
       <!-- ============================ BITÁCORA ============================ -->
       <section class="view" id="view-cobros" aria-labelledby="h-cobros" hidden>
         <div class="title-row">
-          <div><h1 id="h-cobros" class="display">Cobros</h1><p class="sub">Estados de cuenta de los negocios: cobro por resultados, sin mensualidades. Se arman solos el día 1 de cada mes. Los negocios pagan con el datáfono de Wompi y aquí los marcas como pagados.</p></div>
-          <div class="title-acts"><button class="btn" data-action="liq-recargar"><svg class="ic"><use href="#i-refresh"/></svg>Actualizar</button><button class="btn primary" data-action="liq-generar" data-solo-admin>Armar liquidaciones</button></div>
+          <div><h1 id="h-cobros" class="display">Cobros</h1><p class="sub">Estados de cuenta de los negocios: cobro por resultados, sin mensualidades. Se arman solos el día 1 de cada mes. Los negocios pagan con un clic en Wompi (total o abonos) y quedan pagados solos; si pagan por otro medio, aquí los marcas.</p></div>
+          <div class="title-acts"><button class="btn" data-action="liq-recargar"><svg class="ic"><use href="#i-refresh"/></svg>Actualizar</button><button class="btn" data-action="liq-csv">Exportar para el contador</button><button class="btn primary" data-action="liq-generar" data-solo-admin>Armar liquidaciones</button></div>
         </div>
         <div class="kpis liq-kpis" id="liq-resumen"></div>
+        <div class="cobro-alertas">
+          <section class="cobro-bloque" aria-labelledby="h-anom"><header><h2 id="h-anom">Alertas de llegadas raras</h2><span class="meta" id="anom-meta"></span></header><ul class="liq-lista" id="anom-list"></ul></section>
+          <section class="cobro-bloque" aria-labelledby="h-rec"><header><h2 id="h-rec">Reclamos de negocios</h2><span class="meta" id="rec-meta"></span></header><ul class="liq-lista" id="rec-list"></ul></section>
+        </div>
+        <h2 class="cobro-h">Estados de cuenta</h2>
         <div class="filters"><div class="tabs" role="tablist" id="liq-tabs"></div></div>
         <ul class="liq-lista" id="liq-list"></ul>
       </section>

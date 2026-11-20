@@ -14,7 +14,7 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#111111">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
+<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
@@ -88,7 +88,7 @@
         </h1>
         <p class="br-lede" data-reveal>Así se ve, suena y se siente ModoParche: energía de calle, alma llanera y gente que se junta. Esta página reúne todo para usar la marca bien.</p>
         <nav class="br-index" aria-label="Contenido de la página" data-reveal>
-          <a href="#esencia">Esencia</a><a href="#logo">Logo</a><a href="#color">Color</a><a href="#tipo">Tipografía</a><a href="#voz">Voz</a>
+          <a href="#esencia">Esencia</a><a href="#logo">Logo</a><a href="#color">Color</a><a href="#tipo">Tipografía</a><a href="#graficos">Gráficos</a><a href="#insignias">Insignias</a><a href="#voz">Voz</a><a href="#foto">Fotografía</a><a href="#aplicaciones">Aplicaciones</a><a href="#descargas">Descargas</a>
         </nav>
       </div>
       <div class="br-hero-art" aria-hidden="true">
@@ -150,7 +150,7 @@
         <p data-reveal>Una mano rockera coronada, entre llamas, estrellas y rayos: la energía de salir y la corona de quien arma el parche.</p>
       </header>
 
-      <div class="logo-grid" data-reveal-group="80">
+      <div class="logo-grid" data-reveal-group="80" data-tinta-fija>
         <figure class="logo-card logo-card--light logo-card--wide" data-reveal>
           <img src="src/assets/web/logo-imagotipo.webp" alt="Imagotipo de ModoParche sobre fondo blanco" width="720" height="451" loading="lazy">
           <figcaption><b>Imagotipo</b><span>Uso principal. Sobre fondos claros.</span><a class="dl" href="src/assets/web/imagotipo.png" download>Descargar PNG</a></figcaption>
@@ -168,23 +168,6 @@
           <figcaption><b>Isotipo sobre naranja</b><span>Para piezas de campaña.</span><a class="dl" href="src/assets/web/isotipo-naranja.png" download>Descargar PNG</a></figcaption>
         </figure>
       </div>
-
-      <div class="logo-rules">
-        <div class="rule-space" data-reveal>
-          <div class="space-box">
-            <img src="src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" loading="lazy">
-            <i class="sp sp--t"></i><i class="sp sp--r"></i><i class="sp sp--b"></i><i class="sp sp--l"></i>
-          </div>
-          <p><b>Zona de respeto.</b> Deja libre alrededor al menos el alto de la corona. Tamaño mínimo: 32 px en pantalla, 12 mm impreso.</p>
-        </div>
-
-        <ul class="donts" data-reveal-group="70">
-          <li data-reveal><span class="dont-art"><img class="d-stretch" src="src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" loading="lazy"></span><b>No lo estires</b><small>Siempre en su proporción original.</small></li>
-          <li data-reveal><span class="dont-art"><img class="d-recolor" src="src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" loading="lazy"></span><b>No le cambies el color</b><small>Solo naranja, negro y blanco.</small></li>
-          <li data-reveal><span class="dont-art"><img class="d-rotate" src="src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" loading="lazy"></span><b>No lo gires</b><small>La mano siempre hacia arriba.</small></li>
-          <li data-reveal><span class="dont-art dont-art--busy"><img src="src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" loading="lazy"></span><b>No lo pongas sobre ruido</b><small>Fondo limpio, buen contraste.</small></li>
-        </ul>
-      </div>
     </div>
   </section>
 
@@ -199,7 +182,7 @@
         <p data-reveal>Tres tintas mandan: naranja, negro y blanco. El verde oliva aparece poquito, solo para resaltar algo clave. Toca un color para copiarlo.</p>
       </header>
 
-      <div class="swatches" data-reveal-group="70">
+      <div class="swatches" data-reveal-group="70" data-tinta-fija>
         <button type="button" class="sw sw--orange sw--big" data-copy="#FF5A1F" data-reveal><span class="sw-name">Naranja Parche</span><span class="sw-role">Energía. El color que llama a salir.</span><span class="sw-codes"><b>#FF5A1F</b><small>RGB 255 90 31</small></span></button>
         <button type="button" class="sw sw--ink sw--big" data-copy="#111111" data-reveal><span class="sw-name">Negro Noche</span><span class="sw-role">Contraste y estructura.</span><span class="sw-codes"><b>#111111</b><small>RGB 17 17 17</small></span></button>
         <button type="button" class="sw sw--paper" data-copy="#FFFFFF" data-reveal><span class="sw-name">Blanco</span><span class="sw-role">Aire y claridad.</span><span class="sw-codes"><b>#FFFFFF</b><small>RGB 255 255 255</small></span></button>
@@ -208,7 +191,7 @@
         <button type="button" class="sw sw--peach" data-copy="#FFF1EA" data-reveal><span class="sw-name">Durazno</span><span class="sw-role">Fondos suaves y estados.</span><span class="sw-codes"><b>#FFF1EA</b><small>RGB 255 241 234</small></span></button>
       </div>
 
-      <div class="ratio" data-reveal>
+      <div class="ratio" data-reveal data-tinta-fija>
         <p class="ratio-label">Proporción en una pieza</p>
         <div class="ratio-bar" role="img" aria-label="Blanco 45 por ciento, naranja 30, negro 20 y verde oliva 5">
           <span style="--w:45%" class="r-paper">Blanco 45%</span>
@@ -216,6 +199,14 @@
           <span style="--w:20%" class="r-ink">Negro 20%</span>
           <span style="--w:5%" class="r-olive" title="Verde oliva 5%"></span>
         </div>
+      </div>
+
+      <div class="combos" data-reveal-group="60" data-tinta-fija>
+        <p class="ratio-label">Combinaciones que funcionan</p>
+        <div class="combo combo--a" data-reveal><b>Aa</b><span>Negro sobre naranja</span><small>Contraste 6,1:1 · títulos y botones</small></div>
+        <div class="combo combo--b" data-reveal><b>Aa</b><span>Blanco sobre negro</span><small>Contraste 18,9:1 · bloques fuertes</small></div>
+        <div class="combo combo--c" data-reveal><b>Aa</b><span>Brasa sobre blanco</span><small>Contraste 5,9:1 · texto naranja</small></div>
+        <div class="combo combo--d" data-reveal><b>Aa</b><span>Negro sobre oliva</span><small>Contraste 5,2:1 · sellos de confianza</small></div>
       </div>
     </div>
   </section>
@@ -256,12 +247,72 @@
   </section>
 
   <!-- ============================================================
-       05 VOZ
+       05 ELEMENTOS GRÁFICOS
+  ============================================================ -->
+  <section class="br-sec br-sec--soft" id="graficos" aria-labelledby="graf-title">
+    <div class="wrap">
+      <header class="br-head" data-reveal-group>
+        <span class="br-num" data-reveal>05</span>
+        <h2 class="br-h" id="graf-title" data-reveal>Elementos gráficos</h2>
+        <p data-reveal>Trazos de brocha, coronas, llamas y rayos. Son el «ruido bonito» de la marca: acompañan al logo y a los títulos, nunca los tapan.</p>
+      </header>
+
+      <div class="stk-grid" data-reveal-group="60" data-tinta-fija>
+        <figure class="stk-card stk-card--ink" data-reveal><img src="src/assets/web/stk/coronanaranjabrochaarmador.webp" alt="" width="200" height="200" loading="lazy"><figcaption><b>Corona</b><span>Quien arma el parche. Premios, destacados.</span></figcaption></figure>
+        <figure class="stk-card stk-card--orange" data-reveal><img src="src/assets/web/stk/fuegonegrobrochacontorno.webp" alt="" width="200" height="200" loading="lazy"><figcaption><b>Llama</b><span>Lo que está prendido: rumba, «últimos cupos».</span></figcaption></figure>
+        <figure class="stk-card stk-card--ink" data-reveal><img src="src/assets/web/stk/rayonaranjagrungequebrado.webp" alt="" width="200" height="200" loading="lazy"><figcaption><b>Rayo</b><span>Lo rápido: parches relámpago y avisos.</span></figcaption></figure>
+        <figure class="stk-card stk-card--paper" data-reveal><img src="src/assets/web/stk/estrellanegratrazografiti.webp" alt="" width="200" height="200" loading="lazy"><figcaption><b>Estrella</b><span>Calificaciones y momentos especiales.</span></figcaption></figure>
+        <figure class="stk-card stk-card--ink" data-reveal><img src="src/assets/web/stk/chispasnaranjasimpactoesquina.webp" alt="" width="200" height="200" loading="lazy"><figcaption><b>Chispas</b><span>Esquinas con energía. Celebraciones.</span></figcaption></figure>
+        <figure class="stk-card stk-card--orange" data-reveal><img src="src/assets/web/stk/flechablancabrochaderechacta.webp" alt="" width="200" height="200" loading="lazy"><figcaption><b>Flecha</b><span>Señala la acción principal.</span></figcaption></figure>
+      </div>
+
+      <div class="shape-grid" data-reveal-group="70" data-tinta-fija>
+        <div class="shape-card" data-reveal>
+          <span class="shape-burst"><b>92%</b><small>match</small></span>
+          <p><b>El estallido</b>Para números que importan: match, descuentos, cupos. Siempre con texto corto adentro.</p>
+        </div>
+        <div class="shape-card" data-reveal>
+          <span class="shape-teeth" aria-hidden="true"></span>
+          <p><b>Los dientes</b>Separan secciones con un corte en zigzag, como un afiche rasgado.</p>
+        </div>
+        <div class="shape-card" data-reveal>
+          <span class="shape-tags" aria-hidden="true"><i class="t-ink">Rumba</i><i class="t-orange">Últimos cupos</i><i class="t-olive">Verificado</i></span>
+          <p><b>Etiquetas</b>Píldoras de una o dos palabras. Negro para categorías, naranja para urgencia, oliva para confianza.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       06 INSIGNIAS
+  ============================================================ -->
+  <section class="br-sec" id="insignias" aria-labelledby="ins-title">
+    <div class="wrap">
+      <header class="br-head" data-reveal-group>
+        <span class="br-num" data-reveal>06</span>
+        <h2 class="br-h" id="ins-title" data-reveal>Insignias</h2>
+        <p data-reveal>Las medallas premian salir y armar planes. Mismo trazo, colores de la marca y un nombre que suena a parche.</p>
+      </header>
+      <ul class="medals" data-reveal-group="50">
+        <li data-reveal><img src="src/assets/web/stk/medalla-el-armador.webp" alt="" width="160" height="160" loading="lazy"><b>El armador</b><span>Armó su primer parche</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-firme-parche.webp" alt="" width="160" height="160" loading="lazy"><b>Firme al parche</b><span>Llegó a todo lo que se unió</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-rumbero-oficial.webp" alt="" width="160" height="160" loading="lazy"><b>Rumbero oficial</b><span>Cinco noches de rumba</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-rey-mirador.webp" alt="" width="160" height="160" loading="lazy"><b>Rey del mirador</b><span>Parches al aire libre</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-catador-bajon.webp" alt="" width="160" height="160" loading="lazy"><b>Catador del bajón</b><span>Ruta de comida completa</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-crack-deporte.webp" alt="" width="160" height="160" loading="lazy"><b>Crack del deporte</b><span>Partidos y entrenos</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-buena-vibra.webp" alt="" width="160" height="160" loading="lazy"><b>Buena vibra</b><span>Tres buenas calificaciones</span></li>
+        <li data-reveal><img src="src/assets/web/stk/medalla-cero-fantasma.webp" alt="" width="160" height="160" loading="lazy"><b>Cero fantasma</b><span>Nunca dejó a nadie esperando</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       07 VOZ
   ============================================================ -->
   <section class="br-sec" id="voz" aria-labelledby="voz-title">
     <div class="wrap">
       <header class="br-head" data-reveal-group>
-        <span class="br-num" data-reveal>05</span>
+        <span class="br-num" data-reveal>07</span>
         <h2 class="br-h" id="voz-title" data-reveal>Así hablamos</h2>
         <p data-reveal>Como un parcero que sabe dónde está el plan: cercano, directo y con sabor a Llano. Tuteamos, no usamos tecnicismos y nunca regañamos.</p>
       </header>
@@ -286,6 +337,97 @@
           </ul>
         </div>
       </div>
+
+      <div class="glossary" data-reveal-group="50">
+        <p class="ratio-label">Palabras de la casa</p>
+        <dl>
+          <div data-reveal><dt>Parche</dt><dd>El plan con gente. Lo que armas o a lo que le caes.</dd></div>
+          <div data-reveal><dt>Cáele</dt><dd>Únete, llega. La invitación de siempre.</dd></div>
+          <div data-reveal><dt>Parcero</dt><dd>Quien va contigo. En la app, la otra persona.</dd></div>
+          <div data-reveal><dt>La vaca</dt><dd>Dividir la cuenta entre todos.</dd></div>
+          <div data-reveal><dt>Relámpago</dt><dd>Plan que sale ya, para dentro de poco.</dd></div>
+          <div data-reveal><dt>El armador</dt><dd>Quien organiza. Se gana la corona.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       08 FOTOGRAFÍA
+  ============================================================ -->
+  <section class="br-sec br-sec--soft" id="foto" aria-labelledby="foto-title">
+    <div class="wrap">
+      <header class="br-head" data-reveal-group>
+        <span class="br-num" data-reveal>08</span>
+        <h2 class="br-h" id="foto-title" data-reveal>Fotografía</h2>
+        <p data-reveal>Fotos que dan ganas de estar ahí: gente de verdad, planes de verdad, en lugares que se reconocen como Villavo.</p>
+      </header>
+      <div class="photo-grid" data-reveal-group="80">
+        <figure class="photo-card photo-card--tall" data-reveal><img src="src/assets/web/estudio-marca.jpg" alt="Sesión de fotos de la marca ModoParche" width="1000" height="1500" loading="lazy" decoding="async"><figcaption><b>Gente real</b><span>Grupos riéndose, en movimiento. Nada de poses de catálogo.</span></figcaption></figure>
+        <figure class="photo-card" data-reveal><img src="src/assets/web/restaurante.jpg" alt="Afiche de ModoParche en un restaurante" width="1000" height="1500" loading="lazy" decoding="async"><figcaption><b>Luz cálida</b><span>Atardeceres, luces de rumba, tonos naranja.</span></figcaption></figure>
+        <figure class="photo-card" data-reveal><img src="src/assets/web/valla.jpg" alt="Valla de ModoParche en Villavicencio" width="1000" height="1500" loading="lazy" decoding="async"><figcaption><b>Villavo de fondo</b><span>Calles, barrios, el Llano. Que se sepa dónde es.</span></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       09 APLICACIONES
+  ============================================================ -->
+  <section class="br-sec" id="aplicaciones" aria-labelledby="apl-title">
+    <div class="wrap">
+      <header class="br-head" data-reveal-group>
+        <span class="br-num" data-reveal>09</span>
+        <h2 class="br-h" id="apl-title" data-reveal>Aplicaciones</h2>
+        <p data-reveal>Así se ve la marca donde la gente la encuentra: en el celular, en redes y en las piezas del local.</p>
+      </header>
+      <div class="apps" data-reveal-group="70" data-tinta-fija>
+        <figure class="app-mock" data-reveal>
+          <span class="app-icon"><img src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476" loading="lazy"></span>
+          <figcaption><b>Ícono de la app</b><span>Isotipo sobre naranja, esquinas redondeadas.</span></figcaption>
+        </figure>
+        <figure class="app-mock" data-reveal>
+          <span class="app-avatar"><img src="src/assets/web/logo-isotipo-light.webp" alt="" width="397" height="476" loading="lazy"></span>
+          <figcaption><b>Foto de perfil</b><span>Isotipo claro sobre negro. Se lee pequeño.</span></figcaption>
+        </figure>
+        <figure class="app-mock" data-reveal>
+          <span class="app-story">
+            <small>Hoy · 8:30 p. m.</small>
+            <b>Vinilos y salsa brava</b>
+            <span class="app-story-burst">Quedan 3 cupos</span>
+            <i>Cáele al parche</i>
+          </span>
+          <figcaption><b>Historia de Instagram</b><span>Naranja de fondo, titular en Gagalin, un solo llamado.</span></figcaption>
+        </figure>
+        <figure class="app-mock" data-reveal>
+          <span class="app-ticket">
+            <span class="app-ticket-top"><i>Comida</i><em>94% match</em></span>
+            <b>Cata de café de origen</b>
+            <small>Sáb · 4:00 p. m. · $25.000</small>
+            <span class="app-ticket-go">Sumarme</span>
+          </span>
+          <figcaption><b>Tarjeta de parche</b><span>Blanco, negro y un toque de naranja para la urgencia.</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       10 DESCARGAS
+  ============================================================ -->
+  <section class="br-sec br-sec--soft" id="descargas" aria-labelledby="dl-title">
+    <div class="wrap">
+      <header class="br-head" data-reveal-group>
+        <span class="br-num" data-reveal>10</span>
+        <h2 class="br-h" id="dl-title" data-reveal>Kit de marca</h2>
+        <p data-reveal>Todo listo para usar en piezas, presentaciones y redes. Archivos PNG con fondo transparente.</p>
+      </header>
+      <ul class="kit" data-reveal-group="50">
+        <li data-reveal><span class="kit-prev kit-prev--light" data-tinta-fija><img src="src/assets/web/logo-imagotipo.webp" alt="" width="720" height="451" loading="lazy"></span><span class="kit-txt"><b>Imagotipo</b><small>Para fondos claros</small></span><a class="btn btn--sm" href="src/assets/web/imagotipo.png" download>Descargar</a></li>
+        <li data-reveal><span class="kit-prev kit-prev--dark" data-tinta-fija><img src="src/assets/web/logo-imagotipo-light.webp" alt="" width="720" height="451" loading="lazy"></span><span class="kit-txt"><b>Imagotipo claro</b><small>Para fondos oscuros</small></span><a class="btn btn--sm" href="src/assets/web/imagotipo-light.png" download>Descargar</a></li>
+        <li data-reveal><span class="kit-prev kit-prev--light" data-tinta-fija><img src="src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" loading="lazy"></span><span class="kit-txt"><b>Isotipo</b><small>Ícono, avatar y sellos</small></span><a class="btn btn--sm" href="src/assets/web/isotipo.png" download>Descargar</a></li>
+        <li data-reveal><span class="kit-prev kit-prev--dark" data-tinta-fija><img src="src/assets/web/logo-isotipo-light.webp" alt="" width="397" height="476" loading="lazy"></span><span class="kit-txt"><b>Isotipo claro</b><small>Sobre negro o fotos</small></span><a class="btn btn--sm" href="src/assets/web/isotipo-light.png" download>Descargar</a></li>
+        <li data-reveal><span class="kit-prev kit-prev--orange" data-tinta-fija><img src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476" loading="lazy"></span><span class="kit-txt"><b>Isotipo sobre naranja</b><small>Piezas de campaña</small></span><a class="btn btn--sm" href="src/assets/web/isotipo-naranja.png" download>Descargar</a></li>
+      </ul>
     </div>
   </section>
 

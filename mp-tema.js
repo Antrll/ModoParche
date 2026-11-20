@@ -22,7 +22,13 @@
   const NARANJA = [255, 90, 31];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  // Tres modos: claro (casi todo claro), mixto (el diseño de marca: blanco,
+  // negro y naranja; en los paneles, barras oscuras) y oscuro (casi todo oscuro).
+  const TEMAS = ['claro', 'mixto', 'oscuro'];
+  const NOMBRE = { claro: 'Modo claro', mixto: 'Modo mixto', oscuro: 'Modo oscuro' };
   const esOscuro = () => root.classList.contains('is-dark');
+  const temaActual = () => esOscuro() ? 'oscuro' : root.classList.contains('is-mixto') ? 'mixto' : 'claro';
+  const siguienteTema = t => TEMAS[(TEMAS.indexOf(t) + 1) % TEMAS.length];
   // Paneles (usuario, negocio, admin): sus colores oscuros viven en su CSS,
   // así que no se marcan superficies fijas ni se toca el logo de la barra pública.
   const PANEL = root.hasAttribute('data-tema-panel');
@@ -85,15 +91,78 @@
   // Texto naranja sobre un bloque que era negro: en modo oscuro ese bloque queda
   // crema y el naranja de marca no se lee (2,8:1). Se marca para usar el naranja
   // profundo solo en el texto; los fondos naranjas no se tocan.
-  const TINTA = [17, 17, 17], TINTA_OSCURO = [255, 255, 255];
+  const TINTA = [17, 17, 17];
+
+  /* ---------- Bloques de tinta (.mp-tinta-bloque) ----------
+     Los bloques negros grandes del diseño (capítulos, footer, cookies, barras
+     negras) cambian según el modo: claro -> gris muy claro, oscuro -> gris
+     oscuro, mixto -> negro como se diseñaron. Se miden UNA vez con los colores
+     del diseño original (sin is-dark ni is-mixto, sin transiciones) y se
+     comprueba que el fondo de verdad venga de la variable --ink: si es un
+     color fijo, no se marca (si no, el texto quedaría del mismo color). */
+  function marcarBloquesTinta() {
+    if (!document.body) return;
+    const habia = { dark: root.classList.contains('is-dark'), mixto: root.classList.contains('is-mixto'), ya: root.classList.contains('mp-tema-ya') };
+    // Se mide con el diseño original (modo mixto: sin reglas de bloques)
+    root.classList.remove('is-dark');
+    root.classList.add('is-mixto', 'mp-tema-ya');
+    const marcados = [];
+    try {
+      const W = document.documentElement.clientWidth;
+      for (const el of document.body.querySelectorAll('*')) {
+        if (el.closest('svg, .mp-fijo, .mp-tinta-bloque, [data-tinta-fija]') || /^(SCRIPT|STYLE|IMG|SVG|VIDEO|CANVAS|IFRAME|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) continue;
+        const c = rgba(getComputedStyle(el).backgroundColor);
+        if (!c || c[3] < 0.9 || !cerca(c, TINTA, 3)) continue;
+        const r = el.getBoundingClientRect();
+        const grande = r.width * r.height >= 20000 || (el.matches('.nav, footer, .foot') && r.width > W * 0.6);
+        if (!grande) continue;
+        el.classList.add('mp-tinta-bloque');
+        marcados.push(el);
+      }
+      // Comprobación: con la regla del modo claro activa, el fondo ya no es negro
+      root.classList.remove('is-mixto');
+      for (const el of marcados) {
+        if (cerca(rgba(getComputedStyle(el).backgroundColor), TINTA, 3)) el.classList.remove('mp-tinta-bloque');
+      }
+      // Paneles blancos grandes dentro de un bloque de tinta (el panel del radar,
+      // tarjetas del manifiesto): toman los colores de la página en cada modo.
+      root.classList.add('is-mixto');
+      const papeles = [];
+      for (const bloque of document.querySelectorAll('.mp-tinta-bloque')) {
+        for (const el of bloque.querySelectorAll('*')) {
+          if (el.closest('svg, .mp-fijo, .mp-tinta-papel') || /^(IMG|SVG|VIDEO|CANVAS|IFRAME|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) continue;
+          const c = rgba(getComputedStyle(el).backgroundColor);
+          if (!c || c[3] < 0.9 || !cerca(c, [255, 255, 255], 3)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width * r.height < 20000) continue;
+          el.classList.add('mp-tinta-papel');
+          papeles.push(el);
+        }
+      }
+      // En oscuro deben quedar oscuros; si su blanco es fijo, no se tocan
+      root.classList.remove('is-mixto');
+      root.classList.add('is-dark');
+      for (const el of papeles) {
+        if (cerca(rgba(getComputedStyle(el).backgroundColor), [255, 255, 255], 3)) el.classList.remove('mp-tinta-papel');
+      }
+      root.classList.remove('is-dark');
+    } finally {
+      root.classList.toggle('is-dark', habia.dark);
+      root.classList.toggle('is-mixto', habia.mixto);
+      if (!habia.ya) root.classList.remove('mp-tema-ya');
+    }
+  }
+
+  // Texto naranja dentro de un bloque de tinta: en modo claro el bloque queda
+  // gris claro y el naranja de marca no se lee (2,8:1). Se marca para usar el
+  // naranja profundo solo en ese caso; los fondos naranjas no se tocan.
   function marcarNaranjaSobreTinta() {
-    const candidatos = document.body ? document.body.querySelectorAll('*') : [];
-    for (const el of candidatos) {
-      if (el.classList.contains('mp-naranja-texto') || el.closest('svg, .nav, .mp-fijo')) continue;
-      if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
-      if (!cerca(rgba(getComputedStyle(el).color), NARANJA, 4)) continue;
-      const f = fondoDetras(el);
-      if (cerca(f, TINTA, 3) || cerca(f, TINTA_OSCURO, 3)) el.classList.add('mp-naranja-texto');
+    for (const bloque of document.querySelectorAll('.mp-tinta-bloque')) {
+      for (const el of bloque.querySelectorAll('*')) {
+        if (el.classList.contains('mp-naranja-texto') || el.closest('svg, .mp-fijo')) continue;
+        if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+        if (cerca(rgba(getComputedStyle(el).color), NARANJA, 4)) el.classList.add('mp-naranja-texto');
+      }
     }
   }
 
@@ -172,8 +241,8 @@
       if (!fam) return;
       if (!img.dataset.logoOriginal) img.dataset.logoOriginal = original;
 
-      // En modo claro todo queda como se diseñó
-      if (!esOscuro()) { cambiarSrc(img, original); return; }
+      // En modo mixto todo queda como se diseñó
+      if (temaActual() === 'mixto' && !PANEL) { cambiarSrc(img, original); return; }
 
       const tipo = tipoDeFondo(fondoDetras(img.parentElement || img));
       const nombreOriginal = nombreDe(original);
@@ -204,28 +273,33 @@
   }
 
   /* ---------- Aplicar el tema ---------- */
-  function aplicar(oscuro) {
-    root.classList.toggle('is-dark', oscuro);
+  // tema: 'claro' | 'mixto' | 'oscuro' (también acepta true/false por compatibilidad)
+  function aplicar(tema) {
+    if (tema === true) tema = 'oscuro';
+    if (tema === false) tema = 'claro';
+    if (!TEMAS.includes(tema)) tema = 'claro';
+    root.classList.toggle('is-dark', tema === 'oscuro');
+    root.classList.toggle('is-mixto', tema === 'mixto');
     sincronizar();
-    // Avisa a la página (el dashboard marca su selector Sistema/Claro/Oscuro)
-    try { document.dispatchEvent(new CustomEvent('mp-tema', { detail: { oscuro } })); } catch (e) { /* navegador viejo */ }
+    // Avisa a la página (el dashboard marca su selector de tema)
+    try { document.dispatchEvent(new CustomEvent('mp-tema', { detail: { oscuro: tema === 'oscuro', tema } })); } catch (e) { /* navegador viejo */ }
   }
 
   // Deja el botón, los logos y la barra del navegador acordes con el tema actual,
   // venga el cambio de este botón, de los ajustes del panel o de otra pestaña.
   function sincronizar() {
-    const oscuro = esOscuro();
-    const btn = document.querySelector('.tema-toggle');
-    if (btn) {
-      btn.setAttribute('aria-pressed', String(oscuro));
-      btn.setAttribute('aria-label', oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
-      btn.title = oscuro ? 'Modo claro' : 'Modo oscuro';
-    }
+    const tema = temaActual(), oscuro = tema === 'oscuro', luego = siguienteTema(tema);
+    document.querySelectorAll('.tema-toggle').forEach(btn => {
+      btn.dataset.temaActual = tema;
+      btn.setAttribute('aria-pressed', String(tema !== 'claro'));
+      btn.setAttribute('aria-label', `${NOMBRE[tema]}. Cambiar a ${NOMBRE[luego].toLowerCase()}`);
+      btn.title = `${NOMBRE[tema]} · toca para ${NOMBRE[luego].toLowerCase().replace('modo ', 'el modo ')}`;
+    });
     if (PANEL) {
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) {
         if (!meta.dataset.original) meta.dataset.original = meta.content;
-        meta.content = oscuro ? '#121214' : meta.dataset.original;
+        meta.content = oscuro ? '#121214' : tema === 'mixto' ? '#111111' : meta.dataset.original;
       }
     } else {
       try { elegirLogoBarra(); } catch (e) { console.warn('[tema] logo barra', e); }
@@ -307,10 +381,10 @@
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
 
-  function cambiarConFundido(oscuro) {
-    if (reduceMotion.matches) { aplicar(oscuro); return; }
+  function cambiarConFundido(tema) {
+    if (reduceMotion.matches) { aplicar(tema); return; }
     root.classList.add('mp-tema-fade');
-    aplicar(oscuro);
+    aplicar(tema);
     setTimeout(() => root.classList.remove('mp-tema-fade'), 420);
   }
 
@@ -321,8 +395,9 @@
 
   async function alternar(btn, evento) {
     if (esperando) return; // doble clic mientras se prepara la mancha
-    const oscuro = !esOscuro();
-    guardar(oscuro ? 'oscuro' : 'claro');
+    // Cada toque pasa al siguiente: claro -> mixto -> oscuro -> claro
+    const oscuro = siguienteTema(temaActual());
+    guardar(oscuro);
 
     if (!document.startViewTransition || reduceMotion.matches) { cambiarConFundido(oscuro); return; }
 
@@ -371,12 +446,19 @@
   }
 
   /* ---------- Botón ---------- */
+  // Modo mixto: un círculo mitad lleno (mitad claro, mitad oscuro)
+  const MEDIO = '<g class="tema-medio"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></g>';
+  function asegurarIconoMixto(btn) {
+    const svg = btn && btn.querySelector('svg');
+    if (svg && !svg.querySelector('.tema-medio')) svg.insertAdjacentHTML('beforeend', MEDIO);
+  }
   const ICONO = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <mask id="mp-tema-luna"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle class="tema-sombra" cx="30" cy="-6" r="5" fill="#000"/></mask>
     <circle class="tema-disco" cx="12" cy="12" r="5" fill="currentColor" mask="url(#mp-tema-luna)"/>
     <g class="tema-rayos" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M12 1.5v2.2M12 20.3v2.2M1.5 12h2.2M20.3 12h2.2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/>
     </g>
+    ${MEDIO}
   </svg>`;
 
   function crearBoton() {
@@ -386,7 +468,7 @@
       if (!existente.querySelector('svg')) existente.innerHTML = ICONO;
       if (!existente.dataset.listo) {
         existente.dataset.listo = '1';
-        existente.addEventListener('click', e => { alternar(existente, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(!esOscuro()); }); });
+        existente.addEventListener('click', e => { alternar(existente, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(siguienteTema(temaActual())); }); });
       }
       return existente;
     }
@@ -400,7 +482,7 @@
       b.className = 'tema-toggle' + (PANEL ? ' tema-toggle--panel' : '');
       b.innerHTML = ICONO;
       slot.insertBefore(b, slot.firstElementChild);
-      b.addEventListener('click', e => { alternar(b, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(!esOscuro()); }); });
+      b.addEventListener('click', e => { alternar(b, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(siguienteTema(temaActual())); }); });
       return b;
     }
     let lugar = document.querySelector('.nav .nav-right');
@@ -420,29 +502,29 @@
     btn.innerHTML = ICONO;
     const antes = lugar.querySelector('.nav-login, .nav-cta, .auth-back, .nav-burger');
     lugar.insertBefore(btn, antes || null);
-    btn.addEventListener('click', e => { alternar(btn, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(!esOscuro()); }); });
+    btn.addEventListener('click', e => { alternar(btn, e).catch(err => { console.warn('[tema]', err); cambiarConFundido(siguienteTema(temaActual())); }); });
     return btn;
   }
 
   /* ---------- Inicio ---------- */
   function init() {
-    if (!PANEL) { try { marcarFijos(); marcarNaranjaSobreTinta(); } catch (e) { console.warn('[tema] superficies', e); } }
-    try { crearBoton(); } catch (e) { console.warn('[tema] botón', e); }
+    if (!PANEL) { try { marcarFijos(); marcarBloquesTinta(); marcarNaranjaSobreTinta(); } catch (e) { console.warn('[tema] superficies', e); } }
+    try { crearBoton(); document.querySelectorAll('.tema-toggle').forEach(asegurarIconoMixto); } catch (e) { console.warn('[tema] botón', e); }
     vigilarLogosBarra();
     sincronizar();
 
     // Si otra parte de la página cambia el tema (ajustes del dashboard), el botón se entera
     if ('MutationObserver' in window) {
-      let antes = esOscuro();
-      new MutationObserver(() => { const ahora = esOscuro(); if (ahora !== antes) { antes = ahora; sincronizar(); } })
+      let antes = temaActual();
+      new MutationObserver(() => { const ahora = temaActual(); if (ahora !== antes) { antes = ahora; sincronizar(); } })
         .observe(root, { attributes: true, attributeFilter: ['class'] });
     }
     // Otra pestaña cambió el tema: se aplica aquí también
     window.addEventListener('storage', e => {
       if (e.key !== LLAVE) return;
       const t = e.newValue;
-      const oscuro = t === 'oscuro' || (t !== 'claro' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      if (oscuro !== esOscuro()) aplicar(oscuro);
+      const tema = TEMAS.includes(t) ? t : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro');
+      if (tema !== temaActual()) aplicar(tema);
     });
 
     // El logo de la barra cambia cuando la barra cambia de fondo (scroll, menú, tema)
@@ -457,7 +539,7 @@
     const alCambiarSistema = () => {
       let t = null;
       try { t = localStorage.getItem(LLAVE); } catch (e) { /* nada */ }
-      if (t !== 'claro' && t !== 'oscuro') aplicar(sistema.matches);
+      if (!TEMAS.includes(t)) aplicar(sistema.matches ? 'oscuro' : 'claro');
     };
     try { sistema.addEventListener('change', alCambiarSistema); } catch (e) { /* navegador viejo */ }
 

@@ -93,6 +93,7 @@
   ===================================================================== */
   const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const REGLAS = {
+    bienvenida: 'Llega por primera vez a tu local (bienvenida)',
     checkin: 'Hace check-in en uno de tus parches',
     temprano: 'Llega en la primera hora del parche',
     lleno: 'Su parche llena todos los cupos',
@@ -1237,7 +1238,9 @@
     a.llego = NOW();
     marcarEnBase(p, a, true);
     const L = loc(), out = [];
-    const reglasQueAplican = L.cupones.filter(k => k.regla === 'checkin' || (k.regla === 'temprano' && NOW() <= p.inicio + HOUR) || (k.regla === 'relampago' && p.tipo === 'relampago'));
+    // La bienvenida solo se entrega con la llegada validada, y una vez por persona
+    const primeraVez = k => k.regla === 'bienvenida' && !L.codigos.some(c => c.cuponId === k.id && c.persona === a.nombre);
+    const reglasQueAplican = L.cupones.filter(k => primeraVez(k) || k.regla === 'checkin' || (k.regla === 'temprano' && NOW() <= p.inicio + HOUR) || (k.regla === 'relampago' && p.tipo === 'relampago'));
     const extra = p.tipo === 'relampago' && p.cuponId ? L.cupones.find(k => k.id === p.cuponId) : null;
     if (extra && !reglasQueAplican.includes(extra)) reglasQueAplican.push(extra);
     for (const k of reglasQueAplican) { const r = entregar(k, a.nombre, p); if (r) out.push(r); }
@@ -1467,6 +1470,8 @@
       || '<li><p class="empty">Las reseñas aparecen cuando los parceros califican tus parches.</p></li>';
     renderPlan();
     cargarCobros().catch(() => {});
+    if (!qrLocal) cargarQRLocal().catch(() => {});
+    if (!$('#referidos-box').dataset.ok) { $('#referidos-box').dataset.ok = '1'; cargarReferidos().catch(() => { delete $('#referidos-box').dataset.ok; }); }
   }
 
   function renderPlan() {
@@ -1533,21 +1538,289 @@
         <div><span>Este mes · ${esc(fmtPeriodo(mes.periodo || new Date(NOW()).toISOString()))}</span><b class="num">${money(mes.total || 0)}</b><small>${int(mes.clientes || 0)} ${Number(mes.clientes) === 1 ? 'cliente validado' : 'clientes validados'}</small></div>
         <div><span>Tu tarifa</span><b class="cobro-tarifa">${esc(tarifa)}</b><small>Sin mensualidad. Si nadie llega, $0.</small></div>
       </div>
-      ${pend.map(l => `<div class="liq">
+      ${Number(d.credito) > 0 ? `<p class="liq-ok">${ic('i-gift')}Tienes <b>${money(d.credito)}</b> de saldo a favor. Se descuenta solo de tu próximo estado de cuenta.</p>` : ''}
+      ${pend.map(l => {
+        const pagado = Number(l.pagado) || 0, saldo = Math.max(0, (Number(l.total) || 0) - pagado), minimo = Math.min(20000, saldo);
+        return `<div class="liq">
         <div class="liq-top"><b>Estado de cuenta de ${esc(fmtPeriodo(l.periodo))}</b><span class="pill ${vencida(l) ? 'neg' : 'warn'}">${vencida(l) ? 'Vencido' : 'Paga antes del ' + esc(fmtDiaMes(new Date(l.vence + 'T12:00:00').getTime()))}</span></div>
-        <p class="liq-total num">${money(l.total)} <small>· ${int(l.clientes)} clientes</small></p>
-        <p class="liq-ref">Referencia: <code>${esc(l.referencia)}</code> <button type="button" class="text-btn" data-action="copiar-ref" data-ref="${esc(l.referencia)}">Copiar</button></p>
-        <ol class="liq-pasos"><li>Toca «Pagar con Wompi» y escribe el valor exacto: <b>${money(l.total)}</b>.</li><li>En la descripción del pago pon la referencia <b>${esc(l.referencia)}</b>.</li><li>Al terminar toca «Ya pagué» y escribe el número de transacción que te da Wompi.</li></ol>
-        ${l.reportada_en ? `<p class="liq-ok">${ic('i-check')}Avisaste el pago (${esc(l.pago_ref || '')}). El equipo lo confirma pronto.</p>` : ''}
-        <div class="liq-acts"><a class="btn primary" href="${DATAFONO_WOMPI}" target="_blank" rel="noopener">${ic('i-card')}Pagar con Wompi</a><button type="button" class="btn" data-action="liq-reportar" data-id="${esc(l.id)}">Ya pagué</button></div>
-      </div>`).join('')}
-      <p class="mini-title">Clientes validados este mes</p>
+        <p class="liq-total num">${money(saldo)} <small>· ${int(l.clientes)} clientes${pagado ? ` · ya abonaste ${money(pagado)} de ${money(l.total)}` : ''}${Number(l.descuento) ? ` · descuento ${money(l.descuento)}` : ''}</small></p>
+        ${pagado ? `<span class="track liq-track" role="img" aria-label="Pagado ${Math.round(pagado / l.total * 100)}%"><i class="in" style="width:${clamp(pagado / l.total, 0, 1) * 100}%"></i></span>` : ''}
+        <p class="liq-ref">Referencia: <code>${esc(l.referencia)}</code> <button type="button" class="text-btn" data-action="copiar-ref" data-ref="${esc(l.referencia)}">Copiar</button> · <button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">Ver detalle</button></p>
+        <p class="liq-pasos-1">Toca <b>«Pagar con Wompi»</b>: el valor y la referencia ya van puestos. Pagas con tarjeta, PSE, Nequi, Daviplata o Bancolombia y, al aprobarse, el estado de cuenta queda pagado solo.</p>
+        ${l.reportada_en && !pagado ? `<p class="liq-ok">${ic('i-check')}Avisaste el pago (${esc(l.pago_ref || '')}). El equipo lo confirma pronto.</p>` : ''}
+        <div class="liq-acts"><button type="button" class="btn primary" data-action="liq-pagar" data-id="${esc(l.id)}">${ic('i-card')}Pagar ${money(saldo)}</button><button type="button" class="btn" data-action="liq-reportar" data-id="${esc(l.id)}">Ya pagué por otro medio</button></div>
+        ${saldo > minimo ? `<details class="liq-abono"><summary>Pagar solo una parte (abono)</summary>
+          <div class="liq-abono-f"><label for="liq-abono-${esc(l.id)}">Valor del abono</label>
+            <div class="liq-abono-row"><input class="input num" type="number" inputmode="numeric" id="liq-abono-${esc(l.id)}" min="${minimo}" max="${saldo}" step="1000" placeholder="${int(Math.ceil(saldo / 2 / 1000) * 1000)}">
+            <button type="button" class="btn" data-action="liq-abonar" data-id="${esc(l.id)}" data-min="${minimo}" data-max="${saldo}">Abonar con Wompi</button></div>
+            <p class="hint">Desde ${money(minimo)}. Con la mitad pagada tienes 15 días más antes de que tus parches salgan del radar.</p></div>
+        </details>` : ''}
+        <p class="liq-estado" id="liq-estado-${esc(l.id)}" role="status" aria-live="polite"></p>
+      </div>`; }).join('')}
+      <div class="mini-head"><p class="mini-title">Clientes validados este mes</p>${(mes.detalle || []).length ? `<button type="button" class="text-btn" data-action="cobros-csv">${ic('i-download')}Descargar Excel (CSV)</button>` : ''}</div>
       ${(mes.detalle || []).length ? `<ul class="cobro-lista">${mes.detalle.map(c => `<li>
-          <span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}${c.personas > 1 ? ` y ${c.personas - 1} más` : ''}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))} · ${esc(VALIDO_POR[c.validado_por] || 'validado')} · código ${esc(c.codigo)}</small></span>
+          <span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}${c.personas > 1 ? ` y ${c.personas - 1} más` : ''}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))} · ${esc(VALIDO_POR[c.validado_por] || 'validado')} · código ${esc(c.codigo)}</small>
+            ${c.reclamo ? `<span class="pill ${c.reclamo === 'aprobado' ? 'pos' : c.reclamo === 'rechazado' ? 'neg' : 'warn'} cobro-rec">Reclamo ${esc(RECLAMO_TXT[c.reclamo] || c.reclamo)}</span>`
+              : c.reclamable !== false ? `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}">¿No llegó? Reclamar</button>` : ''}</span>
           <span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}<small>${c.tipo === 'paquete' ? `${d.comision_pct}% de ${money(c.base_cop || 0)}` : `${c.personas} × ${money(d.tarifa_cliente)}`}</small></span>
-        </li>`).join('')}</ul>` : '<p class="meta">Todavía nadie ha llegado este mes por ModoParche. Cuando alguien llegue y lo validen (QR, GPS o en la puerta), aparece aquí.</p>'}
-      ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span></li>`).join('')}</ul>` : ''}
+        </li>`).join('')}</ul>
+        <p class="hint">Puedes corregir una llegada hasta 48 horas después. Después de eso, reclama aquí (hasta 15 días) y el equipo lo revisa.</p>` : '<p class="meta">Todavía nadie ha llegado este mes por ModoParche. Cuando alguien llegue y lo validen (QR, GPS o en la puerta), aparece aquí.</p>'}
+      ${(d.reclamos || []).length ? `<p class="mini-title">Tus reclamos</p><ul class="liq-hist">${d.reclamos.map(r => `<li><span>Código ${esc(r.codigo)}<small class="hint" style="display:block">${esc(r.respuesta || r.motivo)}</small></span><span class="num">${money(r.monto)}</span><span class="pill ${r.estado === 'aprobado' ? 'pos' : r.estado === 'rechazado' ? 'neg' : 'warn'}">${esc(RECLAMO_TXT[r.estado] || r.estado)}</span></li>`).join('')}</ul>` : ''}
+      ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${l.estado === 'pagada' ? 'Comprobante' : 'Detalle'}</button></li>`).join('')}</ul>` : ''}
       ${d.demo ? '<p class="meta">Panel de ejemplo: estos cobros no son reales.</p>' : ''}`;
+    ultimaCuenta = d;
+  }
+  const RECLAMO_TXT = { pendiente: 'en revisión', aprobado: 'aprobado', rechazado: 'rechazado' };
+  let ultimaCuenta = null;
+
+  // Reclamo: «esta persona no llegó». El equipo lo revisa; si se aprueba, el cobro se anula.
+  async function reclamarCobro(id, codigo) {
+    const v = window.prompt(`Reclamar el cobro ${codigo}\n\n¿Qué pasó? (por ejemplo: «no vino nadie», «llegaron 2, no 4», «lo marcaron por error»)`, '');
+    if (v === null) return;
+    const motivo = v.trim();
+    if (motivo.length < 5) { toast('Cuéntanos un poco más', 'Escribe en pocas palabras qué pasó (mínimo 5 letras).', { error: true }); return; }
+    if (!REMOTE()) { toast('Panel de ejemplo', 'En tu cuenta real el reclamo le llega al equipo y te respondemos por notificación.'); return; }
+    const { error } = await SB().rpc('reclamar_cobro', { p_cobro: Number(id), p_motivo: motivo.slice(0, 300) });
+    if (error) {
+      const m = error.message || '';
+      if (/reclamar_cobro|PGRST202/.test(m)) { toast('Falta una actualización', 'Los reclamos aún no están activos en la base de datos.', { error: true }); return; }
+      const [t, dd] = errorDB(error); toast(t, dd, { error: true }); return;
+    }
+    toast('Reclamo enviado', 'El equipo lo revisa en 2 días hábiles. Si se aprueba, el cobro se anula solo.');
+    cargarCobros(true);
+  }
+
+  // Abono: paga solo una parte del estado de cuenta
+  function abonarLiquidacion(id, btn) {
+    const inp = document.getElementById('liq-abono-' + id), min = Number(btn.dataset.min), max = Number(btn.dataset.max);
+    const v = Math.round(Number(inp && inp.value));
+    if (!v || v < min || v > max) {
+      liqEstado(id, 'error', `Escribe un valor entre ${money(min)} y ${money(max)}.`);
+      if (inp) inp.focus();
+      return;
+    }
+    pagarLiquidacion(id, btn, v);
+  }
+
+  // Exportación (para el contador): los clientes validados del mes en CSV que abre Excel
+  function descargarCSV(nombre, filas) {
+    const celda = v => { const s = v == null ? '' : String(v); return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    // Punto y coma + BOM: Excel en español lo abre en columnas y con tildes
+    const csv = '﻿' + filas.map(f => f.map(celda).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function exportarCobrosCSV() {
+    const d = ultimaCuenta, mes = d && d.mes;
+    if (!mes || !(mes.detalle || []).length) { toast('Sin datos', 'Todavía no hay clientes validados este mes.'); return; }
+    const filas = [['Fecha', 'Cliente', 'Parche o mesa', 'Tipo', 'Personas', 'Valor del paquete', 'Cobro ModoParche', 'Validado por', 'Código']];
+    for (const c of mes.detalle) filas.push([new Date(c.creado_en).toLocaleString('es-CO'), c.cliente || '', c.titulo || '', c.tipo, c.personas, c.base_cop || '', c.monto_cop, VALIDO_POR[c.validado_por] || c.validado_por, c.codigo]);
+    filas.push([], ['Total', '', '', '', mes.clientes, '', mes.total]);
+    descargarCSV(`modoparche-cobros-${String(mes.periodo).slice(0, 7)}.csv`, filas);
+  }
+
+  // Comprobante / detalle del estado de cuenta: se abre listo para imprimir o «Guardar como PDF»
+  async function comprobanteLiquidacion(id) {
+    const w = window.open('', '_blank');
+    if (!w) { toast('Permite las ventanas emergentes', 'El navegador bloqueó el comprobante. Actívalas para este sitio e intenta de nuevo.', { error: true }); return; }
+    w.document.write('<!doctype html><meta charset="utf-8"><title>Comprobante ModoParche</title><p style="font:16px system-ui;padding:24px">Cargando el comprobante…</p>');
+    let x;
+    if (!REMOTE()) {
+      const d = ultimaCuenta || cuentaDemo(), l = (d.liquidaciones || []).find(y => String(y.id) === String(id)) || {};
+      x = { ...l, negocio: { nombre: loc().perfil.nombre, nit: loc().perfil.nit || '', plan: d.plan }, cobros: (d.mes && d.mes.detalle || []).map(c => ({ fecha: c.creado_en, tipo: c.tipo, personas: c.personas, base: c.base_cop, monto: c.monto_cop, codigo: c.codigo, validado_por: c.validado_por, titulo: c.titulo })), pagos: [], demo: true };
+    } else {
+      const { data, error } = await SB().rpc('mi_liquidacion_detalle', { p_id: Number(id) });
+      if (error) { w.document.body.innerHTML = '<p style="font:16px system-ui;padding:24px">No pudimos cargar el comprobante. ' + esc(/PGRST202|mi_liquidacion_detalle/.test(error.message) ? 'Falta una actualización de la base de datos.' : errorDB(error).join('. ')) + '</p>'; return; }
+      x = data;
+    }
+    const pagado = Number(x.pagado) || (x.estado === 'pagada' ? Number(x.total) : 0);
+    const filas = (x.cobros || []).map(c => `<tr><td>${esc(new Date(c.fecha).toLocaleDateString('es-CO'))}</td><td>${esc(c.titulo || '')}</td><td>${esc(c.tipo === 'paquete' ? 'Paquete' : c.tipo === 'reserva' ? 'Mesa reservada' : 'Mesa')}</td><td class="n">${int(c.personas)}</td><td>${esc(c.codigo)}</td><td class="n">${money(c.monto)}</td></tr>`).join('');
+    const pagos = (x.pagos || []).map(p => `<li>${esc(new Date(p.fecha).toLocaleDateString('es-CO'))} · ${money(p.monto)} · ${esc(p.metodo || 'Wompi')} · transacción ${esc(p.wompi_id || '')}</li>`).join('');
+    w.document.open();
+    w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc((x.estado === 'pagada' ? 'Comprobante ' : 'Estado de cuenta ') + (x.referencia || ''))}</title>
+<style>
+  *{box-sizing:border-box} body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:#15110e;background:#fff;margin:0;padding:32px}
+  .doc{max-width:760px;margin:0 auto} header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:3px solid #ff6a1a;padding-bottom:16px}
+  h1{font-size:22px;margin:0} .marca{font-weight:800;font-size:20px;color:#ff6a1a} .meta{color:#5b524c;margin:2px 0}
+  .sello{display:inline-block;margin-top:8px;padding:4px 10px;border-radius:99px;font-weight:700;font-size:12px;border:2px solid currentColor}
+  .ok{color:#137a3e} .pend{color:#a24a00} table{width:100%;border-collapse:collapse;margin-top:20px} th,td{text-align:left;padding:7px 6px;border-bottom:1px solid #e7e1dc;font-size:13px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5b524c} .n{text-align:right;font-variant-numeric:tabular-nums}
+  .tot{margin-top:16px;margin-left:auto;width:min(320px,100%)} .tot div{display:flex;justify-content:space-between;padding:4px 0} .tot .g{font-weight:800;font-size:17px;border-top:2px solid #15110e;margin-top:4px;padding-top:8px}
+  footer{margin-top:28px;color:#5b524c;font-size:12px} .acc{margin-top:20px;display:flex;gap:8px} button{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:#15110e;color:#fff;cursor:pointer}
+  @media print{body{padding:0}.acc{display:none}}
+</style></head><body><div class="doc">
+<header><div><div class="marca">ModoParche</div><p class="meta">Cobro por resultados · Villavicencio</p></div>
+<div style="text-align:right"><h1>${x.estado === 'pagada' ? 'Comprobante de pago' : 'Estado de cuenta'}</h1><p class="meta">Referencia <b>${esc(x.referencia || '')}</b></p><p class="meta">Periodo: ${esc(fmtPeriodo(x.periodo))}</p>
+<span class="sello ${x.estado === 'pagada' ? 'ok' : 'pend'}">${esc(ESTADOS_LIQ[x.estado] || x.estado || '')}</span></div></header>
+<p style="margin-top:16px"><b>${esc(x.negocio && x.negocio.nombre || '')}</b>${x.negocio && x.negocio.nit ? ` · NIT ${esc(x.negocio.nit)}` : ''}<br><span class="meta">Vence: ${esc(x.vence ? new Date(x.vence + 'T12:00:00').toLocaleDateString('es-CO') : '')}${x.pagada_en ? ` · Pagado el ${esc(new Date(x.pagada_en).toLocaleDateString('es-CO'))}` : ''}</span></p>
+<table><thead><tr><th>Fecha</th><th>Parche o mesa</th><th>Tipo</th><th class="n">Personas</th><th>Código</th><th class="n">Valor</th></tr></thead><tbody>${filas || '<tr><td colspan="6">Sin llegadas en este periodo.</td></tr>'}</tbody></table>
+<div class="tot"><div><span>Clientes validados</span><span>${int(x.clientes || 0)}</span></div>
+${Number(x.descuento) ? `<div><span>Saldo a favor aplicado</span><span>− ${money(x.descuento)}</span></div>` : ''}
+<div><span>Total del periodo</span><span>${money(x.total || 0)}</span></div><div><span>Pagado</span><span>${money(pagado)}</span></div>
+<div class="g"><span>${x.estado === 'pagada' ? 'Saldo' : 'Por pagar'}</span><span>${money(Math.max(0, (Number(x.total) || 0) - pagado))}</span></div></div>
+${pagos ? `<p style="margin-top:16px"><b>Pagos recibidos</b></p><ul class="meta">${pagos}</ul>` : ''}
+<footer>ModoParche cobra solo por clientes que llegaron y quedaron validados (QR, GPS o en la puerta). Los paquetes se pagan en el local; este documento cubre la comisión del servicio. ${x.demo ? '<b>Documento de ejemplo, no es real.</b>' : ''}<br>Generado el ${esc(new Date().toLocaleString('es-CO'))}</footer>
+<div class="acc"><button onclick="window.print()">Imprimir o guardar en PDF</button></div>
+</div></body></html>`);
+    w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch (e) { /* el botón queda */ } }, 400);
+  }
+
+  /* ---------- QR fijo del local: lo imprimes y lo pegas en la entrada ---------- */
+  let qrLocal = null;
+  async function cargarQRLocal(nuevo = false) {
+    const box = $('#qrlocal-box'); if (!box) return;
+    if (nuevo && !confirm('¿Cambiar el QR del local?\n\nEl QR impreso que tienes deja de funcionar y debes imprimir el nuevo.')) return;
+    if (!REMOTE()) qrLocal = { negocio: 'demo', clave: 'demo' };
+    else {
+      const { data, error } = await SB().rpc('mi_qr_local', { p_nuevo: nuevo });
+      if (error) { box.innerHTML = `<p class="meta">${/mi_qr_local|PGRST202/.test(error.message || '') ? 'Falta activar el QR del local en la base de datos (migración 20261120120000_mejoras_cobro.sql).' : esc(errorDB(error).join('. '))}</p>`; return; }
+      qrLocal = data;
+    }
+    const url = `${siteBase()}dashboard.html?llegue=${encodeURIComponent(qrLocal.negocio)}&k=${encodeURIComponent(qrLocal.clave)}`;
+    box.innerHTML = `<div class="qrlocal">
+        <span class="qrlocal-qr">${qrSVG(url)}</span>
+        <div><p>Pégalo en la entrada o en la caja. Tus clientes lo escanean con la cámara del celular y su llegada queda validada al instante (reserva de mesa o parche de hoy).</p>
+        <ul class="qrlocal-pts"><li>${ic('i-check')}No tienes que buscar nombres en la puerta.</li><li>${ic('i-check')}Solo funciona si la persona tiene reserva o parche contigo a esa hora.</li><li>${ic('i-shield')}Si alguien comparte la foto del QR desde lejos, no vale.</li></ul>
+        <div class="liq-acts"><button type="button" class="btn primary" data-action="qrlocal-imprimir">${ic('i-download')}Imprimir QR</button><button type="button" class="btn" data-action="qrlocal-nuevo">${ic('i-refresh')}Cambiar QR</button></div>
+        ${!REMOTE() ? '<p class="meta">Panel de ejemplo: este QR no funciona.</p>' : ''}</div></div>`;
+    box.dataset.url = url;
+  }
+  function imprimirQRLocal() {
+    const url = $('#qrlocal-box') && $('#qrlocal-box').dataset.url;
+    if (!url) return;
+    const w = window.open('', '_blank');
+    if (!w) { toast('Permite las ventanas emergentes', 'El navegador bloqueó la hoja para imprimir.', { error: true }); return; }
+    const nombre = loc().perfil.nombre || 'Nuestro local';
+    w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>QR de llegada · ${esc(nombre)}</title>
+<style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#15110e;background:#fff;display:grid;place-items:center;min-height:100vh}
+.c{text-align:center;padding:40px;border:6px solid #ff6a1a;border-radius:32px;max-width:520px}
+h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;color:#3b332e}.qr{width:330px;height:330px;margin:24px auto}.qr svg{width:100%;height:100%}
+.m{font-weight:800;color:#ff6a1a;font-size:22px;margin-top:18px}@media print{.c{border-width:4px}}</style></head>
+<body><div class="c"><h1>¿Llegaste por ModoParche?</h1><p>Escanea con la cámara y tu llegada queda lista.</p>
+<div class="qr">${qrSVG(url)}</div><p><b>${esc(nombre)}</b></p><p class="m">ModoParche</p></div>
+<script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
+    w.document.close();
+  }
+
+  /* ---------- Referidos: invita a otro local y los dos ganan saldo a favor ---------- */
+  async function cargarReferidos() {
+    const box = $('#referidos-box'); if (!box) return;
+    let d;
+    if (!REMOTE()) d = { codigo: 'DEMO-7F3A', credito: 0, premio: 10000, invitados: 1, premiados: 0, demo: true };
+    else {
+      const { data, error } = await SB().rpc('mi_referidos');
+      if (error) { box.innerHTML = `<p class="meta">${/mi_referidos|PGRST202/.test(error.message || '') ? 'Falta activar los referidos en la base de datos (migración 20261120120000_mejoras_cobro.sql).' : esc(errorDB(error).join('. '))}</p>`; return; }
+      d = data;
+    }
+    const link = `${siteBase()}empresa.html?ref=${encodeURIComponent(d.codigo)}`;
+    box.innerHTML = `<p>Invita a otro local de Villavo. Cuando pague su primer estado de cuenta, <b>los dos ganan ${money(d.premio || 10000)}</b> de saldo a favor.</p>
+      <div class="ref-code"><code>${esc(d.codigo)}</code><button type="button" class="btn btn--sm" data-action="ref-copiar" data-link="${esc(link)}">${ic('i-copy')}Copiar invitación</button></div>
+      <p class="meta">${int(d.invitados || 0)} ${Number(d.invitados) === 1 ? 'local invitado' : 'locales invitados'} · ${int(d.premiados || 0)} ya te dieron premio${d.me_invito ? ` · Te invitó ${esc(d.me_invito)}` : ''}</p>
+      ${d.demo ? '<p class="meta">Panel de ejemplo.</p>' : ''}`;
+  }
+  async function copiarInvitacion(link) {
+    const texto = `Únete a ModoParche con mi invitación: publicas planes gratis y solo pagas por clientes que llegan. ${link}`;
+    try {
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) { await navigator.share({ title: 'ModoParche para negocios', text: texto }); return; }
+      await navigator.clipboard.writeText(texto); toast('Invitación copiada', 'Pégala en WhatsApp o donde quieras.');
+    } catch (e) { if (e && e.name !== 'AbortError') toast('Cópiala a mano', link, { error: true }); }
+  }
+  // Llegó desde una invitación (empresa.html?ref=): se aplica una sola vez
+  async function aplicarReferidoPendiente() {
+    let cod = null;
+    try { cod = localStorage.getItem('mp-ref'); } catch (e) { /* sin almacenamiento */ }
+    if (!cod || !REMOTE()) return;
+    const { data, error } = await SB().rpc('usar_codigo_referido', { p_codigo: cod });
+    try { localStorage.removeItem('mp-ref'); } catch (e) { /* nada */ }
+    if (error) { if (!/YA_TIENES|PGRST202|usar_codigo_referido/.test(error.message || '')) { const [t, dd] = errorDB(error); toast(t, dd, { error: true }); } return; }
+    toast('Invitación aplicada', `Te invitó ${data}. Cuando pagues tu primer estado de cuenta, los dos ganan $10.000.`);
+  }
+
+  // Reseñas reales: solo las dejan clientes con llegada validada
+  async function cargarResenasReales() {
+    if (!REMOTE()) return;
+    const { data, error } = await SB().rpc('mis_resenas_local');
+    if (error || !Array.isArray(data)) return;
+    loc().resenas = data.map(r => ({ autor: r.autor || 'Parcero', estrellas: r.estrellas, texto: r.texto || '', parche: r.titulo || 'tu local', fecha: Date.parse(r.creado_en) }));
+  }
+  /* Pago con un clic: wompi-checkout firma el valor exacto de la base, se abre el
+     widget oficial de Wompi y el webhook marca el estado de cuenta como pagado.
+     Si los pagos en línea no están activos, se ofrece el datáfono (valor a mano). */
+  function liqEstado(id, tipo, texto) {
+    const el = document.getElementById('liq-estado-' + id);
+    if (!el) return;
+    el.className = 'liq-estado' + (tipo ? ' is-' + tipo : '');
+    el.innerHTML = tipo === 'cargando' ? `<span class="pay-spin" aria-hidden="true"></span>${esc(texto)}` : esc(texto || '');
+  }
+  async function pagarLiquidacion(id, btn, monto = null) {
+    if (!REMOTE()) { toast('Panel de ejemplo', monto ? `En tu cuenta real se abre Wompi para abonar ${money(monto)}.` : 'En tu cuenta real se abre Wompi con el valor y la referencia ya puestos.'); return; }
+    btn.disabled = true;
+    liqEstado(id, 'cargando', 'Preparando el pago seguro…');
+    let datos;
+    try {
+      const body = { liquidacion: Number(id) };
+      if (monto) body.monto = monto;
+      const { data, error } = await SB().functions.invoke('wompi-checkout', { body });
+      if (error) { let d = ''; try { d = (await error.context.json()).error || ''; } catch (e2) { /* sin cuerpo */ } throw new Error(d || error.message); }
+      if (!data || data.error) throw new Error((data && data.error) || 'SIN_RESPUESTA');
+      datos = data;
+      await cargarWompi();
+    } catch (e) {
+      btn.disabled = false;
+      const m = String((e && e.message) || e);
+      if (/YA_PAGADA/.test(m)) { liqEstado(id, 'ok', 'Este estado de cuenta ya está pagado.'); cargarCobros(true); return; }
+      if (/DEMASIADOS/.test(m)) { liqEstado(id, 'error', 'Muchos intentos seguidos. Espera unos minutos.'); return; }
+      if (/MONTO_INVALIDO/.test(m)) { liqEstado(id, 'error', 'Ese valor no sirve para abonar. Toca «Actualizar» y revisa el saldo.'); return; }
+      if (/NO_SE_PUEDE_PAGAR|NO_ES_TUYO/.test(m)) { liqEstado(id, 'error', 'Este estado de cuenta ya no está pendiente. Toca «Actualizar».'); return; }
+      // Pagos en línea sin activar (sin llaves, función sin desplegar o migración pendiente): datáfono
+      liqEstado(id, 'info', 'El pago en línea aún no está activo. Te abrimos el datáfono de Wompi: escribe el valor exacto y la referencia, y luego toca «Ya pagué por otro medio».');
+      window.open(DATAFONO_WOMPI, '_blank', 'noopener');
+      return;
+    }
+    const c = datos.customer || {}, cliente = {};
+    if (c.email) cliente.email = c.email;
+    if (c.fullName) cliente.fullName = c.fullName;
+    if (/^3\d{9}$/.test(c.phoneNumber || '')) { cliente.phoneNumber = c.phoneNumber; cliente.phoneNumberPrefix = '+57'; }
+    if (c.legalId) { cliente.legalId = c.legalId; cliente.legalIdType = c.legalIdType || 'NIT'; }
+    let checkout;
+    try {
+      checkout = new window.WidgetCheckout({
+        currency: datos.currency, amountInCents: datos.amountInCents, reference: datos.reference, publicKey: datos.publicKey,
+        signature: { integrity: datos.signature },
+        redirectUrl: new URL('empresa-dashboard.html?pago=' + encodeURIComponent(datos.reference) + '#perfil', location.href).href,
+        customerData: cliente,
+      });
+    } catch (e) { btn.disabled = false; liqEstado(id, 'error', 'No pudimos abrir Wompi. Recarga la página e intenta de nuevo.'); return; }
+    liqEstado(id, 'cargando', 'Completa el pago en la ventana de Wompi. No cierres esta página.');
+    checkout.open(result => {
+      btn.disabled = false;
+      const tx = result && result.transaction;
+      if (!tx) { liqEstado(id, '', ''); return; }
+      seguirPagoLiquidacion(id, datos.reference, tx.id, tx.status);
+    });
+  }
+  // Sigue el pago hasta que Wompi lo resuelva (PSE o Nequi pueden tardar unos minutos)
+  async function seguirPagoLiquidacion(id, referencia, txId, estadoInicial) {
+    if (['DECLINED', 'ERROR', 'VOIDED'].includes(estadoInicial)) { liqEstado(id, 'error', 'El pago no pasó. No se hizo ningún cobro; prueba con otro medio.'); return; }
+    liqEstado(id, 'cargando', 'Confirmando el pago con Wompi…');
+    for (let i = 0; i < 24; i++) {
+      if (txId && i % 2 === 0) { try { await SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: txId } }); } catch (e) { /* el webhook lo confirma igual */ } }
+      let est = null;
+      try { const { data } = await SB().from('pagos').select('estado').eq('referencia', referencia).maybeSingle(); est = data && data.estado; } catch (e) { /* sin red: se reintenta */ }
+      if (est === 'APPROVED') {
+        liqEstado(id, 'ok', '¡Pago aprobado! Ya quedó registrado en tu estado de cuenta.');
+        tone('ok'); cargarCobros(true);
+        toast('Pago aprobado', 'Gracias. Tus parches siguen en el radar.');
+        return;
+      }
+      if (['DECLINED', 'VOIDED', 'ERROR'].includes(est)) { liqEstado(id, 'error', 'El pago no pasó. No se hizo ningún cobro; prueba con otro medio.'); return; }
+      await new Promise(r => setTimeout(r, i < 6 ? 2500 : 5000));
+    }
+    liqEstado(id, 'info', 'Tu pago sigue en proceso. Apenas Wompi lo apruebe, el estado de cuenta se marca pagado solo.');
   }
   async function reportarPago(id) {
     const v = window.prompt('Ya pagué\n\nEscribe el número de transacción que te dio Wompi. El equipo lo revisa y marca tu estado de cuenta como pagado.', '');
@@ -2120,10 +2393,10 @@
         : r.estado === 'confirmada' && hoyOPasada
           ? `<button class="btn btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="llego">${ic('i-door')}Llegaron</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="no_llego">No llegaron</button>`
           : r.estado === 'llego'
-            ? `<label class="mesa-llegaron">Llegaron <select class="input" data-mesa-llegaron="${r.id}" aria-label="Cuántas personas llegaron">${Array.from({ length: r.personas }, (_, k) => k + 1).map(n => `<option value="${n}" ${n === (r.llegaron || r.personas) ? 'selected' : ''}>${n}</option>`).join('')}</select> de ${r.personas}</label>${r.llegadaMetodo === 'gps' ? '<small class="mesa-gps">Marcó su llegada con GPS</small>' : ''}`
+            ? `<label class="mesa-llegaron">Llegaron <select class="input" data-mesa-llegaron="${r.id}" aria-label="Cuántas personas llegaron">${Array.from({ length: r.personas }, (_, k) => k + 1).map(n => `<option value="${n}" ${n === (r.llegaron || r.personas) ? 'selected' : ''}>${n}</option>`).join('')}</select> de ${r.personas}</label>${r.llegadaMetodo === 'gps' ? '<small class="mesa-gps">Marcó su llegada con GPS</small>' : r.llegadaMetodo === 'qr' ? '<small class="mesa-gps">Escaneó el QR del local</small>' : ''}`
             : '';
       return `<li class="row mesa-row">${avatar(r.persona)}
-        <span class="row-main"><b>${esc(r.persona.nombre)} · ${r.personas} personas</b><small>${esc(m ? m.titulo : 'Promo de mesa')} · ${esc(fmtCuando(r.llegada))} · <span class="code">${esc(r.codigo)}</span>${r.nota ? ` · ${esc(r.nota)}` : ''}</small></span>
+        <span class="row-main"><b>${esc(r.persona.nombre)} · ${r.personas} personas</b><small>${esc(m ? m.titulo : 'Promo de mesa')} · ${esc(fmtCuando(r.llegada))} · <span class="code">${esc(r.codigo)}</span>${r.nota ? ` · ${esc(r.nota)}` : ''}</small>${m && m.beneficio && ['pendiente', 'confirmada', 'llego'].includes(r.estado) ? `<small class="mesa-ben-estado ${r.estado === 'llego' ? 'is-on' : ''}">${ic('i-gift')}${r.estado === 'llego' ? 'Entrégales ahora: ' : 'Se entrega cuando lleguen: '}${esc(m.beneficio)}</small>` : ''}</span>
         <span class="pill ${cls}">${esc(txt)}</span>
         <span class="mesa-acts">${acciones}</span></li>`;
     }).join('') || `<li><p class="empty">${L.mesasError ? 'Modo Mesa todavía no está activo en la base de datos. Corre la migración 20261101130000_negocios_mesa_checkin_pagos.sql.' : promos.length ? (mesaUI.tab === 'proximas' ? 'Todavía no hay reservas. Comparte tu promo en redes: la gente la encuentra en el inicio de la app.' : 'Aquí quedan las reservas que ya pasaron.') : 'Lanza tu primera promo de mesa para empezar a recibir grupos.'}</p></li>`;
@@ -2248,7 +2521,15 @@
       const { error } = await SB().rpc('negocio_mesa_estado', { p_id: id, p_estado: estado });
       if (error) { toast('No se pudo cambiar', error.hint || error.message, { error: true }); return; }
     }
-    r.estado = estado; save();
+    r.estado = estado;
+    // Cupón de bienvenida: se entrega cuando la mesa llega, nunca antes
+    let regalos = [];
+    if (estado === 'llego') {
+      const L = loc();
+      for (const k of L.cupones.filter(k => k.regla === 'bienvenida' && !L.codigos.some(c => c.cuponId === k.id && c.persona === r.persona.nombre))) { const x = entregar(k, r.persona.nombre, { id: 'mesa-' + r.id }); if (x) regalos.push(x); }
+    }
+    save();
+    if (regalos.length) avisarCupones(r.persona.nombre, regalos);
     const txt = { confirmada: ['Mesa confirmada', `Le avisamos a ${r.persona.nombre}.`], rechazada: ['Reserva rechazada', `Le avisamos a ${r.persona.nombre} que pruebe otra hora.`], llego: ['Llegaron', `${r.persona.nombre} y su grupo están adentro.`], no_llego: ['Marcada como no llegaron', r.codigo] }[estado];
     toast(txt[0], txt[1]);
     tone(estado === 'llego' || estado === 'confirmada' ? 'ok' : 'in');
@@ -2478,6 +2759,14 @@
         case 'pagar-plan': cambiarPlan('villavo'); break;
         case 'cobros-recargar': cargarCobros(true); break;
         case 'liq-reportar': reportarPago(a.dataset.id); break;
+        case 'liq-pagar': pagarLiquidacion(a.dataset.id, a); break;
+        case 'liq-abonar': abonarLiquidacion(a.dataset.id, a); break;
+        case 'liq-comprobante': comprobanteLiquidacion(a.dataset.id); break;
+        case 'cobro-reclamar': reclamarCobro(a.dataset.id, a.dataset.codigo); break;
+        case 'cobros-csv': exportarCobrosCSV(); break;
+        case 'qrlocal-imprimir': imprimirQRLocal(); break;
+        case 'qrlocal-nuevo': cargarQRLocal(true); break;
+        case 'ref-copiar': copiarInvitacion(a.dataset.link); break;
         case 'copiar-ref': copiarRef(a.dataset.ref); break;
         case 'cerrar-pago': siguiendoPago = null; $('#dlg-pago').close(); break;
         case 'editar-horarios': openHorarios(); break;
@@ -2652,6 +2941,14 @@
         toast(`¡Bienvenido, ${P.nombre}!`, P.horarios ? 'Tu cuenta está lista. Publica tu primer parche con foto.' : 'Tu cuenta está lista. Empieza por poner tus horarios.');
         burst(window.innerWidth / 2, window.innerHeight / 3, 46, ['#ff751f', '#86895d', '#15110e']);
       }, 400);
+    }
+    // Se registró con la invitación de otro local; y reseñas reales (solo de clientes que llegaron)
+    aplicarReferidoPendiente().catch(() => {});
+    cargarResenasReales().then(() => { if (route === 'perfil') renderPerfil(); }).catch(() => {});
+    // Volvió de Wompi (PSE, Bancolombia): confirmamos y refrescamos el estado de cuenta
+    if (REMOTE() && qs.get('pago') && qs.get('id')) {
+      SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: qs.get('id') } })
+        .catch(() => {}).then(() => { cobrosCargados = 0; cargarCobros(true); toast('Revisando tu pago', 'Si Wompi lo aprobó, tu estado de cuenta queda pagado en unos segundos.'); });
     }
     // Eligió Villavo o Varias sedes al registrarse: se activa de una (sin pagos por adelantado)
     if (REMOTE() && P.planPendiente && P.planPendiente !== P.plan && PLANES[P.planPendiente]) {

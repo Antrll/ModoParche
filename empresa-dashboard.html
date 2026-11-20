@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");})();</script>
+<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <title>Panel del negocio · ModoParche</title>
@@ -407,6 +407,14 @@
           <section class="panel cobros-panel" id="cobros" aria-labelledby="h-cobros" data-anim>
             <header><h2 id="h-cobros">Cobros por resultados</h2><button class="btn btn--sm" data-action="cobros-recargar"><svg class="ic"><use href="#i-refresh"/></svg>Actualizar</button></header>
             <div id="cobros-box"><p class="meta">Cargando…</p></div>
+          </section>
+          <section class="panel" id="qrlocal" aria-labelledby="h-qrlocal" data-anim>
+            <header><h2 id="h-qrlocal">QR de llegada del local</h2></header>
+            <div id="qrlocal-box"><p class="meta">Cargando…</p></div>
+          </section>
+          <section class="panel" id="referidos" aria-labelledby="h-referidos" data-anim>
+            <header><h2 id="h-referidos">Invita a otro local</h2></header>
+            <div id="referidos-box"><p class="meta">Cargando…</p></div>
           </section>
           <section class="panel privacy-panel" aria-labelledby="h-privacidad" data-anim>
             <header><h2 id="h-privacidad">Privacidad y cuenta</h2></header>

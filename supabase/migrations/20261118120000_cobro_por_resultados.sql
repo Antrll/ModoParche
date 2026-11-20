@@ -417,6 +417,7 @@ grant execute on function public.reportar_pago_liquidacion(bigint, text) to auth
 -- =====================================================================
 -- 7. LO QUE VE EL EQUIPO (admin)
 -- =====================================================================
+drop function if exists public.admin_liquidaciones();
 create or replace function public.admin_liquidaciones()
 returns table (id bigint, negocio_id uuid, negocio text, plan text, periodo date, clientes integer, total_cop integer,
                referencia text, estado text, vence date, pago_ref text, reportada_en timestamptz, pagada_en timestamptz, en_mora boolean)

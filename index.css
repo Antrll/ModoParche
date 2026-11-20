@@ -800,7 +800,7 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: rgba(17, 17, 17, .2);
+  background: #ffffff;
 }
 .stage-art--seats i.on {
   background: var(--ink);
@@ -810,6 +810,7 @@
   font-family: var(--font-display);
   font-size: var(--t-lg);
   text-transform: uppercase;
+  color: #ffffff;
 }
 
 /* =====================================================================
@@ -1412,4 +1413,3 @@ html:not(.mp-js) .who-tab.is-active { background: var(--ink); }
   .who-tabs-pill { transition: none; }
 }
 /* La cinta de categorías va dentro del bloque naranja pero también se invierte */
-html.is-dark .hero-marquee { --ink: #ffffff; --paper: #161618; }
