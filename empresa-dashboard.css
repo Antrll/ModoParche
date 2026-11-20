@@ -1631,3 +1631,91 @@ html:not(.is-dark):not(.is-mixto) .kpi--lead .kpi-value { color: #b83709; }
   .plan-hold-ayuda { text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .plan-hold.nudge { animation: none; } }
+
+/* Datáfono de Wompi: valor y referencia grandes, con botón de copiar */
+.df-dato { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k btn" "v btn"; align-items: center; gap: 2px 12px; margin-top: 12px; padding: 14px 16px; border-radius: 14px; background: var(--raised); }
+.df-dato span { grid-area: k; font-size: 12px; font-weight: 700; color: var(--muted); }
+.df-dato b { grid-area: v; min-width: 0; overflow-wrap: anywhere; }
+.df-dato .btn { grid-area: btn; }
+.df-dato .btn.is-ok { background: var(--positive); color: #ffffff; }
+.df-valor { font: 400 34px/1 var(--brand); }
+.df-ref { font: 700 17px/1.2 var(--mono); letter-spacing: .02em; }
+.df-pasos { margin: 16px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
+.df-estado { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--positive); }
+.df-estado:empty { display: none; }
+
+/* =====================================================================
+   Botones de texto del panel (Copiar, Ver detalle, Descargar Excel):
+   pastillas pequeñas con ícono (antes salían con el botón del navegador)
+===================================================================== */
+.text-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--rule); color: var(--text); font: 600 13px/1 var(--font); cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease, transform .12s ease; }
+.text-btn .ic { width: 15px; height: 15px; flex: none; }
+.text-btn:hover { background: var(--raised); box-shadow: inset 0 0 0 1.5px var(--border); }
+.text-btn:active { transform: scale(.96); }
+.text-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.cobro-rec { min-height: 0; padding: 0; box-shadow: none; background: none; font-weight: 500; }
+.liq-ref { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.liq-ref-acts { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.liq .liq-acts .btn.primary { min-height: 48px; padding: 0 22px; font-size: 15px; }
+@media (max-width: 560px) {
+  .liq .liq-acts { display: grid; }
+  .liq .liq-acts .btn { width: 100%; justify-content: center; }
+}
+
+/* =====================================================================
+   QR de llegada: vista previa del afiche + pasos
+===================================================================== */
+.qrl { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 22px; align-items: center; }
+.qrl-afiche { margin: 0; display: grid; justify-items: center; gap: 10px; padding: 18px 16px 16px; border-radius: 22px; background: #FF5A1F; color: #111111; text-align: center; box-shadow: 0 22px 40px -26px rgba(184,55,9,.8); rotate: -1.5deg; transition: rotate .4s cubic-bezier(.23, 1, .32, 1); }
+.qrl-afiche:hover { rotate: 0deg; }
+.qrl-k { margin: 0; font: 400 21px/1 var(--brand); text-transform: uppercase; }
+.qrl-qr { display: block; width: 100%; max-width: 170px; padding: 10px; border-radius: 14px; background: #ffffff; }
+.qrl-qr svg { display: block; width: 100%; height: auto; }
+.qrl-afiche figcaption { display: grid; gap: 2px; }
+.qrl-afiche figcaption b { font-size: 14px; font-weight: 800; }
+.qrl-afiche figcaption span { font-size: 12px; font-weight: 600; }
+.qrl-info { display: grid; gap: 14px; min-width: 0; }
+.qrl-pasos { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.qrl-pasos li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; }
+.qrl-pasos li > span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--text); color: var(--on-text, #ffffff); font: 400 15px/1 var(--brand); }
+.qrl-pasos b { display: block; font-size: 14px; }
+.qrl-pasos small { display: block; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.qrl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.qrl-chips li { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: var(--raised); font-size: 12px; font-weight: 600; color: var(--text); }
+.qrl-chips .ic { width: 14px; height: 14px; color: var(--positive); }
+.qrl-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.qrl-nuevo { color: var(--muted); }
+@media (max-width: 640px) {
+  .qrl { grid-template-columns: 1fr; justify-items: stretch; }
+  .qrl-afiche { justify-self: center; width: min(240px, 100%); }
+  .qrl-acts { display: grid; }
+  .qrl-acts .btn { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .qrl-afiche { rotate: 0deg; transition: none; } }
+
+/* =====================================================================
+   Invitar a otro local: boleto con el bono
+===================================================================== */
+.ref { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 20px; align-items: center; }
+.ref-bono { display: grid; place-items: center; align-self: stretch; min-height: 150px; border-radius: 20px; background: #111111; position: relative; overflow: hidden; }
+.ref-bono::before { content: ""; position: absolute; inset: auto -30% -50% -30%; height: 90%; background: radial-gradient(closest-side, rgba(255,90,31,.45), transparent 70%); }
+.ref-burst { position: relative; width: 118px; height: 118px; display: grid; place-content: center; justify-items: center; text-align: center; background: #FF5A1F; color: #111111; clip-path: var(--burst, polygon(50% 0%, 63% 10%, 79.4% 9.6%, 84% 25.3%, 97.6% 34.5%, 92% 50%, 97.6% 65.5%, 84% 74.7%, 79.4% 90.5%, 63% 89.9%, 50% 100%, 37% 89.9%, 20.6% 90.5%, 16% 74.7%, 2.4% 65.5%, 8% 50%, 2.4% 34.5%, 16% 25.3%, 20.6% 9.6%, 37% 10.1%)); }
+.ref-burst b { font: 400 24px/1 var(--brand); }
+.ref-burst small { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.ref-info { display: grid; gap: 12px; min-width: 0; }
+.ref-info > p { margin: 0; font-size: 14px; line-height: 1.5; }
+.ref-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 14px; border: 2px dashed var(--border); }
+.ref-code span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.ref-code code { font: 700 19px var(--mono); letter-spacing: .08em; background: none; padding: 0; }
+.ref-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ref-wa { background: #1f9d55; color: #ffffff; box-shadow: none; }
+.ref-wa:hover { background: #17834a; color: #ffffff; }
+.ref-stats { display: flex; gap: 18px; }
+.ref-stats span { display: grid; font-size: 12px; color: var(--muted); }
+.ref-stats b { font: 400 24px/1 var(--brand); color: var(--text); }
+@media (max-width: 640px) {
+  .ref { grid-template-columns: 1fr; }
+  .ref-bono { min-height: 140px; }
+  .ref-acts { display: grid; grid-template-columns: 1fr 1fr; }
+  .ref-acts .btn { justify-content: center; }
+}

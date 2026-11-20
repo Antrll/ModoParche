@@ -1547,8 +1547,8 @@
         <div class="liq-top"><b>Estado de cuenta de ${esc(fmtPeriodo(l.periodo))}</b><span class="pill ${vencida(l) ? 'neg' : 'warn'}">${vencida(l) ? 'Vencido' : 'Paga antes del ' + esc(fmtDiaMes(new Date(l.vence + 'T12:00:00').getTime()))}</span></div>
         <p class="liq-total num">${money(saldo)} <small>· ${int(l.clientes)} clientes${pagado ? ` · ya abonaste ${money(pagado)} de ${money(l.total)}` : ''}${Number(l.descuento) ? ` · descuento ${money(l.descuento)}` : ''}</small></p>
         ${pagado ? `<span class="track liq-track" role="img" aria-label="Pagado ${Math.round(pagado / l.total * 100)}%"><i class="in" style="width:${clamp(pagado / l.total, 0, 1) * 100}%"></i></span>` : ''}
-        <p class="liq-ref">Referencia: <code>${esc(l.referencia)}</code> <button type="button" class="text-btn" data-action="copiar-ref" data-ref="${esc(l.referencia)}">Copiar</button> · <button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">Ver detalle</button></p>
-        <p class="liq-pasos-1">Toca <b>«Pagar con Wompi»</b>: el valor y la referencia ya van puestos. Pagas con tarjeta, PSE, Nequi, Daviplata o Bancolombia y, al aprobarse, el estado de cuenta queda pagado solo.</p>
+        <p class="liq-ref">Referencia: <code>${esc(l.referencia)}</code> <span class="liq-ref-acts"><button type="button" class="text-btn" data-action="copiar-ref" data-ref="${esc(l.referencia)}">${ic('i-copy')}Copiar</button><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${ic('i-ticket')}Ver detalle</button></span></p>
+        <p class="liq-pasos-1">Toca <b>«Pagar ${money(saldo)}»</b>: el valor y la referencia ya van puestos. Pagas con tarjeta, PSE, Nequi, Daviplata o Bancolombia y, al aprobarse, el estado de cuenta queda pagado solo.</p>
         ${l.reportada_en && !pagado ? `<p class="liq-ok">${ic('i-check')}Avisaste el pago (${esc(l.pago_ref || '')}). El equipo lo confirma pronto.</p>` : ''}
         <div class="liq-acts"><button type="button" class="btn primary" data-action="liq-pagar" data-id="${esc(l.id)}">${ic('i-card')}Pagar ${money(saldo)}</button><button type="button" class="btn" data-action="liq-reportar" data-id="${esc(l.id)}">Ya pagué por otro medio</button></div>
         ${saldo > minimo ? `<details class="liq-abono"><summary>Pagar solo una parte (abono)</summary>
@@ -1568,7 +1568,7 @@
         </li>`).join('')}</ul>
         <p class="hint">Puedes corregir una llegada hasta 48 horas después. Después de eso, reclama aquí (hasta 15 días) y el equipo lo revisa.</p>` : '<p class="meta">Todavía nadie ha llegado este mes por ModoParche. Cuando alguien llegue y lo validen (QR, GPS o en la puerta), aparece aquí.</p>'}
       ${(d.reclamos || []).length ? `<p class="mini-title">Tus reclamos</p><ul class="liq-hist">${d.reclamos.map(r => `<li><span>Código ${esc(r.codigo)}<small class="hint" style="display:block">${esc(r.respuesta || r.motivo)}</small></span><span class="num">${money(r.monto)}</span><span class="pill ${r.estado === 'aprobado' ? 'pos' : r.estado === 'rechazado' ? 'neg' : 'warn'}">${esc(RECLAMO_TXT[r.estado] || r.estado)}</span></li>`).join('')}</ul>` : ''}
-      ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${l.estado === 'pagada' ? 'Comprobante' : 'Detalle'}</button></li>`).join('')}</ul>` : ''}
+      ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${ic('i-ticket')}${l.estado === 'pagada' ? 'Comprobante' : 'Detalle'}</button></li>`).join('')}</ul>` : ''}
       ${d.demo ? '<p class="meta">Panel de ejemplo: estos cobros no son reales.</p>' : ''}`;
     ultimaCuenta = d;
   }
@@ -1683,12 +1683,24 @@ ${pagos ? `<p style="margin-top:16px"><b>Pagos recibidos</b></p><ul class="meta"
       qrLocal = data;
     }
     const url = `${siteBase()}dashboard.html?llegue=${encodeURIComponent(qrLocal.negocio)}&k=${encodeURIComponent(qrLocal.clave)}`;
-    box.innerHTML = `<div class="qrlocal">
-        <span class="qrlocal-qr">${qrSVG(url)}</span>
-        <div><p>Pégalo en la entrada o en la caja. Tus clientes lo escanean con la cámara del celular y su llegada queda validada al instante (reserva de mesa o parche de hoy).</p>
-        <ul class="qrlocal-pts"><li>${ic('i-check')}No tienes que buscar nombres en la puerta.</li><li>${ic('i-check')}Solo funciona si la persona tiene reserva o parche contigo a esa hora.</li><li>${ic('i-shield')}Si alguien comparte la foto del QR desde lejos, no vale.</li></ul>
-        <div class="liq-acts"><button type="button" class="btn primary" data-action="qrlocal-imprimir">${ic('i-download')}Imprimir QR</button><button type="button" class="btn" data-action="qrlocal-nuevo">${ic('i-refresh')}Cambiar QR</button></div>
-        ${!REMOTE() ? '<p class="meta">Panel de ejemplo: este QR no funciona.</p>' : ''}</div></div>`;
+    const nombre = loc().perfil.nombre || 'Tu local';
+    box.innerHTML = `<div class="qrl">
+        <figure class="qrl-afiche" data-tinta-fija aria-label="Vista previa del afiche para la entrada">
+          <p class="qrl-k">¿Llegaste por ModoParche?</p>
+          <span class="qrl-qr">${qrSVG(url)}</span>
+          <figcaption><b>${esc(nombre)}</b><span>Escanea con la cámara</span></figcaption>
+        </figure>
+        <div class="qrl-info">
+          <ol class="qrl-pasos">
+            <li><span>1</span><div><b>Imprímelo</b><small>Sale en una hoja tamaño carta, listo para pegar.</small></div></li>
+            <li><span>2</span><div><b>Pégalo en la entrada o la caja</b><small>Donde la gente lo vea al llegar.</small></div></li>
+            <li><span>3</span><div><b>El cliente lo escanea</b><small>Su reserva o parche de hoy queda validado al instante.</small></div></li>
+          </ol>
+          <ul class="qrl-chips"><li>${ic('i-check')}Sin buscar nombres en la puerta</li><li>${ic('i-shield')}Desde lejos no vale</li><li>${ic('i-clock')}Solo con reserva a esa hora</li></ul>
+          <div class="qrl-acts"><button type="button" class="btn primary" data-action="qrlocal-imprimir">${ic('i-download')}Imprimir afiche</button><button type="button" class="btn ghost qrl-nuevo" data-action="qrlocal-nuevo">${ic('i-refresh')}Cambiar QR</button></div>
+          ${!REMOTE() ? '<p class="meta">Panel de ejemplo: este QR no funciona.</p>' : ''}
+        </div>
+      </div>`;
     box.dataset.url = url;
   }
   function imprimirQRLocal() {
@@ -1709,20 +1721,28 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   }
 
   /* ---------- Referidos: invita a otro local y los dos ganan saldo a favor ---------- */
+  const PREMIO_REFERIDO = 10000; // bono para cada local (también en la base: private.premiar_referido)
   async function cargarReferidos() {
     const box = $('#referidos-box'); if (!box) return;
     let d;
-    if (!REMOTE()) d = { codigo: 'DEMO-7F3A', credito: 0, premio: 10000, invitados: 1, premiados: 0, demo: true };
+    if (!REMOTE()) d = { codigo: 'DEMO-7F3A', credito: 0, premio: PREMIO_REFERIDO, invitados: 1, premiados: 0, demo: true };
     else {
       const { data, error } = await SB().rpc('mi_referidos');
       if (error) { box.innerHTML = `<p class="meta">${/mi_referidos|PGRST202/.test(error.message || '') ? 'Falta activar los referidos en la base de datos (migración 20261120120000_mejoras_cobro.sql).' : esc(errorDB(error).join('. '))}</p>`; return; }
       d = data;
     }
     const link = `${siteBase()}empresa.html?ref=${encodeURIComponent(d.codigo)}`;
-    box.innerHTML = `<p>Invita a otro local de Villavo. Cuando pague su primer estado de cuenta, <b>los dos ganan ${money(d.premio || 10000)}</b> de saldo a favor.</p>
-      <div class="ref-code"><code>${esc(d.codigo)}</code><button type="button" class="btn btn--sm" data-action="ref-copiar" data-link="${esc(link)}">${ic('i-copy')}Copiar invitación</button></div>
-      <p class="meta">${int(d.invitados || 0)} ${Number(d.invitados) === 1 ? 'local invitado' : 'locales invitados'} · ${int(d.premiados || 0)} ya te dieron premio${d.me_invito ? ` · Te invitó ${esc(d.me_invito)}` : ''}</p>
-      ${d.demo ? '<p class="meta">Panel de ejemplo.</p>' : ''}`;
+    const wa = 'https://wa.me/?text=' + encodeURIComponent('Únete a ModoParche con mi invitación: publicas planes gratis y solo pagas por clientes que llegan. ' + link);
+    box.innerHTML = `<div class="ref">
+        <div class="ref-bono" data-tinta-fija><span class="ref-burst"><b>${money(PREMIO_REFERIDO)}</b><small>para cada uno</small></span></div>
+        <div class="ref-info">
+          <p>Invita a otro local de Villavo. Cuando pague su primer estado de cuenta, <b>los dos ganan ${money(PREMIO_REFERIDO)}</b> de saldo a favor, que se descuenta solo.</p>
+          <div class="ref-code"><span>Tu código</span><code>${esc(d.codigo)}</code></div>
+          <div class="ref-acts"><button type="button" class="btn primary" data-action="ref-copiar" data-link="${esc(link)}">${ic('i-copy')}Copiar invitación</button><a class="btn ref-wa" href="${esc(wa)}" target="_blank" rel="noopener">${ic('i-send')}WhatsApp</a></div>
+          <div class="ref-stats"><span><b>${int(d.invitados || 0)}</b>${Number(d.invitados) === 1 ? 'local invitado' : 'locales invitados'}</span><span><b>${int(d.premiados || 0)}</b>${Number(d.premiados) === 1 ? 'bono ganado' : 'bonos ganados'}</span></div>
+          ${d.me_invito ? `<p class="meta">Te invitó ${esc(d.me_invito)}.</p>` : ''}${d.demo ? '<p class="meta">Panel de ejemplo.</p>' : ''}
+        </div>
+      </div>`;
   }
   async function copiarInvitacion(link) {
     const texto = `Únete a ModoParche con mi invitación: publicas planes gratis y solo pagas por clientes que llegan. ${link}`;
@@ -1739,7 +1759,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     const { data, error } = await SB().rpc('usar_codigo_referido', { p_codigo: cod });
     try { localStorage.removeItem('mp-ref'); } catch (e) { /* nada */ }
     if (error) { if (!/YA_TIENES|PGRST202|usar_codigo_referido/.test(error.message || '')) { const [t, dd] = errorDB(error); toast(t, dd, { error: true }); } return; }
-    toast('Invitación aplicada', `Te invitó ${data}. Cuando pagues tu primer estado de cuenta, los dos ganan $10.000.`);
+    toast('Invitación aplicada', `Te invitó ${data}. Cuando pagues tu primer estado de cuenta, los dos ganan ${money(PREMIO_REFERIDO)}.`);
   }
 
   // Reseñas reales: solo las dejan clientes con llegada validada
@@ -1770,7 +1790,6 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       if (error) { let d = ''; try { d = (await error.context.json()).error || ''; } catch (e2) { /* sin cuerpo */ } throw new Error(d || error.message); }
       if (!data || data.error) throw new Error((data && data.error) || 'SIN_RESPUESTA');
       datos = data;
-      await cargarWompi();
     } catch (e) {
       btn.disabled = false;
       const m = String((e && e.message) || e);
@@ -1778,9 +1797,21 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       if (/DEMASIADOS/.test(m)) { liqEstado(id, 'error', 'Muchos intentos seguidos. Espera unos minutos.'); return; }
       if (/MONTO_INVALIDO/.test(m)) { liqEstado(id, 'error', 'Ese valor no sirve para abonar. Toca «Actualizar» y revisa el saldo.'); return; }
       if (/NO_SE_PUEDE_PAGAR|NO_ES_TUYO/.test(m)) { liqEstado(id, 'error', 'Este estado de cuenta ya no está pendiente. Toca «Actualizar».'); return; }
-      // Pagos en línea sin activar (sin llaves, función sin desplegar o migración pendiente): datáfono
-      liqEstado(id, 'info', 'El pago en línea aún no está activo. Te abrimos el datáfono de Wompi: escribe el valor exacto y la referencia, y luego toca «Ya pagué por otro medio».');
-      window.open(DATAFONO_WOMPI, '_blank', 'noopener');
+      // Pago en línea sin activar (función sin desplegar o sin llaves): datáfono, pero con el
+      // valor exacto y la referencia a la vista y copiados, para que no haya errores al escribir.
+      liqEstado(id, '', '');
+      abrirDatafono(id, monto);
+      return;
+    }
+    // El widget de Wompi no cargó (red o bloqueador): mismo pago, en el checkout web de Wompi
+    try { await cargarWompi(); }
+    catch (e) {
+      liqEstado(id, 'cargando', 'Te llevamos a Wompi con el valor ya puesto…');
+      location.href = 'https://checkout.wompi.co/p/?' + new URLSearchParams({
+        'public-key': datos.publicKey, currency: datos.currency, 'amount-in-cents': String(datos.amountInCents),
+        reference: datos.reference, 'signature:integrity': datos.signature,
+        'redirect-url': new URL('empresa-dashboard.html?pago=' + encodeURIComponent(datos.reference) + '#perfil', location.href).href,
+      }).toString();
       return;
     }
     const c = datos.customer || {}, cliente = {};
@@ -1824,6 +1855,38 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     }
     liqEstado(id, 'info', 'Tu pago sigue en proceso. Apenas Wompi lo apruebe, el estado de cuenta se marca pagado solo.');
   }
+  /* Datáfono de Wompi (monto abierto): se muestra el valor exacto y la referencia,
+     el valor se copia solo y se abre Wompi. Así nadie escribe un valor equivocado. */
+  function abrirDatafono(id, monto) {
+    const l = ((ultimaCuenta && ultimaCuenta.liquidaciones) || []).find(x => String(x.id) === String(id));
+    if (!l) { window.open(DATAFONO_WOMPI, '_blank', 'noopener'); return; }
+    const saldo = Math.max(0, (Number(l.total) || 0) - (Number(l.pagado) || 0));
+    const valor = monto || saldo;
+    $('#df-valor').textContent = money(valor);
+    $('#df-ref').textContent = l.referencia;
+    $('#df-copiar-valor').dataset.copiar = String(valor);
+    $('#df-copiar-ref').dataset.copiar = l.referencia;
+    $('#df-abrir').dataset.valor = String(valor);
+    $('#df-abrir').dataset.id = String(id);
+    $('#df-estado').textContent = '';
+    $('#dlg-datafono').showModal();
+  }
+  async function copiarDato(btn) {
+    const v = btn.dataset.copiar || '';
+    try { await navigator.clipboard.writeText(v); btn.classList.add('is-ok'); btn.textContent = 'Copiado'; setTimeout(() => { btn.classList.remove('is-ok'); btn.textContent = 'Copiar'; }, 1600); }
+    catch (e) { toast('Cópialo a mano', v, { error: true }); }
+  }
+  async function abrirWompiDatafono(btn) {
+    const valor = btn.dataset.valor || '';
+    let copiado = false;
+    try { await navigator.clipboard.writeText(valor); copiado = true; } catch (e) { /* sin portapapeles */ }
+    window.open(DATAFONO_WOMPI, '_blank', 'noopener');
+    $('#df-estado').textContent = copiado
+      ? `Copiamos ${money(Number(valor))}: en Wompi pega el valor (mantén presionado y «Pegar») y pon la referencia en la descripción.`
+      : `En Wompi escribe exactamente ${money(Number(valor))} y pon la referencia en la descripción.`;
+    liqEstado(btn.dataset.id, 'info', 'Cuando Wompi apruebe, toca «Ya pagué por otro medio» y escribe el número de la transacción.');
+  }
+
   async function reportarPago(id) {
     const v = window.prompt('Ya pagué\n\nEscribe el número de transacción que te dio Wompi. El equipo lo revisa y marca tu estado de cuenta como pagado.', '');
     if (v === null) return;
@@ -2839,6 +2902,8 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'liq-reportar': reportarPago(a.dataset.id); break;
         case 'liq-pagar': pagarLiquidacion(a.dataset.id, a); break;
         case 'liq-abonar': abonarLiquidacion(a.dataset.id, a); break;
+        case 'df-copiar': copiarDato(a); break;
+        case 'df-abrir': abrirWompiDatafono(a); break;
         case 'liq-comprobante': comprobanteLiquidacion(a.dataset.id); break;
         case 'cobro-reclamar': reclamarCobro(a.dataset.id, a.dataset.codigo); break;
         case 'cobros-csv': exportarCobrosCSV(); break;

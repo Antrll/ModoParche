@@ -588,6 +588,34 @@
   </form>
 </dialog>
 
+<!-- Pago con el datáfono de Wompi (monto abierto): valor y referencia a la vista -->
+<dialog class="dialog dialog--sm" id="dlg-datafono" aria-labelledby="dlg-df-title">
+  <form method="dialog" class="dialog-body">
+    <p class="plan-dlg-k">Pagar con Wompi</p>
+    <h2 id="dlg-df-title">Copia y pega estos datos</h2>
+    <div class="df-dato">
+      <span>Valor exacto a pagar</span>
+      <b class="df-valor num" id="df-valor">$0</b>
+      <button type="button" class="btn btn--sm" data-action="df-copiar" id="df-copiar-valor">Copiar</button>
+    </div>
+    <div class="df-dato">
+      <span>Referencia (va en la descripción)</span>
+      <b class="df-ref" id="df-ref">MP-0000-000000</b>
+      <button type="button" class="btn btn--sm" data-action="df-copiar" id="df-copiar-ref">Copiar</button>
+    </div>
+    <ol class="df-pasos">
+      <li>Toca <b>«Abrir Wompi»</b>: el valor queda copiado.</li>
+      <li>En Wompi pega el valor y escribe la referencia en la descripción.</li>
+      <li>Al terminar toca <b>«Ya pagué por otro medio»</b> con el número de la transacción.</li>
+    </ol>
+    <p class="df-estado" id="df-estado" role="status" aria-live="polite"></p>
+    <footer class="dialog-foot">
+      <button class="btn" value="cancel">Cerrar</button>
+      <button type="button" class="btn primary" data-action="df-abrir" id="df-abrir"><svg class="ic"><use href="#i-card"/></svg>Abrir Wompi</button>
+    </footer>
+  </form>
+</dialog>
+
 <!-- Cambio de plan: se compara, se confirma que se entiende y se mantiene presionado -->
 <dialog class="dialog dialog--plan" id="dlg-plan" aria-labelledby="dlg-plan-title">
   <form method="dialog" class="dialog-body">

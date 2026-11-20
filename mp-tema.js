@@ -393,11 +393,30 @@
     ? { size: 'maskSize', pos: 'maskPosition' }
     : { size: 'webkitMaskSize', pos: 'webkitMaskPosition' };
 
+  // Toques muy seguidos: se ignoran los que llegan a menos de 250 ms del anterior
+  let ultimoToque = 0, generacion = 0, ultimoCambio = -1e9;
+  function terminarTinta() {
+    const t = transicion;
+    transicion = null;
+    if (t) { try { t.skipTransition(); } catch (e) { /* ya terminó */ } }
+    root.classList.remove('mp-tinta', 'mp-tema-ya');
+  }
+
   async function alternar(btn, evento) {
-    if (esperando) return; // doble clic mientras se prepara la mancha
+    const ahora = performance.now();
+    if (ahora - ultimoToque < 250) return;
+    ultimoToque = ahora;
     // Cada toque pasa al siguiente: claro -> mixto -> oscuro -> claro
     const oscuro = siguienteTema(temaActual());
     guardar(oscuro);
+    const mia = ++generacion; // solo cuenta el último toque
+
+    // Si la tinta anterior sigue corriendo (o preparándose), no se apila otra:
+    // se termina de una y el modo nuevo entra con un fundido corto.
+    // Toques seguidos (menos de 1,5 s): fundido rápido, sin tinta, para que no se trabe
+    const seguido = ahora - ultimoCambio < 1500;
+    ultimoCambio = ahora;
+    if (transicion || esperando || seguido) { terminarTinta(); cambiarConFundido(oscuro); return; }
 
     if (!document.startViewTransition || reduceMotion.matches) { cambiarConFundido(oscuro); return; }
 
@@ -406,6 +425,7 @@
     let url = null;
     try { url = await siguienteMascara; } finally { esperando = false; }
     prepararMascara(); // la próxima mancha queda lista desde ya
+    if (mia !== generacion) return; // otro toque llegó mientras se preparaba la mancha
     if (!url) { cambiarConFundido(oscuro); return; }
 
     const { x, y } = centroBoton(btn, evento);
@@ -425,6 +445,17 @@
     }
     const t = transicion;
 
+    // Durante la tinta el navegador manda los toques a la transición, no a la
+    // página: cualquier toque la termina de una (y si fue en el botón, cambia de modo).
+    const alTocar = e => {
+      if (transicion !== t) return;
+      const r = btn.getBoundingClientRect();
+      const enBoton = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      terminarTinta();
+      if (enBoton) { e.preventDefault(); ultimoToque = 0; alternar(btn, e).catch(() => {}); }
+    };
+    document.addEventListener('pointerdown', alTocar, true);
+
     t.ready.then(() => {
       root.animate({
         [MASK.size]: ['0px 0px', `${D}px ${D}px`],
@@ -438,6 +469,7 @@
     }).catch(() => { /* la transición se saltó: el tema ya quedó aplicado */ });
 
     t.finished.catch(() => {}).finally(() => {
+      document.removeEventListener('pointerdown', alTocar, true);
       // Un clic nuevo pudo empezar otra mancha: solo la última limpia
       if (transicion === t) { transicion = null; root.classList.remove('mp-tinta', 'mp-tema-ya'); }
       if (urlEnUso && urlEnUso !== url) URL.revokeObjectURL(urlEnUso);
