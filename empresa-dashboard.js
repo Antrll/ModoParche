@@ -1509,6 +1509,8 @@
       mes: { periodo: new Date(d0.getFullYear(), d0.getMonth(), 1).toISOString().slice(0, 10), clientes, total, detalle },
       liquidaciones: t.cliente ? [{ id: 1, periodo: mesPasado.toISOString().slice(0, 10), clientes: 31, total: 31 * t.cliente, referencia: 'MP-DEMO-7F3A2C', estado: 'pendiente', vence: new Date(hoy + 9 * DAY).toISOString().slice(0, 10) }] : [] };
   }
+  // Botones Actualizar: muestran el logo cargando sin tapar la página (mp-cargando.js)
+  const conCarga = (b, f) => (window.MPCargando ? window.MPCargando.con(b, f) : Promise.resolve().then(f)).catch(e => console.warn('[actualizar]', e));
   async function cargarCobros(forzar = false) {
     const box = $('#cobros-box'); if (!box) return;
     if (!forzar && NOW() - cobrosCargados < 30000) return;
@@ -1848,14 +1850,12 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   async function cambiarPlan(plan) {
     const P = loc().perfil;
     if (!PLANES[plan] || plan === P.plan) return;
-    const t = tarifas(plan);
-    const textos = {
-      basico: 'Con Parche básico publicas 2 parches al mes y no pagas comisión ni cobro por cliente. Lo que ya publicaste se queda.',
-      villavo: `Parches ilimitados y prioridad en el radar. Sin mensualidad: pagas ${t.pct}% por paquete redimido y ${money(t.cliente)} por cliente que llega a tu mesa.`,
-      sedes: `Tarifa preferencial: ${t.pct}% por paquete y ${money(t.cliente)} por cliente. Después te escribimos para crear el acceso de cada sede.`,
-    };
-    const ok = await confirmar(`Cambiar a ${PLANES[plan].nombre}`, textos[plan], 'Sí, cambiar');
+    const ok = await confirmarCambioPlan(P.plan, plan);
     if (!ok) return;
+    const finCarga = window.MPCargando ? window.MPCargando.mostrar() : () => {};
+    try { await aplicarCambioPlan(plan, P); } finally { finCarga(); }
+  }
+  async function aplicarCambioPlan(plan, P) {
     if (REMOTE()) {
       let { error } = await SB().rpc('elegir_plan', { p_plan: plan, p_sedes: plan === 'sedes' ? Math.max(2, P.sedes || 2) : null });
       // Base sin el modelo nuevo: bajar a básico sigue funcionando con la función vieja
@@ -1867,7 +1867,85 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     }
     P.plan = plan; P.planVence = null; P.planPendiente = null; if (plan === 'sedes') P.sedes = Math.max(2, P.sedes || 2);
     save(); renderShell(); renderPlan(); cargarCobros(true);
-    toast('Plan actualizado', `Ahora tienes ${PLANES[plan].nombre}.`);
+    const t = tarifas(plan);
+    toast(`Ya tienes ${PLANES[plan].nombre}`, t.cliente
+      ? `Desde hoy: ${t.pct}% por paquete y ${money(t.cliente)} por cliente que llega. Lo ves en «Cobros por resultados».`
+      : 'Desde hoy no pagas comisión. Lo que llegó antes de hoy sigue en tu estado de cuenta.');
+    tone('ok');
+  }
+
+  /* Cambiar de plan no es un clic: se compara lo de ahora con lo de después,
+     se confirma que se entiende y se mantiene presionado el botón 1,6 s. */
+  function confirmarCambioPlan(actual, nuevo) {
+    const A = PLANES[actual] || PLANES.basico, N = PLANES[nuevo], usados = parchesDelMes();
+    const sube = N.cliente > A.cliente || (A.limite !== Infinity && N.limite === Infinity);
+    const fila = (k, a, n) => `<div class="plan-cmp-row${a !== n ? ' is-cambia' : ''}"><span>${esc(k)}</span><b>${esc(a)}</b><b>${esc(n)}</b></div>`;
+    const lim = p => p.limite === Infinity ? 'Ilimitados' : `${p.limite} al mes`;
+    $('#dlg-plan-title').textContent = `De ${A.nombre} a ${N.nombre}`;
+    $('#plan-cmp').innerHTML = `<div class="plan-cmp-row plan-cmp-row--head"><span></span><b>Ahora</b><b>Después</b></div>`
+      + fila('Parches', lim(A), lim(N))
+      + fila('Por paquete redimido', `${A.pct}%`, `${N.pct}%`)
+      + fila('Por cliente en mesa', money(A.cliente), money(N.cliente))
+      + fila('Prioridad en el radar', A.limite === Infinity ? 'Sí' : 'No', N.limite === Infinity ? 'Sí' : 'No')
+      + fila('Mensualidad', '$0', '$0');
+    const cambios = [];
+    if (nuevo === 'basico') {
+      cambios.push(`Solo puedes publicar <b>2 parches al mes</b>${usados ? ` (este mes ya llevas ${usados})` : ''}.`);
+      cambios.push('Tus parches dejan de tener <b>prioridad en el radar</b> y foto destacada.');
+      cambios.push('Desde hoy no pagas comisión. Lo que llegó <b>antes de hoy</b> se cobra igual en tu estado de cuenta.');
+      cambios.push('Lo que ya publicaste se queda publicado.');
+    } else {
+      cambios.push(`Desde hoy pagas <b>${N.pct}% por cada paquete redimido</b> y <b>${money(N.cliente)} por cada cliente</b> que llega a tu mesa.`);
+      cambios.push('Se cobra una vez al mes en tu estado de cuenta. Si nadie llega, pagas <b>$0</b>.');
+      if (A.limite !== Infinity) cambios.push('Parches ilimitados con foto destacada y prioridad en el radar.');
+      if (nuevo === 'sedes') cambios.push('Después te escribimos para crear el acceso de cada sede.');
+    }
+    $('#plan-cambios').innerHTML = cambios.map(c => `<li>${c}</li>`).join('');
+    $('#plan-ack-txt').textContent = sube
+      ? `Entiendo que desde hoy ModoParche cobra ${N.pct}% por paquete y ${money(N.cliente)} por cliente que llegue.`
+      : 'Entiendo que desde hoy tengo los límites de este plan.';
+    const ack = $('#plan-ack'), hold = $('#plan-hold'), txt = $('#plan-hold-txt'), dlg = $('#dlg-plan');
+    ack.checked = false; hold.disabled = true; hold.style.setProperty('--p', 0); txt.textContent = 'Mantén presionado para cambiar';
+    ack.onchange = () => { hold.disabled = !ack.checked; };
+
+    return new Promise(res => {
+      const DURA = REDUCED() ? 900 : 1600;
+      let t0 = 0, raf = 0, listo = false;
+      const parar = () => {
+        if (listo || !t0) return;
+        cancelAnimationFrame(raf); t0 = 0;
+        hold.classList.remove('is-holding');
+        hold.style.setProperty('--p', 0);
+        txt.textContent = 'Mantén presionado para cambiar';
+      };
+      const paso = now => {
+        const p = Math.min(1, (now - t0) / DURA);
+        hold.style.setProperty('--p', p.toFixed(3));
+        if (p < 1) { raf = requestAnimationFrame(paso); return; }
+        listo = true;
+        txt.textContent = '¡Listo!';
+        try { navigator.vibrate && navigator.vibrate(18); } catch (e) { /* sin vibración */ }
+        setTimeout(() => { dlg.returnValue = 'ok'; dlg.close('ok'); }, 220);
+      };
+      const empezar = e => {
+        if (hold.disabled || listo || t0) return;
+        if (e && e.type === 'keydown') { if (e.repeat || (e.key !== 'Enter' && e.key !== ' ')) return; e.preventDefault(); }
+        if (e && e.pointerId != null) { try { hold.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
+        t0 = performance.now();
+        hold.classList.add('is-holding');
+        txt.textContent = 'Sigue presionando…';
+        raf = requestAnimationFrame(paso);
+      };
+      hold.onpointerdown = empezar;
+      hold.onkeydown = empezar;
+      hold.onpointerup = hold.onpointercancel = hold.onpointerleave = parar;
+      hold.onkeyup = e => { if (e.key === 'Enter' || e.key === ' ') parar(); };
+      hold.oncontextmenu = e => e.preventDefault(); // mantener presionado en el celular no abre el menú
+      hold.onclick = e => { e.preventDefault(); if (!listo && !hold.disabled) { txt.textContent = 'Déjalo presionado hasta que se llene'; hold.classList.remove('nudge'); void hold.offsetWidth; hold.classList.add('nudge'); } };
+      dlg.returnValue = '';
+      dlg.onclose = () => { cancelAnimationFrame(raf); res(dlg.returnValue === 'ok'); };
+      dlg.showModal();
+    });
   }
   async function moverLocal(lat, lng) {
     const P = loc().perfil;
@@ -2757,7 +2835,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'editar-perfil': openPerfil(); break;
         case 'cambiar-plan': cambiarPlan(a.dataset.plan); break;
         case 'pagar-plan': cambiarPlan('villavo'); break;
-        case 'cobros-recargar': cargarCobros(true); break;
+        case 'cobros-recargar': conCarga(a, () => cargarCobros(true)); break;
         case 'liq-reportar': reportarPago(a.dataset.id); break;
         case 'liq-pagar': pagarLiquidacion(a.dataset.id, a); break;
         case 'liq-abonar': abonarLiquidacion(a.dataset.id, a); break;

@@ -2700,6 +2700,8 @@
     return `${d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}, ${hora}`;
   }
   let sesionesCargadas = 0;
+  // Botones Actualizar: muestran el logo cargando sin tapar la página (mp-cargando.js)
+  const conCarga = (b, f) => (window.MPCargando ? window.MPCargando.con(b, f) : Promise.resolve().then(f)).catch(e => console.warn('[actualizar]', e));
   async function cargarSesiones(forzar = false) {
     const ul = $('#devices'); if (!ul) return;
     if (!forzar && Date.now() - sesionesCargadas < 30000) return;
@@ -4469,7 +4471,7 @@
       case 'google-vincular': vincularGoogle(a); break;
       case 'ig-editar': toggleBloque('ig-edit', 'p-ig'); break;
       case 'ig-guardar': guardarInstagram(a); break;
-      case 'sesiones-recargar': cargarSesiones(true); break;
+      case 'sesiones-recargar': conCarga(a, () => cargarSesiones(true)); break;
       case 'sesion-cerrar': cerrarSesionDe(id, a); break;
       case 'go-inicio': go('inicio'); break;
       case 'logout': logout(); break;

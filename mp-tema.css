@@ -75,3 +75,41 @@ html.mp-tema-ya.is-dark .topbar { background-color: #121214 !important; }
 html.is-mixto .tema-toggle .tema-medio { opacity: 1; transform: none; }
 html.is-mixto .tema-toggle .tema-disco, html.is-mixto .tema-toggle .tema-rayos { opacity: 0; transform: scale(.4); }
 @media (prefers-reduced-motion: reduce) { .tema-toggle .tema-medio { transition: none; } }
+
+/* =====================================================================
+   Indicador "actualizando" (mp-cargando.js): el logo flotando bajo la
+   barra, como al deslizar para recargar en el celular. No tapa la página.
+===================================================================== */
+.mp-cargando {
+  position: fixed; z-index: 1200; left: 50%; top: calc(var(--top-h, var(--topbar, 64px)) + 12px);
+  display: grid; justify-items: center; gap: 6px; pointer-events: none;
+  translate: -50% -90px; opacity: 0;
+  transition: translate .55s cubic-bezier(.23, 1, .32, 1), opacity .25s ease;
+}
+.mp-cargando.is-on { translate: -50% 0; opacity: 1; }
+.mp-cargando.is-fuera { translate: -50% -14px; opacity: 0; scale: .6; transition: translate .3s ease, opacity .28s ease, scale .32s cubic-bezier(.5, 0, .75, 0); }
+.mp-cargando-badge {
+  position: relative; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%;
+  background: #ffffff; box-shadow: 0 1px 2px rgba(17,17,17,.08), 0 10px 24px -12px rgba(17,17,17,.45);
+}
+.mp-cargando-badge img { width: 30px; height: 30px; animation: mpCargandoBob .9s cubic-bezier(.77, 0, .175, 1) infinite; }
+.mp-cargando-dk { display: none; }
+.mp-cargando-ring { position: absolute; inset: 0; width: 100%; height: 100%; rotate: -90deg; animation: mpCargandoGiro .85s linear infinite; }
+.mp-cargando-trk { fill: none; stroke: #e9e9eb; stroke-width: 3; }
+.mp-cargando-val { fill: none; stroke: #FF5A1F; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 26 74; }
+.mp-cargando-txt { padding: 3px 10px; border-radius: 999px; background: rgba(17,17,17,.82); color: #ffffff; font: 700 11px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+html.is-dark .mp-cargando-badge { background: #1f1f23; box-shadow: inset 0 0 0 1px #2e2e33, 0 10px 24px -12px #000000; }
+html.is-dark .mp-cargando-trk { stroke: #36363c; }
+html.is-dark .mp-cargando-lt { display: none; }
+html.is-dark .mp-cargando-dk { display: block; }
+html.is-dark .mp-cargando-txt { background: rgba(255,255,255,.9); color: #111111; }
+@keyframes mpCargandoBob { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-3px) rotate(8deg); } }
+@keyframes mpCargandoGiro { to { rotate: 270deg; } }
+/* El botón que se tocó: su ícono gira mientras carga */
+.is-cargando .ic { animation: mpCargandoIcono .8s linear infinite; }
+@keyframes mpCargandoIcono { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .mp-cargando, .mp-cargando.is-fuera { transition: opacity .2s ease; translate: -50% 0; scale: 1; }
+  .mp-cargando-badge img, .is-cargando .ic { animation: none; }
+  .mp-cargando-ring { animation-duration: 1.6s; }
+}

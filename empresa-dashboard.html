@@ -588,6 +588,26 @@
   </form>
 </dialog>
 
+<!-- Cambio de plan: se compara, se confirma que se entiende y se mantiene presionado -->
+<dialog class="dialog dialog--plan" id="dlg-plan" aria-labelledby="dlg-plan-title">
+  <form method="dialog" class="dialog-body">
+    <p class="plan-dlg-k">Cambio de plan</p>
+    <h2 id="dlg-plan-title">Cambiar de plan</h2>
+    <div class="plan-cmp" id="plan-cmp"></div>
+    <p class="mini-title">Qué cambia desde hoy</p>
+    <ul class="plan-cambios" id="plan-cambios"></ul>
+    <label class="plan-ack"><input type="checkbox" id="plan-ack"><span id="plan-ack-txt">Entiendo el cambio.</span></label>
+    <footer class="dialog-foot plan-foot">
+      <button class="btn" value="cancel">Mejor no</button>
+      <button type="button" class="btn primary plan-hold" id="plan-hold" disabled aria-describedby="plan-hold-ayuda">
+        <span class="plan-hold-fill" aria-hidden="true"></span>
+        <span class="plan-hold-txt" id="plan-hold-txt">Mantén presionado para cambiar</span>
+      </button>
+    </footer>
+    <p class="plan-hold-ayuda" id="plan-hold-ayuda">Marca la casilla y deja el dedo (o el clic) sobre el botón hasta que se llene.</p>
+  </form>
+</dialog>
+
 <dialog class="dialog dialog--wide" id="dlg-perfil" aria-labelledby="dlg-perfil-title">
   <form method="dialog" class="dialog-body" id="form-perfil" novalidate>
     <header class="dialog-head">
@@ -774,6 +794,7 @@
 <script src="mp-checkin.js"></script>
 <script src="empresa-dashboard.js"></script>
 <script src="mp-tema.js" defer></script>
+<script src="mp-cargando.js" defer></script>
 <script src="mp-seguridad-biz.js"></script>
 <script src="legal.js" defer></script>
 </body>

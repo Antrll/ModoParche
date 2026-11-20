@@ -1075,7 +1075,7 @@ html.is-dark .logo:not(.logo--fuego):not(.logo--dia) { background: var(--night);
 ===================================================================== */
 html.is-mixto .topbar {
   --surface: #1a1a1d; --raised: #242428; --border: #303036; --rule: #26262b; --control: #45454c;
-  --text: #ffffff; --muted: #b4b4bc; --faint: #9d9da6;
+  --text: #ffffff; --muted: #b4b4bc; --faint: #9d9da6; --on-text: #121214;
   background: rgba(17,17,17,.94); color: #ffffff; box-shadow: none;
 }
 html.is-mixto .topbar .input, html.is-mixto .topbar input { background-color: var(--raised); color: #ffffff; }
@@ -1102,3 +1102,9 @@ html:not(.is-dark):not(.is-mixto) .kpi--lead .kpi-value { color: #b83709; }
 html:not(.is-dark):not(.is-mixto) .kpi--lead .delta { background: rgba(17,17,17,.06); color: #111111; }
 html:not(.is-dark):not(.is-mixto) .kpi--lead .delta.is-up { background: rgba(14,111,49,.12); color: #0e6f31; }
 html:not(.is-dark):not(.is-mixto) .kpi--lead .delta.is-down { background: rgba(181,43,6,.1); color: #b52b06; }
+
+/* La vista previa del aviso es una notificación de celular: siempre clara */
+.phone-toast { color: #111111; }
+.phone-toast p { color: #55555c; }
+/* Palabras resaltadas en reportes y búsqueda: legibles en cualquier modo */
+html.is-dark :is(.rep-copia, .sp-item, .msg-text) mark { background: #ff9a6b; color: #111111; }

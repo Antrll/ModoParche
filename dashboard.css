@@ -2281,3 +2281,8 @@ html:not(.is-dark):not(.is-mixto) .qk--ink { background: #f1f1f3; color: #111111
   html:not(.is-dark):not(.is-mixto) .bottom-nav { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); background: rgba(255,255,255,.9); color: #55555c; box-shadow: 0 0 0 1px #e4e4e7, 0 18px 40px -18px rgba(17,17,17,.35); }
   html:not(.is-dark):not(.is-mixto) .bn.is-active { color: #111111; }
 }
+
+/* Modo claro: textos del parche oficial que eran blancos sobre negro */
+html:not(.is-dark):not(.is-mixto) :is(.of-sold, .of-note) { color: #45454d; }
+html:not(.is-dark):not(.is-mixto) .of-sold b, html:not(.is-dark):not(.is-mixto) .of-map { color: #111111; }
+html:not(.is-dark):not(.is-mixto) .of-map::after { background: #b83709; }

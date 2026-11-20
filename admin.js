@@ -1887,6 +1887,8 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       try { await recargarMetricas(); if (current === 'resumen') { $('#view-resumen').classList.add('quiet'); renderResumen(); } updateCounts(); stampRefresh(); } catch (e) { /* lo intenta en la próxima */ }
     }, DEMO ? 300 : 5000);
   }
+  // Botones Actualizar: muestran el logo cargando sin tapar la página (mp-cargando.js)
+  const conCarga = (b, f) => (window.MPCargando ? window.MPCargando.con(b, f) : Promise.resolve().then(f)).catch(e => console.warn('[actualizar]', e));
   async function refrescarTodo(manual) {
     const btn = $('#refresh-btn'); btn.classList.add('is-loading');
     try {
@@ -1942,16 +1944,16 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       const id = a.dataset.id;
       switch (a.dataset.action) {
         case 'logout': salir(); break;
-        case 'refrescar': refrescarTodo(true); break;
+        case 'refrescar': conCarga(a, () => refrescarTodo(true)); break;
         case 'liq-pagada': marcarLiquidacion(a.dataset.id, 'pagada'); break;
         case 'liq-anular': marcarLiquidacion(a.dataset.id, 'anulada'); break;
         case 'liq-reabrir': marcarLiquidacion(a.dataset.id, 'pendiente'); break;
         case 'liq-generar': generarLiquidaciones(); break;
-        case 'liq-recargar': liqs = null; reclamos = null; anomalias = null; renderCobros(); break;
+        case 'liq-recargar': liqs = null; reclamos = null; anomalias = null; conCarga(a, () => renderCobros()); break;
         case 'liq-csv': exportarLiquidacionesCSV(); break;
         case 'rec-aprobar': resolverReclamo(a.dataset.id, true); break;
         case 'rec-rechazar': resolverReclamo(a.dataset.id, false); break;
-        case 'ver-errores': verErrores(); break;
+        case 'ver-errores': conCarga(a, () => verErrores()); break;
         case 'ir-anuncio': location.hash = '#anuncios'; setTimeout(() => $('#an-texto').focus(), 300); break;
         case 'cerrar-drawer': closeDrawer(); break;
         case 'suspender': accionSuspender(id, a.dataset.on === '1', a); break;

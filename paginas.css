@@ -865,3 +865,8 @@ html.is-dark .tag-olive--dark { color: #55583a; }
   .kit li .btn { grid-column: 1 / -1; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { .stk-card img, .medals img, .photo-card img { transition: none; } }
+
+/* Tarjetas de logo sobre blanco: texto oscuro también en modo oscuro */
+.logo-card--light { color: #111111; }
+/* Etiqueta oliva dentro de un bloque que en modo claro pasó a gris claro */
+html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .tag-olive--dark { color: #55583a; }
