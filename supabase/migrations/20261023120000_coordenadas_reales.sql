@@ -7,11 +7,11 @@
 --
 -- Deja 8 parches de ejemplo, uno por lugar real:
 --   Discoteca Los Capachos ......... 4.1165, -73.6508  (Km 4 Vía Acacías)
---   C.C. Primavera Urbana .......... 4.1348, -73.6206  (Calle 15 # 40-01)
+--   C.C. Primavera Urbana .......... 4.13468, -73.64046  (Calle 15 # 40-01)
 --   Parque Los Fundadores .......... 4.1242, -73.6395  (Entrada sur / Av. 40)
---   Mirador La Piedra del Amor ..... 4.1585, -73.6540  (Vía Antigua a Bogotá)
+--   Mirador La Piedra del Amor ..... 4.17173, -73.67540  (Vía Antigua a Bogotá)
 --   Parque Siete de Agosto ......... 4.1462, -73.6335
---   C.C. Viva Villavicencio ........ 4.1290, -73.6225  (Av. 40)
+--   C.C. Viva Villavicencio ........ 4.125621, -73.638716  (Av. 40)
 --   Parque del Hacha ............... 4.1488, -73.6382  (Centro)
 --   Vereda El Carmen ............... 4.1410, -73.6615  (inicio sendero ecológico)
 -- Solo toca filas con demo = true; los parches de los usuarios no cambian.
@@ -34,7 +34,7 @@ update public.parches set
 where demo and titulo = 'Rumba en Los Capachos';
 
 update public.parches set
-  lugar = 'C.C. Primavera Urbana', barrio = 'Calle 15 # 40-01', lat = 4.1348, lng = -73.6206
+  lugar = 'C.C. Primavera Urbana', barrio = 'Calle 15 # 40-01', lat = 4.13468, lng = -73.64046
 where demo and titulo = 'Cine y arcade en Primavera Urbana';
 
 update public.parches set
@@ -42,7 +42,7 @@ update public.parches set
 where demo and titulo = 'Tarde de frisbee y picnic';
 
 update public.parches set
-  lugar = 'Mirador La Piedra del Amor', barrio = 'Buenavista, Vía Antigua a Bogotá', lat = 4.1585, lng = -73.6540,
+  lugar = 'Mirador La Piedra del Amor', barrio = 'Buenavista, Vía Antigua a Bogotá', lat = 4.17173, lng = -73.67540,
   demo_regla = '{"dias": 2, "hora": "16:30"}'
 where demo and titulo = 'Atardecer en la Piedra del Amor';
 
@@ -55,7 +55,7 @@ where demo and titulo in ('Micro en La Bombonera', 'Micro en el Parque Siete de 
 update public.parches set
   titulo = 'Hora feliz 2x1 en el C.C. Viva', creador_nombre = 'Terraza C.C. Viva',
   descripcion = '2x1 en cócteles mientras dure la hora feliz. Terraza al aire libre y buena música.',
-  lugar = 'C.C. Viva Villavicencio', barrio = 'Av. 40', lat = 4.1290, lng = -73.6225,
+  lugar = 'C.C. Viva Villavicencio', barrio = 'Av. 40', lat = 4.125621, lng = -73.638716,
   cupon = '{"comercio": "Terraza C.C. Viva", "desc": "2x1 en la primera ronda", "codigo": "PARCHE2X1"}'
 where demo and titulo in ('Hora feliz 2x1 en La Terraza Llanera', 'Hora feliz 2x1 en el C.C. Viva');
 

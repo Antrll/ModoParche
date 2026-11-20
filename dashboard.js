@@ -99,9 +99,9 @@
   // Coordenadas reales verificadas
   const LUGARES = [
     { id: 'capachos', nombre: 'Discoteca Los Capachos', ref: 'Km 4 Vía Acacías', lat: 4.1165, lng: -73.6508 },
-    { id: 'primavera', nombre: 'C.C. Primavera Urbana', ref: 'Calle 15 # 40-01', lat: 4.1348, lng: -73.6206 },
+    { id: 'primavera', nombre: 'C.C. Primavera Urbana', ref: 'Calle 15 # 40-01', lat: 4.13468, lng: -73.64046 },
     { id: 'fundadores', nombre: 'Parque Los Fundadores', ref: 'Entrada sur, Av. 40', lat: 4.1242, lng: -73.6395 },
-    { id: 'piedra', nombre: 'Mirador La Piedra del Amor', ref: 'Buenavista, Vía Antigua a Bogotá', lat: 4.1585, lng: -73.6540 },
+    { id: 'piedra', nombre: 'Mirador La Piedra del Amor', ref: 'Buenavista, Vía Antigua a Bogotá', lat: 4.17173, lng: -73.67540 },
     { id: 'siete', nombre: 'Parque Siete de Agosto', ref: 'Barrio Siete de Agosto', lat: 4.1462, lng: -73.6335 },
     { id: 'viva', nombre: 'C.C. Viva Villavicencio', ref: 'Av. 40', lat: 4.125621, lng: -73.638716 },
     { id: 'hacha', nombre: 'Parque del Hacha', ref: 'Centro', lat: 4.1488, lng: -73.6382 },
