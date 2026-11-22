@@ -97,6 +97,10 @@ begin
     select count(*) into n_largo
       from public.parches where creador_id = uid and creado_en > now() - interval '1 day';
     if n_largo >= 6 then
+      if exists (select 1 from public.negocios n where n.id = uid) then
+        raise exception 'DEMASIADO_RAPIDO' using errcode = 'P0001',
+          hint = 'Ya abriste 6 parches hoy. Pide la verificación de tu negocio a modoparcheoficial@gmail.com para publicar sin tope diario.';
+      end if;
       raise exception 'DEMASIADO_RAPIDO' using errcode = 'P0001', hint = 'Ya abriste 6 parches hoy. Mañana puedes abrir más.';
     end if;
 
@@ -328,3 +332,26 @@ begin
 end $$;
 revoke all on function public.sistema_permitir_intento(text, integer, integer) from public, anon, authenticated;
 grant execute on function public.sistema_permitir_intento(text, integer, integer) to service_role;
+
+-- =====================================================================
+-- 7. es_miembro SIN FUGA DE PRIVACIDAD
+-- Antes cualquier cuenta podía preguntar "¿esta persona va a este
+-- parche?" por cualquier persona y parche. Ahora solo responde la verdad
+-- a quien tiene por qué saberlo: la propia persona, quien creó el parche,
+-- alguien que también va, el equipo o el servidor (sin sesión). A los
+-- demás les responde false. Las reglas de seguridad (que preguntan por
+-- la cuenta propia) siguen igual.
+-- =====================================================================
+create or replace function public.es_miembro(p_parche uuid, p_usuario uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.parche_miembros m where m.parche_id = p_parche and m.usuario_id = p_usuario)
+     and (
+       p_usuario = (select auth.uid())
+       or (select auth.uid()) is null
+       or exists (select 1 from public.parches p where p.id = p_parche and p.creador_id = (select auth.uid()))
+       or exists (select 1 from public.parche_miembros y where y.parche_id = p_parche and y.usuario_id = (select auth.uid()))
+       or exists (select 1 from public.admins a where a.id = (select auth.uid()))
+     )
+$$;
+revoke all on function public.es_miembro(uuid, uuid) from public, anon;
+grant execute on function public.es_miembro(uuid, uuid) to authenticated;

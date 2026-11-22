@@ -582,10 +582,14 @@
   }
   function errorDB(err) {
     const m = String((err && (err.message || err.hint)) || '');
+    // Las reglas de la base mandan un código (DEMASIADO_RAPIDO, BLOQUEADO…) y la explicación en hint
+    const codigo = /^[A-Z][A-Z0-9_]{2,}$/.test(m.trim());
+    if (/DEMASIADO_RAPIDO/.test(m)) return ['Vas muy rápido', (err && err.hint) || 'Espera un momento e intenta de nuevo.'];
     if (/LIMITE_PLAN/.test(m)) return ['Llegaste al límite de tu plan', 'Parche básico incluye 2 parches al mes. Cambia a Parche Villavo en Perfil y plan.'];
     if (/fetch|network/i.test(m)) return ['Sin conexión', 'Revisa tu internet e intenta de nuevo.'];
     if (/titulo/i.test(m)) return ['Revisa el nombre', 'El nombre debe tener entre 5 y 60 caracteres.'];
     if (/cupos/i.test(m)) return ['Revisa los cupos', 'En el radar los parches van de 2 a 60 cupos.'];
+    if (codigo && err && err.hint) return ['No se guardó', err.hint];
     return ['No se guardó', m || 'Intenta de nuevo en unos segundos.'];
   }
   const parchesDelMes = () => loc().parches.filter(p => p.creado && p.creadoTs >= new Date(new Date(NOW()).getFullYear(), new Date(NOW()).getMonth(), 1).getTime()).length;

@@ -3,7 +3,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dashboard-usuarios-supabase]
+    branches: [main, dashboard-usuarios-supabase, SubidaDavidClaudeWeb]
   pull_request:
 
 permissions:
@@ -23,3 +23,9 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # Edge Functions de Supabase: tipos (deno check) y comportamiento con un Supabase simulado
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - run: deno check --config tests/edge/deno.json supabase/functions/*/index.ts
+      - run: deno test --config tests/edge/deno.json --allow-env --allow-read --no-check tests/edge/

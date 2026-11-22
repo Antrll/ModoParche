@@ -61,6 +61,7 @@ const parchesDe = async (uid, k) => sinTrg('parches', async () => {
 const publicar = `insert into public.parches (titulo,categoria,inicio,lugar,lat,lng,cupos_max) values ('Séptimo del día','rumba',now()+interval '1 day','Local',4.1,-73.6,10)`;
 await parchesDe(U.neg, 6);
 await como(U.neg); await falla('1 negocio sin verificar: máximo 6 al día (aunque sea plan Villavo)', publicar, [], /DEMASIADO_RAPIDO/);
+await como(U.neg); await falla('1 al negocio le dice cómo quitar el tope', publicar, [], /verificación de tu negocio/);
 await raiz(); await db.query(`update public.negocios set verificado=true where id=$1`, [U.neg]);
 await como(U.neg); await sirve('1 negocio verificado no tiene tope diario', publicar);
 await raiz(); await db.query(`update public.negocios set verificado=false where id=$1`, [U.neg]);
@@ -158,5 +159,27 @@ pasa('7 primer intento pasa', (await uno(`select public.sistema_permitir_intento
 await uno(`select public.sistema_permitir_intento('wompi-confirmar:a', 2, 600) v`);
 pasa('7 pasado el máximo frena', (await uno(`select public.sistema_permitir_intento('wompi-confirmar:a', 2, 600) v`)).v === false);
 pasa('7 otra clave no se afecta', (await uno(`select public.sistema_permitir_intento('wompi-confirmar:b', 2, 600) v`)).v === true);
+
+// ---------- 8. es_miembro sin fuga de privacidad
+const miembro = async (quien, parche, usuario) => { await como(quien); return (await uno(`select public.es_miembro($1,$2) v`, [parche, usuario])).v; };
+pasa('8 la propia persona sabe que va', (await miembro(U.ana, pa, U.ana)) === true);
+pasa('8 quien creó el parche sabe quién va', (await miembro(U.neg, pa, U.ana)) === true);
+pasa('8 otro asistente sabe quién va', (await miembro(U.beto, pa, U.ana)) === true);
+pasa('8 una cuenta ajena no puede averiguar a qué parche va alguien', (await miembro(U.neg2, pa, U.ana)) === false);
+await raiz(); pasa('8 el servidor (sin sesión) sí sabe', (await uno(`select public.es_miembro($1,$2) v`, [pa, U.ana])).v === true);
+await raiz(); await db.query(`delete from private.intentos where clave like 'cupon_aviso:%'`); // la prueba 2 llenó el freno por hora
+await como(U.neg); pasa('8 el negocio sigue entregando cupones a sus asistentes', (await em('k-miembro', U.ana)).r.ok === true);
+
+// ---------- 9. Postura general de seguridad de la base (auditoría automática)
+await raiz();
+const sinRls = await q(`select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and not c.relrowsecurity`);
+pasa('9 toda tabla de public tiene RLS', sinRls.length === 0, JSON.stringify(sinRls));
+const sinPath = await q(`select p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.prosecdef and n.nspname in ('public','private','seguridad') and not exists (select 1 from unnest(coalesce(p.proconfig,'{}')) c where c like 'search_path=%')`);
+pasa('9 toda función SECURITY DEFINER fija su search_path', sinPath.length === 0, JSON.stringify(sinPath));
+// Lo único que un visitante sin cuenta puede ejecutar con permisos elevados
+const anonDef = (await q(`select p.proname f from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute') order by 1`)).map(x => x.f);
+pasa('9 anon solo ejecuta parche_publico y ubicacion_por_token', JSON.stringify(anonDef) === JSON.stringify(['parche_publico', 'ubicacion_por_token']), JSON.stringify(anonDef));
+const anonTablas = await q(`select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace, unnest(array['SELECT','INSERT','UPDATE','DELETE']) pr where n.nspname='public' and c.relkind in ('r','v','m','p') and has_table_privilege('anon', c.oid, pr)`);
+pasa('9 anon no tiene permisos de tabla en public', anonTablas.length === 0, JSON.stringify(anonTablas));
 
 console.log(`PASARON ${ok} · FALLARON ${mal}`); fallos.forEach(x => console.log(' -', x.slice(0, 230)));

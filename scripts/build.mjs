@@ -29,10 +29,18 @@ const htmls = raiz.filter(f => f.endsWith('.html'));
 const assets = raiz.filter(f => /\.(js|css)$/.test(f) && !CONFIG.has(f));
 const paginas = htmls.map(f => f.replace(/\.html$/, ''));
 
-// Assets públicos, sin los originales en alta resolución
+// Assets públicos: solo lo que usa el sitio. Los originales de diseño
+// (ads/, stickers/, dec/, insignias/, fuentes/, Branding/ en alta resolución)
+// se quedan en el repositorio para el equipo, pero nunca se publican.
+const ASSETS_PUBLICOS = ['assets/web', 'assets/fonts', 'assets/Branding/favicon'];
 fs.cpSync(path.join(ROOT, 'src'), path.join(DIST, 'src'), {
   recursive: true,
-  filter: s => !path.relative(path.join(ROOT, 'src'), s).split(path.sep).join('/').startsWith('assets/fuentes'),
+  filter: s => {
+    const rel = path.relative(path.join(ROOT, 'src'), s).split(path.sep).join('/');
+    if (rel === '' || rel === 'assets' || rel === 'assets/Branding') return true; // carpetas que hay que recorrer
+    if (!rel.startsWith('assets/')) return true; // src/vendor y el resto
+    return ASSETS_PUBLICOS.some(p => rel === p || rel.startsWith(p + '/'));
+  },
 });
 for (const f of EXTRA) fs.copyFileSync(path.join(ROOT, f), path.join(DIST, f));
 
@@ -101,9 +109,19 @@ for (const f of htmls) {
     if (!existe(ruta)) rotos.push(`${f}: ${r}`);
   }
 }
+// El manifiesto de la app y lo que el service worker guarda para abrir sin señal
+const manifiesto = JSON.parse(fs.readFileSync(path.join(DIST, 'manifest.webmanifest'), 'utf8'));
+for (const i of [...(manifiesto.icons || []), ...(manifiesto.screenshots || []), ...(manifiesto.shortcuts || []).flatMap(x => x.icons || [])]) {
+  if (i && i.src && !/^https?:/.test(i.src) && !existe(i.src.startsWith('/') ? i.src : '/' + i.src)) rotos.push(`manifest.webmanifest: ${i.src}`);
+}
+const basico = /const BASICO = \[([\s\S]*?)\];/.exec(fs.readFileSync(sw, 'utf8'));
+if (!basico) rotos.push('sw.js: no se encontró la lista BASICO');
+const entradas = basico ? [...basico[1].matchAll(/(['"])([^'"]+)\1/g)].map(m => m[2]) : [];
+for (const r of entradas) if (!existe(r)) rotos.push(`sw.js (BASICO): ${r}`);
+
 if (rotos.length) {
   console.error(`Enlaces o archivos que no existen en dist/ (${rotos.length}):\n  ` + rotos.join('\n  '));
   process.exit(1);
 }
 
-console.log(`dist/ listo: ${htmls.length} páginas, ${assets.length} archivos JS/CSS y ${vendor.size} librerías con hash. Enlaces revisados.`);
+console.log(`dist/ listo: ${htmls.length} páginas, ${assets.length} archivos JS/CSS y ${vendor.size} librerías con hash. Revisados los enlaces, el manifiesto y ${entradas.length} archivos del modo sin conexión.`);

@@ -172,48 +172,13 @@ describe('api/p.js (vista para compartir)', () => {
   });
 });
 
-describe('api/contacto.js (formulario con Turnstile)', () => {
-  const C = require('../../api/contacto.js');
-  const guardado = { ...process.env };
-  const conEnv = async (env, fn) => { Object.assign(process.env, env); try { return await fn(); } finally { for (const k of Object.keys(env)) { if (k in guardado) process.env[k] = guardado[k]; else delete process.env[k]; } } };
-  it('toma la IP real de Vercel', () => {
-    expect(C.ipDe({ headers: { 'x-real-ip': '181.50.1.2' } })).toBe('181.50.1.2');
-    expect(C.ipDe({ headers: { 'x-forwarded-for': '181.50.1.3, 10.0.0.1' } })).toBe('181.50.1.3');
-    expect(C.ipDe({ headers: { 'x-real-ip': '<script>' } })).toBe('');
-  });
-  it('recorta los campos y descarta los extra', () => {
-    const d = C.limpiarCuerpo({ nombre: 'a'.repeat(200), mensaje: 'm'.repeat(5000), rol: 'admin' });
-    expect(d.p_nombre.length).toBe(80);
-    expect(d.p_mensaje.length).toBe(1500);
-    expect('rol' in d).toBe(false);
-  });
-  it('solo acepta POST', async () => {
-    const res = respuesta();
-    await C({ method: 'GET', headers: {} }, res);
-    expect(res.code).toBe(405);
-  });
-  it('sin llaves configuradas no guarda nada', async () => {
-    const res = respuesta();
-    await conEnv({ TURNSTILE_SECRET: '', SUPABASE_SERVICE_ROLE_KEY: '' }, () => C({ method: 'POST', headers: {}, body: { nombre: 'Ana' } }, res));
-    expect(res.code).toBe(503);
-  });
-  it('sin token de captcha se rechaza (antes de tocar la base)', async () => {
-    const res = respuesta();
-    await conEnv({ TURNSTILE_SECRET: 's', SUPABASE_SERVICE_ROLE_KEY: 'k' }, () => C({ method: 'POST', headers: {}, body: { nombre: 'Ana', correo: 'a@b.co', mensaje: 'Hola equipo de ModoParche' } }, res));
-    expect(res.code).toBe(400);
-    expect(res.body.codigo).toBe('CAPTCHA');
-  });
-  it('el campo oculto (bot) recibe ok sin guardar', async () => {
-    const res = respuesta();
-    await conEnv({ TURNSTILE_SECRET: 's', SUPABASE_SERVICE_ROLE_KEY: 'k' }, () => C({ method: 'POST', headers: {}, body: { sitio: 'spam' } }, res));
-    expect(res.code).toBe(200);
-    expect(res.body.ok).toBe(true);
-  });
-  it('el formulario va a /api/contacto con el captcha cargado', () => {
-    const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
-    expect(raiz('equipo.js')).toContain("fetch('/api/contacto'");
+describe('Formulario de contacto', () => {
+  const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+  it('va a la Edge Function contacto con el captcha cargado', () => {
+    expect(raiz('equipo.js')).toContain("'/functions/v1/contacto'");
     expect(raiz('equipo.js')).not.toContain('rpc/enviar_contacto');
     expect(raiz('equipo.html')).toContain('mp-captcha.js');
+    expect(raiz('supabase/config.toml')).toMatch(/\[functions\.contacto\]\s*\nverify_jwt = false/);
   });
 });
 

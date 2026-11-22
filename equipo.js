@@ -25,6 +25,7 @@
   const form = document.getElementById('contactForm');
   if (!form) return;
   const btn = form.querySelector('button[type="submit"]'), status = form.querySelector('.status'), txt = status.querySelector('.status-text');
+  const URL_CONTACTO = ((window.MP_SUPABASE && window.MP_SUPABASE.url) || 'https://quxqqxnowlwiahorifpy.supabase.co') + '/functions/v1/contacto';
   const MOTIVOS = { 'Tengo una idea o parche': 'contacto', 'Quiero sumarme al equipo': 'empleo', 'Tengo un negocio en Villavo': 'negocio', 'Prensa o alianza': 'prensa' };
   const aviso = (titulo, detalle, error) => {
     txt.replaceChildren();
@@ -51,7 +52,8 @@
       return;
     }
     try {
-      const r = await fetch('/api/contacto', {
+      // Edge Function de Supabase: verifica el captcha y guarda (la llave maestra nunca sale de Supabase)
+      const r = await fetch(URL_CONTACTO, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

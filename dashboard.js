@@ -3000,6 +3000,8 @@
     if (/SIN_VERIFICAR/.test(m)) return 'Verifica tu cédula para abrir parches.';
     if (/permission denied|row-level security/i.test(m)) return 'No tienes permiso para hacer eso.';
     if (/PGRST205|42P01|Could not find the table/i.test(m)) return 'Faltan las tablas en Supabase.';
+    // Código de una regla de la base (BLOQUEADO, NO_ESTAS…): se muestra su explicación, no el código
+    if (/^[A-Z][A-Z0-9_]{2,}$/.test(m.trim()) && err && err.hint) return err.hint;
     return m || 'Intenta de nuevo en unos segundos.';
   }
   const setBoot = t => { const el = $('#boot-text'); if (el) el.textContent = t; };

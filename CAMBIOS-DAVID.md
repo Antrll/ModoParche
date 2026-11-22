@@ -66,3 +66,20 @@ Antes de cambiar nada se comprobó cada punto contra el código. Lo que no era c
 **Para revisar:** `empresa.html` todavía dice "Tienes 5 días hábiles de retracto"; con el cobro por resultados quizá ya no aplica (texto legal: no se tocó).
 
 **Pruebas:** `npm run lint` 0 errores; `npm test` 63/63 en Vitest (53 unitarias nuevas o existentes + las suites SQL con 153 + 67 + 59 comprobaciones), 0 fallos; `npm run build` sin errores y con revisión de enlaces; `npm audit` 0 vulnerabilidades. Las 17 páginas compiladas abren en Chromium sin errores de JavaScript ni archivos faltantes, y ninguna llama a Google.
+
+## 8. Que todo funcione al desplegar (Vercel + Supabase) y mejoras del backend
+Lo que antes no se había podido probar, ahora se probó de verdad: Deno 2.9.6 para las Edge Functions, `vercel build` (el mismo proceso de Vercel) y Chromium para la app.
+
+- **Contacto sin configurar nada en Vercel:** `api/contacto.js` se cambió por la Edge Function `supabase/functions/contacto` (Turnstile + `enviar_contacto_verificado`). La llave `service_role` ya no tiene que copiarse a Vercel: todos los secretos viven en Supabase. Si la migración de la Fase 3 todavía no se corrió, la función usa `enviar_contacto` y el formulario no se cae mientras se despliega.
+- **Edge Functions probadas:** las 5 pasan `deno check` (tipos) y 32 pruebas de comportamiento contra un Supabase simulado (`tests/edge/`): firma y entorno de Wompi, montos y firma de integridad del pago, freno y "no es tu pago", push (ruta /admin, número del ícono, endpoints inválidos), depuración por bucket y contacto (captcha, IP, bot, origen, CORS). Nuevo `npm run test:edge` y paso en el CI de GitHub (que ahora también corre en `SubidaDavidClaudeWeb`).
+- **enviar-push:** si las llaves VAPID quedan mal copiadas responde `503 PUSH_MAL_CONFIGURADO` con un mensaje claro en vez de caerse en cada aviso. El armado del aviso quedó en `armarAviso()` (probado).
+- **Vercel:** `vercel build` termina bien. Se corrigió `"engines"`: con `>=22.12` Vercel usaba Node 26 y saltaba solo a cada versión nueva de Node; ahora `>=22.12 <25` (Vercel usa Node 24 fijo y en los computadores sirve Node 22 o 24).
+- **Sitio publicado de 51 MB a 13 MB:** el build publicaba ~37 MB de originales de diseño que ninguna página usa (`ads/`, `stickers/`, `dec/`, `insignias/`, `Branding/` en alta). Siguen en Git para el equipo; solo se publican `src/assets/web`, `fonts` y `Branding/favicon`.
+- **Revisión del build ampliada:** además de los enlaces de cada página, revisa los íconos del manifiesto y los 36 archivos que guarda el service worker para el modo sin conexión.
+- **Privacidad — `es_miembro`:** cualquier cuenta podía preguntar si cualquier persona iba a cualquier parche. Ahora solo responde la verdad a la propia persona, a quien creó el parche, a otro asistente, al equipo o al servidor.
+- **Auditoría permanente de la base** (en `tests/sql/fase3.mjs`): toda tabla con RLS, toda función `SECURITY DEFINER` con `search_path` fijo, anónimos solo pueden ejecutar `parche_publico` y `ubicacion_por_token`, y no tienen permisos de tabla.
+- **Mensajes de error claros:** los paneles mostraban el código interno de la base (`DEMASIADO_RAPIDO`, `BLOQUEADO`…) en vez de la explicación en español. Ahora muestran la explicación. Al negocio sin verificar que llega a 6 parches al día se le dice que pida la verificación.
+- **Probado en Chromium (sitio compilado):** el panel de negocios abre sin conexión; el aviso "Hay una versión nueva de ModoParche · Actualizar" aparece y al tocarlo recarga con la versión nueva; el OCR carga su worker desde el propio sitio y sin red dice "sin conexión" en 0,4 s.
+- `vitest.config.mjs`: Vitest corre solo `tests/unit` y `tests/sql` (las de `tests/edge` son de Deno).
+
+**Pruebas:** `npm run lint` 0 errores · `npm test` 57/57 (incluye 153 + 67 + 70 comprobaciones SQL) · `npm run test:edge` 32/32 + `deno check` de las 5 funciones · `npm run build` y `vercel build` sin errores · `npm audit` 0 vulnerabilidades.

@@ -26,6 +26,19 @@ const limpiar = (t: string) => String(t ?? '').replace(/<[^>]+>/g, '').replace(/
 // Igual que la regla de la base (private.push_valido): Apple usa varios subdominios de push.apple.com
 const HOSTS_PUSH = /^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.notify\.windows\.com|([a-z0-9-]+\.)*push\.apple\.com)$/i;
 const endpointValido = (u: string) => { try { const x = new URL(u); return x.protocol === 'https:' && !x.username && !x.password && HOSTS_PUSH.test(x.hostname); } catch { return false; } };
+// El aviso que ve el celular: a dónde lleva y el número del ícono
+export function armarAviso(n: { id?: unknown; texto?: string; parche_id?: string | null }, quien: { esAdmin: boolean; negocio: boolean; noLeidas: number }) {
+  // El equipo abre el panel admin; un negocio, su panel; una persona, su radar (y el parche)
+  const base = quien.esAdmin ? '/admin' : quien.negocio ? '/empresa-dashboard' : '/dashboard';
+  return {
+    title: 'ModoParche',
+    body: limpiar(n.texto ?? ''),
+    url: quien.esAdmin || quien.negocio ? base : (n.parche_id ? `${base}?parche=${n.parche_id}` : base),
+    tag: n.parche_id ? `parche-${n.parche_id}` : `mp-${n.id}`,
+    badge: Math.max(0, Math.min(Math.round(Number(quien.noLeidas) || 0), 999)),
+  };
+}
+
 // Compara huellas de igual largo para no filtrar el secreto por tiempo
 async function mismoSecreto(a: string, b: string): Promise<boolean> {
   const h = async (t: string) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
@@ -42,7 +55,12 @@ Deno.serve(async (req) => {
 
   const pub = Deno.env.get('VAPID_PUBLIC_KEY') ?? '', prv = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
   if (!pub || !prv) return json({ error: 'PUSH_SIN_CONFIGURAR' }, 503);
-  webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') ?? 'mailto:equipo@modoparche.co', pub, prv);
+  try { webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') ?? 'mailto:equipo@modoparche.co', pub, prv); }
+  catch (e) {
+    // Llaves mal copiadas en los secretos: se dice claro en vez de caerse en cada aviso
+    console.error('[push] llaves VAPID inválidas:', (e as Error).message);
+    return json({ error: 'PUSH_MAL_CONFIGURADO' }, 503);
+  }
 
   const body = await req.json().catch(() => ({}));
   const n = body?.record;
@@ -52,22 +70,12 @@ Deno.serve(async (req) => {
   const { data: subs, error } = await admin.from('push_suscripciones').select('id, endpoint, p256dh, auth').eq('usuario_id', n.usuario_id).order('id', { ascending: false }).limit(5);
   if (error) { console.error('[push]', error.message); return json({ error: 'ERROR_INTERNO' }, 500); }
   if (!subs?.length) return json({ ok: true, enviados: 0 });
-  // El equipo abre el panel admin; un negocio, su panel; una persona, su radar
   const [{ data: esAdmin }, { data: negocio }, { count: noLeidas }] = await Promise.all([
     admin.from('admins').select('id').eq('id', n.usuario_id).maybeSingle(),
     admin.from('negocios').select('id').eq('id', n.usuario_id).maybeSingle(),
     admin.from('notificaciones').select('id', { count: 'exact', head: true }).eq('usuario_id', n.usuario_id).eq('leida', false),
   ]);
-  const base = esAdmin ? '/admin' : negocio ? '/empresa-dashboard' : '/dashboard';
-
-  const payload = JSON.stringify({
-    title: 'ModoParche',
-    body: limpiar(n.texto),
-    url: esAdmin || negocio ? base : (n.parche_id ? `${base}?parche=${n.parche_id}` : base),
-    tag: n.parche_id ? `parche-${n.parche_id}` : `mp-${n.id}`,
-    // Número del ícono de la app (avisos sin leer)
-    badge: Math.max(0, Math.min(Number(noLeidas ?? 0), 999)),
-  });
+  const payload = JSON.stringify(armarAviso(n, { esAdmin: !!esAdmin, negocio: !!negocio, noLeidas: noLeidas ?? 0 }));
 
   let enviados = 0;
   const vencidas: number[] = [];

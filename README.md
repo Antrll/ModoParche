@@ -44,22 +44,28 @@ Sobre la base que ya está en producción, en este orden:
 
 ## Despliegue de la Fase 3A (seguridad restante, notificaciones y PWA)
 
-Va después de las Fases 1 y 2, en este orden:
+Va después de las Fases 1 y 2. **Sigue este orden** (así el sitio no se cae en ningún momento, ni siquiera el formulario de contacto):
 
-1. **Supabase > SQL Editor**, pestaña nueva: corre `supabase/migrations/20261125120000_pulido_seguridad_y_pwa_fase3.sql`. Se puede correr más de una vez y no borra datos.
-2. **Secretos de Edge Functions** (Supabase > Edge Functions > Secrets): crea `CRON_SECRET` (una frase larga al azar). Si no existe, `depurar-archivos` usa `PUSH_WEBHOOK_SECRET`.
-3. **Despliega las Edge Functions** que cambiaron y la nueva:
+1. **Secretos de Edge Functions** (Supabase > Edge Functions > Secrets):
+   - `TURNSTILE_SECRET`: la *Secret Key* del widget de Cloudflare Turnstile (la misma que está en Authentication > Attack Protection).
+   - `CRON_SECRET`: una frase larga al azar (si no existe, `depurar-archivos` usa `PUSH_WEBHOOK_SECRET`).
+2. **Despliega las Edge Functions** (desde la raíz del proyecto):
    ```bash
+   supabase functions deploy contacto --no-verify-jwt
    supabase functions deploy wompi-checkout
    supabase functions deploy wompi-webhook --no-verify-jwt
    supabase functions deploy enviar-push --no-verify-jwt
    supabase functions deploy depurar-archivos --no-verify-jwt
    ```
-4. **Vercel > Settings > Environment Variables**: crea `TURNSTILE_SECRET` (la *Secret Key* del widget de Turnstile, la misma de Supabase > Attack Protection) y `SUPABASE_SERVICE_ROLE_KEY` (Supabase > Project Settings > API > `service_role`). Las usa `/api/contacto`. **Nunca** las pongas en archivos del repositorio.
-5. **Programa la depuración diaria** (sección siguiente) y vuelve a desplegar en Vercel.
+3. **Despliega en Vercel.** No hace falta crear ninguna variable de entorno en Vercel: todos los secretos viven en Supabase.
+4. **Supabase > SQL Editor**, pestaña nueva: corre `supabase/migrations/20261125120000_pulido_seguridad_y_pwa_fase3.sql`. Se puede correr más de una vez y no borra datos.
+5. **Programa la depuración diaria** (sección siguiente).
+6. **Verifica en el panel admin a los negocios reales** que publiquen más de 6 parches al día: sin el sello de verificado tienen ese tope (el mensaje les dice que pidan la verificación).
 
-> [!IMPORTANT]
-> Desde esta fase el formulario de `equipo.html` ya no llama la base directo: va a `/api/contacto`, que verifica el captcha de Turnstile en el servidor. Si faltan las variables del paso 4, el formulario responde que no está disponible (y muestra el correo del equipo).
+> [!NOTE]
+> El formulario de `equipo.html` ya no llama la base directo: va a la Edge Function `contacto`, que verifica el captcha de Turnstile y guarda con la llave del servidor (que nunca sale de Supabase). Si la migración del paso 4 todavía no está, la función usa la anterior, así que el formulario sigue funcionando en medio del despliegue. Si falta `TURNSTILE_SECRET`, responde que no está disponible y muestra el correo del equipo.
+
+**Pruebas de las Edge Functions:** `npm run test:edge` revisa los tipos con Deno (`deno check`) y prueba el comportamiento de las 5 funciones contra un Supabase simulado (pagos, firma de Wompi, push, contacto, depuración). El CI de GitHub lo corre en cada cambio.
 
 Qué cambia:
 
@@ -68,7 +74,7 @@ Qué cambia:
 | Registro de negocios | Exige nombre del negocio, responsable y teléfono o NIT válidos. |
 | Parches por día | Solo un negocio **verificado** por el equipo abre parches sin tope diario. Los demás (personas y negocios sin verificar) tienen máximo 6 al día. |
 | Cupones | Un cupón para una persona exige el parche donde está, no se entrega si alguno bloqueó al otro y hay máximo 120 cupones con aviso por negocio cada hora. |
-| Contacto | Captcha verificado en el servidor y aviso (push) a los admins activos cuando llega un mensaje. |
+| Contacto | Captcha verificado en el servidor (Edge Function `contacto`) y aviso (push) a los admins activos cuando llega un mensaje. |
 | Wompi | `wompi-checkout` revisa que quien confirma sea un negocio y frena a 20 confirmaciones cada 10 minutos. `wompi-webhook` responde 405 a lo que no sea POST y deduce el entorno del secreto si falta `WOMPI_ENTORNO`. |
 | `/p/<id>` | No muestra parches terminados ni de negocios en mora. Un error de Supabase ya no se guarda en caché como "no existe". |
 | Push | Acepta todos los subdominios de Apple, los admins abren `/admin` y el ícono de la app muestra el número de avisos sin leer. |
