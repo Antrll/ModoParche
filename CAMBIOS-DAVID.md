@@ -102,3 +102,6 @@ Migración nueva `supabase/migrations/20261126120000_backend_mantenimiento_fase4
 
 **Pruebas:** nueva suite `tests/sql/fase4.mjs` (28 comprobaciones: índices, migración que se corre dos veces, retención, conciliación, aviso tardío, permisos, salud, tope de JSON); `tests/edge/conciliar-pagos.test.ts` (7 pruebas); `depurar-archivos` revisa que anote su tarea; 4 pruebas unitarias nuevas. `tests/sql/sql.test.mjs` ahora exige un mínimo de comprobaciones por suite.
 Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL) · Edge Functions 39/39 + `deno check` · build sin errores.
+
+## 11. Mensaje para retomar con Claude
+- **`docs/MENSAJE-PARA-CLAUDE.md` (nuevo):** el mensaje que Julián pega como primer mensaje en Claude Code. Le dice qué leer, qué comprobar, el resumen de todo, las reglas y los pendientes. También está enlazado al inicio de `docs/CONTEXTO-SubidaDavidClaudeWeb.md`.

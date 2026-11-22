@@ -3,6 +3,7 @@
 > Documento para quien siga el trabajo desde otro computador (por ejemplo, el de Julián) o desde otra sesión de Claude.
 > Explica **qué se cambió, dónde, cómo funciona, qué pasa con los usuarios, cómo desplegarlo y cómo probarlo**.
 > El detalle cronológico, punto por punto, está en [`CAMBIOS-DAVID.md`](../CAMBIOS-DAVID.md).
+> **Para retomar con Claude:** pega el mensaje de [`docs/MENSAJE-PARA-CLAUDE.md`](MENSAJE-PARA-CLAUDE.md) como primer mensaje.
 
 ---
 
