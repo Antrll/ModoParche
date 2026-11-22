@@ -119,3 +119,7 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 - **Qué:** las 11 fotos que Julián agregó el 22/11 (`src/assets/web/equipo/`, `index/`, `marca/`, `negocios/`) venían en WebP **sin pérdida** (formato para gráficos), de 2,2 a 4,5 MB cada una: unos 28 MB en total, muy lento en celular.
 - **Cómo:** se volvieron a guardar como WebP de foto (calidad 82, mismas medidas, así el HTML no cambia). Total: **28 MB → 2,8 MB**. Diferencia medida con PSNR de 33 a 36 dB (no se nota) y comparada a ojo al 100 % en la más pesada (`esquina-villavo.webp`, de 4,4 MB a 632 KB).
 - **Para la próxima foto:** exportarla como WebP con pérdida (calidad 80-85) o JPG, máximo ~1.600 px de ancho; debería pesar entre 150 y 400 KB.
+
+## 13. Diagnóstico de migraciones para producción
+- **`supabase/diagnostico_migraciones.sql` (nuevo, solo lee):** en el SQL Editor de Supabase dice, para cada una de las 28 migraciones, si ya está ("SÍ") o "FALTA", revisando un objeto que solo esa migración crea. Probado: en una base completa no falta ninguna; en una base hasta la Fase 2 marca exactamente la 27 y la 28.
+- **Publicación por merge:** el PR [Antrll/ModoParche#3](https://github.com/Antrll/ModoParche/pull/3) hacia `main` publica en modoparche.vercel.app (Vercel conectado al repositorio). Preview: https://modoparche-red.vercel.app. Se decidió: primero Supabase (migraciones y Edge Functions), después el merge.

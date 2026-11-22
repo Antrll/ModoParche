@@ -250,6 +250,11 @@ Otros detalles: `depurar-archivos` ahora anota su tarea; el texto de "Errores de
 
 ### 7.2 Orden
 
+**Antes de todo, revisa qué tiene la base de producción:** Supabase > SQL Editor > pestaña nueva > pega `supabase/diagnostico_migraciones.sql` > Run. Es de solo lectura: dice "SÍ" o "FALTA" por cada migración. Corre en orden (de arriba hacia abajo) las que digan FALTA, cada una en una pestaña nueva.
+
+**Publicación:** Vercel está conectado al repositorio (proyecto `davzd/modoparche`). El pull request [Antrll/ModoParche#3](https://github.com/Antrll/ModoParche/pull/3) (`SubidaDavidClaudeWeb` → `main`) ya tiene su versión de prueba en https://modoparche-red.vercel.app (usa la misma base real que producción). **Al unir el PR a `main`, Vercel publica solo en modoparche.vercel.app.** El PR trae también las Fases 1 y 2, que nunca se habían publicado.
+
+
 1. Crear `TURNSTILE_SECRET` y `CRON_SECRET` en Supabase.
 2. Desplegar las Edge Functions:
    ```bash
