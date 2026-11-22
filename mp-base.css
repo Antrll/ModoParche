@@ -242,11 +242,12 @@ ul[class], ol[class] { list-style: none; }
 ===================================================================== */
 .field { display: grid; gap: 8px; margin-bottom: 18px; }
 .field > label,
-.field-label { font-weight: 700; font-size: var(--t-sm); }
+.field-label { font-weight: 700; font-size: var(--t-sm); transition: color .2s ease; }
+.field:focus-within > label, .field:focus-within > .field-label { color: var(--orange-deep); }
 .field-hint { font-size: var(--t-sm); color: var(--muted); }
 
 .input,
-.field input:not([type="checkbox"]):not([type="radio"]),
+.field input:where(:not([type="checkbox"], [type="radio"])),
 .field select,
 .field textarea {
   width: 100%;
@@ -254,11 +255,12 @@ ul[class], ol[class] { list-style: none; }
   padding: 14px 16px;
   font-size: var(--t-body);
   color: var(--ink);
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: var(--r-sm);
+  caret-color: var(--orange);
+  background-color: var(--field-bg, var(--soft));
+  border: 1.5px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: var(--r);
   appearance: none;
-  transition: border-color .2s ease, background-color .2s ease;
+  transition: border-color .2s ease, background-color .2s ease, box-shadow .25s var(--ease-out);
 }
 .field textarea { min-height: 128px; resize: vertical; line-height: 1.5; }
 .field select {
@@ -269,19 +271,25 @@ ul[class], ol[class] { list-style: none; }
 }
 .field input::placeholder, .field textarea::placeholder { color: var(--muted); opacity: .75; }
 
-.field input:hover, .field select:hover, .field textarea:hover { background: #fcfcfc; }
+.field input:hover, .field select:hover, .field textarea:hover {
+  background-color: var(--field-bg, var(--soft));
+  border-color: color-mix(in srgb, var(--ink) 42%, transparent);
+}
 .field input:focus, .field select:focus, .field textarea:focus {
-  outline: 3px solid var(--orange);
-  outline-offset: 2px;
-  border-color: var(--ink);
-  background: var(--orange-soft);
+  outline: 2px solid transparent; /* visible en modo de alto contraste */
+  border-color: var(--orange);
+  background-color: var(--paper);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--orange) 22%, transparent), 0 10px 22px -14px color-mix(in srgb, var(--orange) 80%, transparent);
 }
 
 /* Error solo después de que la persona interactúa */
 .field input:user-invalid, .field select:user-invalid, .field textarea:user-invalid,
 .field.has-error input, .field.has-error select, .field.has-error textarea {
   border-color: var(--danger);
-  background: #fff5f2;
+  background-color: #fff5f2;
+}
+.field.has-error input:focus, .field.has-error select:focus, .field.has-error textarea:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent);
 }
 .field-error {
   display: none; align-items: center; gap: 8px;
@@ -831,8 +839,8 @@ html.is-dark .nav--orange:not(.is-scrolled) {
 html.is-dark, html.is-dark .mp-fijo {
   --bg-color: var(--paper); --text-main: var(--ink); --text-muted: var(--muted); --gray-light: var(--soft);
 }
-html.is-dark .field input:hover, html.is-dark .field select:hover, html.is-dark .field textarea:hover { background: var(--soft); }
-html.is-dark .field.has-error input, html.is-dark .field.has-error select, html.is-dark .field.has-error textarea { background: #2a1712; }
+html.is-dark .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+html.is-dark .field.has-error input, html.is-dark .field.has-error select, html.is-dark .field.has-error textarea { background-color: #2a1712; }
 @media (hover: hover) and (pointer: fine) { html.is-dark .nav.is-scrolled .nav-login:hover { background: color-mix(in srgb, var(--paper) 08%, transparent); } }
 html.is-dark .nav.is-scrolled { box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 10px 30px -22px rgba(0,0,0,.9); }
 /* La estrella punteada se pinta con multiply (desaparece sobre oscuro) */
@@ -916,4 +924,33 @@ html.is-dark .nav--ink:not(.is-scrolled) .logo b { color: #b83709; }
   --orange-deep: #b83709; --orange-soft: #fff1ea; --olive-deep: #55583a; --olive-soft: #eef0e3;
   --ok: #0e6f31; --danger: #b52b06; --gray-border: #e5e7eb;
   --bg-color: var(--paper); --text-main: var(--ink); --text-muted: var(--muted); --gray-light: var(--soft);
+}
+
+
+/* =====================================================================
+   MOVIMIENTO LENTO
+   El sello de la marca gira despacio detrás de lo importante, las fotos
+   respiran y se desplazan un poco con el scroll. Todo con transform y
+   solo si la persona no pidió reducir el movimiento.
+===================================================================== */
+@keyframes mp-giro { to { rotate: 360deg; } }
+@keyframes mp-giro-atras { to { rotate: -360deg; } }
+@keyframes mp-respira { from { scale: 1; } to { scale: 1.07; } }
+@keyframes mp-vaiven { 0%, 100% { rotate: -5deg; } 50% { rotate: 5deg; } }
+@keyframes mp-deriva { 0%, 100% { translate: 0 0; } 50% { translate: -34px 26px; } }
+@keyframes mp-paralaje { from { translate: 0 -4%; } to { translate: 0 4%; } }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .media.is-loaded > img {
+      scale: 1.1;
+      animation: mp-paralaje linear both;
+      animation-timeline: view();
+    }
+  }
+}
+
+
+/* Lo naranja dentro de un bloque de tinta conserva su texto oscuro en modo claro */
+html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .mp-fijo {
+  --ink: #111111; --paper: #ffffff; --soft: #f4f4f5; --soft-2: #e9e9eb; --muted: #38383f;
 }

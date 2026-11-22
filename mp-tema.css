@@ -130,3 +130,20 @@ html.is-dark .mp-cargando-txt { background: rgba(255,255,255,.9); color: #111111
 .mp-barra-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .mp-barra-btn[disabled] { opacity: .6; cursor: default; }
 @media (max-width: 480px) { .mp-barra { border-radius: 18px; } }
+
+
+/* Detalles compartidos de los campos (también en los paneles) */
+::selection { background: #FF5A1F; color: #111; }
+:where(input, textarea) { caret-color: #FF5A1F; }
+input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
+  -webkit-text-fill-color: currentColor;
+  transition: background-color 9999s ease-out;
+}
+.input { transition: border-color .2s ease, background-color .2s ease, box-shadow .25s cubic-bezier(.23, 1, .32, 1); }
+.input:not(:focus) { border-color: color-mix(in srgb, currentColor 13%, transparent); }
+.input:not(:focus):hover { border-color: color-mix(in srgb, currentColor 38%, transparent); }
+.input:focus {
+  outline: 2px solid transparent;
+  border-color: #FF5A1F;
+  box-shadow: 0 0 0 3px rgba(255, 90, 31, .22), 0 8px 18px -12px rgba(255, 90, 31, .7);
+}

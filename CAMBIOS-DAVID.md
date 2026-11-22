@@ -105,3 +105,12 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 
 ## 11. Mensaje para retomar con Claude
 - **`docs/MENSAJE-PARA-CLAUDE.md` (nuevo):** el mensaje que Julián pega como primer mensaje en Claude Code. Le dice qué leer, qué comprobar, el resumen de todo, las reglas y los pendientes. También está enlazado al inicio de `docs/CONTEXTO-SubidaDavidClaudeWeb.md`.
+
+## 12. Mejora visual de formularios, página de negocios y movimiento (Julián, con Claude)
+- **Formularios:** los campos públicos pasan a un solo estilo (fondo suave, borde fino, foco naranja, etiqueta que se enciende, cursor y selección de marca, flecha visible en oscuro). Los campos de los paneles comparten foco y borde desde `mp-tema.css`. **Corregido:** el selector con `:not()` pesaba más que `:hover`, `:focus` y error, y esos colores nunca se veían.
+- **Negocios (`comercio.html`):** mismos textos, mejor repartidos. Datos de la portada en línea, cómo funciona como ruta de tres paradas, Parche Villavo a todo el ancho con sus beneficios en dos columnas, los otros dos planes debajo, cobro con etiqueta y explicación en columnas y razones en cuatro columnas. Se agregó una cinta decorativa que repite frases de la misma página (oculta para lectores de pantalla).
+- **Movimiento lento:** el sello de la marca gira despacio detrás de las portadas de negocios, equipo, preguntas y acceso; las fotos se desplazan un poco con el scroll; la cabecera legal solo mueve su resplandor. Todo se apaga con `prefers-reduced-motion`.
+- **Acceso:** el panel naranja acompaña el formulario largo en escritorio y el logo ya no queda por debajo de la pantalla.
+- **Botones naranjas en bloques de tinta:** en modo claro tenían texto claro sobre naranja (2,7:1). Ahora conservan su texto oscuro.
+- **No se cambió:** ningún texto legal ni funcionalidad.
+- **Archivos:** `mp-base.css`, `mp-tema.css`, `comercio.html`, `comercio.css`, `login.css`, `equipo.css`, `paginas.css`, `legal.css`.

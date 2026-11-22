@@ -381,3 +381,27 @@
 .btn-google svg { width: 20px; height: 20px; flex: none; }
 .auth-o { display: flex; align-items: center; gap: 12px; margin: 14px 0 16px; color: var(--muted); font-size: var(--t-sm); font-weight: 600; }
 .auth-o::before, .auth-o::after { content: ""; flex: 1; height: 1px; background: var(--soft-2); }
+
+
+/* El sello gira despacio detrás del logo */
+.brand-panel { isolation: isolate; }
+.brand-panel::before, .brand-panel::after, .biz-aside::before {
+  content: ""; position: absolute; z-index: -1; aspect-ratio: 1; clip-path: var(--burst); pointer-events: none;
+}
+.brand-panel::before { width: 96%; right: -22%; bottom: -24%; background: #e8430c; }
+.brand-panel::after { width: 30%; left: -9%; bottom: 9%; background: var(--olive); }
+.biz-aside { isolation: isolate; }
+.biz-aside::before { width: 74%; right: -24%; top: -12%; background: color-mix(in srgb, var(--orange) 20%, transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .brand-panel::before, .biz-aside::before { animation: mp-giro 110s linear infinite; }
+  .brand-panel::after { animation: mp-giro-atras 70s linear infinite; }
+}
+.pill span { transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .2s var(--ease-out); }
+.pill:active span { transform: scale(.97); }
+
+
+/* En pantallas de escritorio el panel acompaña el formulario largo y el logo siempre se ve */
+@media (min-width: 981px) {
+  .brand-panel { position: sticky; top: calc(var(--nav-h) + clamp(16px, 2vw, 28px)); align-self: start; height: calc(100svh - var(--nav-h) - 2 * clamp(16px, 2vw, 28px)); }
+}
+.bc--mark { width: min(46%, 38svh); }

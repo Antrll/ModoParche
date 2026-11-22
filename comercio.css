@@ -486,3 +486,130 @@
 @media (max-width: 760px) { .cobro-casos, .cobro-porque { grid-template-columns: 1fr; } }
 /* "o $2.500 / cliente" en letra normal: en Gagalin la "o" mayúscula parece un cero */
 .plan-price small { font-family: var(--font-body); font-weight: 800; text-transform: none; letter-spacing: 0; font-size: .95rem; }
+
+
+/* =====================================================================
+   6. REPARTO DE TEXTOS Y MOVIMIENTO LENTO
+===================================================================== */
+/* Portada */
+.biz-hero { position: relative; overflow: hidden; isolation: isolate; }
+.biz-hero h1 { font-size: clamp(2.9rem, 6vw, 5.6rem); }
+.biz-lede { font-size: clamp(1.05rem, 1.35vw, 1.2rem); max-width: 50ch; }
+.biz-facts { max-width: 620px; gap: 0; margin-top: 4px; padding-top: 0; border-top: 1px solid color-mix(in srgb, var(--paper) 22%, transparent); }
+.biz-facts div { display: flex; align-items: center; gap: 14px; padding: 20px 22px 4px 0; background: none; }
+.biz-facts div + div { padding-left: 22px; border-left: 1px solid color-mix(in srgb, var(--paper) 22%, transparent); }
+.biz-facts dt { flex: none; font-size: clamp(2.2rem, 3.4vw, 3rem); }
+.biz-facts dd { max-width: 19ch; }
+.biz-hero-art::before {
+  content: ""; position: absolute; z-index: -1; inset: -13%; clip-path: var(--burst);
+  background: color-mix(in srgb, var(--orange) 26%, transparent); pointer-events: none;
+}
+.biz-hero-photo { position: relative; }
+
+/* Cinta */
+.biz-cinta { padding: 13px 0; background: var(--orange); color: var(--ink); --speed: 70s; }
+.biz-cinta span { font-family: var(--font-display); font-size: clamp(1.15rem, 1.8vw, 1.6rem); line-height: 1; text-transform: uppercase; }
+.biz-cinta i { flex: none; width: 18px; height: 18px; margin: 0 clamp(18px, 2.4vw, 34px); background: var(--ink); clip-path: var(--burst); }
+
+/* Cómo funciona: una ruta de tres paradas */
+.biz-steps { position: relative; gap: 0; counter-reset: parada; padding-top: 4px; }
+.biz-step:not(:last-child)::after {
+  content: ""; position: absolute; left: 31px; top: 70px; bottom: 6px; width: 3px;
+  background-image: repeating-linear-gradient(to bottom, var(--orange) 0 12px, transparent 12px 24px);
+  background-size: 3px 24px;
+}
+.biz-step, .biz-step--1, .biz-step--2, .biz-step--3 {
+  position: relative; counter-increment: parada;
+  grid-template-columns: 64px minmax(0, 1fr); column-gap: clamp(18px, 2.6vw, 32px); row-gap: 8px;
+  padding: 0 0 clamp(34px, 4.4vw, 54px); background: none; color: var(--ink); border-radius: 0; overflow: visible;
+}
+.biz-step:last-child { padding-bottom: 0; }
+.biz-step:hover { transform: none; }
+.biz-step::before {
+  content: counter(parada); grid-row: 1 / span 2; align-self: start; display: grid; place-items: center; width: 64px; height: 64px;
+  font-family: var(--font-display); font-size: 1.7rem; line-height: 1;
+  background: var(--orange); color: #111; clip-path: var(--burst);
+  transition: rotate .7s var(--ease-out), scale .4s var(--ease-out);
+}
+.biz-step:hover::before { rotate: 36deg; scale: 1.08; }
+.biz-step h3, .biz-step p { grid-column: 2; }
+.biz-step h3 { padding-top: 14px; }
+.biz-step--3 h3 { color: inherit; }
+.biz-step--3 p { color: inherit; }
+.biz-how-photos figure:last-child { translate: 0 26px; }
+.biz-how-head { padding-bottom: 26px; }
+
+/* Planes: Villavo a todo el ancho y los otros dos debajo */
+.plan-main {
+  position: relative; grid-column: 1 / -1; display: grid; isolation: isolate;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: auto auto 1fr;
+  column-gap: clamp(32px, 5vw, 76px); row-gap: 18px;
+}
+.plan-main::after {
+  content: ""; position: absolute; z-index: -1; right: -8%; top: -44%; width: 56%; aspect-ratio: 1;
+  background: rgba(17, 17, 17, .07); clip-path: var(--burst); pointer-events: none;
+}
+.plan-main-top { grid-column: 1; display: grid; justify-content: start; gap: 14px; }
+.plan-main .plan-price small { display: block; margin-top: 8px; font-size: 1rem; }
+.plan-lead { grid-column: 1; }
+.plan-main > .btn { grid-column: 1; align-self: end; justify-self: start; margin-top: 8px; }
+.plan-main .checks { grid-column: 2; grid-row: 1 / 4; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 28px; align-content: center; }
+.plan-main .checks li { line-height: 1.35; }
+.plan-side { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.plan-tier { justify-content: flex-start; }
+.plan-tier > .btn, .plan-tier > .link { margin-top: auto; align-self: flex-start; }
+.plan-tier > p { max-width: 48ch; }
+.plan-list { gap: 10px; margin-bottom: 6px; }
+.plan-list li { position: relative; padding-left: 22px; line-height: 1.4; }
+.plan-list li::before {
+  content: ""; position: absolute; left: 0; top: .32em; width: 12px; height: 12px;
+  background: var(--orange); clip-path: var(--burst);
+}
+.plan-list em { font-size: var(--t-sm); opacity: .78; }
+
+/* Cobro: etiqueta a la izquierda y explicación a la derecha */
+.cobro-modelo { gap: clamp(22px, 3vw, 32px); }
+.cobro-caso { gap: 0; }
+.cobro-caso h4 { margin: 14px 0 12px; font-size: clamp(1.45rem, 2vw, 1.75rem); }
+.cobro-caso p {
+  display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px;
+  padding: 13px 0; border-top: 1px solid color-mix(in srgb, var(--ink) 11%, transparent);
+}
+.cobro-caso p b { font-size: var(--t-sm); line-height: 1.7; }
+.cobro-porque { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(20px, 2.4vw, 32px); }
+.cobro-porque li { padding: 16px 0 0; background: none; border-radius: 0; border-top: 2px solid var(--ink); font-size: .95rem; }
+.cobro-porque b { display: block; margin-bottom: 8px; font-family: var(--font-display); font-weight: 400; font-size: 1.3rem; line-height: 1.05; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .biz-hero-art::before { animation: mp-giro 90s linear infinite; }
+  .biz-stamp { animation: mp-vaiven 9s ease-in-out infinite; }
+  .biz-step:not(:last-child)::after { animation: biz-ruta 3.6s linear infinite; }
+  .plan-main::after { animation: mp-giro-atras 100s linear infinite; }
+}
+@keyframes biz-ruta { to { background-position: 0 24px; } }
+.biz-cinta .marquee-track { will-change: transform; }
+
+@media (max-width: 1080px) {
+  .plan-main { grid-template-columns: 1fr; grid-template-rows: none; }
+  .plan-main-top, .plan-lead, .plan-main > .btn, .plan-main .checks { grid-column: 1; grid-row: auto; }
+  .plan-main > .btn { order: 4; justify-self: stretch; }
+  .cobro-porque { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .plan-side { grid-template-columns: 1fr; }
+  .plan-main .checks { grid-template-columns: 1fr; gap: 13px; }
+}
+@media (max-width: 620px) {
+  .biz-facts { grid-template-columns: 1fr; }
+  .biz-facts div { padding: 16px 0 0; }
+  .biz-facts div + div { padding-left: 0; border-left: 0; }
+  .biz-facts dt { min-width: 104px; }
+  .biz-how-photos figure:last-child { translate: none; }
+  .biz-how-head { padding-bottom: 0; }
+  .biz-step, .biz-step--1, .biz-step--2, .biz-step--3 { grid-template-columns: 52px minmax(0, 1fr); column-gap: 16px; }
+  .biz-step::before { width: 52px; height: 52px; font-size: 1.4rem; }
+  .biz-step h3 { padding-top: 8px; }
+  .biz-step:not(:last-child)::after { left: 25px; top: 58px; }
+  .cobro-caso p { grid-template-columns: 1fr; gap: 2px; }
+  .cobro-porque { grid-template-columns: 1fr; }
+}

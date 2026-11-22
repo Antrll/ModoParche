@@ -870,3 +870,13 @@ html.is-dark .tag-olive--dark { color: #55583a; }
 .logo-card--light { color: #111111; }
 /* Etiqueta oliva dentro de un bloque que en modo claro pasó a gris claro */
 html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .tag-olive--dark { color: #55583a; }
+
+
+/* Preguntas: un sello enorme gira despacio detrás del buscador */
+.faq-hero::after {
+  content: ""; position: absolute; z-index: 1; right: -9%; top: -48%; width: min(62vw, 760px); aspect-ratio: 1;
+  background: rgba(17, 17, 17, .08); clip-path: var(--burst); pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .faq-hero::after { animation: mp-giro 130s linear infinite; }
+}

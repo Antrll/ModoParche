@@ -102,3 +102,9 @@ html.is-dark .mp-cookies { background: #ffffff; color: #111111; box-shadow: 0 22
 html.is-dark .mp-cookies a { color: #111111; }
 html.is-dark .mp-cookies b { color: #b83709; }
 html.is-dark .legal-note--ok { background: #12301f; }
+
+
+/* Páginas de lectura: solo el resplandor de la cabecera se mueve */
+@media (prefers-reduced-motion: no-preference) {
+  .legal-hero::after { animation: mp-deriva 26s ease-in-out infinite; }
+}
