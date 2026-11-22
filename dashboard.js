@@ -166,12 +166,12 @@
   function oficialDemo() {
     const p = normalizeParche({
       id: 'd0', oficial: true, titulo: 'Andrés Cepeda en Villavo', categoria: 'conciertos',
-      descripcion: 'El parche oficial de noviembre. Vamos en combo a cantar con Andrés Cepeda: en el chat armamos la previa, la llegada y la vaca para el transporte. Compra tu entrada o tu palco en la boletería oficial y cáele al parche.',
+      descripcion: 'El parche oficial de noviembre. Vamos en combo a cantar con Andrés Cepeda: en el chat armamos la previa, la llegada y el transporte. Compra tu entrada o tu palco en la boletería oficial y cáele al parche.',
       inicio: new Date('2026-11-28T19:00:00-05:00').getTime(), lugar: 'Coliseo Las Malocas', barrio: 'Parque Las Malocas', lat: 4.12287, lng: -73.574447,
       costo: 0, presupuesto: 0, cuposMax: 1000, creadorNombre: 'Equipo ModoParche',
       info: OFICIAL_CEPEDA, imagen: 'src/assets/web/oficiales/andres-cepeda.webp',
     });
-    p.chat = [{ tipo: 'sys', texto: 'El equipo de ModoParche abrió este parche oficial. Aquí armamos la llegada, la vaca y la previa.', ts: Date.now() - 48 * HOUR }];
+    p.chat = [{ tipo: 'sys', texto: 'El equipo de ModoParche abrió este parche oficial. Aquí armamos la llegada y la previa.', ts: Date.now() - 48 * HOUR }];
     return p;
   }
 
@@ -865,7 +865,12 @@
       document.head.insertBefore(css, document.querySelector('link[href="dashboard.css"]'));
       const js = document.createElement('script');
       js.src = '/src/vendor/leaflet/leaflet.js';
-      js.onload = () => { res(true); updateUserMarker(); };
+      js.onload = () => {
+        // Agrupa los parches cercanos; si no carga, el mapa funciona igual sin grupos
+        const g = document.createElement('script'); g.src = '/src/vendor/leaflet/leaflet.markercluster.js';
+        g.onload = g.onerror = () => { res(true); updateUserMarker(); };
+        document.head.appendChild(g);
+      };
       js.onerror = () => { leafletP = null; toast('El mapa no cargó', 'Revisa tu conexión para ver el mapa.', { type: 'error' }); res(false); };
       document.head.appendChild(js);
     });
@@ -877,28 +882,47 @@
 
   const pinIcon = p => L.divIcon({
     className: 'pin-icon',
-    html: `<div class="pin ${isMine(p) ? 'pin--own' : ''} ${p.aliado ? 'pin--ally' : ''} ${p.oficial ? 'pin--oficial' : ''} ${isFull(p) ? 'pin--full' : ''} ${p._drop ? 'pin--drop' : ''}" title="${esc(p.titulo)}">${ic(p.oficial ? 'i-crown' : catById(p.categoria).icon)}</div>`,
-    iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40],
+    html: `<div class="pin-z"><div class="pin ${isMine(p) ? 'pin--own' : ''} ${p.aliado ? 'pin--ally' : ''} ${p.oficial ? 'pin--oficial' : ''} ${isFull(p) ? 'pin--full' : ''} ${p._drop ? 'pin--drop' : ''}" title="${esc(p.titulo)}">${ic(p.oficial ? 'i-crown' : catById(p.categoria).icon)}</div></div>`,
+    iconSize: [32, 36], iconAnchor: [16, 36], popupAnchor: [0, -34],
   });
   const meIcon = () => L.divIcon({ className: 'me-icon', html: '<div class="me-dot"><span class="me-label">Tú</span></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
 
   // Lugares sugeridos que coinciden con lo que se busca (salen primero en el buscador)
   const lugaresQue = q => LUGARES.filter(l => norm(l.nombre + ' ' + l.ref).includes(norm(q)))
     .map(l => ({ nombre: l.nombre, detalle: l.ref, lat: l.lat, lng: l.lng, id: l.id }));
-  let searchMarker = null;
+  let searchMarker = null, capaPins = null, mapaEncuadrado = false;
 
   function initLiveMap() {
     if (liveMap || typeof L === 'undefined') return;
-    liveMap = L.map('live-map', { zoomControl: false }).setView(CENTER, 13);
+    liveMap = L.map('live-map', {
+      zoomControl: false, minZoom: 10, zoomSnap: .5, wheelPxPerZoomLevel: 110,
+      maxBounds: [[3.3, -74.8], [5, -72.7]], maxBoundsViscosity: .7,
+    }).setView(CENTER, 13);
     L.control.zoom({ position: 'bottomright' }).addTo(liveMap);
     tiles().addTo(liveMap);
+    // Los pines se achican al alejar para que no tapen el mapa
+    const escalaPin = () => {
+      const z = liveMap.getZoom();
+      liveMap.getContainer().style.setProperty('--pin-z', z <= 11.5 ? .62 : z <= 12.5 ? .72 : z <= 13.5 ? .82 : z <= 14.5 ? .92 : 1);
+    };
+    liveMap.on('zoomend', escalaPin); escalaPin();
+    capaPins = L.markerClusterGroup ? L.markerClusterGroup({
+      maxClusterRadius: z => (z >= 15 ? 28 : 46), disableClusteringAtZoom: 17, spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false, chunkedLoading: true, animate: !reduceMotion,
+      iconCreateFunction: g => {
+        const n = g.getChildCount();
+        return L.divIcon({ className: 'pin-grupo-icon', html: `<div class="pin-grupo"><b class="tnum">${n}</b></div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+      },
+    }) : L.layerGroup();
+    capaPins.addTo(liveMap);
+    $('#map-todos')?.addEventListener('click', verTodosEnMapa);
     // Buscar cualquier lugar o dirección de Villavo y volar hasta allá
     if (window.MPMapa) window.MPMapa.buscador(liveMap, {
       placeholder: 'Busca un lugar o dirección',
       extras: lugaresQue,
       onElegir: r => {
         if (searchMarker) liveMap.removeLayer(searchMarker);
-        searchMarker = L.marker([r.lat, r.lng], { icon: L.divIcon({ className: 'pin-icon', html: '<div class="pin pin--search">' + ic('i-pin') + '</div>', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] }) })
+        searchMarker = L.marker([r.lat, r.lng], { icon: L.divIcon({ className: 'pin-icon', html: '<div class="pin pin--search">' + ic('i-pin') + '</div>', iconSize: [32, 36], iconAnchor: [16, 36], popupAnchor: [0, -34] }) })
           .bindPopup(`<div class="pop-search"><b>${esc(r.nombre)}</b>${r.detalle ? `<small>${esc(r.detalle)}</small>` : ''}<button class="btn btn--xs" data-action="crear-aqui" data-lat="${r.lat}" data-lng="${r.lng}" data-nombre="${esc(r.nombre)}">${ic('i-plus')} Abrir un parche aquí</button></div>`, { className: 'mp-popup' })
           .addTo(liveMap);
         liveMap.once('moveend', () => searchMarker && searchMarker.openPopup());
@@ -907,6 +931,18 @@
     if (userPos) updateUserMarker();
   }
 
+  function verTodosEnMapa() {
+    if (!liveMap) return;
+    const pts = activeList().filter(timeMatch).filter(enMapa).map(p => [p.lat, p.lng]);
+    if (!pts.length) { liveMap.setView(CENTER, 13); return; }
+    liveMap.closePopup();
+    liveMap.fitBounds(pts, { padding: [46, 46], maxZoom: 15, animate: !reduceMotion });
+  }
+  // Abre el pin aunque esté dentro de un grupo
+  function abrirPin(m) {
+    if (capaPins && capaPins.zoomToShowLayer) capaPins.zoomToShowLayer(m, () => m.openPopup());
+    else m.openPopup();
+  }
   function renderTimeSeg() {
     $$('#time-seg .seg-btn').forEach(b => { const on = b.dataset.time === state.time; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on); });
     requestAnimationFrame(() => movePill($('#time-seg')));
@@ -916,13 +952,13 @@
     const list = activeList().filter(timeMatch).filter(enMapa);
     if (liveMap) {
       const ids = new Set(list.map(p => p.id));
-      liveMarkers.forEach((m, id) => { if (!ids.has(id)) { liveMap.removeLayer(m); liveMarkers.delete(id); } });
+      liveMarkers.forEach((m, id) => { if (!ids.has(id)) { capaPins.removeLayer(m); liveMarkers.delete(id); } });
       list.forEach(p => {
         let m = liveMarkers.get(p.id);
         if (!m) {
           m = L.marker([p.lat, p.lng], { icon: pinIcon(p), riseOnHover: true });
-          m.bindPopup(() => popupHTML(findP(p.id) || p), { className: 'mp-popup', minWidth: 260, maxWidth: 260, autoPanPadding: [30, 90] });
-          m.addTo(liveMap);
+          m.bindPopup(() => popupHTML(findP(p.id) || p), { className: 'mp-popup', minWidth: 232, maxWidth: 232, autoPanPaddingTopLeft: [16, 74], autoPanPaddingBottomRight: [16, 104] });
+          capaPins.addLayer(m);
           liveMarkers.set(p.id, m);
         } else {
           m.setLatLng([p.lat, p.lng]);
@@ -931,6 +967,8 @@
         }
         delete p._drop;
       });
+      // La primera vez se encuadran todos los parches
+      if (!mapaEncuadrado && list.length > 1) { mapaEncuadrado = true; liveMap.fitBounds(list.map(p => [p.lat, p.lng]), { padding: [46, 46], maxZoom: 14, animate: false }); }
     }
     $('#map-counter').innerHTML = `<b>${list.length}</b> ${list.length === 1 ? 'parche' : 'parches'} ${timeLabel()}`;
     const empty = $('#map-empty');
@@ -954,8 +992,9 @@
       liveMap.invalidateSize();
       renderLiveMap();
       const m = liveMarkers.get(id);
-      if (reduceMotion) { liveMap.setView([p.lat, p.lng], 16); m && m.openPopup(); }
-      else { liveMap.flyTo([p.lat, p.lng], 16, { duration: 1.4 }); if (m) liveMap.once('moveend', () => m.openPopup()); }
+      mapaEncuadrado = true;
+      if (reduceMotion) { liveMap.setView([p.lat, p.lng], 16); m && abrirPin(m); }
+      else { liveMap.flyTo([p.lat, p.lng], 16, { duration: 1.1 }); if (m) liveMap.once('moveend', () => abrirPin(m)); }
     }, wasMap ? 60 : 140));
   }
 
@@ -1389,7 +1428,7 @@
   function removeParcheLocal(id) {
     state.parches = state.parches.filter(x => x.id !== id);
     const m = liveMarkers.get(id);
-    if (m && liveMap) { liveMap.removeLayer(m); liveMarkers.delete(id); }
+    if (m && liveMap) { capaPins.removeLayer(m); liveMarkers.delete(id); }
     if (state.chatId === id) { state.chatId = null; $('#mis-wrap').classList.remove('is-chat'); }
     refresh();
   }
@@ -1828,7 +1867,7 @@
     const box = $('#chat');
     const p = state.chatId && findP(state.chatId);
     if (!p) {
-      box.innerHTML = `<div class="chat-placeholder"><img src="${STK('parceros')}" alt=""><h3>Elige un parche</h3><p>Aquí ves el chat del grupo, quiénes van y la vaca.</p></div>`;
+      box.innerHTML = `<div class="chat-placeholder"><img src="${STK('parceros')}" alt=""><h3>Elige un parche</h3><p>Aquí ves el chat del grupo, quiénes van y cómo llegar.</p></div>`;
       return;
     }
     syncCanalChat();
@@ -1836,8 +1875,6 @@
     const keepText = entrada?.value || '';
     const trPanel = $('[data-panel="transporte"]');
     if (trPanel) state.abiertoTransporte = trPanel.open;
-    const vacaOpen = $('#vaca')?.open || false;
-    const vacaVal = $('#vaca-total')?.value || '';
     const ids = (inside(p) ? ['me'] : []).concat(p.confirmados);
     const names = ids.map(id => id === 'me' ? 'Tú' : personById(id)?.nombre || 'Parcero');
     box.innerHTML = `
@@ -1868,14 +1905,6 @@
       <div class="chat-msgs" id="chat-msgs">${consejoChatHTML(p)}${chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()}${typing.on ? '<div class="typing" aria-label="Escribiendo"><i></i><i></i><i></i></div>' : ''}</div>
       <div class="chat-foot">${inside(p) ? `
         <div class="chat-tools">
-          <details class="vaca" id="vaca" ${vacaOpen ? 'open' : ''}>
-            <summary>${ic('i-cash')} Hacer la vaca ${ic('i-chev-down')}</summary>
-            <div class="vaca-body">
-              <div class="input-wrap">${ic('i-cash')}<input class="input tnum" id="vaca-total" type="number" min="0" step="1000" inputmode="numeric" placeholder="Gasto total del grupo" value="${esc(vacaVal)}"></div>
-              <div class="vaca-result"><span class="tnum" id="vaca-split"></span><b class="tnum" id="vaca-each">$0</b></div>
-              <button class="btn btn--ghost btn--xs" data-action="vaca-send">${ic('i-send')} Mandar al chat</button>
-            </div>
-          </details>
           ${transporteHTML(p)}
           <div class="chat-acts">
             <button type="button" class="chip-btn" data-action="invitar" data-id="${p.id}">${ic('i-users')} Invitar parceros</button>
@@ -1893,7 +1922,6 @@
         </form>`
         : `<p class="chat-locked">Cáele al parche para entrar al chat.</p>${joinButton(p)}`}
       </div>`;
-    updateVaca();
     scrollChat(false);
     if (conFoco) { const i = $('#chat-input'); if (i) { i.focus({ preventScroll: true }); try { i.setSelectionRange(cursor, cursor); } catch (e) { /* nada */ } } }
   }
@@ -1921,15 +1949,6 @@
     const box = $('#chat-msgs');
     if (box) requestAnimationFrame(() => box.scrollTo({ top: box.scrollHeight, behavior: smooth && !reduceMotion ? 'smooth' : 'auto' }));
   }
-  function updateVaca() {
-    const p = state.chatId && findP(state.chatId);
-    const inp = $('#vaca-total');
-    if (!p || !inp) return;
-    const n = Math.max(1, ocupados(p)), total = Math.max(0, Number(inp.value) || 0);
-    $('#vaca-split').textContent = `${money(total)} entre ${n}`;
-    $('#vaca-each').textContent = money(Math.ceil(total / n / 100) * 100) + ' c/u';
-  }
-
   async function sendChat(text) {
     const p = state.chatId && findP(state.chatId);
     if (!p || !text.trim()) return;
@@ -2219,7 +2238,7 @@
       if (!liveMap) return;
       liveMap.invalidateSize();
       if (mesaMarker) liveMap.removeLayer(mesaMarker);
-      mesaMarker = L.marker([m.negocio.lat, m.negocio.lng], { icon: L.divIcon({ className: 'pin-icon', html: `<div class="pin pin--mesa">${ic('i-table')}</div>`, iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] }) })
+      mesaMarker = L.marker([m.negocio.lat, m.negocio.lng], { icon: L.divIcon({ className: 'pin-icon', html: `<div class="pin pin--mesa">${ic('i-table')}</div>`, iconSize: [32, 36], iconAnchor: [16, 36], popupAnchor: [0, -34] }) })
         .bindPopup(`<div class="pop-search"><b>${esc(m.negocio.nombre)}</b><small>${esc(m.titulo)}</small><button class="btn btn--xs" data-action="mesa-reservar" data-id="${esc(m.id)}">${ic('i-table')} Reservar mesa</button></div>`, { className: 'mp-popup' })
         .addTo(liveMap);
       liveMap.flyTo([m.negocio.lat, m.negocio.lng], 16, { duration: reduceMotion ? 0 : 1.1 });
@@ -3919,7 +3938,6 @@
     'Lleva el celular cargado y con datos. Si puedes, una batería extra.',
     'Si algo te incomoda, sal del lugar y llama al 123. No esperes.',
     'No compartas tu dirección, cédula ni datos bancarios por el chat.',
-    'Paga la vaca solo a personas del parche y por medios que dejen registro.',
     'Si te sientes en peligro, toca "Ayuda" arriba: 123 y tu ubicación a un toque.',
     'En planes de río o montaña, avisa a alguien la ruta y la hora de regreso.',
     'Confía en tu instinto: si un plan no te da buena espina, no vayas.',
@@ -4287,9 +4305,9 @@
     const vs = p.viajes || [];
     const libres = vs.reduce((a, v) => a + Math.max(0, v.puestos - v.pasajeros.length), 0);
     const mio = vs.find(v => v.autor === 'me');
-    return `<details class="vaca transporte" ${state.abiertoTransporte ? 'open' : ''} data-panel="transporte">
+    return `<details class="plegable transporte" ${state.abiertoTransporte ? 'open' : ''} data-panel="transporte">
       <summary>${ic('i-users')} Transporte ${vs.length ? `<span class="tnum">${libres} ${libres === 1 ? 'puesto' : 'puestos'}</span>` : ''} ${ic('i-chev-down')}</summary>
-      <div class="vaca-body tr-body">
+      <div class="plegable-body tr-body">
         ${vs.length ? `<ul class="tr-list">${vs.map(v => {
           const quedan = v.puestos - v.pasajeros.length, voy = v.pasajeros.includes('me');
           return `<li class="tr-item">
@@ -4774,14 +4792,6 @@
       case 'logout': logout(); break;
       case 'mis-datos': descargarMisDatos(a); break;
       case 'borrar-cuenta': askBorrarCuenta(); break;
-      case 'vaca-send': {
-        const p = findP(state.chatId), total = Number($('#vaca-total').value) || 0;
-        if (!p) break;
-        if (total <= 0) { toast('Falta el total', 'Escribe cuánto gastó el grupo.', { type: 'error' }); break; }
-        const n = Math.max(1, ocupados(p));
-        sendChat(`La vaca: ${money(total)} entre ${n} = ${money(Math.ceil(total / n / 100) * 100)} cada uno.`);
-        break;
-      }
     }
   }
 
@@ -4853,7 +4863,6 @@
       const inp = $('#chat-input');
       sendChat(inp.value); inp.value = ''; inp.focus();
     });
-    document.addEventListener('input', e => { if (e.target.id === 'vaca-total') updateVaca(); });
 
     // Sombra de la barra al bajar
     let ticking = false;

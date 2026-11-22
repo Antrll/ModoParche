@@ -1,0 +1,46 @@
+/* =====================================================================
+   ModoParche · mp-energia.css
+   Stickers en movimiento, cintas y barra de avance de las páginas públicas.
+===================================================================== */
+.mp-con-stk { overflow-x: clip; }
+.mp-stk { position: absolute; z-index: 0; display: block; pointer-events: none; will-change: transform; }
+.mp-stk img {
+  display: block; width: 100%; height: auto; rotate: var(--giro, 0deg);
+  filter: drop-shadow(0 10px 12px rgba(17,17,17,.22));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mp-stk img { opacity: 0; scale: .55; transition: opacity .45s ease, scale .7s cubic-bezier(.34, 1.56, .64, 1); }
+  .mp-stk.is-vivo img { opacity: 1; scale: 1; }
+  .mp-stk--0.is-vivo img { animation: mp-bota 5.2s ease-in-out var(--d, 0s) infinite; }
+  .mp-stk--1.is-vivo img { animation: mp-baila 4.4s ease-in-out var(--d, 0s) infinite; }
+  .mp-stk--2.is-vivo img { animation: mp-flota 6.4s ease-in-out var(--d, 0s) infinite; }
+}
+@keyframes mp-bota { 0%, 100% { translate: 0 0; } 50% { translate: 0 -16px; } }
+@keyframes mp-baila { 0%, 100% { rotate: calc(var(--giro, 0deg) - 8deg); } 50% { rotate: calc(var(--giro, 0deg) + 8deg); } }
+@keyframes mp-flota { 0%, 100% { translate: -7px 5px; rotate: calc(var(--giro, 0deg) - 4deg); } 50% { translate: 7px -11px; rotate: calc(var(--giro, 0deg) + 5deg); } }
+
+/* Cinta inclinada entre secciones */
+.mp-cinta {
+  position: relative; z-index: 3; width: calc(100% + 40px); margin: -11px -20px; padding: 12px 0;
+  background: #FF5A1F; color: #111111; rotate: -1deg; --speed: 58s;
+  box-shadow: 0 8px 18px -12px rgba(17,17,17,.55);
+}
+.mp-cinta span { font-family: var(--font-display); font-size: clamp(1.15rem, 1.9vw, 1.7rem); line-height: 1; text-transform: uppercase; }
+.mp-cinta i { flex: none; width: 18px; height: 18px; margin: 0 clamp(16px, 2.2vw, 30px); background: #111111; clip-path: var(--burst); }
+main:has(.mp-cinta) { overflow-x: clip; }
+
+/* Barra de avance de lectura */
+.mp-avance {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 2000; height: 3px; background: #FF5A1F;
+  transform: scaleX(0); transform-origin: 0 50%; pointer-events: none;
+}
+
+/* Fotos y tarjetas con reacción al pasar */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  main figure.media { transition: transform .45s cubic-bezier(.23, 1, .32, 1), box-shadow .45s ease; }
+  main figure.media:hover { transform: translateY(-5px) rotate(-.7deg); box-shadow: 0 22px 36px -22px rgba(17,17,17,.7); }
+}
+@media print { .mp-stk, .mp-cinta, .mp-avance { display: none; } }
+
+/* Pegados en la esquina de una foto o tarjeta */
+.mp-stk--pega { z-index: 2; }

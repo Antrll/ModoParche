@@ -405,3 +405,9 @@
   .brand-panel { position: sticky; top: calc(var(--nav-h) + clamp(16px, 2vw, 28px)); align-self: start; height: calc(100svh - var(--nav-h) - 2 * clamp(16px, 2vw, 28px)); }
 }
 .bc--mark { width: min(46%, 38svh); }
+
+/* El verde oliva es de las empresas: en el acceso de personas todo va en naranja */
+.page-auth:not(.page-biz-auth) { --olive: var(--orange); --olive-deep: var(--orange-deep); --olive-soft: var(--orange-soft); }
+.page-auth:not(.page-biz-auth) .brand-panel::after { background: #111111; }
+
+.google-directo { display: flex; justify-content: center; min-height: 44px; margin-bottom: 4px; }

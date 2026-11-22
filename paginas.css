@@ -880,3 +880,6 @@ html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .tag-olive--dark { color: #55
 @media (prefers-reduced-motion: no-preference) {
   .faq-hero::after { animation: mp-giro 130s linear infinite; }
 }
+
+/* La marca en la calle: dos piezas */
+.br-street-photos { grid-template-columns: repeat(2, 1fr); }

@@ -371,3 +371,14 @@ Las pruebas SQL corren **todas las migraciones** desde cero. Si una migración n
 | `32986d0` | Despliegue probado: contacto como Edge Function, pruebas con Deno, sitio de 13 MB, `es_miembro`. |
 | `c6dad03` | Documentación completa (`docs/CONTEXTO-SubidaDavidClaudeWeb.md`, `CLAUDE.md`). |
 | (este) | Fase 4: mantenimiento del backend. |
+
+## 13. Estado de producción (22 de noviembre de 2026)
+
+Producción tiene `a2e2bae` más la mejora visual (`fd307e7` sin el resto de la rama). En Supabase ya están las migraciones de las Fases 1 y 2; faltan las de las Fases 3 y 4. Edge Functions desplegadas: `wompi-checkout` y `wompi-webhook` (versión anterior). Faltan `contacto`, `enviar-push`, `depurar-archivos` y `conciliar-pagos`.
+
+## 14. Asistente Parce y Google (pendiente de activar)
+
+- **Asistente:** crear el secreto `GROQ_API_KEY` en Supabase > Edge Functions > Secrets (nunca en el código ni en Vercel) y correr `supabase functions deploy asistente --no-verify-jwt`. Necesita la migración de la Fase 3 (`sistema_permitir_intento`). Modelo por defecto: `openai/gpt-oss-120b`; se cambia con el secreto opcional `GROQ_MODEL`. En un Preview, el dominio debe estar en `ORIGENES_EXTRA`.
+- **Migración nueva:** `20261127120000_quitar_vaca.sql`, después de la Fase 4.
+- **Google sin el dominio de Supabase:** en Google Cloud > Google Auth Platform > Clientes, agregar `https://modoparche.vercel.app` en Orígenes autorizados de JavaScript; en Branding, poner ModoParche como nombre de la app. Después se agrega el dominio a `GOOGLE_DOMINIOS` en `login.js`. La alternativa es un dominio personalizado de Supabase, que es pago.
+- **Decisiones legales pendientes:** `terminos.html` aún menciona la vaca, y la Política de Privacidad debe decir que las preguntas al asistente se procesan con Groq antes de activarlo.

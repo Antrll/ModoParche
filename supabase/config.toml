@@ -24,3 +24,7 @@ verify_jwt = false
 # La llama un cron cada hora: se valida CRON_SECRET (o PUSH_WEBHOOK_SECRET)
 [functions.conciliar-pagos]
 verify_jwt = false
+
+# Asistente virtual público: se valida el origen y hay freno por IP
+[functions.asistente]
+verify_jwt = false

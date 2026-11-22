@@ -183,7 +183,7 @@ El script se puede correr más de una vez. Crea perfiles, parches, chat, rutas, 
 | --- | --- |
 | `supabase-client.js` | Crea el cliente de Supabase con la llave pública (anon). |
 | `login.js` | Registro en 3 pasos e inicio de sesión con Supabase Auth. |
-| `dashboard.js` | Inicio con las funciones principales, mapa en tiempo real con GPS, mis parches con chat y vaca, y perfil con foto opcional (sin avatares). Lee y guarda en Supabase y escucha cambios en tiempo real. De los parches de ejemplo de la base solo muestra 2. |
+| `dashboard.js` | Inicio con las funciones principales, mapa en tiempo real con GPS, mis parches con chat, y perfil con foto opcional (sin avatares). Lee y guarda en Supabase y escucha cambios en tiempo real. De los parches de ejemplo de la base solo muestra 2. |
 | `supabase/migrations/` | Esquema, seguridad, triggers y parches de ejemplo de Villavicencio. |
 
 ### Cuentas de negocio

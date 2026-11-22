@@ -309,6 +309,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  /* Google directo: la ventana de Google muestra el dominio de ModoParche y no el
+     de Supabase. Solo corre en los dominios ya autorizados en Google Cloud
+     (Clientes > Orígenes de JavaScript). En los demás sigue el flujo anterior. */
+  const GOOGLE_CLIENT_ID = '1019735207166-4thm053g3sk4a4bbf390tpgejmqhnkah.apps.googleusercontent.com';
+  const GOOGLE_DOMINIOS = [];
+  async function activarGoogleDirecto() {
+    if (!sb || !GOOGLE_DOMINIOS.includes(location.hostname)) return;
+    await new Promise((ok, mal) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
+    const crudo = crypto.randomUUID() + crypto.randomUUID();
+    const huella = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(crudo)))).map(b => b.toString(16).padStart(2, '0')).join('');
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID, nonce: huella, use_fedcm_for_button: true,
+      callback: async ({ credential }) => {
+        const { error } = await sb.auth.signInWithIdToken({ provider: 'google', token: credential, nonce: crudo });
+        if (error) { showStatus('login-status', 'error', ...authError(error)); return; }
+        location.replace('dashboard.html');
+      },
+    });
+    document.querySelectorAll('[data-google]').forEach(btn => {
+      const caja = document.createElement('div');
+      caja.className = 'google-directo';
+      btn.after(caja);
+      window.google.accounts.id.renderButton(caja, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', locale: 'es', width: 360 });
+      btn.hidden = true;
+    });
+  }
+  activarGoogleDirecto().catch(() => { /* sigue el botón con el flujo anterior */ });
+
   // Entrar o crear cuenta con Google (Supabase OAuth). Después del regreso, el
   // dashboard pide una sola vez cédula, fecha de nacimiento y autorizaciones.
   document.querySelectorAll('[data-google]').forEach(btn => btn.addEventListener('click', async () => {

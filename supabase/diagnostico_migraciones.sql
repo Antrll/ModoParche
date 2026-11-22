@@ -36,7 +36,8 @@ with marcas (orden, archivo, tipo, esquema, objeto) as (values
   (25, '20261123120000_seguridad_y_antifraude_fase1.sql',    'tabla',   'private', 'intentos'),
   (26, '20261124120000_estabilidad_rendimiento_fase2.sql',   'tabla',   'public',  'mensajes_contacto'),
   (27, '20261125120000_pulido_seguridad_y_pwa_fase3.sql',    'funcion', 'public',  'sistema_archivos_por_borrar'),
-  (28, '20261126120000_backend_mantenimiento_fase4.sql',     'tabla',   'private', 'tareas_ejecutadas')
+  (28, '20261126120000_backend_mantenimiento_fase4.sql',     'tabla',   'private', 'tareas_ejecutadas'),
+  (29, '20261127120000_quitar_vaca.sql',                     'datos',   null,      null)
 )
 select m.orden, m.archivo,
   case

@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="mp-mapa.css">
 <link rel="stylesheet" href="mp-verificacion.css">
 <link rel="stylesheet" href="legal.css">
+<link rel="stylesheet" href="mp-asistente.css">
 </head>
 <body>
 <a class="skip" href="#content">Saltar al contenido</a>
@@ -242,6 +243,7 @@
       <div id="live-map" aria-label="Mapa de Villavicencio con los parches"></div>
       <div class="map-counter tnum" id="map-counter" aria-live="polite"></div>
       <button class="map-locate" id="map-locate" aria-label="Ir a mi ubicación" title="Mi ubicación"><svg class="ic"><use href="#i-locate"/></svg></button>
+      <button class="map-todos" id="map-todos" type="button" aria-label="Ver todos los parches" title="Ver todos"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       <div class="map-empty" id="map-empty" hidden></div>
     </div>
     <p class="geo-status" id="geo-status"></p>
@@ -1107,5 +1109,6 @@
 <script src="mp-tema.js" defer></script>
 <script src="mp-cargando.js" defer></script>
 <script src="legal.js" defer></script>
+<script src="mp-asistente.js" defer></script>
 </body>
 </html>

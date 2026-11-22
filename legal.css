@@ -108,3 +108,57 @@ html.is-dark .legal-note--ok { background: #12301f; }
 @media (prefers-reduced-motion: no-preference) {
   .legal-hero::after { animation: mp-deriva 26s ease-in-out infinite; }
 }
+
+
+/* =====================================================================
+   Páginas del pie: lectura más agradable (mismos textos)
+===================================================================== */
+body:has(.legal-doc) { background: var(--soft); }
+.legal-hero { padding-bottom: clamp(56px, 7vw, 92px); }
+.legal-hero h1 { font-size: clamp(2.5rem, 6vw, 5rem); line-height: .92; }
+.legal-kicker { box-shadow: 0 8px 16px -10px rgba(255, 90, 31, .9); }
+.legal-layout { margin-top: clamp(-44px, -3vw, -24px); padding-top: 0; padding-inline: var(--margin); position: relative; z-index: 2; }
+.legal-toc {
+  padding: 14px; border-radius: var(--r-lg); background: var(--paper);
+  box-shadow: 0 1px 2px rgba(17,17,17,.05), 0 18px 34px -24px rgba(17,17,17,.4);
+}
+.legal-toc a { transition: background-color .15s ease, color .15s ease, translate .2s var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .legal-toc a:hover { translate: 3px 0; } }
+.legal-toc a.is-on { background: #FF5A1F; color: #111111; }
+.legal-doc { max-width: 820px; font-size: 1.03rem; }
+.legal-doc > section, .legal-doc > section:last-child {
+  padding: clamp(22px, 3vw, 36px); margin-bottom: 16px; border: 0; border-radius: var(--r-lg);
+  background: var(--paper); box-shadow: 0 1px 2px rgba(17,17,17,.04), 0 16px 30px -26px rgba(17,17,17,.4);
+}
+.legal-doc h2 { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; text-wrap: balance; }
+.legal-doc h2 .n {
+  flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; margin: 0;
+  background: #FF5A1F; color: #111111; clip-path: var(--burst); font-size: 1.05rem; line-height: 1;
+  transition: rotate .6s var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) { .legal-doc > section:hover h2 .n { rotate: 36deg; } }
+.legal-doc code { padding: 2px 7px; border-radius: 7px; background: var(--soft); font-size: .86em; overflow-wrap: anywhere; }
+.legal-note { border-radius: var(--r); }
+.legal-table-wrap { border-radius: var(--r); box-shadow: none; }
+.legal-table { border-collapse: separate; border-spacing: 0; }
+.legal-table th { padding: 11px 14px; background: #111111; color: #ffffff; font-size: .78rem; letter-spacing: .01em; }
+html.is-dark .legal-table th { background: #2a2a2f; }
+.legal-table th:first-child { border-top-left-radius: 14px; }
+.legal-table th:last-child { border-top-right-radius: 14px; }
+.legal-table td { padding: 13px 14px; }
+.legal-table td:first-child { font-weight: 700; }
+.legal-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--soft) 55%, transparent); }
+.legal-table tbody tr:last-child td { border-bottom: 0; }
+.legal-card { border-radius: var(--r); }
+@media (max-width: 900px) { .legal-layout { margin-top: -28px; } .legal-toc { padding: 8px; } }
+/* En el celular cada fila de la tabla es una ficha */
+@media (max-width: 640px) {
+  .legal-table-wrap { overflow: visible; }
+  .legal-table, .legal-table tbody, .legal-table tr, .legal-table td { display: block; width: 100%; }
+  .legal-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .legal-table tr { margin-bottom: 10px; padding: 12px 14px; border-radius: var(--r); background: var(--soft); }
+  .legal-table tbody tr:nth-child(even) td { background: none; }
+  .legal-table td { padding: 5px 0; border: 0; }
+  .legal-table td:first-child { font-size: 1.02rem; }
+  .legal-table td:not(:first-child)[data-col]::before { content: attr(data-col); display: block; color: var(--muted); font-size: .74rem; font-weight: 700; }
+}

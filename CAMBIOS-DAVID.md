@@ -115,11 +115,27 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 - **No se cambió:** ningún texto legal ni funcionalidad.
 - **Archivos:** `mp-base.css`, `mp-tema.css`, `comercio.html`, `comercio.css`, `login.css`, `equipo.css`, `paginas.css`, `legal.css`.
 
-## 12. Fotos nuevas de Julián optimizadas (sin pérdida visible)
+## 13. Fotos nuevas de Julián optimizadas (sin pérdida visible)
 - **Qué:** las 11 fotos que Julián agregó el 22/11 (`src/assets/web/equipo/`, `index/`, `marca/`, `negocios/`) venían en WebP **sin pérdida** (formato para gráficos), de 2,2 a 4,5 MB cada una: unos 28 MB en total, muy lento en celular.
 - **Cómo:** se volvieron a guardar como WebP de foto (calidad 82, mismas medidas, así el HTML no cambia). Total: **28 MB → 2,8 MB**. Diferencia medida con PSNR de 33 a 36 dB (no se nota) y comparada a ojo al 100 % en la más pesada (`esquina-villavo.webp`, de 4,4 MB a 632 KB).
 - **Para la próxima foto:** exportarla como WebP con pérdida (calidad 80-85) o JPG, máximo ~1.600 px de ancho; debería pesar entre 150 y 400 KB.
 
-## 13. Diagnóstico de migraciones para producción
+## 14. Diagnóstico de migraciones para producción
 - **`supabase/diagnostico_migraciones.sql` (nuevo, solo lee):** en el SQL Editor de Supabase dice, para cada una de las 28 migraciones, si ya está ("SÍ") o "FALTA", revisando un objeto que solo esa migración crea. Probado: en una base completa no falta ninguna; en una base hasta la Fase 2 marca exactamente la 27 y la 28.
 - **Publicación por merge:** el PR [Antrll/ModoParche#3](https://github.com/Antrll/ModoParche/pull/3) hacia `main` publica en modoparche.vercel.app (Vercel conectado al repositorio). Preview: https://modoparche-red.vercel.app. Se decidió: primero Supabase (migraciones y Edge Functions), después el merge.
+
+## 15. Mejora visual publicada en producción (22 de noviembre de 2026)
+- **Qué:** producción quedó con `a2e2bae` más la mejora visual del punto 12 (despliegue directo a Vercel `modoparche-6tl7xmxoq`). **El resto de esta rama (Fases 3 y 4) sigue sin publicarse.**
+- **Por qué:** publicar toda la rama habría tumbado el formulario de contacto, porque la Edge Function `contacto` aún no está desplegada.
+- **Archivos:** los CSS y `comercio.html` del punto 12. No se modificó ninguna rama para este despliegue.
+
+## 16. Mapa, asistente IA, fotos nuevas, cédula y más energía (Julián, con Claude)
+- **Mapa:** pines más pequeños que se achican al alejar, parches cercanos agrupados (`src/vendor/leaflet/leaflet.markercluster.js`), ventana más compacta, botón "Ver todos" y límite a la zona del Meta. Archivos: `dashboard.js`, `dashboard.css`, `dashboard.html`.
+- **Oliva:** fuera del acceso de personas; sigue en el de negocios (`login.css`).
+- **Asistente "Parce":** Edge Function `asistente` (Groq, modelo `openai/gpt-oss-120b`, freno por IP, solo desde el sitio, no guarda conversaciones) y `mp-asistente.js/.css`. **La llave va solo en el secreto `GROQ_API_KEY` de Supabase.** Pruebas: `tests/edge/asistente.test.ts`. Necesita la migración de la Fase 3 (`sistema_permitir_intento`).
+- **Fotos:** las 11 nuevas en equipo, inicio, marca y negocios, con versión de 640 px. Ninguna foto se repite entre páginas.
+- **Vaca eliminada:** interfaz, textos, sticker y frases guardadas (`20261127120000_quitar_vaca.sql`). **Pendiente de decisión:** `terminos.html` todavía la menciona porque es texto legal.
+- **Energía:** `mp-energia.js/.css`: stickers en los espacios libres (nunca sobre el contenido), cintas en movimiento y barra de avance. Respeta "reducir movimiento".
+- **Páginas del pie:** rediseño visual en `legal.css`; tablas como fichas en celular. En `cookies.html` solo cambió la etiqueta técnica de la sesión por "Tu sesión iniciada", a pedido de Julián.
+- **Cédula:** modal rediseñado (`mp-verificacion.css`), mismos textos y mismo flujo.
+- **Google:** `login.js` puede usar el botón oficial de Google desde el dominio propio. Queda **apagado** (`GOOGLE_DOMINIOS` vacío) hasta autorizar el dominio en Google Cloud; la CSP de `vercel.json` ya lo permite.
