@@ -1,0 +1,14 @@
+# ModoParche · configuración de la CLI de Supabase
+project_id = "quxqqxnowlwiahorifpy"
+
+# Exige la sesión del negocio que paga
+[functions.wompi-checkout]
+verify_jwt = true
+
+# Wompi no manda sesión de Supabase: se valida la firma del evento
+[functions.wompi-webhook]
+verify_jwt = false
+
+# Lo llama el Database Webhook: se valida PUSH_WEBHOOK_SECRET
+[functions.enviar-push]
+verify_jwt = false

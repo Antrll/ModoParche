@@ -3,8 +3,7 @@
 //
 // Wompi llama aquí cada vez que una transacción cambia de estado
 // (evento transaction.updated). Revisamos la firma del evento con el
-// secreto de eventos y, si es válida, aplicamos el pago: el plan del
-// negocio sube a Parche Villavo por 30 días.
+// secreto de eventos y, si es válida, aplicamos el pago al estado de cuenta.
 //
 // Secretos:
 //   WOMPI_EVENTS_SECRET  test_events_... o prod_events_...
@@ -24,9 +23,19 @@ async function sha256hex(texto: string): Promise<string> {
 
 // "transaction.amount_in_cents" -> data.transaction.amount_in_cents
 function valor(data: Record<string, unknown>, ruta: string): string {
-  const v = ruta.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), data);
+  const v = ruta.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' && Object.hasOwn(o, k) ? (o as Record<string, unknown>)[k] : undefined), data);
   return v === undefined || v === null ? '' : String(v);
 }
+
+// Compara sin revelar por tiempo en qué carácter falla
+function iguales(a: string, b: string): boolean {
+  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
+  let dif = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) dif |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return dif === 0;
+}
+const OBLIGATORIAS = ['transaction.id', 'transaction.status', 'transaction.amount_in_cents'];
+const VENTANA_MS = 72 * 3600_000; // Wompi reintenta hasta por un día
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('ok');
@@ -37,15 +46,20 @@ Deno.serve(async (req) => {
   if (!evento || !evento.signature || !evento.data) return new Response('evento invalido', { status: 400 });
 
   // Firma: SHA256(valores de signature.properties + timestamp + secreto de eventos)
-  const props: string[] = Array.isArray(evento.signature.properties) ? evento.signature.properties : [];
+  const props: string[] = Array.isArray(evento.signature.properties) ? evento.signature.properties.map(String) : [];
+  if (!OBLIGATORIAS.every((c) => props.includes(c))) return new Response('firma incompleta', { status: 401 });
   const cadena = props.map((p) => valor(evento.data, p)).join('') + String(evento.timestamp ?? '') + SECRETO;
   const esperado = await sha256hex(cadena);
-  if (esperado.toLowerCase() !== String(evento.signature.checksum ?? '').toLowerCase()) {
+  if (!iguales(esperado, String(evento.signature.checksum ?? '').toLowerCase())) {
     return new Response('firma invalida', { status: 401 });
   }
+  // El timestamp puede venir en segundos o milisegundos
+  const ts = Number(evento.timestamp);
+  const ms = ts < 1e12 ? ts * 1000 : ts;
+  if (!Number.isFinite(ms) || Math.abs(Date.now() - ms) > VENTANA_MS) return new Response('evento vencido', { status: 401 });
 
   const entorno = Deno.env.get('WOMPI_ENTORNO');
-  if (entorno && evento.environment && evento.environment !== entorno) return new Response('otro entorno');
+  if (entorno && evento.environment !== entorno) return new Response('otro entorno');
   if (evento.event !== 'transaction.updated') return new Response('ok');
 
   const tx = evento.data.transaction ?? {};
@@ -57,6 +71,6 @@ Deno.serve(async (req) => {
     p_metodo: tx.payment_method_type ?? null, p_monto: tx.amount_in_cents, p_moneda: tx.currency,
   });
   // Si falla, devolvemos 500 para que Wompi lo reintente
-  if (error) return new Response(error.message, { status: 500 });
+  if (error) { console.error('[webhook]', error.message); return new Response('error', { status: 500 }); }
   return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 });

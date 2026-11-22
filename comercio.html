@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Para negocios - ModoParche</title>
+<link rel="canonical" href="https://modoparche.vercel.app/comercio">
 <meta name="description" content="Crea la cuenta de tu café, bar, restaurante o ruta en Villavicencio y publica parches con foto en el radar de ModoParche.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
@@ -14,22 +15,20 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#111111">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js" data-js></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
-<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="comercio.css">
-<script>document.documentElement.classList.add('mp-js');</script>
 <link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-biz">
@@ -57,17 +56,17 @@
   </div>
 </header>
 
-<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+<div class="mobile-menu mp-tinta-bloque" id="mobileMenu" aria-hidden="true">
   <nav aria-label="Menú móvil">
     <a href="index.html">Inicio</a>
-    <a href="comercio.html" aria-current="page">Negocios</a>
+    <a class="mp-naranja-texto" href="comercio.html" aria-current="page">Negocios</a>
     <a href="preguntas.html">Preguntas</a>
     <a href="marca.html">La marca</a>
     <a href="equipo.html">Equipo</a>
     <a href="empresa.html#entrar">Entrar como negocio</a>
   </nav>
   <div class="mobile-menu-foot">
-    <a href="empresa.html" class="btn btn--block">Crear cuenta de negocio</a>
+    <a href="empresa.html" class="btn btn--block mp-fijo">Crear cuenta de negocio</a>
     <a href="login.html" class="btn btn--block btn--ghost">Cuenta personal</a>
     <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
@@ -78,16 +77,16 @@
 <!-- ============================================================
      HERO NEGOCIOS
 ============================================================ -->
-<section class="biz-hero" aria-labelledby="biz-hero-title">
+<section class="biz-hero mp-tinta-bloque" aria-labelledby="biz-hero-title">
   <div class="wrap biz-hero-grid">
     <div class="biz-hero-copy" data-reveal-group="90">
       <h1 id="biz-hero-title" data-reveal-lines>
         <span class="line-mask"><span>Llena tus mesas</span></span>
-        <span class="line-mask"><span class="accent">en horas flojas</span></span>
+        <span class="line-mask"><span class="accent mp-naranja-texto">en horas flojas</span></span>
       </h1>
       <p class="biz-lede" data-reveal>Crea la cuenta de tu local tú mismo, elige tu plan y publica parches con foto en el radar en vivo de ModoParche: la gente de Villavicencio que ya está buscando dónde caer hoy.</p>
       <div class="biz-hero-actions" data-reveal>
-        <a href="empresa.html" class="btn btn--on-ink">Crear cuenta de negocio
+        <a href="empresa.html" class="btn btn--on-ink mp-fijo">Crear cuenta de negocio
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a href="#planes" class="link">Ver planes y precios</a>
@@ -95,11 +94,11 @@
 
       <dl class="biz-facts" data-reveal>
         <div>
-          <dt>$0</dt>
+          <dt class="mp-naranja-texto">$0</dt>
           <dd>fijos al mes: solo pagas por clientes que llegan</dd>
         </div>
         <div>
-          <dt>5 min</dt>
+          <dt class="mp-naranja-texto">5 min</dt>
           <dd>para crear tu cuenta y publicar tu primer parche</dd>
         </div>
       </dl>
@@ -107,9 +106,9 @@
 
     <figure class="biz-hero-art" data-reveal="scale">
       <div class="biz-hero-photo media" data-error="No pudimos cargar la imagen">
-        <img src="src/assets/web/restaurante.jpg" alt="Tablero de ModoParche en la entrada de un restaurante en la noche" width="1000" height="1500">
+        <img src="src/assets/web/restaurante.webp" alt="Tablero de ModoParche en la entrada de un restaurante en la noche" width="1000" height="1500" srcset="src/assets/web/restaurante-640.webp 640w, src/assets/web/restaurante.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
       </div>
-      <div class="biz-stamp" aria-hidden="true">
+      <div class="biz-stamp mp-fijo" aria-hidden="true">
         <b>2x1</b>
         <span>Promo en vivo</span>
       </div>
@@ -127,10 +126,10 @@
       <p data-reveal>Sin pautas eternas ni algoritmos raros: publicas qué tienes hoy, a qué hora y para cuántas personas.</p>
       <div class="biz-how-photos" data-reveal="scale">
         <figure class="media" data-error="">
-          <img src="src/assets/web/discoteca.jpg" alt="Afiche de ModoParche en un bar nocturno" width="1000" height="1500" loading="lazy" decoding="async">
+          <img src="src/assets/web/discoteca.webp" alt="Afiche de ModoParche en un bar nocturno" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/discoteca-640.webp 640w, src/assets/web/discoteca.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
         </figure>
         <figure class="media" data-error="">
-          <img src="src/assets/web/paradero.jpg" alt="Afiche de ModoParche en paradero de Villavicencio" width="1000" height="1500" loading="lazy" decoding="async">
+          <img src="src/assets/web/paradero.webp" alt="Afiche de ModoParche en paradero de Villavicencio" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/paradero-640.webp 640w, src/assets/web/paradero.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
         </figure>
       </div>
     </div>
@@ -144,9 +143,9 @@
         <h3>Lanza un parche con foto</h3>
         <p>¿Martes flojo a las 6 p. m.? Abres una cata, un 2x1 o una mesa compartida con cupos contados y le subes una foto que llame la atención.</p>
       </li>
-      <li class="biz-step biz-step--3" data-reveal>
-        <h3>Recibe al grupo</h3>
-        <p>El radar muestra tu parche con el sello de aliado a quienes tienen match con ese plan. Ves en tiempo real cuántos cupos se van llenando.</p>
+      <li class="biz-step biz-step--3 mp-tinta-bloque" data-reveal>
+        <h3 class="mp-naranja-texto">Recibe al grupo</h3>
+        <p>El radar muestra tu parche con el sello de aliado a quienes buscan ese tipo de plan. Ves en tiempo real cuántos cupos se van llenando.</p>
       </li>
     </ol>
   </div>
@@ -163,7 +162,7 @@
     </div>
 
     <div class="plans-board" data-reveal-group="90">
-      <article class="plan-main" data-reveal>
+      <article class="plan-main mp-fijo" data-reveal>
         <div class="plan-main-top">
           <h3>Parche Villavo</h3>
           <p class="plan-price">10% <small>o $2.500 / cliente</small></p>
@@ -201,19 +200,19 @@
           <a href="empresa.html?plan=basico" class="btn btn--sm btn--paper">Empezar gratis</a>
         </article>
 
-        <article class="plan-tier plan-tier--custom" data-reveal>
+        <article class="plan-tier plan-tier--custom mp-tinta-bloque" data-reveal>
           <div class="plan-tier-head">
             <h3>Varias sedes</h3>
-            <p class="plan-price">8% <small>o $2.000 / cliente</small></p>
+            <p class="plan-price mp-naranja-texto">8% <small>o $2.000 / cliente</small></p>
           </div>
           <p>Para marcas con más de un punto en Villavicencio o el Meta que mueven volumen y buscan tarifas preferenciales.</p>
           <ul class="plan-list">
             <li><b>8%</b> en combos, boletas o experiencias cerradas</li>
             <li><b>$2.000</b> por cliente validado en consumo libre</li>
             <li>Parches ilimitados en todas tus ubicaciones</li>
-            <li>Panel central con acceso para cada sede</li>
-            <li>Campañas coordinadas o independientes por sede</li>
-            <li>Métricas comparativas sede por sede</li>
+            <li>Panel central con acceso para cada sede <em>(próximamente)</em></li>
+            <li>Campañas coordinadas por sede <em>(próximamente)</em></li>
+            <li>Métricas comparativas sede por sede <em>(próximamente)</em></li>
             <li>Prioridad destacada en el radar multizona</li>
             <li>Acompañamiento directo del equipo</li>
           </ul>
@@ -226,14 +225,14 @@
       <h3 class="cobro-titulo" data-reveal>¿Cómo funciona el cobro?</h3>
       <div class="cobro-casos">
         <article class="cobro-caso" data-reveal>
-          <span class="cobro-tag">Paquetes cerrados · 10% / 8%</span>
+          <span class="cobro-tag mp-fijo">Paquetes cerrados · 10% / 8%</span>
           <h4>Si vendes paquetes o planes cerrados</h4>
           <p><b>Aplica para:</b> combos de comida, catas de café, talleres, boletas o covers para eventos y fiestas.</p>
           <p><b>Cómo opera:</b> el cliente aparta el paquete en la web y lo paga en tu local. Por cada paquete redimido pagas solo la comisión de tu plan.</p>
           <p><b>Control:</b> el cliente recibe un QR único que tu personal escanea en la entrada para redimir el producto o servicio.</p>
         </article>
         <article class="cobro-caso" data-reveal>
-          <span class="cobro-tag">Consumo libre en mesa · $2.500 / $2.000</span>
+          <span class="cobro-tag mp-fijo">Consumo libre en mesa · $2.500 / $2.000</span>
           <h4>Si manejas consumo libre en mesa</h4>
           <p><b>Aplica para:</b> gastrobares, miradores, restaurantes a la carta o cafeterías donde el cliente reserva su espacio y pide libremente de tu menú.</p>
           <p><b>Cómo opera:</b> el cliente asegura su cupo o beneficio de bienvenida en la plataforma y paga su cuenta directamente en tu caja.</p>
@@ -250,7 +249,7 @@
     </div>
 
     <figure class="biz-banner media" data-reveal="scale" data-error="">
-      <img src="src/assets/web/valla.jpg" alt="Valla de ModoParche en Villavicencio al atardecer" width="1536" height="1024" loading="lazy" decoding="async">
+      <img src="src/assets/web/valla.webp" alt="Valla de ModoParche en Villavicencio al atardecer" width="1536" height="1024" loading="lazy" decoding="async" srcset="src/assets/web/valla-640.webp 640w, src/assets/web/valla.webp 1536w" sizes="(max-width: 700px) 100vw, 50vw">
     </figure>
   </div>
 </section>
@@ -260,7 +259,7 @@
 ============================================================ -->
 <section class="biz-join" id="alianza" aria-labelledby="join-title">
   <div class="wrap">
-    <div class="biz-join-card" data-reveal="scale">
+    <div class="biz-join-card mp-tinta-bloque" data-reveal="scale">
       <div class="biz-join-copy">
         <span class="tag-olive">Nuevo · sin intermediarios</span>
         <h2 id="join-title">Tu cuenta, en tres pasos</h2>
@@ -271,7 +270,7 @@
           <li><span><b>Tu plan</b><span>Básico gratis, o Villavo y Varias sedes pagando solo por clientes que llegan.</span></span></li>
         </ol>
         <div class="biz-join-actions">
-          <a href="empresa.html" class="btn btn--on-ink">Crear cuenta de negocio
+          <a href="empresa.html" class="btn btn--on-ink mp-fijo">Crear cuenta de negocio
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
           <a href="empresa-dashboard.html?demo=1" class="link">Ver panel de ejemplo</a>
@@ -286,7 +285,7 @@
 
 </main>
 
-<footer class="foot">
+<footer class="foot mp-tinta-bloque">
   <div class="wrap">
     <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
       <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
@@ -294,23 +293,23 @@
     <div class="foot-grid">
       <div class="foot-intro">
         <p>Planes en grupo para Villavicencio. Lleva gente con ganas de salir directo a tu local.</p>
-        <a href="empresa.html" class="btn btn--sm btn--on-ink">Crear cuenta de negocio</a>
+        <a href="empresa.html" class="btn btn--sm btn--on-ink mp-fijo">Crear cuenta de negocio</a>
       </div>
       <div class="foot-col">
-        <h2>Negocios</h2>
+        <h2 class="mp-naranja-texto">Negocios</h2>
         <a href="#como-funciona">Cómo funciona</a>
         <a href="#planes">Planes y precios</a>
         <a href="empresa.html">Crear cuenta de negocio</a>
         <a href="empresa.html#entrar">Entrar como negocio</a>
       </div>
       <div class="foot-col">
-        <h2>ModoParche</h2>
+        <h2 class="mp-naranja-texto">ModoParche</h2>
         <a href="index.html">Inicio</a>
         <a href="preguntas.html#negocios">Preguntas de negocios</a>
         <a href="marca.html">La marca</a>
       </div>
       <div class="foot-col foot-contact">
-        <h2>Escríbenos</h2>
+        <h2 class="mp-naranja-texto">Escríbenos</h2>
         <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
         <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
         <a href="equipo.html">Equipo y contacto</a>

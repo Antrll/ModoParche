@@ -1038,8 +1038,8 @@ html:not(.is-dark):not(.is-mixto) .sidebar .nav-item[aria-current="page"] kbd { 
 .errores-list small { color: var(--muted); font-size: 12px; }
 .errores-list pre { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--surface); font: 11.5px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 140px; overflow: auto; }
 /* Barra lateral clara: el naranja de texto pasa al tono oscuro para que se lea */
-html:not(.is-dark) .sidebar .brand-name b i,
-html:not(.is-dark) .sidebar .side-live b { color: var(--accent-ink); }
+html:not(.is-dark):not(.is-mixto) .sidebar .brand-name b i,
+html:not(.is-dark):not(.is-mixto) .sidebar .side-live b { color: var(--accent-ink); }
 /* Modo oscuro: celdas de retención con texto oscuro sobre los naranjas claros */
 html.is-dark .ret .cell[data-l="1"], html.is-dark .ret .cell[data-l="2"],
 html.is-dark .ret .cell[data-l="3"], html.is-dark .ret .cell[data-l="4"] { color: #111; }
@@ -1108,3 +1108,31 @@ html:not(.is-dark):not(.is-mixto) .kpi--lead .delta.is-down { background: rgba(1
 .phone-toast p { color: #55555c; }
 /* Palabras resaltadas en reportes y búsqueda: legibles en cualquier modo */
 html.is-dark :is(.rep-copia, .sp-item, .msg-text) mark { background: #ff9a6b; color: #111111; }
+
+/* Revisión de cédulas */
+.verif-panel { margin: 0 0 16px; padding: 18px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-soft); }
+.verif-panel header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.verif-panel h2 { margin: 0; font-size: 17px; }
+.verif-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.verif-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border-radius: 14px; background: var(--raised); }
+.verif-main { display: grid; gap: 3px; min-width: 0; }
+.verif-main small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.verif-fotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.verif-fotos:not(:empty) { margin-top: 8px; }
+.verif-fotos img { width: 100%; border-radius: 10px; }
+.verif-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 640px) { .verif-row { grid-template-columns: 1fr; } .verif-acts { justify-content: flex-start; } }
+
+
+/* Mensajes de contacto y empleo */
+.contacto-panel { margin-bottom: 18px; }
+.contacto-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.contacto-head h2 { font-size: 18px; }
+.contacto-list { display: grid; gap: 10px; max-height: 420px; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.contacto { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--raised); }
+.contacto.is-nuevo { box-shadow: inset 3px 0 0 #FF5A1F; }
+.contacto-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.contacto-top small { margin-left: auto; color: var(--muted); }
+.contacto p { overflow-wrap: anywhere; white-space: pre-wrap; }
+.contacto a { width: fit-content; overflow-wrap: anywhere; }
+.contacto-acts { display: flex; flex-wrap: wrap; gap: 6px; }

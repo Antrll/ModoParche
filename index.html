@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ModoParche - Villavicencio tiene plan</title>
+<link rel="canonical" href="https://modoparche.vercel.app/">
 <meta name="description" content="ModoParche te muestra los planes en grupo abiertos hoy en Villavicencio, ordenados por tus gustos, tu presupuesto y tu horario.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
@@ -14,23 +15,22 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js" data-js></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
-<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="index.css">
-<script>document.documentElement.classList.add('mp-js');</script>
 <link rel="stylesheet" href="legal.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"ModoParche","url":"https://modoparche.vercel.app/","logo":"https://modoparche.vercel.app/src/assets/Branding/favicon/android-chrome-512x512.png","email":"modoparcheoficial@gmail.com","areaServed":"Villavicencio, Meta, Colombia","sameAs":["https://www.instagram.com/modoparcheoficial/"]}</script>
 </head>
 <body class="page-home">
 
@@ -60,9 +60,9 @@
   </div>
 </header>
 
-<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+<div class="mobile-menu mp-tinta-bloque" id="mobileMenu" aria-hidden="true">
   <nav aria-label="Menú móvil">
-    <a href="index.html" aria-current="page">Inicio</a>
+    <a class="mp-naranja-texto" href="index.html" aria-current="page">Inicio</a>
     <a href="comercio.html">Negocios</a>
     <a href="preguntas.html">Preguntas</a>
     <a href="marca.html">La marca</a>
@@ -70,7 +70,7 @@
     <a href="login.html">Iniciar sesión</a>
   </nav>
   <div class="mobile-menu-foot">
-    <a href="login.html#crear" class="btn btn--block">Crear mi cuenta</a>
+    <a href="login.html#crear" class="btn btn--block mp-fijo">Crear mi cuenta</a>
     <a href="empresa.html" class="btn btn--block btn--ghost">Tengo un negocio</a>
     <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
@@ -81,7 +81,7 @@
 <!-- ============================================================
      HERO - el nombre en dos tintas
 ============================================================ -->
-<section class="hero" aria-labelledby="hero-title">
+<section class="hero mp-fijo" aria-labelledby="hero-title">
   <div class="wrap hero-grid">
     <h1 class="hero-title" id="hero-title" data-reveal-lines>
       <span class="line-mask"><span>Modo</span></span>
@@ -109,8 +109,8 @@
 
   <div class="hero-marquee marquee" aria-hidden="true">
     <div class="marquee-track">
-      <span>Rumba</span><i></i><span>Comida</span><i></i><span>Aventura</span><i></i><span>Deporte</span><i></i><span>Cultura</span><i></i><span>Gaming</span><i></i><span>Villavo tiene plan</span><i></i>
-      <span>Rumba</span><i></i><span>Comida</span><i></i><span>Aventura</span><i></i><span>Deporte</span><i></i><span>Cultura</span><i></i><span>Gaming</span><i></i><span>Villavo tiene plan</span><i></i>
+      <span>Rumba</span><i class="mp-fijo"></i><span>Comida</span><i class="mp-fijo"></i><span>Aventura</span><i class="mp-fijo"></i><span>Deporte</span><i class="mp-fijo"></i><span>Cultura</span><i class="mp-fijo"></i><span>Gaming</span><i class="mp-fijo"></i><span>Villavo tiene plan</span><i class="mp-fijo"></i>
+      <span>Rumba</span><i class="mp-fijo"></i><span>Comida</span><i class="mp-fijo"></i><span>Aventura</span><i class="mp-fijo"></i><span>Deporte</span><i class="mp-fijo"></i><span>Cultura</span><i class="mp-fijo"></i><span>Gaming</span><i class="mp-fijo"></i><span>Villavo tiene plan</span><i class="mp-fijo"></i>
     </div>
   </div>
 </section>
@@ -118,19 +118,19 @@
 <!-- ============================================================
      RADAR (vista previa: sin ubicación ni inscripción)
 ============================================================ -->
-<section class="radar" id="feed" aria-labelledby="radar-title">
+<section class="radar mp-tinta-bloque" id="feed" aria-labelledby="radar-title">
   <div class="wrap radar-grid">
     <div class="radar-intro" data-reveal-group>
       <h2 class="h-xl" id="radar-title" data-reveal>Tu radar en vivo</h2>
-      <p class="radar-lede" data-reveal>Marca qué te provoca, cuánto quieres gastar y cuándo sales. Así se ve lo que te espera adentro: cada parche llega con su porcentaje de match contigo.</p>
+      <p class="radar-lede" data-reveal>Marca qué te provoca, cuánto quieres gastar y cuándo sales. Así se ve lo que te espera adentro: primero los planes que van con lo que marcaste.</p>
 
-      <form class="radar-filters" id="radarFilters" data-reveal onsubmit="return false">
+      <form class="radar-filters" id="radarFilters" data-reveal>
         <fieldset>
           <legend>¿Qué te provoca?</legend>
           <div class="chips">
-            <label class="chip"><input type="checkbox" name="cat" value="Rumba" checked><span>Rumba</span></label>
-            <label class="chip"><input type="checkbox" name="cat" value="Comida" checked><span>Comida</span></label>
-            <label class="chip"><input type="checkbox" name="cat" value="Aventura" checked><span>Aventura</span></label>
+            <label class="chip"><input type="checkbox" name="cat" value="Rumba" checked><span class="mp-fijo">Rumba</span></label>
+            <label class="chip"><input type="checkbox" name="cat" value="Comida" checked><span class="mp-fijo">Comida</span></label>
+            <label class="chip"><input type="checkbox" name="cat" value="Aventura" checked><span class="mp-fijo">Aventura</span></label>
             <label class="chip"><input type="checkbox" name="cat" value="Deporte"><span>Deporte</span></label>
             <label class="chip"><input type="checkbox" name="cat" value="Cultura"><span>Cultura</span></label>
             <label class="chip"><input type="checkbox" name="cat" value="Gaming"><span>Gaming</span></label>
@@ -158,7 +158,7 @@
       </form>
     </div>
 
-    <div class="radar-panel" data-ui data-reveal="scale">
+    <div class="radar-panel mp-tinta-papel" data-ui data-reveal="scale">
       <div class="radar-head">
         <p class="radar-count" aria-live="polite"><b id="radarCount">0</b> <span id="radarCountLabel">parches para ti</span></p>
         <span class="tag-olive">Vista previa</span>
@@ -167,14 +167,14 @@
       <ul class="radar-list" id="radarList" aria-busy="false">
         <!-- Sin JavaScript se ven estos dos ejemplos -->
         <li class="plan">
-          <div class="plan-match"><b>92%</b><span>match</span></div>
+          <div class="plan-match"><b>Top</b><span>para ti</span></div>
           <div class="plan-body">
             <h3 class="plan-title">Cata de café de origen</h3>
             <p class="plan-meta">Hoy 5:00 p. m. · $25.000</p>
           </div>
         </li>
         <li class="plan">
-          <div class="plan-match"><b>87%</b><span>match</span></div>
+          <div class="plan-match"><b>Top</b><span>para ti</span></div>
           <div class="plan-body">
             <h3 class="plan-title">Caminata al amanecer</h3>
             <p class="plan-meta">Sáb 6:00 a. m. · Gratis</p>
@@ -187,7 +187,7 @@
         <h3>Nada cuadra con eso… todavía</h3>
         <p>Ningún parche de muestra coincide con esos filtros. Suelta alguno, o crea tu cuenta y abre tú el plan.</p>
         <div class="empty-actions">
-          <button type="button" class="btn btn--sm" id="radarReset">Quitar filtros</button>
+          <button type="button" class="btn btn--sm mp-fijo" id="radarReset">Quitar filtros</button>
           <a href="login.html#crear" class="btn btn--sm btn--ghost">Crear mi cuenta</a>
         </div>
       </div>
@@ -209,8 +209,8 @@
     <div class="spec-head" data-reveal-group>
       <h2 class="h-lg" id="spec-title" data-reveal>Todo Villavo junto</h2>
       <p data-reveal>Lo que hace ModoParche, sin rodeos: junta a la gente que quiere salir con los planes que ya se están armando.</p>
-      <p class="spec-dif" data-reveal><b>La diferencia:</b> no te damos una lista de eventos, te damos una experiencia completa. Encuentras el plan a tu medida, conoces a la gente antes de llegar, arman el transporte y la vaca en el chat, y sales acompañado y seguro, con tu ubicación en vivo para tu gente de confianza.</p>
-      <a href="login.html#crear" class="btn" data-reveal>Crear mi cuenta</a>
+      <p class="spec-dif" data-reveal><b class="mp-fijo">La diferencia:</b> no te damos una lista de eventos, te damos una experiencia completa. Encuentras el plan a tu medida, conoces a la gente antes de llegar, arman el transporte y la vaca en el chat, y sales acompañado y seguro, con tu ubicación en vivo para tu gente de confianza.</p>
+      <a href="login.html#crear" class="btn mp-fijo" data-reveal>Crear mi cuenta</a>
     </div>
 
     <ul class="tiles" data-reveal-group="70">
@@ -259,23 +259,23 @@
     </div>
 
     <ol class="stages" id="stages" data-reveal>
-      <li class="stage stage--1 is-open">
+      <li class="stage stage--1 is-open mp-tinta-bloque">
         <button class="stage-tab" type="button" aria-expanded="true" aria-controls="stage-1"><span class="stage-n">01</span>Crea tu cuenta</button>
         <div class="stage-body" id="stage-1">
           <h3>Crea tu cuenta</h3>
           <p>Eliges tus categorías, tu presupuesto y en qué horario te queda bien salir. Te toma menos de un minuto.</p>
-          <div class="stage-art stage-art--chips" aria-hidden="true"><span>Rumba</span><span class="on">Comida</span><span class="on">Aventura</span><span>Gaming</span></div>
+          <div class="stage-art stage-art--chips" aria-hidden="true"><span>Rumba</span><span class="on mp-fijo">Comida</span><span class="on mp-fijo">Aventura</span><span>Gaming</span></div>
         </div>
       </li>
       <li class="stage stage--2">
         <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-2"><span class="stage-n">02</span>Mira tu radar</button>
         <div class="stage-body" id="stage-2">
           <h3>Mira tu radar</h3>
-          <p>Los parches abiertos aparecen ordenados por porcentaje de match contigo, con lugar, hora y precio.</p>
-          <div class="stage-art stage-art--match" aria-hidden="true"><b>92%</b><span>match</span></div>
+          <p>Filtra los parches abiertos por lo que te gusta, tu presupuesto y cuándo sales. Cada uno trae lugar, hora y precio.</p>
+          <div class="stage-art stage-art--match" aria-hidden="true"><b>Hoy</b><span>en Villavo</span></div>
         </div>
       </li>
-      <li class="stage stage--3">
+      <li class="stage stage--3 mp-fijo">
         <button class="stage-tab" type="button" aria-expanded="false" aria-controls="stage-3"><span class="stage-n">03</span>Únete o abre el tuyo</button>
         <div class="stage-body" id="stage-3">
           <h3>Únete o abre el tuyo</h3>
@@ -312,13 +312,13 @@
         <div class="who-copy">
           <h3>Sal sin cadenas de chat</h3>
           <ul class="checks">
-            <li>Planes ordenados por match con tus gustos, tu presupuesto y tu horario.</li>
+            <li>Planes que filtras por tus gustos, tu presupuesto y tu horario.</li>
             <li>Cupos reales: sabes cuántos faltan antes de moverte.</li>
             <li>Abre tu propio parche y deja que la gente se sume.</li>
           </ul>
-          <a href="login.html#crear" class="btn">Crear mi cuenta</a>
+          <a href="login.html#crear" class="btn mp-fijo">Crear mi cuenta</a>
         </div>
-        <div class="who-art" aria-hidden="true"><b>92%</b><span>match</span></div>
+        <div class="who-art" aria-hidden="true"><b>Tu</b><span>parche</span></div>
       </div>
 
       <div class="who-panel" role="tabpanel" id="panel-negocios" aria-labelledby="tab-negocios" tabindex="0" hidden>
@@ -343,7 +343,7 @@
 <!-- ============================================================
      CAMPAÑA - piezas sobre el titular
 ============================================================ -->
-<section class="campaign teeth-top teeth-bottom" id="campana" aria-labelledby="campaign-title">
+<section class="campaign teeth-top teeth-bottom mp-fijo" id="campana" aria-labelledby="campaign-title">
   <div class="wrap campaign-stage">
     <h2 class="campaign-title" id="campaign-title" data-reveal-lines>
       <span class="line-mask"><span>Así se ve</span></span>
@@ -353,31 +353,31 @@
     <div class="prints" id="prints">
       <figure class="print print--a" style="--r:-8deg">
         <button type="button" class="print-btn media" data-error="No pudimos cargar la pieza" aria-label="Ampliar: afiche en discoteca">
-          <img src="src/assets/web/discoteca.jpg" alt="Afiche de ModoParche en una discoteca de noche" width="1000" height="1500" loading="lazy" decoding="async">
+          <img src="src/assets/web/discoteca.webp" alt="Afiche de ModoParche en una discoteca de noche" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/discoteca-640.webp 640w, src/assets/web/discoteca.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
         </button>
         <figcaption>Discoteca</figcaption>
       </figure>
       <figure class="print print--b" style="--r:6deg">
         <button type="button" class="print-btn media" data-error="No pudimos cargar la pieza" aria-label="Ampliar: tablero frente a un restaurante">
-          <img src="src/assets/web/restaurante.jpg" alt="Tablero de ModoParche frente a un restaurante" width="1000" height="1500" loading="lazy" decoding="async">
+          <img src="src/assets/web/restaurante.webp" alt="Tablero de ModoParche frente a un restaurante" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/restaurante-640.webp 640w, src/assets/web/restaurante.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
         </button>
         <figcaption>Restaurante</figcaption>
       </figure>
       <figure class="print print--c" style="--r:3deg">
         <button type="button" class="print-btn media" data-error="No pudimos cargar la pieza" aria-label="Ampliar: valla publicitaria">
-          <img src="src/assets/web/valla.jpg" alt="Valla de ModoParche al atardecer con las montañas detrás" width="1536" height="1024" loading="lazy" decoding="async">
+          <img src="src/assets/web/valla.webp" alt="Valla de ModoParche al atardecer con las montañas detrás" width="1536" height="1024" loading="lazy" decoding="async" srcset="src/assets/web/valla-640.webp 640w, src/assets/web/valla.webp 1536w" sizes="(max-width: 700px) 100vw, 50vw">
         </button>
         <figcaption>Valla</figcaption>
       </figure>
       <figure class="print print--d" style="--r:-4deg">
         <button type="button" class="print-btn media" data-error="No pudimos cargar la pieza" aria-label="Ampliar: afiche en paradero de bus">
-          <img src="src/assets/web/paradero.jpg" alt="Afiche de ModoParche en un paradero de bus" width="1000" height="1500" loading="lazy" decoding="async">
+          <img src="src/assets/web/paradero.webp" alt="Afiche de ModoParche en un paradero de bus" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/paradero-640.webp 640w, src/assets/web/paradero.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
         </button>
         <figcaption>Paradero</figcaption>
       </figure>
       <figure class="print print--e" style="--r:9deg">
         <button type="button" class="print-btn media" data-error="No pudimos cargar la pieza" aria-label="Ampliar: afiche deportivo">
-          <img src="src/assets/web/deportivo.jpg" alt="Afiche deportivo de ModoParche en un parque" width="1000" height="1500" loading="lazy" decoding="async">
+          <img src="src/assets/web/deportivo.webp" alt="Afiche deportivo de ModoParche en un parque" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/deportivo-640.webp 640w, src/assets/web/deportivo.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
         </button>
         <figcaption>Afiche deportivo</figcaption>
       </figure>
@@ -390,17 +390,17 @@
 <!-- ============================================================
      ENCUENTRO CALLEJERO
 ============================================================ -->
-<section class="street" id="encuentro" aria-labelledby="street-title">
+<section class="street mp-tinta-bloque" id="encuentro" aria-labelledby="street-title">
   <div class="wrap street-grid">
     <h2 class="h-xl" id="street-title" data-reveal>El parche te encuentra</h2>
     <div class="street-copy" data-reveal-group>
       <p class="street-lead" data-reveal>¿Y si el próximo plan aparece en tu esquina? ModoParche empezará a verse en distintos rincones de Villavicencio.</p>
       <p data-reveal>En una pared, en un afiche, en una esquina… quizás te cruces con uno de nuestros mensajes sin estarlo buscando.</p>
-      <p class="street-shout" data-reveal>Sal. Encuentra. Conecta.</p>
+      <p class="street-shout mp-naranja-texto" data-reveal>Sal. Encuentra. Conecta.</p>
     </div>
   </div>
   <figure class="street-banner media" data-reveal="scale" data-error="No pudimos cargar el banner">
-    <img src="src/assets/web/banner.jpg" alt="Banner de ModoParche: ¿Qué se arma hoy?, el nombre repetido y El Manifiesto" width="2400" height="800" loading="lazy" decoding="async">
+    <img src="src/assets/web/banner.webp" alt="Banner de ModoParche: ¿Qué se arma hoy?, el nombre repetido y El Manifiesto" width="2400" height="800" loading="lazy" decoding="async" srcset="src/assets/web/banner-640.webp 640w, src/assets/web/banner.webp 2400w" sizes="(max-width: 700px) 100vw, 50vw">
   </figure>
 </section>
 
@@ -409,10 +409,10 @@
 ============================================================ -->
 <section class="ask" aria-labelledby="ask-title">
   <div class="wrap ask-row" data-reveal-group>
-    <span class="ask-mark" aria-hidden="true" data-reveal>?</span>
+    <span class="ask-mark mp-fijo" aria-hidden="true" data-reveal>?</span>
     <div class="ask-copy">
       <h2 class="h-lg" id="ask-title" data-reveal>¿Te quedó alguna duda?</h2>
-      <p data-reveal>Qué es un parche, cómo se calcula el match, si es seguro, cuánto cuesta para negocios. Lo respondimos todo en un solo lugar.</p>
+      <p data-reveal>Qué es un parche, cómo encontrar planes, si es seguro, cuánto cuesta para negocios. Lo respondimos todo en un solo lugar.</p>
     </div>
     <a href="preguntas.html" class="btn btn--ink" data-reveal>Ver preguntas frecuentes
       <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -426,9 +426,9 @@
 <section class="close" id="unete" aria-labelledby="close-title">
   <div class="close-row">
     <div class="close-side close-side--photo media" data-error="">
-      <img src="src/assets/web/orangeprint.jpg" alt="" width="1536" height="1024" loading="lazy" decoding="async">
+      <img src="src/assets/web/orangeprint.webp" alt="" width="1536" height="1024" loading="lazy" decoding="async" srcset="src/assets/web/orangeprint-640.webp 640w, src/assets/web/orangeprint.webp 1536w" sizes="(max-width: 700px) 100vw, 50vw">
     </div>
-    <div class="close-tile" data-reveal="scale">
+    <div class="close-tile mp-fijo" data-reveal="scale">
       <img class="close-crown" src="src/assets/web/corona.png" alt="" width="600" height="352" loading="lazy">
       <h2 id="close-title">Tu parche te espera</h2>
       <p>Crea tu cuenta en tres pasos y deja que ModoParche haga el resto.</p>
@@ -439,7 +439,7 @@
         <a href="login.html" class="link">Ya tengo cuenta</a>
       </div>
     </div>
-    <div class="close-side close-side--ink" aria-hidden="true">
+    <div class="close-side close-side--ink mp-tinta-bloque" aria-hidden="true">
       <img src="src/assets/web/isotipo-negro.png" alt="" width="512" height="512" loading="lazy">
     </div>
   </div>
@@ -450,7 +450,7 @@
 <!-- ============================================================
      FOOTER
 ============================================================ -->
-<footer class="foot">
+<footer class="foot mp-tinta-bloque">
   <div class="wrap">
     <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
       <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
@@ -458,23 +458,23 @@
     <div class="foot-grid">
       <div class="foot-intro">
         <p>Planes en grupo para Villavicencio. Sal, encuentra y conecta con gente de tu misma vibra.</p>
-        <a href="login.html#crear" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink mp-fijo">Crear mi cuenta</a>
       </div>
       <div class="foot-col">
-        <h2>Explora</h2>
+        <h2 class="mp-naranja-texto">Explora</h2>
         <a href="#feed">El radar</a>
         <a href="#como-funciona">Cómo funciona</a>
         <a href="preguntas.html">Preguntas</a>
         <a href="marca.html">La marca</a>
       </div>
       <div class="foot-col">
-        <h2>Negocios</h2>
+        <h2 class="mp-naranja-texto">Negocios</h2>
         <a href="comercio.html">Para negocios</a>
         <a href="empresa.html">Crear cuenta de negocio</a>
         <a href="empresa.html#entrar">Entrar como negocio</a>
       </div>
       <div class="foot-col foot-contact">
-        <h2>Escríbenos</h2>
+        <h2 class="mp-naranja-texto">Escríbenos</h2>
         <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
         <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
         <a href="equipo.html">Equipo y contacto</a>
@@ -491,10 +491,10 @@
 
 <!-- Visor de la campaña -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Pieza de campaña ampliada" hidden>
-  <button class="lb-btn lb-close" id="lbClose" type="button" aria-label="Cerrar">
+  <button class="lb-btn lb-close mp-fijo" id="lbClose" type="button" aria-label="Cerrar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
   </button>
-  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="Pieza anterior">
+  <button class="lb-btn lb-prev mp-fijo" id="lbPrev" type="button" aria-label="Pieza anterior">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
   <figure class="lb-fig">
@@ -504,7 +504,7 @@
     </div>
     <figcaption><span id="lbCap"></span><span class="lb-count" id="lbCount"></span></figcaption>
   </figure>
-  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="Pieza siguiente">
+  <button class="lb-btn lb-next mp-fijo" id="lbNext" type="button" aria-label="Pieza siguiente">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
   </button>
 </div>

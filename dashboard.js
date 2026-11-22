@@ -31,11 +31,10 @@
   const MIN = 60 * 1000;
   const HOUR = 60 * MIN;
 
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const { esc, norm } = window.MPUtil;
   const hash = s => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) | 0; return Math.abs(h); };
   const ic = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${name}"/></svg>`;
-  const money = n => '$' + Math.round(Number(n) || 0).toLocaleString('es-CO');
+  const { money } = window.MPUtil;
 
   const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const todayKey = () => dayKey(Date.now());
@@ -70,9 +69,10 @@
     return 2 * R * Math.asin(Math.sqrt(s));
   }
 
-  // Con sesión todo se lee y guarda en Supabase. Modo demo (?demo=1 o sin conexión): en este navegador.
+  // Con sesión todo se lee y guarda en Supabase. Modo demo SOLO con ?demo=1: sin red no se entra a datos de ejemplo.
   const sb = window.mpSupabase || null;
-  const DEMO = !sb || new URLSearchParams(window.location.search).has('demo');
+  const DEMO = new URLSearchParams(window.location.search).has('demo');
+  let soloLectura = false;
   let me = null;
   const isRemote = p => !DEMO && p && !p.local;
 
@@ -253,8 +253,13 @@
      5. PLANTILLAS
   ===================================================================== */
   const STK = n => `src/assets/web/stk/${n}.webp`;
+  // Solo https o rutas del sitio en href y src (también fotos en memoria al crear)
+  const safeImg = u => window.MPSeguro ? window.MPSeguro.safeUrl(u, { imagen: true }) : String(u || '');
+  // Sin fetch(data:): la política de seguridad del sitio lo bloquea
+  const dataABlob = d => { const [c, b64] = String(d).split(','), bin = atob(b64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new Blob([u8], { type: (c.match(/:(.*?);/) || [])[1] || 'image/jpeg' }); };
+  const safeHref = u => (window.MPSeguro ? window.MPSeguro.safeUrl(u) : '') || '#';
   const initial = n => (String(n || '?').trim().charAt(0) || '?').toUpperCase();
-  const photoImg = f => `<span class="av-photo"><img src="${esc(f.src)}" alt="" style="transform:translate(${+f.x || 0}%, ${+f.y || 0}%) scale(${+f.zoom || 1})"></span>`;
+  const photoImg = f => `<span class="av-photo"><img src="${esc(safeImg(f.src))}" alt="" style="transform:translate(${+f.x || 0}%, ${+f.y || 0}%) scale(${+f.zoom || 1})"></span>`;
 
   function avHTML(who, cls = '') {
     const meToo = who === 'me';
@@ -283,19 +288,19 @@
     const label = `${ic('i-bolt')}<span>Caerle</span>`;
     return `<button class="btn btn--hold${sz}" data-hold="join" data-id="${p.id}" aria-label="Caerle a ${esc(p.titulo)}: mantén presionado para confirmar">
       <span class="hold-label">${label}</span><span class="hold-fill" aria-hidden="true">${label}</span>
-      <span class="hold-tip" aria-hidden="true">Mantén presionado</span>
+      <span class="hold-tip" aria-hidden="true">Toca o mantén presionado</span>
     </button>`;
   }
 
   function coverHTML(p) {
     const cat = catById(p.categoria);
     const tags = `<div class="card-tags">
-        ${esDestacado(p) ? `<span class="tag tag--top">${ic('i-star')} Destacado</span>` : ''}${p.aliado ? `<span class="tag tag--ally">${ic('i-crown')} Aliado</span>${p.verificado ? `<span class="tag tag--verif">${ic('i-check')} Verificado</span>` : ''}` : `<span class="tag">${ic(cat.icon)} ${esc(cat.label)}</span>`}
+        ${esDestacado(p) ? `<span class="tag tag--top">${ic('i-star')} Destacado</span>` : ''}${p.aliado && (p.verificado || p.demo) ? `<span class="tag tag--ally">${ic('i-crown')} Aliado</span>${p.verificado ? `<span class="tag tag--verif">${ic('i-check')} Verificado</span>` : ''}` : `<span class="tag">${ic(cat.icon)} ${esc(cat.label)}</span>`}
         ${p.promo ? `<span class="tag tag--promo">${esc(p.promo)}</span>` : ''}
         ${priceTag(p)}
       </div>`;
     const share = `<button type="button" class="cover-share" data-action="compartir" data-id="${p.id}" aria-label="Compartir ${esc(p.titulo)}" title="Compartir">${ic('i-share')}</button>`;
-    if (p.imagen) return `<figure class="card-cover"><img src="${esc(p.imagen)}" alt="Foto de ${esc(p.titulo)}" loading="lazy" decoding="async" onerror="this.remove()">${tags}${share}</figure>`;
+    if (p.imagen) return `<figure class="card-cover"><img src="${esc(safeImg(p.imagen))}" alt="Foto de ${esc(p.titulo)}" loading="lazy" decoding="async" data-quitar-si-falla>${tags}${share}</figure>`;
     return `<figure class="card-cover card-cover--art ${cat.tone}"><img src="${STK(cat.art)}" alt="" loading="lazy" decoding="async">${tags}${share}</figure>`;
   }
 
@@ -335,7 +340,7 @@
   function popupHTML(p) {
     const cat = catById(p.categoria);
     return `<div class="pop">
-      <div class="pop-cover">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : `<div class="card-cover card-cover--art ${cat.tone}" style="height:100%"><img src="${STK(cat.art)}" alt=""></div>`}</div>
+      <div class="pop-cover">${p.imagen ? `<img src="${esc(safeImg(p.imagen))}" alt="">` : `<div class="card-cover card-cover--art ${cat.tone}" style="height:100%"><img src="${STK(cat.art)}" alt=""></div>`}</div>
       <div class="pop-body">
         <h3 class="pop-title">${esc(p.titulo)}</h3>
         <ul class="meta">
@@ -391,6 +396,7 @@
     if (!$('#view-' + view)) return;
     const changed = state.view !== view;
     state.view = view;
+    syncGeo();
     $$('.view').forEach(v => v.classList.toggle('is-active', v.id === 'view-' + view));
     $$('.tab, .bn').forEach(b => {
       const on = b.dataset.nav === view;
@@ -458,8 +464,9 @@
 
   function renderCards(animate = false) {
     renderFiltros();
-    const list = activeList().filter(p => !p.oficial).filter(matchesSearch).filter(filtroMatch).sort((a, b) => a.inicio - b.inicio);
-    $('#open-count').innerHTML = state.search
+    const delLocal = p => { if (!state.localId) return true; const c = String(p.creadorId || ''); return c === state.localId || ('MP-' + c.slice(0, 4).toUpperCase()) === state.localId; };
+    const list = activeList().filter(p => !p.oficial).filter(delLocal).filter(matchesSearch).filter(filtroMatch).sort((a, b) => a.inicio - b.inicio);
+    $('#open-count').innerHTML = state.localId ? `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} de este local · <button type="button" class="text-btn" data-action="local-quitar">Ver todos</button>` : state.search
       ? `<b>${list.length}</b> para "${esc(state.search)}"`
       : userPos ? `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} · distancias desde tu ubicación` : `<b>${list.length}</b> ${list.length === 1 ? 'plan' : 'planes'} en Villavicencio`;
     const grid = $('#cards');
@@ -488,7 +495,7 @@
       ${detalle}
       <span class="of-tk-go">${url ? `Comprar ${tipo === 'palco' ? 'palco' : 'entrada'} ${ic('i-out')}` : 'Pronto a la venta'}</span>`;
     return url
-      ? `<a class="of-tk of-tk--${tipo}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Comprar ${nombre.toLowerCase()} en la boletería oficial (se abre en otra pestaña)">${inner}</a>`
+      ? `<a class="of-tk of-tk--${tipo}" href="${esc(safeHref(url))}" target="_blank" rel="noopener noreferrer" aria-label="Comprar ${nombre.toLowerCase()} en la boletería oficial (se abre en otra pestaña)">${inner}</a>`
       : `<div class="of-tk of-tk--${tipo} is-off" aria-label="${nombre}: pronto a la venta">${inner}</div>`;
   }
   function renderOficial(animate = false) {
@@ -504,7 +511,7 @@
     const accion = p.unido
       ? `<button class="btn btn--ink" data-action="chat" data-id="${p.id}">${ic('i-chat')} Ir al chat del parche</button>`
       : isFull(p) ? `<button class="btn btn--ghost" disabled>Parche lleno</button>` : holdButton(p, '');
-    const poster = p.imagen ? `<figure class="of-poster"><img src="${esc(p.imagen)}" alt="Afiche oficial: ${esc(i.artista || p.titulo)}, ${esc(cuando)}" decoding="async"></figure>` : '';
+    const poster = p.imagen ? `<figure class="of-poster"><img src="${esc(safeImg(p.imagen))}" alt="Afiche oficial: ${esc(i.artista || p.titulo)}, ${esc(cuando)}" decoding="async"></figure>` : '';
     slot.innerHTML = `<section class="oficial ${p.imagen ? 'has-poster' : ''} ${animate ? 'is-in' : ''}" aria-labelledby="of-title">
       ${poster}
       <div class="of-art" aria-hidden="true">
@@ -546,6 +553,7 @@
     if (f === 'hoy') return dayKey(p.inicio) === todayKey();
     if (f === 'gratis') return precio(p) === 0;
     if (f === 'cerca') return !!userPos && distKm(p) <= CERCA_KM;
+    if (f === 'parati') return (perfil.intereses || []).includes(p.categoria);
     return p.categoria === f;
   }
   function renderFiltros() {
@@ -553,7 +561,9 @@
     if (!box) return;
     const base = activeList().filter(p => !p.oficial).filter(matchesSearch);
     const cuenta = f => { const prev = state.filtro; state.filtro = f; const n = base.filter(filtroMatch).length; state.filtro = prev; return n; };
-    const opts = [['todos', 'Todos', 'i-bolt'], ['hoy', 'Hoy', 'i-clock'], ['gratis', 'Gratis', 'i-tag']];
+    const opts = [['todos', 'Todos', 'i-bolt']];
+    if ((perfil.intereses || []).length) opts.push(['parati', 'Para ti', 'i-star']);
+    opts.push(['hoy', 'Hoy', 'i-clock'], ['gratis', 'Gratis', 'i-tag']);
     if (userPos) opts.push(['cerca', `A ${CERCA_KM} km`, 'i-locate']);
     [...new Set(base.map(p => p.categoria))].forEach(c => { const k = catById(c); opts.push([c, k.label.split(' ')[0], k.icon]); });
     if (!opts.some(o => o[0] === state.filtro)) state.filtro = 'todos';
@@ -642,7 +652,7 @@
     slot.innerHTML = `<section class="block hist" aria-labelledby="t-hist">
       <div class="block-head"><div><h2 class="block-title" id="t-hist">Oficiales anteriores</h2><p class="block-sub">Los parches grandes que ya armamos con la comunidad.</p></div></div>
       <div class="hist-row">${h.map(x => `<article class="hist-card">
-        <figure>${x.imagen ? `<img src="${esc(x.imagen)}" alt="Afiche de ${esc(x.info.artista || x.titulo)}" loading="lazy">` : `<img src="${STK('corona-principal')}" alt="" loading="lazy" class="is-art">`}</figure>
+        <figure>${x.imagen ? `<img src="${esc(safeImg(x.imagen))}" alt="Afiche de ${esc(x.info.artista || x.titulo)}" loading="lazy">` : `<img src="${STK('corona-principal')}" alt="" loading="lazy" class="is-art">`}</figure>
         <div><small>${esc(cap(new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(x.inicio)))}</small><b>${esc(x.titulo)}</b><span class="tnum">${x.van ? `${x.van} ${x.van === 1 ? 'parcero fue' : 'parceros fueron'}` : esc(x.lugar)}</span></div>
       </article>`).join('')}</div>
     </section>`;
@@ -691,7 +701,7 @@
     cancelada: ['Cancelada', 'is-off'], llego: ['Llegaron', 'is-ok'], no_llego: ['No llegaron', 'is-off'],
   };
   // Se puede marcar la llegada desde 1 hora antes hasta 4 horas después de la reserva
-  const puedeLlegar = r => ['pendiente', 'confirmada'].includes(r.estado) && Date.now() > r.llegada - HOUR && Date.now() < r.llegada + 4 * HOUR;
+  const puedeLlegar = r => r.estado === 'confirmada' && !r.aviseLlegada && Date.now() > r.llegada - HOUR && Date.now() < r.llegada + 4 * HOUR;
   async function mesaLlegue(id, btn) {
     const r = (state.misMesas || []).find(x => String(x.id) === String(id));
     if (!r) return;
@@ -700,10 +710,15 @@
     btn.disabled = true;
     try {
       const pos = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(ok, mal, { enableHighAccuracy: true, timeout: 15000, maximumAge: 20000 }));
-      const { error } = await sb.rpc('mesa_llegue', { p_reserva: r.id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude, p_precision: pos.coords.accuracy });
+      const { data, error } = await sb.rpc('mesa_llegue', { p_reserva: r.id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude, p_precision: pos.coords.accuracy });
       if (error) throw error;
-      r.estado = 'llego'; renderMesas();
-      toast('¡Llegaste!', `Le avisamos a ${r.negocio.nombre}. Disfruta tu mesa.`, { icon: 'i-check' });
+      if (data && data.por_confirmar) {
+        r.aviseLlegada = true; renderMesas();
+        toast('Le avisamos al local', `${r.negocio.nombre} confirma tu llegada. Muestra tu código ${r.codigo} o escanea el QR de la entrada.`, { icon: 'i-check', ms: 6000 });
+      } else {
+        r.estado = 'llego'; renderMesas();
+        toast('¡Llegaste!', `Le avisamos a ${r.negocio.nombre}. Disfruta tu mesa.`, { icon: 'i-check' });
+      }
     } catch (err) {
       const m = String((err && (err.hint || err.message)) || '');
       toast('No pudimos marcar tu llegada', err && err.code === 1 ? 'Permite la ubicación o muestra tu código en la entrada.' : /mesa_llegue|PGRST202/.test(m) ? `Muestra tu código ${r.codigo} en la entrada.` : (err.hint || dbMsg(err)), { type: 'error' });
@@ -713,13 +728,13 @@
   async function llegarPorQRLocal(negocio, clave) {
     if (DEMO || !sb) { toast('Llegada al local', 'En el modo demo no se guarda.', { icon: 'i-check' }); return; }
     toast('Validando tu llegada…', 'Un momento.', { icon: 'i-locate', ms: 2500 });
-    // La ubicación es opcional: si la da, el servidor revisa que esté cerca del local
+    // El servidor exige la ubicación para confirmar que estás en el local
     let lat = null, lng = null;
     if (navigator.geolocation) {
       try {
         const pos = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(ok, mal, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }));
         lat = pos.coords.latitude; lng = pos.coords.longitude;
-      } catch (e) { /* sin permiso: sigue sin ubicación */ }
+      } catch (e) { /* sin permiso: el servidor responde qué hacer */ }
     }
     const { data, error } = await sb.rpc('llegue_por_qr_local', { p_negocio: negocio, p_clave: clave, p_lat: lat, p_lng: lng });
     if (error) {
@@ -728,8 +743,9 @@
       return;
     }
     const d = data || {};
+    if (d.ok === false) { toast('No pudimos marcar tu llegada', d.hint || 'Muestra tu código en la entrada.', { type: 'error', ms: 7000 }); return; }
     if (d.tipo === 'mesa') {
-      const r = (state.misMesas || []).find(x => x.negocio && x.negocio.id === negocio && ['pendiente', 'confirmada'].includes(x.estado));
+      const r = (state.misMesas || []).find(x => x.negocio && x.negocio.id === negocio && x.estado === 'confirmada');
       if (r) r.estado = 'llego';
       renderMesas();
     } else if (d.parche) {
@@ -765,6 +781,7 @@
   async function enviarCalificacionLocal(btn) {
     const card = btn.closest('.rate-card--local'), estrellas = Number(card.querySelector('.loc-stars').dataset.v || 0);
     if (!estrellas) { toast('Elige las estrellas', 'Toca de 1 a 5 estrellas.', { type: 'error' }); return; }
+    if (DEMO || !sb) { localesPorCalificar.shift(); renderCalificar(); toast('Modo demo', 'En tu cuenta real esta calificación se guarda.', { icon: 'i-star' }); return; }
     btn.disabled = true;
     const { error } = await sb.rpc('calificar_local', { p_cobro: Number(card.dataset.cobro), p_estrellas: estrellas, p_texto: card.querySelector('.loc-texto').value.trim().slice(0, 280) });
     btn.disabled = false;
@@ -844,10 +861,10 @@
     if (leafletP) return leafletP;
     leafletP = new Promise(res => {
       const css = document.createElement('link');
-      css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; css.crossOrigin = '';
+      css.rel = 'stylesheet'; css.href = '/src/vendor/leaflet/leaflet.css';
       document.head.insertBefore(css, document.querySelector('link[href="dashboard.css"]'));
       const js = document.createElement('script');
-      js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; js.crossOrigin = '';
+      js.src = '/src/vendor/leaflet/leaflet.js';
       js.onload = () => { res(true); updateUserMarker(); };
       js.onerror = () => { leafletP = null; toast('El mapa no cargó', 'Revisa tu conexión para ver el mapa.', { type: 'error' }); res(false); };
       document.head.appendChild(js);
@@ -952,17 +969,23 @@
     }
     flyOnFix = flyOnFix || fly;
     if (fly && userPos) flyToUser();
-    const opts = { enableHighAccuracy: true, timeout: 12000, maximumAge: 20000 };
-    navigator.geolocation.getCurrentPosition(onPos, onGeoErr, opts);
-    if (watchId === null) watchId = navigator.geolocation.watchPosition(onPos, onGeoErr, opts);
+    navigator.geolocation.getCurrentPosition(onPos, onGeoErr, { enableHighAccuracy: fly || state.view === 'mapa', timeout: 12000, maximumAge: 60000 });
+    syncGeo();
     if (!userPos) setGeoStatus(`${ic('i-locate')} Buscando tu ubicación...`);
+  }
+  // Un solo seguimiento, y solo mientras el mapa está abierto y la app a la vista
+  function syncGeo() {
+    if (!('geolocation' in navigator)) return;
+    const debe = state.view === 'mapa' && !document.hidden;
+    if (debe && watchId === null) watchId = navigator.geolocation.watchPosition(onPos, onGeoErr, { enableHighAccuracy: true, timeout: 12000, maximumAge: 20000 });
+    if (!debe && watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
   }
   function onPos(pos) {
     const p = [pos.coords.latitude, pos.coords.longitude];
     const moved = !userPos || haversine(userPos, p) > 0.08;
     userPos = p; userAcc = pos.coords.accuracy;
     updateUserMarker();
-    setGeoStatus(`${ic('i-locate')} Ubicación en vivo · precisión ${Math.round(userAcc)} m`);
+    setGeoStatus(`${ic('i-locate')} ${watchId !== null ? 'Ubicación en vivo' : 'Ubicación actual'} · precisión ${Math.round(userAcc)} m`);
     $('#map-locate').classList.add('is-on');
     if (flyOnFix) { flyOnFix = false; flyToUser(); }
     if (moved) { if (state.view === 'inicio') renderCards(); if (state.view === 'mapa') renderLiveMap(); }
@@ -1148,16 +1171,23 @@
     const when = ts ? fmtCuando(ts) : 'Elige fecha y hora';
     const precioTxt = costo ? money(costo) : 'Gratis';
     renderFotoParche();
-    $('#create-preview').innerHTML = `
-      <div class="cpv-cover ${c.tone} ${draft.foto ? 'has-photo' : ''}"><img src="${draft.foto ? esc(draft.foto) : STK(c.art)}" alt=""><span class="tag">${ic(c.icon)} ${esc(c.label)}</span><span class="tag tag--price tnum">${precioTxt}</span></div>
-      <div class="cpv-body">
+    const prev = $('#create-preview');
+    // La foto solo se vuelve a poner si cambió: decodificarla en cada tecla hacía lento el formulario
+    const llaveFoto = draft.foto ? 'f' + draft.foto.length + draft.foto.slice(-24) : 'c' + c.art;
+    if (prev._foto !== llaveFoto) {
+      prev.innerHTML = `<div class="cpv-cover"><img src="${draft.foto ? esc(safeImg(draft.foto)) : STK(c.art)}" alt=""><span class="tag" data-cpv-cat></span><span class="tag tag--price tnum" data-cpv-precio></span></div><div class="cpv-body"></div>`;
+      prev._foto = llaveFoto;
+    }
+    $('.cpv-cover', prev).className = `cpv-cover ${c.tone} ${draft.foto ? 'has-photo' : ''}`;
+    $('[data-cpv-cat]', prev).innerHTML = `${ic(c.icon)} ${esc(c.label)}`;
+    $('[data-cpv-precio]', prev).textContent = precioTxt;
+    $('.cpv-body', prev).innerHTML = `
         <b>${esc(titulo)}</b>
         <ul class="meta">
           <li>${ic('i-clock')}<span class="tnum">${esc(when)}</span></li>
           <li>${ic('i-pin')}<span>${esc(F('lugar').value.trim() || 'Sin lugar todavía')}</span></li>
           <li>${ic('i-users')}<span class="tnum">${cupos} cupos · tú eres el primero</span></li>
-        </ul>
-      </div>`;
+        </ul>`;
     $('#create-summary').textContent = ts ? `${when} · ${cupos} cupos · ${precioTxt}` : '';
   }
 
@@ -1215,17 +1245,21 @@
       F('costo').value = precio(p); F('descripcion').value = p.descripcion; F('lugar').value = p.lugar;
       draft.lat = p.lat; draft.lng = p.lng; draft.barrio = p.barrio || '';
       draft.foto = p.imagen || '';
+      $('#c-planb').value = p.planB || ''; $('#c-planb-activo').checked = !!p.planBActivo;
     } else {
+      $('#c-planb').value = ''; $('#c-planb-activo').checked = false;
       F('categoria').value = 'chill';
-      F('fecha').value = todayKey();
+      // Si +90 min cae después de medianoche, el plan queda para mañana
       const h = new Date(Date.now() + 90 * MIN);
-      F('hora').value = h.getDate() === new Date().getDate() ? `${pad(h.getHours())}:00` : '23:00';
+      F('fecha').value = dayKey(h.getTime());
+      F('hora').value = `${pad(h.getHours())}:00`;
       F('cupos').value = 8; F('costo').value = 0;
       draft.lat = null; draft.lng = null; draft.barrio = '';
       draft.foto = '';
       // "Abrir un parche aquí" desde el buscador del mapa
       if (punto) { draft.lat = +(+punto.lat).toFixed(6); draft.lng = +(+punto.lng).toFixed(6); F('lugar').value = String(punto.nombre || '').slice(0, 60); draft.autoLugar = true; }
     }
+    $('#c-planb-switch').hidden = !p;
     F('fecha').min = todayKey();
     const match = p && LUGARES.find(l => l.lat === p.lat && l.lng === p.lng);
     selectPlaceChip(match ? match.id : null);
@@ -1249,13 +1283,22 @@
       lugar: F('lugar').value.trim(), barrio: draft.barrio, lat: draft.lat, lng: draft.lng,
       costo, presupuesto: costo, cuposMax: clamp(Number(F('cupos').value) || 2, 2, 60),
       imagen: draft.foto || '',
+      planB: $('#c-planb').value.trim().slice(0, 120), planBActivo: !!editingId && $('#c-planb-activo').checked,
       confirmados: base ? base.confirmados : [], chat: base ? base.chat : [],
       unido: true, propio: true, creadorId: 'me', creadoPorMi: true, checkin: base ? base.checkin : false,
     });
   }
 
+  let creando = false;
   async function submitCreate(e) {
     e.preventDefault();
+    if (creando) return;
+    creando = true;
+    const b0 = $('#create-submit'); b0.disabled = true;
+    try { await publicarParche(); }
+    finally { creando = false; b0.disabled = false; b0.classList.remove('is-loading'); }
+  }
+  async function publicarParche() {
     const names = Object.keys(RULES);
     names.forEach(n => touched.add(n));
     const bad = names.filter(n => !validate(n));
@@ -1580,7 +1623,7 @@
   async function accionAmigo(accion, id, btn) {
     const d = amigos.datos; if (!d) return;
     const nombre = amigoNombre(id).split(' ')[0];
-    if (accion === 'quitar' && !confirm(`¿Quitar a ${amigoNombre(id)} de tus amigos?\n\nYa no podrán escribirse. Si quieres que no te vuelva a encontrar, mejor bloquéala desde tu perfil.`)) return;
+    if (accion === 'quitar' && !(await confirmarModal('¿Quitar de tus amigos?', `Ya no podrán escribirse con ${amigoNombre(id)}. Si quieres, pueden volver a agregarse.`, 'Sí, quitar'))) return;
     if (btn) btn.disabled = true;
     let error = null, res = null;
     if (!DEMO && sb) {
@@ -1605,9 +1648,10 @@
     } else if (accion === 'cancelar') {
       d.enviadas = sacar(d.enviadas);
     } else if (accion === 'quitar') {
+      const quitado = quien.nombre || amigoNombre(id);
       d.amigos = sacar(d.amigos); amigos.conv.delete(id);
       if (amigos.dmId === id) { amigos.dmId = null; $('#mis-wrap').classList.remove('is-chat'); }
-      toast('Listo', `${amigoNombre(id)} ya no está en tus amigos.`);
+      toast('Listo', `${quitado} ya no está en tus amigos.`);
     }
     pintarBadgeAmigos();
     renderAmigos();
@@ -1629,11 +1673,13 @@
     const list = misList();
     $('#mis-list').innerHTML = list.length ? list.map((p, i) => `
       <li class="mis-row" data-id="${p.id}">
-        <div class="mis-actions" aria-hidden="true">${misActionsHTML(p)}</div>
+        <div class="mis-actions" aria-hidden="true" inert>${misActionsHTML(p)}</div>
         <button class="mis-item ${state.chatId === p.id ? 'is-active' : ''}" data-action="chat" data-id="${p.id}" style="--d:${i * 60}ms">
           <span class="mis-ic ${isMine(p) ? 'is-own' : ''}">${ic(catById(p.categoria).icon)}</span>
           <span><b>${esc(p.titulo)}</b><small class="tnum">${esc(fmtCuando(p.inicio))} · ${ocupados(p)}/${p.cuposMax}</small></span>
         </button>
+        <button type="button" class="mis-mas" data-action="mis-opciones" data-id="${p.id}" aria-expanded="false" aria-label="Opciones de ${esc(p.titulo)}">${ic('i-more')}</button>
+        <div class="mis-inline" hidden>${misActionsHTML(p).replace(/ tabindex="-1"/g, '')}</div>
       </li>`).join('')
       : `<li class="mis-empty">${state.misTab === 'propios'
           ? emptyHTML({ art: 'corona-armador', title: 'Aún no armas uno', text: 'Abre tu primer parche y gánate la insignia de El armador.' })
@@ -1785,7 +1831,9 @@
       box.innerHTML = `<div class="chat-placeholder"><img src="${STK('parceros')}" alt=""><h3>Elige un parche</h3><p>Aquí ves el chat del grupo, quiénes van y la vaca.</p></div>`;
       return;
     }
-    const keepText = $('#chat-input')?.value || '';
+    syncCanalChat();
+    const entrada = $('#chat-input'), conFoco = !!entrada && document.activeElement === entrada, cursor = entrada ? entrada.selectionStart : 0;
+    const keepText = entrada?.value || '';
     const trPanel = $('[data-panel="transporte"]');
     if (trPanel) state.abiertoTransporte = trPanel.open;
     const vacaOpen = $('#vaca')?.open || false;
@@ -1847,12 +1895,26 @@
       </div>`;
     updateVaca();
     scrollChat(false);
+    if (conFoco) { const i = $('#chat-input'); if (i) { i.focus({ preventScroll: true }); try { i.setSelectionRange(cursor, cursor); } catch (e) { /* nada */ } } }
   }
   function renderChatMsgs() {
     const p = state.chatId && findP(state.chatId);
     const box = $('#chat-msgs');
     if (!p || !box) return;
-    box.innerHTML = consejoChatHTML(p) + (chatLista(p).map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()) + (typing.on ? '<div class="typing"><i></i><i></i><i></i></div>' : '');
+    const lista = chatLista(p);
+    box.innerHTML = consejoChatHTML(p) + (lista.map(m => msgHTML(m, 0, p.chat)).join('') || chatVacioHTML()) + (typing.on ? '<div class="typing"><i></i><i></i><i></i></div>' : '');
+    box._pid = p.id; box._n = lista.length; box._ult = lista[lista.length - 1] || null;
+    scrollChat();
+  }
+  // Mensaje nuevo: se agrega al final sin tocar lo demás (no cierra el teclado ni quita el foco)
+  function anexarMsg(p) {
+    const box = $('#chat-msgs');
+    if (!box) { renderChat(); return; }
+    const lista = chatLista(p);
+    if (box._pid !== p.id || !box._n || lista.length !== box._n + 1 || lista[lista.length - 2] !== box._ult) { renderChatMsgs(); return; }
+    const m = lista[lista.length - 1], html = msgHTML(m, 0, p.chat), t = box.querySelector('.typing');
+    if (t) t.insertAdjacentHTML('beforebegin', html); else box.insertAdjacentHTML('beforeend', html);
+    box._n = lista.length; box._ult = m;
     scrollChat();
   }
   function scrollChat(smooth = true) {
@@ -1875,7 +1937,7 @@
     const resp = replyTo;
     if (resp) { msg.reply = { key: resp.key, autor: resp.autor, texto: resp.texto }; clearReply(); }
     p.chat.push(msg);
-    renderChatMsgs();
+    anexarMsg(p);
     if (isRemote(p)) {
       const row = { parche_id: p.id, texto: msg.texto };
       if (resp && resp.id != null) row.responde_a = resp.id;
@@ -2107,18 +2169,21 @@
     const m = mesaState.promo, v = m && validarMesa();
     if (!v) return;
     const btn = $('#mesa-submit');
-    btn.classList.add('is-loading');
+    if (btn.disabled) return;
+    btn.disabled = true; btn.classList.add('is-loading');
     const nota = $('#mesa-nota').value.trim().slice(0, 140);
     let reserva;
-    if (DEMO || !sb) {
-      await new Promise(r => setTimeout(r, 450));
-      reserva = { id: 'r' + Date.now().toString(36), codigo: 'MESA-' + Math.random().toString(36).slice(2, 7).toUpperCase(), estado: 'pendiente' };
-    } else {
-      const { data, error } = await sb.rpc('reservar_mesa', { p_promo: m.id, p_personas: v.n, p_llegada: new Date(v.ts).toISOString(), p_nota: nota });
-      if (error) { btn.classList.remove('is-loading'); $('#mesa-error').textContent = rpcMsg(error); return; }
-      reserva = data;
-    }
-    btn.classList.remove('is-loading');
+    try {
+      if (DEMO || !sb) {
+        await new Promise(r => setTimeout(r, 450));
+        reserva = { id: 'r' + Date.now().toString(36), codigo: 'MESA-' + Math.random().toString(36).slice(2, 7).toUpperCase(), estado: 'pendiente' };
+      } else {
+        const { data, error } = await sb.rpc('reservar_mesa', { p_promo: m.id, p_personas: v.n, p_llegada: new Date(v.ts).toISOString(), p_nota: nota });
+        if (error) { $('#mesa-error').textContent = rpcMsg(error); return; }
+        reserva = data;
+      }
+    } catch (e2) { $('#mesa-error').textContent = 'Sin conexión. Intenta de nuevo.'; return; }
+    finally { btn.disabled = false; btn.classList.remove('is-loading'); }
     state.misMesas = (state.misMesas || []).concat([{ ...reserva, personas: v.n, llegada: v.ts, nota, titulo: m.titulo, beneficio: m.beneficio, negocio: m.negocio }]);
     if (DEMO) store.set('mp_demo_mesas', state.misMesas);
     closeModal('modal-mesa');
@@ -2200,6 +2265,8 @@
     if (identidades === null) cargarIdentidades().then(pintarVinculos).catch(() => {});
     if (state.view === 'perfil') cargarSesiones().catch(() => {});
     renderInsignias();
+    renderIntereses();
+    renderCuponesUsuario();
     renderVerify();
     renderRating();
     const pa = $('#p-anuncios'); if (pa) pa.checked = !!perfil.recibe_anuncios;
@@ -2225,12 +2292,18 @@
     card.classList.toggle('is-verified', ok);
     $('#verify-text').textContent = ok
       ? `Verificaste tu cédula${perfil.cedula_verificada_en ? ' el ' + new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(perfil.cedula_verificada_en)) : ''}. Tu sello sale en tu perfil y en los chats.`
+      : perfil.cedula_estado === 'pendiente' ? 'Recibimos tu cédula. El equipo la está revisando y te avisamos por notificación.'
+      : perfil.cedula_estado === 'rechazada' ? `Tu verificación no fue aprobada${perfil.cedula_motivo ? ': ' + perfil.cedula_motivo : ''}. Puedes enviar fotos nuevas.`
       : 'Verifica tu cédula una sola vez para abrir parches y llevar el sello. Tus fotos quedan privadas.';
-    $('#verify-btn').hidden = ok;
+    $('#verify-btn').hidden = ok || perfil.cedula_estado === 'pendiente';
   }
 
   async function pedirVerificacion(motivo) {
     if (perfil.cedula_verificada) return true;
+    if (perfil.cedula_estado === 'pendiente') {
+      toast('Tu cédula está en revisión', 'Te avisamos apenas quede aprobada. Después ya puedes abrir parches.', { icon: 'i-shield', ms: 6000 });
+      return false;
+    }
     if (!window.MPVerificacion) { toast('No cargó la verificación', 'Recarga la página e intenta de nuevo.', { type: 'error' }); return false; }
     if (!perfil.cedula) {
       toast('Tu cuenta no tiene cédula', 'Escríbenos a modoparcheoficial@gmail.com para agregarla y poder verificarte.', { type: 'error', ms: 7000 });
@@ -2241,6 +2314,7 @@
       sb, uid: me && me.id, cedula: perfil.cedula, demo: DEMO, motivo,
       abrirModal: () => openModal('modal-verificacion'),
       cerrarModal: () => closeModal('modal-verificacion'),
+      alPendiente: () => { perfil.cedula_estado = 'pendiente'; perfil.cedula_motivo = ''; try { savePerfil(); } catch (e) { /* nada */ } renderVerify(); },
     });
     if (!ok) return false;
     perfil.cedula_verificada = true;
@@ -2289,8 +2363,60 @@
     { img: 'medalla-crack-deporte', nombre: 'Crack del deporte', como: 'Cáele a un parche de deporte', ok: enCategoria('deportes') },
     { img: 'medalla-rey-mirador', nombre: 'Rey del mirador', como: 'Sube a un mirador con el parche', ok: enCategoria('pueblear') },
   ];
+  const insigniasGanadas = new Set();
+  async function cargarInsignias() {
+    if (DEMO || !sb || soloLectura) return;
+    const { data, error } = await sb.rpc('mis_insignias');
+    if (error) return;
+    (data || []).forEach(k => insigniasGanadas.add(k));
+    if (state.view === 'perfil') renderInsignias();
+  }
+  let misCupones = [];
+  async function cargarCupones() {
+    if (DEMO || !sb || soloLectura) { renderCuponesUsuario(); return; }
+    const { data, error } = await sb.rpc('mis_cupones');
+    if (!error) misCupones = data || [];
+    renderCuponesUsuario();
+  }
+  function renderCuponesUsuario() {
+    const box = $('#mis-cupones'); if (!box) return;
+    const ahora = Date.now();
+    const vivos = misCupones.filter(c => !c.canjeado && Date.parse(c.vence) > ahora);
+    $('#mis-cupones-n').textContent = vivos.length ? `${vivos.length} por usar` : '';
+    box.innerHTML = misCupones.length ? misCupones.slice(0, 20).map(c => {
+      const estado = c.canjeado ? 'Usado' : Date.parse(c.vence) <= ahora ? 'Vencido' : `Vence ${fmtCuando(Date.parse(c.vence)).toLowerCase()}`;
+      const vivo = !c.canjeado && Date.parse(c.vence) > ahora;
+      return `<li class="cupon-mio ${vivo ? '' : 'is-off'}"><span><b>${esc(c.cupBen || c.cupNombre)}</b><small>${esc(c.negocio)} · ${esc(estado)}</small></span>${vivo ? `<button type="button" class="btn btn--ink btn--sm" data-action="cupon-ver" data-id="${esc(c.codigo)}">${ic('i-qr')} Mostrar</button>` : ''}</li>`;
+    }).join('') : '<li class="mini-note">Cuando un local te dé un cupón al llegar, aparece aquí.</li>';
+  }
+  async function verCupon(codigo) {
+    const c = misCupones.find(x => x.codigo === codigo); if (!c) return;
+    $('#cupon-ben').textContent = c.cupBen || c.cupNombre;
+    $('#cupon-local').textContent = c.negocio || '';
+    $('#cupon-codigo').textContent = c.codigo;
+    const qr = $('#cupon-qr');
+    qr.textContent = '';
+    openModal('modal-cupon');
+    try { if (window.MPCheckin) qr.innerHTML = await window.MPCheckin.dibujar(c.codigo); }
+    catch (e) { qr.textContent = 'Muestra el código de abajo.'; }
+  }
+  function renderIntereses() {
+    const box = $('#p-intereses'); if (!box) return;
+    const mios = new Set(perfil.intereses || []);
+    box.innerHTML = CATS.map(c => `<button type="button" class="interes ${mios.has(c.id) ? 'is-on' : ''}" data-action="interes" data-cat="${c.id}" aria-pressed="${mios.has(c.id)}">${ic(c.icon)}<span>${esc(c.label)}</span></button>`).join('');
+  }
+  let guardarInteresT = null;
+  function toggleInteres(btn) {
+    const k = btn.dataset.cat, lista = new Set(perfil.intereses || []);
+    if (lista.has(k)) { if (lista.size === 1) { toast('Deja al menos uno', 'Así te mostramos planes con buen match.', { icon: 'i-info' }); return; } lista.delete(k); } else lista.add(k);
+    perfil.intereses = [...lista];
+    renderIntereses(); savePerfil();
+    if (DEMO || !sb) return;
+    clearTimeout(guardarInteresT);
+    guardarInteresT = setTimeout(() => updatePerfilRemote({ intereses: perfil.intereses }).then(() => { refresh(); }).catch(err => toast('No se guardaron tus gustos', dbMsg(err), { type: 'error' })), 500);
+  }
   function renderInsignias() {
-    const lista = INSIGNIAS.map(b => ({ ...b, ganada: !!b.ok() }));
+    const lista = INSIGNIAS.map(b => ({ ...b, ganada: !!b.ok() || insigniasGanadas.has(b.img) }));
     const n = lista.filter(b => b.ganada).length;
     $('#badges-count').textContent = `${n} de ${lista.length}`;
     const bar = $('#badge-bar');
@@ -2752,14 +2878,17 @@
   }
 
   /* ---------- Completar el registro (entró con Google) ---------- */
-  let completarGoogle = false;
+  let completarGoogle = false, completarFecha = false;
   async function revisarRegistro() {
     if (DEMO || !sb) return;
     const { data, error } = await sb.rpc('estado_registro');
     if (error || !data || (!data.falta && !data.falta_cedula)) return; // sin activar o todo completo
     completarGoogle = !!data.falta;
+    completarFecha = completarGoogle || !!data.falta_fecha;
     $('#comp-google').hidden = !completarGoogle;
-    $('#comp-google-2').hidden = !completarGoogle;
+    $('#comp-google-2').hidden = !completarFecha;
+    // Las cuentas de correo ya aceptaron términos: a ellas solo se les pide la fecha
+    $$('#comp-google-2 .report-bloquear').forEach(l => { l.style.display = completarGoogle ? '' : 'none'; });
     $('#comp-sub').textContent = completarGoogle
       ? 'Entraste con Google. Para usar ModoParche confirma estos datos una sola vez.'
       : 'Ahora la cédula es obligatoria para cuidar la comunidad. Escríbela una sola vez; nadie más la ve.';
@@ -2775,17 +2904,22 @@
     const msg = $('#comp-msg'), b = $('#comp-ok');
     const nombre = $('#comp-nombre').value.trim(), fecha = $('#comp-fecha').value, cedula = $('#comp-cedula').value.trim();
     if (!/^[1-9]\d{4,9}$/.test(cedula)) { msg.textContent = 'Escribe tu cédula solo con números: de 5 a 10 dígitos, sin empezar en 0.'; $('#comp-cedula').focus(); return; }
+    if (completarFecha && !fecha) { msg.textContent = 'Escribe tu fecha de nacimiento.'; $('#comp-fecha').focus(); return; }
     if (completarGoogle) {
       if (!/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]{3,80}$/.test(nombre)) { msg.textContent = 'Escribe tu nombre solo con letras.'; return; }
-      if (!fecha) { msg.textContent = 'Escribe tu fecha de nacimiento.'; return; }
       if (!$('#comp-terminos').checked || !$('#comp-datos').checked) { msg.textContent = 'Necesitamos que aceptes los términos y el tratamiento de datos.'; return; }
     }
     b.disabled = true; msg.textContent = '';
-    const { error } = await sb.rpc('completar_registro', completarGoogle
+    const { data: res, error } = await sb.rpc('completar_registro', completarGoogle
       ? { p_cedula: cedula, p_fecha: fecha, p_terminos: true, p_datos: true, p_anuncios: $('#comp-anuncios').checked, p_nombre: nombre }
-      : { p_cedula: cedula });
+      : completarFecha ? { p_cedula: cedula, p_fecha: fecha } : { p_cedula: cedula });
     b.disabled = false;
-    if (error) { msg.textContent = (error.hint) || (/23505|duplicate/.test(`${error.code} ${error.message}`) ? 'Esa cédula ya tiene una cuenta.' : dbMsg(error)); return; }
+    if (error) { msg.textContent = (error.hint) || (/23505|duplicate/.test(`${error.code} ${error.message}`) ? 'No pudimos registrar esa cédula.' : dbMsg(error)); return; }
+    if (res && res.ok === false) { msg.textContent = res.hint || 'No pudimos registrar esa cédula.'; return; }
+    // Ya queda en memoria: verificarla no pide recargar la página
+    perfil.cedula = cedula;
+    try { savePerfil(); } catch (e2) { /* nada */ }
+    renderVerify();
     if (!completarGoogle) { closeModal('modal-completar'); toast('Cédula guardada', 'Cuando quieras, verifícala en tu perfil para ganar el sello.', { icon: 'i-shield' }); return; }
     perfil.nombre = nombre; perfil.primer = nombre.split(' ')[0];
     try { savePerfil(); } catch (e2) { /* nada */ }
@@ -2793,6 +2927,26 @@
     toast(`¡Bienvenido, ${perfil.primer}!`, 'Tu cuenta quedó lista.', { icon: 'i-check' });
   }
 
+  // Con un modal abierto, el resto de la página no recibe foco ni clics
+  function syncInert() {
+    const arriba = modalStack.length ? $('#' + modalStack[modalStack.length - 1].id) : null;
+    [...document.body.children].forEach(el => {
+      if (['SCRIPT', 'STYLE'].includes(el.tagName) || el.id === 'toasts' || el.id === 'boot') return;
+      el.inert = !!arriba && el !== arriba;
+    });
+  }
+  function confirmarModal(titulo, texto, okTxt) {
+    return new Promise(res => {
+      let hecho = false;
+      const fin = v => { if (hecho) return; hecho = true; res(v); };
+      $('#confirm-title').textContent = titulo; $('#confirm-text').textContent = texto; $('#confirm-ok').textContent = okTxt;
+      $('#confirm-ok').onclick = () => { fin(true); closeModal('modal-confirm'); };
+      const m = $('#modal-confirm');
+      const obs = new MutationObserver(() => { if (m.classList.contains('is-closing') || m.hidden) { obs.disconnect(); fin(false); } });
+      obs.observe(m, { attributes: true, attributeFilter: ['class', 'hidden'] });
+      openModal('modal-confirm');
+    });
+  }
   function openModal(id) {
     const m = $('#' + id);
     if (!m || (!m.hidden && !m.classList.contains('is-closing'))) return;
@@ -2802,6 +2956,7 @@
     panel.setAttribute('tabindex', '-1');
     modalStack.push({ id, ret: document.activeElement });
     document.body.classList.add('no-scroll');
+    syncInert();
     setTimeout(() => { (id === 'modal-create' && !isMobile() ? F('titulo') : panel).focus({ preventScroll: true }); }, 60);
   }
   function closeModal(id) {
@@ -2816,9 +2971,10 @@
     if (id === 'modal-qrscan') cerrarLectorQR();
     if (id === 'modal-qrid') clearTimeout(qridTimer);
     if (!modalStack.length) document.body.classList.remove('no-scroll');
+    syncInert();
     if (entry && entry.ret && document.contains(entry.ret)) entry.ret.focus({ preventScroll: true });
   }
-  const closeAllModals = () => [...modalStack].reverse().forEach(x => closeModal(x.id));
+  const closeAllModals = () => [...modalStack].reverse().forEach(x => { if (x.id !== 'modal-completar') closeModal(x.id); });
 
   /* =====================================================================
      12. SUPABASE
@@ -2841,11 +2997,12 @@
   const hideBoot = () => { const b = $('#boot'); if (b) { b.classList.add('is-done'); setTimeout(() => b.remove(), 500); } };
   function bootError(err) {
     const sql = /PGRST205|42P01|Could not find the table/i.test(String(err && (err.code + ' ' + err.message)));
-    setBoot(sql ? 'Faltan las tablas en Supabase. Corre los archivos de supabase/migrations en el SQL Editor y recarga.' : `No pudimos cargar tus parches. ${dbMsg(err)}`);
+    const sinRed = navigator.onLine === false || /Failed to fetch|NetworkError|Load failed/i.test(String(err && err.message));
+    setBoot(sql ? 'Faltan las tablas en Supabase. Corre los archivos de supabase/migrations en el SQL Editor y recarga.' : sinRed ? 'Sin conexión. Cuando vuelva el internet cargamos tus parches.' : `No pudimos cargar tus parches. ${dbMsg(err)}`);
+    if (sinRed) window.addEventListener('online', () => window.location.reload(), { once: true });
     const box = $('#boot-actions');
     box.hidden = false;
     box.innerHTML = `<button class="btn btn--ink" data-boot="retry">${ic('i-refresh')} Reintentar</button>
-      <a class="btn btn--ghost" href="dashboard.html?demo=1">Ver el modo demo</a>
       <button class="btn btn--ghost" data-boot="logout">${ic('i-logout')} Cerrar sesión</button>`;
     box.addEventListener('click', e => {
       const b = e.target.closest('[data-boot]');
@@ -2884,6 +3041,9 @@
     $('#confirm-ok').onclick = async () => {
       const b = $('#confirm-ok'); b.disabled = true;
       if (DEMO || !sb) { try { localStorage.clear(); } catch (e) { /* nada */ } window.location.replace('index.html'); return; }
+      // Primero se revisa si se puede: si no, no se toca ningún archivo
+      const chk = await sb.rpc('puedo_borrar_cuenta');
+      if (chk.data && chk.data.ok === false) { b.disabled = false; toast('Aún no se puede borrar', chk.data.hint, { type: 'error', ms: 7000 }); return; }
       // Las fotos se borran con la API de Storage (cada quien solo puede borrar su carpeta)
       try {
         const { data: files } = await sb.storage.from('fotos').list(me.id, { limit: 1000 });
@@ -2907,7 +3067,9 @@
 
   async function logout() {
     if (DEMO || !sb) { window.location.href = 'login.html'; return; }
+    cerrarCanales();
     try { await sb.auth.signOut(); } catch (e) { /* salimos igual */ }
+    limpiarLocal();
     window.location.replace('login.html');
   }
 
@@ -2942,6 +3104,8 @@
       contacto_nombre: (priv && priv.contacto_nombre) || '', contacto_tel: (priv && priv.contacto_tel) || '',
       recibe_anuncios: !!p.recibe_anuncios,
       cedula_verificada: !!(priv && priv.cedula_verificada), cedula_verificada_en: (priv && priv.cedula_verificada_en) || null,
+      cedula_estado: (priv && priv.cedula_estado) || (priv && priv.cedula_verificada ? 'aprobada' : 'sin_enviar'),
+      cedula_motivo: (priv && priv.cedula_motivo) || '',
       instagram: (priv && priv.instagram) || '',
     });
   }
@@ -2962,6 +3126,7 @@
       llegaron: miembros.filter(m => m.checkin).map(m => m.usuario_id === me.id ? 'me' : m.usuario_id),
       locs: Object.fromEntries(miembros.filter(m => m.localidad).map(m => [m.usuario_id === me.id ? 'me' : m.usuario_id, m.localidad])),
       localidad: (mia && mia.localidad) || '',
+      planB: r.plan_b || '', planBActivo: !!r.plan_b_activo,
     });
   }
   // Mensajes de personas de ejemplo (sin cuenta) no se muestran
@@ -2997,24 +3162,51 @@
     state.historial = r.error ? [] : (r.data || []).map(x => ({ id: x.id, titulo: x.titulo, inicio: Date.parse(x.inicio), lugar: x.lugar, imagen: x.imagen || '', info: x.oficial_info || {}, van: (x.parche_miembros && x.parche_miembros[0] && x.parche_miembros[0].count) || 0 }));
   }
 
+  // Hasta 600 parches en páginas de 150, con sus miembros en la misma respuesta
+  async function traerRadar(since) {
+    const filas = []; let ci = null, cid = null;
+    for (let i = 0; i < 4; i++) {
+      const { data, error } = await sb.rpc('parches_radar', { p_desde: since, p_limite: 150, p_inicio: ci, p_id: cid });
+      if (error) {
+        if (!/parches_radar|PGRST202/.test(error.message || '')) throw error;
+        // Web publicada antes que la migración
+        const v = await sb.from('parches').select('*').gte('inicio', since).order('inicio');
+        if (v.error) throw v.error;
+        return { filas: v.data || [], conMiembros: false, error: null };
+      }
+      filas.push(...(data || []));
+      if (!data || data.length < 150) break;
+      const u = data[data.length - 1]; ci = u.inicio; cid = u.id;
+    }
+    return { filas, conMiembros: true, error: null };
+  }
   async function loadRemote() {
     const since = new Date(Date.now() - 7 * 24 * HOUR).toISOString();
     const [pf, pv, ps] = await Promise.all([
       sb.from('perfiles').select('*').eq('id', me.id).maybeSingle(),
       sb.from('perfiles_privados').select('*').eq('id', me.id).maybeSingle(),
-      sb.from('parches').select('*').gte('inicio', since).order('inicio'),
+      traerRadar(since),
     ]);
-    for (const r of [pf, pv, ps]) if (r.error) throw r.error;
-    const rows = keepRows(ps.data || []);
+    for (const r of [pf, pv]) if (r.error) throw r.error;
+    const rows = keepRows(ps.filas);
     let miembros = [];
-    if (rows.length) {
+    if (ps.conMiembros) miembros = rows.flatMap(r => r.miembros || []);
+    else if (rows.length) {
       const mm = await selMiembros(c => sb.from('parche_miembros').select(c).in('parche_id', rows.map(r => r.id)));
       if (mm.error) throw mm.error;
       miembros = mm.data;
     }
     await cachePeople(rows.map(r => r.creador_id).concat(miembros.map(m => m.usuario_id)));
     applyPerfilRow(pf.data, pv.data);
-    state.parches = rows.map(r => fromRow(r, miembros.filter(m => m.parche_id === r.id)));
+    const porParche = new Map();
+    miembros.forEach(m => { if (!porParche.has(m.parche_id)) porParche.set(m.parche_id, []); porParche.get(m.parche_id).push(m); });
+    const antes = new Map(state.parches.map(x => [x.id, x]));
+    state.parches = rows.map(r => {
+      const o = antes.get(r.id), n = fromRow(r, porParche.get(r.id) || [], o);
+      if (o) { n.viajes = o.viajes; n.encuestas = o.encuestas; n.album = o.album; }
+      return n;
+    });
+    ultimaRecarga = Date.now();
     await Promise.all([cargarMesas(), cargarCalificados(), cargarHistorial(), cargarEspera(), cargarParceros()]);
   }
 
@@ -3036,9 +3228,10 @@
     const idx = state.parches.findIndex(p => p.id === id);
     const p = fromRow(row, miembros, idx >= 0 ? state.parches[idx] : null);
     if (drop) p._drop = true;
-    if (idx >= 0) state.parches[idx] = p; else state.parches.push(p);
+    if (idx >= 0) { const o = state.parches[idx]; p.viajes = o.viajes; p.encuestas = o.encuestas; p.album = o.album; state.parches[idx] = p; } else state.parches.push(p);
     refresh();
-    if (state.chatId === id) renderChat();
+    // Escribiendo: no se reemplaza el formulario del chat
+    if (state.chatId === id) { if (document.activeElement && document.activeElement.id === 'chat-input') renderChatMsgs(); else renderChat(); }
   }
   const reloadTimers = new Map();
   function reloadParche(id, { drop = false } = {}) {
@@ -3060,7 +3253,7 @@
   }
 
   async function uploadFoto(dataUrl, tipo) {
-    const blob = await (await fetch(dataUrl)).blob();
+    const blob = dataABlob(dataUrl);
     const path = `${me.id}/${tipo}-${Date.now()}.jpg`;
     const { error } = await sb.storage.from('fotos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
     if (error) throw error;
@@ -3075,7 +3268,9 @@
       const row = {
         titulo: d.titulo, categoria: d.categoria, descripcion: d.descripcion, inicio: new Date(d.inicio).toISOString(),
         lugar: d.lugar, barrio: d.barrio || '', lat: d.lat, lng: d.lng, costo: d.costo, presupuesto: d.costo, cupos_max: d.cuposMax,
+        plan_b: d.planB || '',
       };
+      if (editId) row.plan_b_activo = !!(d.planB && d.planBActivo);
       // Foto nueva: se sube al bucket "fotos" (carpeta propia) y se guarda el enlace
       if (d.imagen && d.imagen.startsWith('data:')) row.imagen = await uploadFoto(d.imagen, 'parche');
       else row.imagen = d.imagen || '';
@@ -3100,50 +3295,49 @@
 
   let extrasT = null;
   const extrasPronto = id => { clearTimeout(extrasT); extrasT = setTimeout(() => cargarExtras(id), 400); };
+  let canalUsuario = null, canalChat = null, canalChatId = null, ultimoRadar = new Date().toISOString(), ultimaRecarga = Date.now();
+  async function mensajeEntrante(r) {
+    const p = findP(r.parche_id);
+    if (!p || !isRealMsg(r) || p.chat.some(m => m.id === r.id)) return;
+    const mine = r.autor_id === me.id && p.chat.find(m => m.autor === 'me' && !m.id && m.texto === r.texto);
+    if (mine) { mine.id = r.id; return; }
+    await cachePeople([r.autor_id]);
+    if (p.chat.some(m => m.id === r.id)) return;
+    p.chat.push(msgFromRow(r));
+    if (r.encuesta_id && !(p.encuestas || {})[r.encuesta_id]) extrasPronto(p.id);
+    if (state.chatId === p.id) anexarMsg(p);
+  }
+  // Solo el parche abierto escucha en vivo: no se reciben cambios de toda la base
+  function syncCanalChat() {
+    if (DEMO || !sb) return;
+    const id = state.chatId && isUuid(state.chatId) ? state.chatId : null;
+    if (id === canalChatId) return;
+    if (canalChat) { sb.removeChannel(canalChat); canalChat = null; }
+    canalChatId = id;
+    if (!id) return;
+    const f = `parche_id=eq.${id}`;
+    canalChat = sb.channel('mp-chat-' + id)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: f }, ({ new: r }) => { mensajeEntrante(r); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'parche_miembros', filter: f }, () => reloadParche(id))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'parches', filter: `id=eq.${id}` }, () => reloadParche(id))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'parches', filter: `id=eq.${id}` }, () => reloadParche(id))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'viajes', filter: f }, () => extrasPronto(id))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fotos_parche', filter: f }, () => extrasPronto(id))
+      .subscribe();
+  }
   function subscribeRealtime() {
-    const pidOf = pl => (pl.new && (pl.new.parche_id || pl.new.id)) || (pl.old && (pl.old.parche_id || pl.old.id));
-    sb.channel('mp-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'parches' }, pl => {
-        const id = (pl.new && pl.new.id) || (pl.old && pl.old.id);
-        if (!id) return;
-        if (pl.eventType === 'INSERT' && pl.new.creador_id !== me.id && !findP(id)) {
-          reloadParche(id, { drop: true }).then(() => {
-            const p = findP(id);
-            if (p) toast('Nuevo parche en vivo', `${p.titulo} · ${fmtKm(distKm(p))}`, { icon: 'i-live', action: { label: 'Ver', id } });
-          });
-          return;
-        }
-        if (findP(id)) reloadParche(id);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'parche_miembros' }, pl => {
-        const id = pidOf(pl);
-        if (id && findP(id)) reloadParche(id);
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, async ({ new: r }) => {
-        const p = findP(r.parche_id);
-        if (!p || !isRealMsg(r) || p.chat.some(m => m.id === r.id)) return;
-        const mine = r.autor_id === me.id && p.chat.find(m => m.autor === 'me' && !m.id && m.texto === r.texto);
-        if (mine) { mine.id = r.id; return; }
-        await cachePeople([r.autor_id]);
-        if (p.chat.some(m => m.id === r.id)) return;
-        p.chat.push(msgFromRow(r));
-        if (r.encuesta_id && !(p.encuestas || {})[r.encuesta_id]) extrasPronto(p.id);
-        if (state.chatId === p.id) renderChatMsgs();
-      })
+    if (canalUsuario) return;
+    canalUsuario = sb.channel('mp-usuario-' + me.id)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_directos', filter: `para_id=eq.${me.id}` }, ({ new: r }) => { dmEntrante(r); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
-        // Ícono de la app con aviso de novedades (si el navegador lo permite)
         if (document.hidden) marcarInsignia(1);
+        if (r.icono === 'i-ticket') cargarCupones().catch(() => {});
         // Chat abierto: no hace falta avisar de lo que ya estás leyendo
         if (r.icono === 'i-chat' && state.chatId === r.parche_id) return;
+        if (r.parche_id && findP(r.parche_id)) reloadParche(r.parche_id);
         // Las de mesa y verificación ya tienen su propio aviso
-        if (r.icono !== 'i-bolt' && r.icono !== 'i-users' && r.icono !== 'i-shield') toast('Novedad en tus parches', String(r.texto).replace(/<\/?b>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'), { icon: 'i-live' });
+        if (r.icono !== 'i-bolt' && r.icono !== 'i-users' && r.icono !== 'i-shield') toast('Novedad en tus parches', String(r.texto).replace(/<\/?b>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'), { icon: r.icono || 'i-bell', action: r.parche_id ? { label: 'Abrir', id: r.parche_id } : undefined });
       })
-      // Transporte, encuestas y álbum del chat abierto
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'viajes' }, pl => { const pid = (pl.new && pl.new.parche_id) || (pl.old && pl.old.parche_id); if (pid && pid === state.chatId) extrasPronto(pid); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'viaje_pasajeros' }, () => { if (state.chatId) extrasPronto(state.chatId); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'encuesta_votos' }, () => { if (state.chatId) extrasPronto(state.chatId); })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fotos_parche' }, ({ new: r }) => { if (r.parche_id === state.chatId) extrasPronto(r.parche_id); })
       // Modo Mesa: el local confirma o rechaza la reserva
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mesa_reservas', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
         const mia = (state.misMesas || []).find(x => x.id === r.id);
@@ -3154,8 +3348,48 @@
         if (state.view === 'inicio') renderMesas();
       })
       .subscribe();
+    syncCanalChat();
   }
+  function cerrarCanales() {
+    canalUsuario = canalChat = null; canalChatId = null;
+    if (sb) try { sb.removeAllChannels(); } catch (e) { /* ya cerrados */ }
+  }
+  // Parches nuevos: una consulta liviana mientras la app está a la vista
+  async function revisarRadar() {
+    if (DEMO || document.hidden || navigator.onLine === false) return;
+    const desde = ultimoRadar; ultimoRadar = new Date().toISOString();
+    const { data, error } = await sb.from('parches').select('id, creador_id').gt('creado_en', desde).limit(20);
+    if (error) { ultimoRadar = desde; return; }
+    for (const r of data || []) {
+      if (r.creador_id === me.id || findP(r.id)) continue;
+      await reloadParche(r.id, { drop: true });
+      const n = findP(r.id);
+      if (n) toast('Nuevo parche en vivo', `${n.titulo} · ${fmtKm(distKm(n))}`, { icon: 'i-live', action: { label: 'Ver', id: r.id } });
+    }
+    if (Date.now() - ultimaRecarga > 5 * 60 * 1000 && !interactuando()) { ultimaRecarga = Date.now(); refreshData().catch(() => {}); }
+    if (state.chatId && isUuid(state.chatId)) extrasPronto(state.chatId);
+  }
+  const interactuando = () => !!holding || modalStack.length > 0 || !!document.querySelector('#cards :focus, #cards .is-holding, #chat-input:focus');
 
+  // Copia mínima para abrir sin señal (sin cédula, celular ni chats)
+  const claveRadar = () => 'mp_radar_' + me.id;
+  function guardarRadar() {
+    store.set(claveRadar(), { nombre: perfil.nombre, ciudad: perfil.ciudad, parches: state.parches.slice(0, 120).map(p => { const c = Object.assign({}, p); delete c._drop; c.chat = []; c.album = []; c.viajes = []; c.encuestas = {}; return c; }) });
+  }
+  function restaurarRadar() {
+    const c = store.get(claveRadar(), null);
+    if (!c || !Array.isArray(c.parches)) return false;
+    state.parches = c.parches.map(normalizeParche);
+    perfil = Object.assign({}, PERFIL_DEF, { nombre: c.nombre, primer: String(c.nombre || 'Parcero').split(' ')[0], ciudad: c.ciudad || 'Villavicencio', tel: '', mail: me.email || '', cedula: '', intereses: [] });
+    return true;
+  }
+  // Al salir no queda información de la cuenta en este navegador (el tema y el aviso de cookies sí)
+  function limpiarLocal() {
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1'].includes(k)).forEach(k => localStorage.removeItem(k));
+      Object.keys(sessionStorage).filter(k => k.startsWith('mp_')).forEach(k => sessionStorage.removeItem(k));
+    } catch (e) { /* sin almacenamiento */ }
+  }
   async function bootRemote() {
     setBoot('Revisando tu sesión...');
     let session = null;
@@ -3183,11 +3417,19 @@
       history.replaceState(null, '', u.pathname + u.search + u.hash);
       setTimeout(() => toast('¡Correo confirmado!', 'Tu cuenta quedó activa. Bienvenido a tu radar.', { icon: 'i-check', ms: 6000 }), 900);
     }
-    if (me.user_metadata && me.user_metadata.tipo === 'empresa') { window.location.replace('empresa-dashboard.html'); return false; }
-    try { const { data: esAdmin } = await sb.rpc('soy_admin'); if (esAdmin === true) { window.location.replace('admin.html'); return false; } } catch (e) { /* cuenta normal */ }
-    sb.auth.onAuthStateChange((ev, s) => { if (ev === 'SIGNED_OUT' || (!s && ev !== 'INITIAL_SESSION')) window.location.replace('login.html'); });
+    { const cuenta = window.MPSeguro ? await window.MPSeguro.tipoCuenta(sb, me) : { tipo: 'persona' };
+      if (cuenta.tipo === 'negocio') { window.location.replace('empresa-dashboard.html'); return false; }
+      if (cuenta.tipo === 'admin') { window.location.replace('admin.html'); return false; } }
+    sb.auth.onAuthStateChange((ev, s) => { if (ev === 'SIGNED_OUT' || (!s && ev !== 'INITIAL_SESSION')) { cerrarCanales(); limpiarLocal(); window.location.replace('login.html'); } });
     setBoot('Cargando los parches de Villavo...');
-    try { await loadRemote(); } catch (err) { console.error(err); bootError(err); return false; }
+    try { await loadRemote(); guardarRadar(); }
+    catch (err) {
+      console.error(err);
+      if (!restaurarRadar()) { bootError(err); return false; }
+      soloLectura = true;
+      window.addEventListener('online', () => window.location.reload(), { once: true });
+      setTimeout(() => toast('Sin conexión: modo solo lectura', 'Ves lo último que cargó. Para unirte o escribir necesitas internet.', { icon: 'i-info', ms: 7000 }), 700);
+    }
     return true;
   }
 
@@ -3323,7 +3565,13 @@
     clearTimeout(timer);
     if (btn.classList.contains('is-done')) return;
     btn.classList.remove('is-holding');
-    if (!cancelled && performance.now() - t0 < 320) holdHint(btn);
+    // Toque corto: alternativa a mantener presionado (WCAG 2.5.1), con confirmación
+    if (!cancelled && performance.now() - t0 < 320) setTimeout(() => confirmarCaerle(btn), 80);
+  }
+  async function confirmarCaerle(btn) {
+    const q = findP(btn.dataset.id);
+    if (!q || !btn.isConnected) return;
+    if (await confirmarModal('¿Le caes a este parche?', `${q.titulo} · ${fmtCuando(q.inicio)}`, 'Sí, le caigo')) holdDone(btn);
   }
   function holdHint(btn) {
     btn.classList.remove('is-hint'); void btn.offsetWidth; btn.classList.add('is-hint');
@@ -3986,9 +4234,14 @@
     const ids = $$('#inv-list input:checked').map(i => i.value);
     if (!p) return;
     if (!ids.length) { $('#inv-msg').textContent = 'Elige al menos una persona.'; return; }
-    const btn = $('#inv-send'); btn.classList.add('is-loading');
-    const { data, error } = await sb.rpc('invitar_a_parche', { p_parche: p.id, p_invitados: ids });
-    btn.classList.remove('is-loading');
+    const btn = $('#inv-send');
+    if (btn.disabled) return;
+    if (DEMO || !sb) { closeModal('modal-invitar'); toast('Modo demo', 'En tu cuenta real les llega el aviso.', { icon: 'i-info' }); return; }
+    btn.disabled = true; btn.classList.add('is-loading');
+    let data = null, error = null;
+    try { ({ data, error } = await sb.rpc('invitar_a_parche', { p_parche: p.id, p_invitados: ids })); }
+    catch (e2) { error = e2; }
+    finally { btn.disabled = false; btn.classList.remove('is-loading'); }
     if (error) { $('#inv-msg').textContent = /MUCHOS/.test(error.message) ? 'Invita máximo 15 personas a la vez.' : dbMsg(error); return; }
     closeModal('modal-invitar');
     ringBurst(btn);
@@ -4002,12 +4255,21 @@
     const [vj, en, fo] = await Promise.all([
       sb.from('viajes').select('id, usuario_id, medio, puestos, desde, hora, viaje_pasajeros(usuario_id)').eq('parche_id', id).order('creado_en'),
       sb.from('encuestas').select('id, autor_id, pregunta, opciones, encuesta_votos(usuario_id, opcion)').eq('parche_id', id),
-      sb.from('fotos_parche').select('id, usuario_id, url, creado_en').eq('parche_id', id).order('creado_en', { ascending: false }).limit(120),
+      sb.from('fotos_parche').select('id, usuario_id, url, ruta, creado_en').eq('parche_id', id).order('creado_en', { ascending: false }).limit(120)
+        .then(r => r.error && /ruta/.test(r.error.message || '')
+          ? sb.from('fotos_parche').select('id, usuario_id, url, creado_en').eq('parche_id', id).order('creado_en', { ascending: false }).limit(120)
+          : r),
     ]);
+    // Las fotos privadas se ven con enlaces temporales
+    const rutas = (fo.data || []).map(f => f.ruta).filter(Boolean), firmadas = {};
+    if (rutas.length) {
+      const { data: urls } = await sb.storage.from('album').createSignedUrls(rutas, 3600);
+      (urls || []).forEach(u => { if (u.signedUrl) firmadas[u.path] = u.signedUrl; });
+    }
     const yo = u => u === me.id ? 'me' : u;
     if (!vj.error) p.viajes = (vj.data || []).map(v => ({ id: v.id, autor: yo(v.usuario_id), medio: v.medio, puestos: v.puestos, desde: v.desde, hora: v.hora, pasajeros: (v.viaje_pasajeros || []).map(x => yo(x.usuario_id)) }));
     if (!en.error) p.encuestas = Object.fromEntries((en.data || []).map(e => [e.id, { pregunta: e.pregunta, opciones: e.opciones, votos: Object.fromEntries((e.encuesta_votos || []).map(v => [yo(v.usuario_id), v.opcion])) }]));
-    if (!fo.error) p.album = (fo.data || []).map(f => ({ id: f.id, autor: yo(f.usuario_id), url: f.url }));
+    if (!fo.error) p.album = (fo.data || []).filter(f => !f.ruta || firmadas[f.ruta]).map(f => ({ id: f.id, autor: yo(f.usuario_id), ruta: f.ruta || null, url: f.ruta ? firmadas[f.ruta] : f.url }));
     await cachePeople([].concat((vj.data || []).map(v => v.usuario_id), (fo.data || []).map(f => f.usuario_id)));
     if (state.chatId === id) renderChat();
   }
@@ -4104,6 +4366,7 @@
     $('#form-encuesta').reset();
     $('#enc-msg').textContent = '';
     $$('#enc-ops .enc-op').forEach((el, i) => { el.hidden = i > 1; });
+    const mas = $('[data-action="enc-mas"]'); if (mas) mas.hidden = false;
     openModal('modal-encuesta');
   }
   async function crearEncuesta(e) {
@@ -4114,16 +4377,20 @@
     const ops = $$('#enc-ops .enc-op:not([hidden]) input').map(i => i.value.trim()).filter(Boolean);
     if (pregunta.length < 3) { $('#enc-msg').textContent = 'Escribe la pregunta.'; return; }
     if (ops.length < 2) { $('#enc-msg').textContent = 'Pon al menos 2 opciones.'; return; }
-    const btn = $('#enc-send'); btn.classList.add('is-loading');
+    const btn = $('#enc-send');
+    if (btn.disabled) return;
+    btn.disabled = true; btn.classList.add('is-loading');
     if (isRemote(p)) {
-      const { data, error } = await sb.rpc('crear_encuesta', { p_parche: p.id, p_pregunta: pregunta, p_opciones: ops });
-      btn.classList.remove('is-loading');
+      let data = null, error = null;
+      try { ({ data, error } = await sb.rpc('crear_encuesta', { p_parche: p.id, p_pregunta: pregunta, p_opciones: ops })); }
+      catch (e2) { error = e2; }
+      finally { btn.disabled = false; btn.classList.remove('is-loading'); }
       if (error) { $('#enc-msg').textContent = /DEMASIADAS/.test(error.message) ? 'Máximo 3 encuestas por hora.' : /crear_encuesta|PGRST202/.test(error.message) ? 'Falta activar esta función en la base de datos.' : dbMsg(error); return; }
       p.encuestas = p.encuestas || {};
       p.encuestas[data] = { pregunta, opciones: ops, votos: {} };
       if (!p.chat.some(m => m.encuestaId === data)) p.chat.push({ tipo: 'encuesta', autor: 'me', texto: pregunta, ts: Date.now(), encuestaId: data });
     } else {
-      btn.classList.remove('is-loading');
+      btn.disabled = false; btn.classList.remove('is-loading');
       const eid = 'e' + Date.now();
       p.encuestas = p.encuestas || {};
       p.encuestas[eid] = { pregunta, opciones: ops, votos: {} };
@@ -4147,7 +4414,7 @@
     const fotos = p.album || [];
     $('#album-title').textContent = p.titulo;
     $('#album-grid').innerHTML = fotos.length ? fotos.map((f, i) => `<figure class="album-ph" style="--d:${Math.min(i, 12) * 40}ms">
-        <button type="button" class="album-open" data-action="album-ver" data-id="${esc(String(f.id))}" aria-label="Ver foto ${i + 1}"><img src="${esc(f.url)}" alt="" loading="lazy" decoding="async"></button>
+        <button type="button" class="album-open" data-action="album-ver" data-id="${esc(String(f.id))}" aria-label="Ver foto ${i + 1}"><img src="${esc(safeImg(f.url))}" alt="" loading="lazy" decoding="async"></button>
         ${f.autor === 'me' ? `<button type="button" class="album-del" data-action="album-borrar" data-id="${esc(String(f.id))}" aria-label="Borrar mi foto">${ic('i-trash')}</button>` : ''}
       </figure>`).join('')
       : `<div class="album-vacio">${emptyHTML({ art: 'aventura-camara', title: 'El álbum está vacío', text: 'Suban las fotos del parche: quedan de recuerdo para todos los que fueron.', cta: '' })}</div>`;
@@ -4162,10 +4429,20 @@
       try {
         const data = await comprimirFoto(file);
         if (isRemote(p)) {
-          const url = await uploadFoto(data, 'album');
-          const { data: row, error } = await sb.from('fotos_parche').insert({ parche_id: p.id, url }).select('id').single();
-          if (error) throw error;
-          p.album = [{ id: row.id, autor: 'me', url }].concat(p.album || []);
+          const ruta = `${p.id}/${me.id}/album-${Date.now()}-${ok}.jpg`;
+          const blob = dataABlob(data);
+          const sub = await sb.storage.from('album').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+          if (sub.error && /bucket not found/i.test(sub.error.message || '')) {
+            const url = await uploadFoto(data, 'album');
+            const { data: fila, error: eFila } = await sb.from('fotos_parche').insert({ parche_id: p.id, url }).select('id').single();
+            if (eFila) throw eFila;
+            p.album = [{ id: fila.id, autor: 'me', url }].concat(p.album || []);
+            ok++; renderAlbum(); continue;
+          }
+          if (sub.error) throw sub.error;
+          const { data: row, error } = await sb.from('fotos_parche').insert({ parche_id: p.id, url: 'privada', ruta }).select('id').single();
+          if (error) { await sb.storage.from('album').remove([ruta]).catch(() => {}); throw error; }
+          p.album = [{ id: row.id, autor: 'me', ruta, url: URL.createObjectURL(blob) }].concat(p.album || []);
         } else p.album = [{ id: 'f' + Date.now() + ok, autor: 'me', url: data }].concat(p.album || []);
         ok++;
         renderAlbum();
@@ -4185,6 +4462,11 @@
     if (isRemote(p)) {
       const { error } = await sb.from('fotos_parche').delete().eq('id', f.id);
       if (error) { toast('No se borró', dbMsg(error), { type: 'error' }); return; }
+      // También el archivo: si solo se borra la fila, la foto sigue guardada
+      const vieja = !f.ruta && String(f.url || '').match(/\/object\/public\/fotos\/([^?#]+)$/);
+      const { error: eArch } = f.ruta ? await sb.storage.from('album').remove([f.ruta])
+        : vieja ? await sb.storage.from('fotos').remove([decodeURIComponent(vieja[1])]) : { error: null };
+      if (eArch) console.warn('[album]', eArch.message);
     }
     p.album = p.album.filter(x => x !== f);
     renderAlbum(); renderChat();
@@ -4193,7 +4475,7 @@
     const p = state.chatId && findP(state.chatId);
     const f = p && (p.album || []).find(x => String(x.id) === fid);
     if (!f) return;
-    $('#foto-grande').src = f.url;
+    $('#foto-grande').src = safeImg(f.url);
     openModal('modal-foto');
   }
 
@@ -4304,7 +4586,8 @@
         if (await Notification.requestPermission() !== 'granted') throw new Error('PERMISO');
         const sub = (await pushActual()) || await swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUBLIC) });
         const j = sub.toJSON();
-        const { error } = await sb.from('push_suscripciones').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint', ignoreDuplicates: true });
+        let { error } = await sb.rpc('registrar_push', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+        if (error && /registrar_push|PGRST202/.test(error.message || '')) ({ error } = await sb.from('push_suscripciones').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint', ignoreDuplicates: true }));
         if (error) { await sub.unsubscribe().catch(() => {}); throw error; }
         toast('Avisos activados', 'Te avisamos aunque ModoParche esté cerrado.', { icon: 'i-live' });
       } else {
@@ -4410,6 +4693,10 @@
       case 'checkin-gps': checkinGps(id, a); break;
       case 'qr-mostrar': mostrarQR(id); break;
       case 'qr-escanear': abrirEscaner(id); break;
+      case 'mis-opciones': { const f = a.closest('.mis-row'), box = $('.mis-inline', f); box.hidden = !box.hidden; a.setAttribute('aria-expanded', String(!box.hidden)); break; }
+      case 'local-quitar': state.localId = null; refresh(); if (state.view === 'inicio') renderCards(); break;
+      case 'cupon-ver': verCupon(id); break;
+      case 'interes': toggleInteres(a); break;
       case 'mesa-reservar': closeAllModals(); abrirMesa(id); break;
       case 'mesa-cancelar': cancelarMesa(id); break;
       case 'mesa-llegue': mesaLlegue(id, a); break;
@@ -4488,7 +4775,19 @@
     }
   }
 
+  function blindarConfirmar() {
+    const ok = $('#confirm-ok');
+    let h = null;
+    Object.defineProperty(ok, 'onclick', { configurable: true, get: () => h, set: v => { h = v; } });
+    ok.addEventListener('click', async ev => {
+      if (!h || ok.dataset.ocupado) return;
+      ok.dataset.ocupado = '1';
+      try { await h.call(ok, ev); }
+      finally { delete ok.dataset.ocupado; ok.disabled = false; }
+    });
+  }
   function bind() {
+    blindarConfirmar();
     // En captura: los popups de Leaflet frenan la propagación del clic
     document.addEventListener('click', onClick, true);
     $('#report-form')?.addEventListener('submit', sendReport);
@@ -4511,7 +4810,11 @@
     $('#album-file')?.addEventListener('change', e => { subirAlbum(e.target.files); e.target.value = ''; });
     $('#c-foto')?.addEventListener('change', e => { elegirFotoParche(e.target.files && e.target.files[0]); e.target.value = ''; });
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && modalStack.length) { closeModal(modalStack[modalStack.length - 1].id); return; }
+      if (e.key === 'Escape' && modalStack.length) {
+        const arriba = modalStack[modalStack.length - 1].id;
+        if (arriba !== 'modal-completar') closeModal(arriba);
+        return;
+      }
       if (e.key === 'Escape' && replyTo && document.activeElement && document.activeElement.id === 'chat-input') clearReply();
     });
 
@@ -4550,7 +4853,8 @@
       requestAnimationFrame(() => { $('#top').classList.toggle('is-scrolled', window.scrollY > 8); ticking = false; });
     }, { passive: true });
 
-    setInterval(() => { if (state.view === 'inicio') { renderNext(); renderCards(); } }, 60 * 1000);
+    setInterval(() => { if (!document.hidden && state.view === 'inicio' && !interactuando()) { renderNext(); renderCards(); } }, 60 * 1000);
+    document.addEventListener('visibilitychange', syncGeo);
     window.addEventListener('resize', () => {
       liveMap && liveMap.invalidateSize();
       if (!isMobile()) $('#mis-wrap').classList.remove('is-chat');
@@ -4560,6 +4864,14 @@
   }
 
   async function init() {
+    if (!DEMO && !sb) {
+      setBoot('Sin conexión. Cuando vuelva el internet abrimos tu radar.');
+      const box = $('#boot-actions'); box.hidden = false;
+      box.innerHTML = '<button class="btn btn--ink" data-boot="retry">Reintentar</button>';
+      box.addEventListener('click', () => window.location.reload());
+      window.addEventListener('online', () => window.location.reload(), { once: true });
+      return;
+    }
     if (DEMO) { loadDemo(); await cargarMesas(); await cargarEspera(); }
     else if (!(await bootRemote())) return;
 
@@ -4581,6 +4893,13 @@
     let abrir = qs.get('parche');
     if (!abrir) { try { abrir = sessionStorage.getItem('mp_abrir'); sessionStorage.removeItem('mp_abrir'); } catch (e) { abrir = null; } }
     if (abrir && findP(abrir)) setTimeout(() => openChat(abrir), 400);
+    { const lo = String(qs.get('local') || '').trim();
+      if (/^[0-9a-f-]{36}$/i.test(lo) || /^MP-[0-9A-F]{4}$/i.test(lo)) {
+        state.localId = /^MP-/i.test(lo) ? lo.toUpperCase() : lo.toLowerCase();
+        go('inicio'); renderCards();
+        const del = state.parches.find(x => String(x.creadorId) === state.localId || ('MP-' + String(x.creadorId || '').slice(0, 4).toUpperCase()) === state.localId);
+        toast(del ? (del.creadorNombre || 'Este local') : 'Este local', del ? 'Estos son sus parches abiertos.' : 'Por ahora no tiene parches abiertos.', { icon: 'i-store' });
+      } }
     if (qs.has('crear')) setTimeout(() => abrirCrear(), 500);
     { let ll = qs.get('llegue') && qs.get('k') ? [qs.get('llegue'), qs.get('k')] : null;
       if (!ll) { try { ll = JSON.parse(sessionStorage.getItem('mp_llegue') || 'null'); } catch (e) { ll = null; } }
@@ -4590,6 +4909,8 @@
         setTimeout(() => llegarPorQRLocal(ll[0], String(ll[1]).slice(0, 64)), 600);
       } }
     cargarLocalesPorCalificar().catch(() => {});
+    cargarInsignias().catch(() => {});
+    cargarCupones().catch(() => {});
     cargarAmigos().catch(() => {});
     if (qs.get('amigos') !== null || window.location.hash === '#amigos') { state.misTab = 'amigos'; go('mis'); }
     cargarDestacados().catch(() => {});
@@ -4600,13 +4921,15 @@
     revisarRegistro().catch(() => {});
     limpiarInsignia();
     marcarTema();
-    // Si el celular cambia a oscuro (por la noche), seguimos el cambio
-    try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', marcarTema); } catch (e) { /* navegador viejo */ }
     // El botón sol/luna de la barra (mp-tema.js) avisa: se marca el selector de Ajustes
     document.addEventListener('mp-tema', () => { try { marcarTema(); } catch (e) { /* nada */ } });
-    if (!DEMO) {
+    if (!DEMO && !soloLectura) {
       subscribeRealtime();
-    } else if (sb) {
+      setInterval(() => { revisarRadar().catch(() => {}); }, 90 * 1000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) revisarRadar().catch(() => {}); });
+      window.addEventListener('pagehide', e => { if (!e.persisted) cerrarCanales(); });
+      window.addEventListener('pageshow', e => { if (e.persisted) { subscribeRealtime(); revisarRadar().catch(() => {}); } });
+    } else if (DEMO && sb) {
       setTimeout(() => toast('Modo demo', 'Estás viendo parches de ejemplo guardados en este navegador.', { icon: 'i-info' }), 900);
     }
     // El mapa se precarga cuando el navegador está libre

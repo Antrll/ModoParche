@@ -12,7 +12,7 @@
   const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
 
   const PLANES = { basico: 'Parche básico', villavo: 'Parche Villavo', sedes: 'Varias sedes' };
-  const CAT_LABEL = { comida: 'Comida', rumba: 'Rumba', chill: 'Plan chill', pueblear: 'Aventura', deportes: 'Deporte', conciertos: 'Conciertos', cultura: 'Cultura', gaming: 'Gaming' };
+  const CAT_LABEL = { comida: 'Comida', rumba: 'Rumba', chill: 'Plan chill', pueblear: 'Aventura', deportes: 'Deporte', conciertos: 'Conciertos', cultura: 'Cultura', gaming: 'Gaming', rio: 'Río', pet: 'Pet friendly' };
 
   /* ---------- Pestañas Crear / Entrar ---------- */
   function setView(view, { updateHash = true, focus = false } = {}) {
@@ -117,7 +117,7 @@
       try {
         const { data } = await sb.auth.getSession();
         const u = data && data.session && data.session.user;
-        if (u && u.user_metadata && u.user_metadata.tipo === 'empresa') { location.replace('empresa-dashboard.html'); return; }
+        if (u && window.MPSeguro && (await window.MPSeguro.tipoCuenta(sb, u)).tipo === 'negocio') { location.replace('empresa-dashboard.html'); return; }
       } catch (e) { /* seguimos aquí */ }
     }
 
@@ -249,9 +249,9 @@
         const captchaToken = await captcha(formIn);
         const { data, error } = await sb.auth.signInWithPassword({ email: $('#bz-login-email').value.trim(), password: $('#bz-login-pass').value, options: { captchaToken } });
         if (error) throw error;
-        try { const r = await sb.rpc('soy_admin'); if (r.data === true) { location.replace('admin.html'); return; } } catch (e2) { /* cuenta normal */ }
-        const tipo = data.user && data.user.user_metadata && data.user.user_metadata.tipo;
-        if (tipo !== 'empresa') {
+        const cuenta = window.MPSeguro ? await window.MPSeguro.tipoCuenta(sb, data.user) : { tipo: 'persona' };
+        if (cuenta.tipo === 'admin') { location.replace('admin.html'); return; }
+        if (cuenta.tipo !== 'negocio') {
           showStatus('bz-login-status', 'error', 'Esta es una cuenta personal', 'Te llevamos a tu radar. Para un negocio, crea una cuenta aparte con el correo del local.');
           setTimeout(() => location.replace('dashboard.html'), 1800);
           return;

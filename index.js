@@ -130,6 +130,7 @@
 
   function initRadar() {
     const form  = $('#radarFilters');
+    form?.addEventListener('submit', e => e.preventDefault());
     const list  = $('#radarList');
     const empty = $('#radarEmpty');
     const count = $('#radarCount');
@@ -191,7 +192,7 @@
         // Vista previa: sin lugar exacto ni inscripción. Sumarse lleva a crear la cuenta.
         list.innerHTML = matches.slice(0, 4).map((p, i) => `
             <li class="plan" style="--d:${i * 60}ms">
-              <div class="plan-match"><b>${p.match}%</b><span>match</span></div>
+              <div class="plan-match"><b>Top</b><span>para ti</span></div>
               <div class="plan-body">
                 <div class="plan-top">
                   <span class="plan-cat">${p.cat}</span>

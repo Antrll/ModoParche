@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FF5A1F">
 <title>Mi panel · ModoParche</title>
-<script>(function(){var t='sistema';try{t=localStorage.getItem('mp_tema')||'sistema';}catch(e){}var d=t==='oscuro'||(t!=='claro'&&t!=='mixto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('is-dark');else if(t==='mixto')document.documentElement.classList.add('is-mixto');})();</script>
+<meta name="robots" content="noindex, nofollow">
+<script src="/mp-init.js"></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
@@ -36,6 +37,8 @@
 <svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M9 20v-6h6v6"/></symbol>
     <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
@@ -106,8 +109,8 @@
 <header class="top" id="top">
   <div class="top-row">
     <button type="button" class="logo" data-nav="inicio" aria-label="Ir al inicio de tu panel">
-      <img class="logo-lt" src="src/assets/web/isotipo-96.png" alt="" width="40" height="40">
-      <img class="logo-dk" src="src/assets/web/isotipo-light-96.png" alt="" width="40" height="40">
+      <img class="logo-lt" src="src/assets/web/isotipo-96.png" alt="" width="40" height="40" loading="lazy" decoding="async">
+      <img class="logo-dk" src="src/assets/web/isotipo-light-96.png" alt="" width="40" height="40" loading="lazy" decoding="async">
       <span>Modo<b>Parche</b></span>
     </button>
 
@@ -286,7 +289,7 @@
           <label class="photo-btn" title="Subir foto">
             <svg class="ic"><use href="#i-camera"/></svg>
             <span class="sr-only">Subir foto de perfil</span>
-            <input type="file" id="photo-file" accept="image/*" hidden>
+            <input type="file" id="photo-file" class="sr-only" accept="image/*">
           </label>
         </div>
         <h2 class="id-name" id="id-name">Parcero</h2>
@@ -313,6 +316,17 @@
         <p class="mini-note" id="photo-note">La foto es opcional. Si no subes una, mostramos tu inicial.</p>
         <button class="text-btn" type="button" id="photo-remove" hidden>Quitar foto</button>
       </div>
+
+      <!-- Gustos y cupones -->
+      <section class="pcard" aria-labelledby="h-gustos">
+        <h2 class="pcard-title" id="h-gustos">Tus gustos</h2>
+        <p class="mini-note">Con esto armamos el filtro «Para ti» de tu radar.</p>
+        <div class="intereses" id="p-intereses" role="group" aria-labelledby="h-gustos"></div>
+      </section>
+      <section class="pcard" aria-labelledby="h-cupones">
+        <div class="pcard-head"><h2 class="pcard-title" id="h-cupones">Tus cupones</h2><span class="mini-note" id="mis-cupones-n"></span></div>
+        <ul class="cupones-mios" id="mis-cupones"></ul>
+      </section>
 
       <!-- Datos -->
       <form class="pcard data-card" id="form-perfil" novalidate>
@@ -507,11 +521,21 @@
             <span class="label-like">Foto del parche <small>(opcional)</small></span>
             <div class="foto-box" id="c-foto-box">
               <img id="c-foto-img" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Foto elegida para el parche">
-              <label class="btn btn--ghost btn--sm foto-pick"><svg class="ic"><use href="#i-camera"/></svg><span id="c-foto-txt">Agregar foto</span><input type="file" id="c-foto" accept="image/*" hidden></label>
+              <label class="btn btn--ghost btn--sm foto-pick"><svg class="ic"><use href="#i-camera"/></svg><span id="c-foto-txt">Agregar foto</span><input type="file" id="c-foto" class="sr-only" accept="image/*"></label>
               <button type="button" class="text-btn" data-action="foto-quitar" id="c-foto-quitar" hidden>Quitar foto</button>
             </div>
             <p class="mini-note">Una foto del lugar o del plan hace que más gente le caiga. Se ve en la tarjeta y al compartir.</p>
           </div>
+        </section>
+
+        <!-- Plan B -->
+        <section class="cstep" aria-labelledby="cs-planb">
+          <h3 class="cstep-title" id="cs-planb">Plan B bajo techo <small>(opcional)</small></h3>
+          <div class="field">
+            <label for="c-planb">Si llueve, ¿para dónde cogemos?</label>
+            <input class="input" id="c-planb" maxlength="120" placeholder="Ej: nos vemos en el C.C. Primavera Urbana">
+          </div>
+          <label class="planb-switch" id="c-planb-switch" hidden><input type="checkbox" id="c-planb-activo"> <span>Activar el Plan B y avisarle al grupo</span></label>
         </section>
 
         <!-- 2. Cuándo y cuántos -->
@@ -729,7 +753,7 @@
     <div class="album">
       <div class="album-head">
         <div><h2 class="modal-title" id="album-h">Álbum del parche</h2><p class="cal-sub" id="album-title"></p></div>
-        <label class="btn btn--sm" id="album-add"><svg class="ic"><use href="#i-camera"/></svg> Subir fotos<input type="file" id="album-file" accept="image/*" multiple hidden></label>
+        <label class="btn btn--sm" id="album-add"><svg class="ic"><use href="#i-camera"/></svg> Subir fotos<input type="file" id="album-file" class="sr-only" accept="image/*" multiple></label>
         <button type="button" class="icon-btn" data-close aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
       </div>
       <div class="album-grid" id="album-grid"></div>
@@ -747,6 +771,20 @@
 </div>
 
 <!-- MODAL: CONFIRMAR -->
+<div class="modal" id="modal-cupon" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel modal-panel--sm" role="dialog" aria-modal="true" aria-labelledby="cupon-ben">
+    <div class="cupon-ver">
+      <p class="eyebrow" id="cupon-local"></p>
+      <h2 class="modal-title" id="cupon-ben">Tu cupón</h2>
+      <div class="cupon-qr" id="cupon-qr" aria-hidden="true"></div>
+      <p class="cupon-codigo tnum" id="cupon-codigo"></p>
+      <p class="mini-note">Muéstralo en el local. Se puede usar una sola vez.</p>
+      <button class="btn btn--ghost" data-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="modal-confirm" hidden>
   <div class="modal-backdrop" data-close></div>
   <div class="modal-panel modal-panel--sm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
@@ -1040,8 +1078,8 @@
 <div class="ptr" id="ptr" aria-hidden="true">
   <div class="ptr-badge">
     <svg class="ptr-ring" viewBox="0 0 48 48"><circle class="ptr-trk" cx="24" cy="24" r="21"/><circle class="ptr-val" cx="24" cy="24" r="21" pathLength="100"/></svg>
-    <img class="logo-lt" src="src/assets/web/isotipo-96.png" alt="" width="30" height="30">
-    <img class="logo-dk" src="src/assets/web/isotipo-light-96.png" alt="" width="30" height="30">
+    <img class="logo-lt" src="src/assets/web/isotipo-96.png" alt="" width="30" height="30" loading="lazy" decoding="async">
+    <img class="logo-dk" src="src/assets/web/isotipo-light-96.png" alt="" width="30" height="30" loading="lazy" decoding="async">
   </div>
 </div>
 <p class="sr-only" id="ptr-status" role="status" aria-live="polite"></p>
@@ -1060,7 +1098,9 @@
   <div class="boot-actions" id="boot-actions" hidden></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/src/vendor/supabase.js"></script>
+<script src="mp-utils.js"></script>
+<script src="mp-seguro.js"></script>
 <script src="supabase-client.js"></script>
 <script src="mp-mapa.js"></script>
 <script src="mp-checkin.js"></script>

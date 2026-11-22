@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equipo y contacto - ModoParche</title>
+<link rel="canonical" href="https://modoparche.vercel.app/equipo">
 <meta name="description" content="Conoce al equipo llanero detrás de ModoParche en Villavicencio. Misión, visión, manifiesto y contacto directo.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
@@ -14,22 +15,20 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js" data-js></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
-<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="equipo.css">
-<script>document.documentElement.classList.add('mp-js');</script>
 <link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-team">
@@ -57,17 +56,17 @@
   </div>
 </header>
 
-<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+<div class="mobile-menu mp-tinta-bloque" id="mobileMenu" aria-hidden="true">
   <nav aria-label="Menú móvil">
     <a href="index.html">Inicio</a>
     <a href="comercio.html">Negocios</a>
     <a href="preguntas.html">Preguntas</a>
     <a href="marca.html">La marca</a>
-    <a href="equipo.html" aria-current="page">Equipo</a>
+    <a class="mp-naranja-texto" href="equipo.html" aria-current="page">Equipo</a>
     <a href="login.html">Iniciar sesión</a>
   </nav>
   <div class="mobile-menu-foot">
-    <a href="login.html#crear" class="btn btn--block">Crear mi cuenta</a>
+    <a href="login.html#crear" class="btn btn--block mp-fijo">Crear mi cuenta</a>
     <a href="#contacto" class="btn btn--block btn--ghost">Escribir al equipo</a>
     <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
@@ -87,7 +86,7 @@
       </h1>
       <p class="team-lede" data-reveal>Somos un grupo de llaneros armando la infraestructura social de nuestra propia ciudad. ModoParche nació porque estábamos cansados de planear salidas por grupos de WhatsApp que nunca cuadran.</p>
       <div class="team-hero-actions" data-reveal>
-        <a href="#contacto" class="btn">Hablar con nosotros
+        <a href="#contacto" class="btn mp-fijo">Hablar con nosotros
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a href="#manifiesto" class="link">Leer el manifiesto</a>
@@ -95,7 +94,7 @@
     </div>
 
     <figure class="team-hero-art media" data-reveal="scale" data-error="No pudimos cargar el Orangeprint">
-      <img src="src/assets/web/orangeprint.jpg" alt="Orangeprint de ModoParche: despiece del símbolo con corona, mano rockera, rayos y llamas" width="1536" height="1024">
+      <img src="src/assets/web/orangeprint.webp" alt="Orangeprint de ModoParche: despiece del símbolo con corona, mano rockera, rayos y llamas" width="1536" height="1024" srcset="src/assets/web/orangeprint-640.webp 640w, src/assets/web/orangeprint.webp 1536w" sizes="(max-width: 700px) 100vw, 50vw">
     </figure>
   </div>
 </section>
@@ -103,25 +102,25 @@
 <!-- ============================================================
      EL MANIFIESTO - MISIÓN Y VISIÓN
 ============================================================ -->
-<section class="manifesto teeth-top" id="manifiesto" aria-labelledby="manifesto-title">
+<section class="manifesto teeth-top mp-tinta-bloque" id="manifiesto" aria-labelledby="manifesto-title">
   <div class="wrap manifesto-grid">
     <div class="manifesto-head" data-reveal-group>
       <h2 class="h-xl" id="manifesto-title" data-reveal>Por qué existimos</h2>
       <p data-reveal>Construimos la herramienta que nos habría gustado tener cada viernes a las siete de la noche en Villavicencio.</p>
     </div>
 
-    <article class="manifesto-block manifesto-block--orange" data-reveal>
+    <article class="manifesto-block manifesto-block--orange mp-fijo" data-reveal>
       <h3>La misión</h3>
       <p>Hacer que armar un plan en Villavicencio tome segundos, no cadenas eternas de mensajes. Conectamos personas con vibras compatibles y negocios locales con la gente que ya quiere estar ahí.</p>
     </article>
 
-    <article class="manifesto-block manifesto-block--paper" data-reveal>
+    <article class="manifesto-block manifesto-block--paper mp-tinta-papel" data-reveal>
       <h3>La visión</h3>
       <p>Empezamos en Villavo porque es donde vivimos, pero construimos para que cualquier ciudad intermedia de Colombia tenga su propio radar de planes activos.</p>
     </article>
 
     <figure class="manifesto-photo media" data-reveal="scale" data-error="No pudimos cargar la imagen">
-      <img src="src/assets/web/valla.jpg" alt="Valla de ModoParche en Villavicencio al atardecer" width="1536" height="1024" loading="lazy" decoding="async">
+      <img src="src/assets/web/valla.webp" alt="Valla de ModoParche en Villavicencio al atardecer" width="1536" height="1024" loading="lazy" decoding="async" srcset="src/assets/web/valla-640.webp 640w, src/assets/web/valla.webp 1536w" sizes="(max-width: 700px) 100vw, 50vw">
     </figure>
   </div>
 </section>
@@ -137,9 +136,9 @@
     </div>
 
     <div class="roster-grid" data-reveal-group="90">
-      <article class="member member--ink" data-reveal>
+      <article class="member member--ink mp-tinta-bloque" data-reveal>
         <div class="member-top">
-          <div class="member-monogram" aria-hidden="true">DG</div>
+          <div class="member-monogram mp-fijo" aria-hidden="true">DG</div>
         </div>
         <div class="member-body">
           <h3>David García</h3>
@@ -147,7 +146,7 @@
         </div>
       </article>
 
-      <article class="member member--orange" data-reveal>
+      <article class="member member--orange mp-fijo" data-reveal>
         <div class="member-top">
           <div class="member-monogram" aria-hidden="true">JG</div>
         </div>
@@ -165,7 +164,7 @@
         <div class="member-body">
           <h3>Falta tu silla</h3>
           <p><b>Vacante abierta.</b> Buscamos manos en comunidad, contenido callejero o desarrollo en Villavo. Escríbenos directo.</p>
-          <a href="#contacto" class="btn btn--sm" data-topic="Quiero sumarme al equipo">Postularme ahora</a>
+          <a href="#contacto" class="btn btn--sm mp-fijo" data-topic="Quiero sumarme al equipo">Postularme ahora</a>
         </div>
       </article>
     </div>
@@ -181,8 +180,8 @@
       <h2 class="h-lg" id="values-title" data-reveal>Cómo trabajamos</h2>
       <p data-reveal>Tres reglas internas para decidir qué entra a ModoParche y qué se queda por fuera.</p>
       <div class="values-photos" data-reveal>
-        <figure class="media" data-error=""><img src="src/assets/web/deportivo.jpg" alt="Afiche deportivo de ModoParche en un parque" width="1000" height="1500" loading="lazy" decoding="async"></figure>
-        <figure class="media" data-error=""><img src="src/assets/web/paradero.jpg" alt="Afiche de ModoParche en un paradero de bus" width="1000" height="1500" loading="lazy" decoding="async"></figure>
+        <figure class="media" data-error=""><img src="src/assets/web/deportivo.webp" alt="Afiche deportivo de ModoParche en un parque" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/deportivo-640.webp 640w, src/assets/web/deportivo.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw"></figure>
+        <figure class="media" data-error=""><img src="src/assets/web/paradero.webp" alt="Afiche de ModoParche en un paradero de bus" width="1000" height="1500" loading="lazy" decoding="async" srcset="src/assets/web/paradero-640.webp 640w, src/assets/web/paradero.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw"></figure>
       </div>
     </div>
 
@@ -191,12 +190,12 @@
         <h3>De la calle</h3>
         <p>Cada decisión de producto parte de un parche real que armamos o intentamos armar en Villavicencio: una cata, un cotejo, una caminata o una pola.</p>
       </article>
-      <article class="value-band value-band--2" data-reveal>
+      <article class="value-band value-band--2 mp-fijo" data-reveal>
         <h3>Negocios primero</h3>
         <p>Si un café, un bar o un mirador aliado no llena una mesa gracias a nosotros, no estamos haciendo bien el trabajo.</p>
       </article>
-      <article class="value-band value-band--3" data-reveal>
-        <h3>Simple y directo</h3>
+      <article class="value-band value-band--3 mp-tinta-bloque" data-reveal>
+        <h3 class="mp-naranja-texto">Simple y directo</h3>
         <p>Preferimos una función que la gente de Villavo use todos los días a diez pantallas que nadie encuentra.</p>
       </article>
     </div>
@@ -232,7 +231,7 @@
       </dl>
     </div>
 
-    <form class="contact-form" id="contactForm" data-validate data-demo-form data-success="<b>¡Mensaje enviado!</b><small>Lo leemos hoy mismo y te respondemos al correo que dejaste.</small>">
+    <form class="contact-form" id="contactForm" data-validate>
       <div class="field">
         <span class="field-label">¿Sobre qué nos escribes?</span>
         <div class="topic-chips" id="topicChips">
@@ -247,25 +246,27 @@
       <div class="field-row">
         <div class="field">
           <label for="name">Tu nombre</label>
-          <input type="text" id="name" name="name" required placeholder="¿Cómo te llamas?" data-error="Dinos cómo te llamas.">
+          <input type="text" id="name" name="name" required minlength="2" maxlength="80" placeholder="¿Cómo te llamas?" data-error="Dinos cómo te llamas.">
         </div>
         <div class="field">
           <label for="email">Tu correo</label>
-          <input type="email" id="email" name="email" required placeholder="tu@correo.com" data-error="Escribe un correo válido para responderte.">
+          <input type="email" id="email" name="email" required maxlength="120" placeholder="tu@correo.com" data-error="Escribe un correo válido para responderte.">
         </div>
       </div>
 
       <div class="field">
         <label for="msg">Mensaje</label>
-        <textarea id="msg" name="msg" required placeholder="Cuéntanos qué tienes en mente…" data-error="Escribe tu mensaje antes de enviarlo."></textarea>
+        <textarea id="msg" name="msg" required minlength="10" maxlength="1500" placeholder="Cuéntanos qué tienes en mente…" data-error="Escribe tu mensaje (mínimo 10 letras)."></textarea>
       </div>
 
-      <button type="submit" class="btn btn--block">Enviar mensaje
+      <div class="sr-only" aria-hidden="true"><label>No llenes este campo <input type="text" name="sitio" tabindex="-1" autocomplete="off"></label></div>
+
+      <button type="submit" class="btn btn--block mp-fijo">Enviar mensaje
         <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
 
       <div class="status" role="status" aria-live="polite" tabindex="-1">
-        <span class="status-icon" aria-hidden="true">
+        <span class="status-icon mp-fijo" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
         </span>
         <div class="status-text"></div>
@@ -276,7 +277,7 @@
 
 </main>
 
-<footer class="foot">
+<footer class="foot mp-tinta-bloque">
   <div class="wrap">
     <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
       <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
@@ -284,24 +285,24 @@
     <div class="foot-grid">
       <div class="foot-intro">
         <p>Planes en grupo para Villavicencio. Hecho en el Meta por gente que sale a parchar.</p>
-        <a href="login.html#crear" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink mp-fijo">Crear mi cuenta</a>
       </div>
       <div class="foot-col">
-        <h2>Esta página</h2>
+        <h2 class="mp-naranja-texto">Esta página</h2>
         <a href="#manifiesto">El manifiesto</a>
         <a href="#equipo">El equipo</a>
         <a href="#principios">Cómo trabajamos</a>
         <a href="#contacto">Contacto</a>
       </div>
       <div class="foot-col">
-        <h2>ModoParche</h2>
+        <h2 class="mp-naranja-texto">ModoParche</h2>
         <a href="index.html">Inicio</a>
         <a href="comercio.html">Para negocios</a>
         <a href="preguntas.html">Preguntas</a>
         <a href="marca.html">La marca</a>
       </div>
       <div class="foot-col foot-contact">
-        <h2>Escríbenos</h2>
+        <h2 class="mp-naranja-texto">Escríbenos</h2>
         <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
         <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
         <p>Villavicencio, Meta</p>
@@ -321,29 +322,8 @@
 
 <script src="mp-base.js" defer></script>
 <script src="mp-tema.js" defer></script>
-<script>
-(() => {
-  const chips = Array.from(document.querySelectorAll('[data-set-topic]'));
-  const topicIn = document.getElementById('contactTopic');
-  const msgIn = document.getElementById('msg');
-
-  function selectTopic(label) {
-    chips.forEach(c => c.classList.toggle('is-active', c.dataset.setTopic === label));
-    if (topicIn) topicIn.value = label;
-  }
-
-  chips.forEach(c => c.addEventListener('click', () => selectTopic(c.dataset.setTopic)));
-
-  document.querySelectorAll('[data-topic]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectTopic(btn.dataset.topic);
-      if (msgIn && !msgIn.value.trim()) {
-        msgIn.placeholder = 'Cuéntanos qué haces en Villavo y en qué te gustaría aportar al equipo…';
-      }
-    });
-  });
-})();
-</script>
+<script src="supabase-client.js" defer></script>
+<script src="equipo.js" defer></script>
 <script src="legal.js" defer></script>
 </body>
 </html>

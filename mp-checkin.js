@@ -16,8 +16,8 @@
 (function () {
   'use strict';
 
-  var LIB_QR = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
-  var LIB_SCAN = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+  var LIB_QR = '/src/vendor/qrcode.js';
+  var LIB_SCAN = '/src/vendor/html5-qrcode.min.js';
   var PREFIJO = 'MPCHK';
   var PASO = 30; // segundos
 
@@ -85,7 +85,10 @@
           opts.qr.innerHTML = qrSVG(texto(opts.parcheId, cod));
           if (opts.codigo) opts.codigo.textContent = cod.replace(/(.{5})/, '$1 ');
         }).catch(function (e) {
-          opts.qr.innerHTML = '<p class="qr-err">' + (e.message || 'No pudimos generar el QR.') + '</p>';
+          var aviso = document.createElement('p');
+          aviso.className = 'qr-err';
+          aviso.textContent = e.message || 'No pudimos generar el QR.';
+          opts.qr.replaceChildren(aviso);
         });
       }
       timer = setTimeout(tick, 1000);
@@ -100,16 +103,20 @@
      Devuelve { detener } . onLeido({ parcheId, codigo }) */
   function escanear(elId, onLeido, onError, lector_) {
     var leer = lector_ || parsear; // otro formato (por ejemplo el QR de identidad)
-    var lector = null, parado = false, yaLeyo = false;
+    var lector = null, parado = false, yaLeyo = false, arranque = Promise.resolve();
+    // Si se cierra mientras la cámara arranca, se espera y se apaga: no queda encendida
+    function apagar() {
+      if (!lector) return Promise.resolve();
+      var l = lector; lector = null;
+      return Promise.resolve().then(function () { return l.stop(); }).catch(function () { /* ya estaba detenido */ }).then(function () { try { l.clear(); } catch (e) { /* nada */ } });
+    }
     var api = {
       detener: function () {
         parado = true;
-        if (!lector) return Promise.resolve();
-        var l = lector; lector = null;
-        return l.stop().catch(function () { /* ya estaba detenido */ }).then(function () { try { l.clear(); } catch (e) { /* nada */ } });
+        return arranque.catch(function () { /* falló al abrir */ }).then(apagar);
       },
     };
-    cargar(LIB_SCAN, function () { return typeof window.Html5Qrcode === 'function'; }).then(function () {
+    arranque = cargar(LIB_SCAN, function () { return typeof window.Html5Qrcode === 'function'; }).then(function () {
       if (parado) return;
       lector = new window.Html5Qrcode(elId, { verbose: false });
       return lector.start({ facingMode: 'environment' }, { fps: 10, qrbox: function (w, h) { var s = Math.floor(Math.min(w, h) * 0.72); return { width: s, height: s }; } },
@@ -118,10 +125,12 @@
           var r = leer(raw);
           if (!r) { if (onError) onError(new Error('Ese QR no es de ModoParche.'), true); return; }
           yaLeyo = true;
-          api.detener().then(function () { onLeido(r); });
+          parado = true;
+          apagar().then(function () { onLeido(r); });
         },
         function () { /* sin QR en este cuadro */ });
-    }).catch(function (e) {
+    }).then(function () { if (parado && !yaLeyo) return apagar(); }).catch(function (e) {
+      if (parado) return;
       var msg = /NotAllowed|Permission/i.test(String(e && (e.name || e.message || e)))
         ? 'Sin permiso de cámara. Actívalo en el candado del navegador o escribe el código.'
         : /NotFound|no camera/i.test(String(e && (e.name || e.message || e))) ? 'No encontramos una cámara. Escribe el código que ve el organizador.'

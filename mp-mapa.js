@@ -214,11 +214,12 @@
           '<form class="mpm-form" role="search">' +
             '<svg class="mpm-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>' +
             '<label class="mpm-sr">Buscar un lugar o dirección</label>' +
-            '<input class="mpm-input" type="search" autocomplete="off" spellcheck="false" placeholder="' + (opts.placeholder || 'Busca un lugar o dirección') + '">' +
+            '<input class="mpm-input" type="search" autocomplete="off" spellcheck="false" ">' +
             '<button class="mpm-clear" type="button" aria-label="Limpiar" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>' +
           '</form>' +
           '<ul class="mpm-list" role="listbox" hidden></ul>' +
           '<p class="mpm-msg" role="status" aria-live="polite"></p>';
+        box.querySelector('.mpm-input').placeholder = opts.placeholder || 'Busca un lugar o dirección';
         L.DomEvent.disableClickPropagation(box);
         L.DomEvent.disableScrollPropagation(box);
         var input = box.querySelector('.mpm-input'), list = box.querySelector('.mpm-list');

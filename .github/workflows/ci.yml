@@ -1,0 +1,25 @@
+# ModoParche · revisa cada cambio: lint, pruebas (unitarias y SQL/RLS) y compilación
+name: CI
+
+on:
+  push:
+    branches: [main, dashboard-usuarios-supabase]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

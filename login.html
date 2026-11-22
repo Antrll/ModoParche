@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Iniciar sesión o crear cuenta - ModoParche</title>
+<link rel="canonical" href="https://modoparche.vercel.app/login">
 <meta name="description" content="Inicia sesión o crea tu cuenta en ModoParche para ver los planes en grupo abiertos hoy en Villavicencio.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
@@ -14,26 +15,20 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js" data-js data-auth="#crear"></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
-<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="login.css">
-<script>
-  document.documentElement.classList.add('mp-js');
-  // Abre directo el registro si el enlace trae #crear (sin parpadeo)
-  if (/^#crear/.test(location.hash)) document.documentElement.classList.add('auth-start-signup');
-</script>
 <link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-auth">
@@ -58,7 +53,7 @@
 <main id="main" class="auth-shell">
 
   <!-- Panel visual (solo escritorio) -->
-  <aside class="brand-panel" aria-hidden="true">
+  <aside class="brand-panel mp-fijo" aria-hidden="true">
     <div class="brand-copy">
       <p class="brand-kicker">Villavicencio · Meta</p>
       <p class="brand-title" data-reveal-lines>
@@ -123,12 +118,12 @@
           </div>
 
           <div class="status" id="login-status" role="alert" tabindex="-1">
-            <span class="status-icon" aria-hidden="true">!</span>
+            <span class="status-icon mp-fijo" aria-hidden="true">!</span>
             <div class="status-text"></div>
           </div>
           <button type="button" class="text-link btn-link resend-link" id="resend-confirm" hidden>Reenviar el correo de confirmación</button>
 
-          <button type="submit" class="btn btn--block" id="login-submit">Entrar
+          <button type="submit" class="btn btn--block mp-fijo" id="login-submit">Entrar
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
         </form>
@@ -204,7 +199,7 @@
 
             <div class="wz-actions">
               <span></span>
-              <button type="button" class="btn" data-wz-next="1">Continuar
+              <button type="button" class="btn mp-fijo" data-wz-next="1">Continuar
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
@@ -238,13 +233,13 @@
 
             <div class="wz-actions">
               <button type="button" class="btn btn--paper" data-wz-prev="2">Atrás</button>
-              <button type="button" class="btn" data-wz-next="2">Continuar
+              <button type="button" class="btn mp-fijo" data-wz-next="2">Continuar
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
           </div>
 
-          <!-- PASO 3: Intereses (IDs: 1=Rumba, 2=Comida, 3=Aventura, 4=Deporte, 5=Cultura, 6=Gaming) -->
+          <!-- PASO 3: Intereses (las 10 categorías del radar) -->
           <div class="wz-step" id="wz-step-3">
             <h1>¿Qué te gusta parchar?</h1>
             <p class="sub">Elige mínimo una. Puedes cambiarlas cuando quieras.</p>
@@ -253,10 +248,14 @@
               <div class="pill-group" id="catGroup">
                 <label class="pill"><input type="checkbox" name="categorias[]" value="1"><span>Rumba</span></label>
                 <label class="pill"><input type="checkbox" name="categorias[]" value="2"><span>Comida</span></label>
-                <label class="pill"><input type="checkbox" name="categorias[]" value="3"><span>Aventura</span></label>
-                <label class="pill"><input type="checkbox" name="categorias[]" value="4"><span>Deporte</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="3"><span>Pueblear</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="4"><span>Deportes</span></label>
                 <label class="pill"><input type="checkbox" name="categorias[]" value="5"><span>Cultura</span></label>
                 <label class="pill"><input type="checkbox" name="categorias[]" value="6"><span>Gaming</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="7"><span>Chill</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="8"><span>Conciertos</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="9"><span>Río</span></label>
+                <label class="pill"><input type="checkbox" name="categorias[]" value="10"><span>Pet friendly</span></label>
               </div>
             </div>
 
@@ -284,13 +283,13 @@
             </fieldset>
 
             <div class="status" id="reg-status" role="alert" tabindex="-1">
-              <span class="status-icon" aria-hidden="true">!</span>
+              <span class="status-icon mp-fijo" aria-hidden="true">!</span>
               <div class="status-text"></div>
             </div>
 
             <div class="wz-actions">
               <button type="button" class="btn btn--paper" data-wz-prev="3">Atrás</button>
-              <button type="submit" class="btn" id="wz-submit">Crear mi cuenta
+              <button type="submit" class="btn mp-fijo" id="wz-submit">Crear mi cuenta
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
@@ -307,7 +306,7 @@
             <li>Busca el mensaje de <b>ModoParche</b> (modoparcheoficial@gmail.com).</li>
             <li>Toca <b>«Confirmar mi correo»</b> y entras directo a tu radar.</li>
           </ol>
-          <a class="btn btn--block" id="confirm-abrir" href="#" target="_blank" rel="noopener" hidden>Abrir mi correo</a>
+          <a class="btn btn--block mp-fijo" id="confirm-abrir" href="#" target="_blank" rel="noopener" hidden>Abrir mi correo</a>
           <button type="button" class="btn btn--paper btn--block" id="confirm-reenviar">Reenviar el correo</button>
           <p class="confirm-msg" id="confirm-msg" role="status" aria-live="polite"></p>
           <p class="auth-switch">¿Escribiste mal el correo? <button type="button" class="text-link btn-link" id="confirm-cambiar">Corregirlo</button></p>
@@ -338,10 +337,10 @@
             <input type="password" id="rec-pass2" required autocomplete="new-password" placeholder="La misma contraseña" data-error="Repite la misma contraseña.">
           </div>
           <div class="status" id="rec-status" role="alert" tabindex="-1">
-            <span class="status-icon" aria-hidden="true">!</span>
+            <span class="status-icon mp-fijo" aria-hidden="true">!</span>
             <div class="status-text"></div>
           </div>
-          <button type="submit" class="btn btn--block" id="rec-submit">Guardar y entrar</button>
+          <button type="submit" class="btn btn--block mp-fijo" id="rec-submit">Guardar y entrar</button>
         </form>
       </div>
 
@@ -355,7 +354,8 @@
 
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" defer></script>
+<script src="/src/vendor/supabase.js" defer></script>
+<script src="mp-seguro.js" defer></script>
 <script src="supabase-client.js" defer></script>
 <script src="mp-captcha.js" defer></script>
 <script src="mp-base.js" defer></script>

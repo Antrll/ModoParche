@@ -119,7 +119,7 @@ function esMayorDeEdad(iso) {
 /* ---------- Supabase Auth ---------- */
 const CIUDADES = { 1: 'Villavicencio', 2: 'Acacías', 3: 'Restrepo' };
 // value del formulario -> categoría del dashboard
-const INTERESES = { 1: 'rumba', 2: 'comida', 3: 'pueblear', 4: 'deportes', 5: 'cultura', 6: 'gaming' };
+const INTERESES = { 1: 'rumba', 2: 'comida', 3: 'pueblear', 4: 'deportes', 5: 'cultura', 6: 'gaming', 7: 'chill', 8: 'conciertos', 9: 'rio', 10: 'pet' };
 
 function showStatus(id, type, title, text = '') {
   const box = document.getElementById(id);
@@ -170,14 +170,8 @@ function authError(err) {
 // (tabla admins), nunca los metadatos que el usuario puede editar.
 async function destino(user) {
   const sb = window.mpSupabase;
-  if (sb) {
-    try {
-      const { data, error } = await sb.rpc('soy_admin');
-      if (!error && data === true) return 'admin.html';
-    } catch (e) { /* sin la función seguimos con el panel normal */ }
-  }
-  const tipo = user && user.user_metadata && user.user_metadata.tipo;
-  return tipo === 'empresa' ? 'empresa-dashboard.html' : 'dashboard.html';
+  const c = window.MPSeguro ? await window.MPSeguro.tipoCuenta(sb, user) : { tipo: 'persona' };
+  return c.tipo === 'admin' ? 'admin.html' : c.tipo === 'negocio' ? 'empresa-dashboard.html' : 'dashboard.html';
 }
 
 function noClient(statusId) {

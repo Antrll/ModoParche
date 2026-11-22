@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <title>Sin conexión · ModoParche</title>
 <link rel="icon" href="/src/assets/Branding/favicon/favicon.ico">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js"></script>
 <style>
   @font-face { font-family: 'Gagalin'; src: url('/src/assets/fonts/Gagalin-Regular.woff2') format('woff2'); font-display: swap; }
   :root { --bg: #FF5A1F; --ink: #111; --card: #fff; --muted: #38383f; }
@@ -29,18 +29,13 @@
 </head>
 <body>
 <main>
-  <img src="/src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" onerror="this.remove()">
+  <img src="/src/assets/web/logo-isotipo.webp" alt="" width="397" height="476" data-quitar-si-falla>
   <h1>Sin señal</h1>
   <p>No hay internet en este momento. Apenas vuelva la conexión, seguimos donde ibas.</p>
   <div class="card"><b>¿En una emergencia?</b>Llama al 123. Las llamadas funcionan aunque no tengas datos.</div>
   <button type="button" id="r">Reintentar</button>
   <p class="estado" id="e" role="status" aria-live="polite"></p>
 </main>
-<script>
-  var e = document.getElementById('e');
-  function volver() { e.textContent = 'Conectando…'; location.reload(); }
-  document.getElementById('r').addEventListener('click', function () { navigator.onLine ? volver() : (e.textContent = 'Todavía sin conexión. Revisa el wifi o los datos.'); });
-  window.addEventListener('online', volver);
-</script>
+<script src="/offline.js"></script>
 </body>
 </html>

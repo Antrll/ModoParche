@@ -23,10 +23,21 @@ const json = (body: unknown, status = 200) =>
 // El texto de las notificaciones trae <b>…</b>: se quita para el aviso del sistema
 const limpiar = (t: string) => String(t ?? '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').slice(0, 180);
 
+const HOSTS_PUSH = /^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)$/i;
+const endpointValido = (u: string) => { try { const x = new URL(u); return x.protocol === 'https:' && !x.username && !x.password && HOSTS_PUSH.test(x.hostname); } catch { return false; } };
+// Compara huellas de igual largo para no filtrar el secreto por tiempo
+async function mismoSecreto(a: string, b: string): Promise<boolean> {
+  const h = async (t: string) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
+  const [x, y] = await Promise.all([h(a), h(b)]);
+  let dif = 0;
+  for (let i = 0; i < x.length; i++) dif |= x[i] ^ y[i];
+  return dif === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'METODO' }, 405);
   const secreto = Deno.env.get('PUSH_WEBHOOK_SECRET') ?? '';
-  if (!secreto || req.headers.get('x-webhook-secret') !== secreto) return json({ error: 'NO_AUTORIZADO' }, 401);
+  if (!secreto || !(await mismoSecreto(req.headers.get('x-webhook-secret') ?? '', secreto))) return json({ error: 'NO_AUTORIZADO' }, 401);
 
   const pub = Deno.env.get('VAPID_PUBLIC_KEY') ?? '', prv = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
   if (!pub || !prv) return json({ error: 'PUSH_SIN_CONFIGURAR' }, 503);
@@ -37,19 +48,23 @@ Deno.serve(async (req) => {
   if (body?.type !== 'INSERT' || !n?.usuario_id) return json({ ok: true, enviados: 0 });
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
-  const { data: subs, error } = await admin.from('push_suscripciones').select('id, endpoint, p256dh, auth').eq('usuario_id', n.usuario_id);
-  if (error) return json({ error: error.message }, 500);
+  const { data: subs, error } = await admin.from('push_suscripciones').select('id, endpoint, p256dh, auth').eq('usuario_id', n.usuario_id).order('id', { ascending: false }).limit(5);
+  if (error) { console.error('[push]', error.message); return json({ error: 'ERROR_INTERNO' }, 500); }
+  // Un negocio abre su panel; una persona, su radar
+  const { data: negocio } = await admin.from('negocios').select('id').eq('id', n.usuario_id).maybeSingle();
+  const base = negocio ? '/empresa-dashboard' : '/dashboard';
 
   const payload = JSON.stringify({
     title: 'ModoParche',
     body: limpiar(n.texto),
-    url: n.parche_id ? `/dashboard?parche=${n.parche_id}` : '/dashboard',
+    url: negocio ? base : (n.parche_id ? `${base}?parche=${n.parche_id}` : base),
     tag: n.parche_id ? `parche-${n.parche_id}` : `mp-${n.id}`,
   });
 
   let enviados = 0;
   const vencidas: number[] = [];
   await Promise.all((subs ?? []).map(async (s) => {
+    if (!endpointValido(s.endpoint)) { vencidas.push(s.id); return; }
     try {
       await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3600 });
       enviados++;

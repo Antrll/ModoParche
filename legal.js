@@ -57,7 +57,7 @@
     box.setAttribute('aria-label', 'Aviso de cookies');
     box.innerHTML =
       '<p><b>Sin rastreo.</b> Solo guardamos en tu navegador lo necesario para que inicies sesión y el sitio funcione. ' +
-      'No usamos cookies de publicidad ni de analítica. <a href="' + base + 'cookies.html">Ver detalles</a></p>' +
+      'No usamos cookies de publicidad; medimos visitas de forma agregada y sin cookies. <a href="' + base + 'cookies.html">Ver detalles</a></p>' +
       '<button type="button" class="mp-cookies-ok">Entendido</button>';
     document.body.appendChild(box);
     requestAnimationFrame(function () { box.classList.add('is-in'); });

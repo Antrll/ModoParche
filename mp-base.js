@@ -224,6 +224,7 @@
     return !firstBad;
   }
 
+  window.MPValidar = validateWithin;
   function initLiveValidation() {
     $$('form[data-validate]').forEach(form => {
       form.setAttribute('novalidate', '');

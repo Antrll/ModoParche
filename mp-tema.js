@@ -93,88 +93,10 @@
   // profundo solo en el texto; los fondos naranjas no se tocan.
   const TINTA = [17, 17, 17];
 
-  /* ---------- Bloques de tinta (.mp-tinta-bloque) ----------
-     Los bloques negros grandes del diseño (capítulos, footer, cookies, barras
-     negras) cambian según el modo: claro -> gris muy claro, oscuro -> gris
-     oscuro, mixto -> negro como se diseñaron. Se miden UNA vez con los colores
-     del diseño original (sin is-dark ni is-mixto, sin transiciones) y se
-     comprueba que el fondo de verdad venga de la variable --ink: si es un
-     color fijo, no se marca (si no, el texto quedaría del mismo color). */
-  function marcarBloquesTinta() {
-    if (!document.body) return;
-    const habia = { dark: root.classList.contains('is-dark'), mixto: root.classList.contains('is-mixto'), ya: root.classList.contains('mp-tema-ya') };
-    // Se mide con el diseño original (modo mixto: sin reglas de bloques)
-    root.classList.remove('is-dark');
-    root.classList.add('is-mixto', 'mp-tema-ya');
-    const marcados = [];
-    try {
-      const W = document.documentElement.clientWidth;
-      for (const el of document.body.querySelectorAll('*')) {
-        if (el.closest('svg, .mp-fijo, .mp-tinta-bloque, [data-tinta-fija]') || /^(SCRIPT|STYLE|IMG|SVG|VIDEO|CANVAS|IFRAME|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) continue;
-        const c = rgba(getComputedStyle(el).backgroundColor);
-        if (!c || c[3] < 0.9 || !cerca(c, TINTA, 3)) continue;
-        const r = el.getBoundingClientRect();
-        const grande = r.width * r.height >= 20000 || (el.matches('.nav, footer, .foot') && r.width > W * 0.6);
-        if (!grande) continue;
-        el.classList.add('mp-tinta-bloque');
-        marcados.push(el);
-      }
-      // Comprobación: con la regla del modo claro activa, el fondo ya no es negro
-      root.classList.remove('is-mixto');
-      for (const el of marcados) {
-        if (cerca(rgba(getComputedStyle(el).backgroundColor), TINTA, 3)) el.classList.remove('mp-tinta-bloque');
-      }
-      // Paneles blancos grandes dentro de un bloque de tinta (el panel del radar,
-      // tarjetas del manifiesto): toman los colores de la página en cada modo.
-      root.classList.add('is-mixto');
-      const papeles = [];
-      for (const bloque of document.querySelectorAll('.mp-tinta-bloque')) {
-        for (const el of bloque.querySelectorAll('*')) {
-          if (el.closest('svg, .mp-fijo, .mp-tinta-papel') || /^(IMG|SVG|VIDEO|CANVAS|IFRAME|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) continue;
-          const c = rgba(getComputedStyle(el).backgroundColor);
-          if (!c || c[3] < 0.9 || !cerca(c, [255, 255, 255], 3)) continue;
-          const r = el.getBoundingClientRect();
-          if (r.width * r.height < 20000) continue;
-          el.classList.add('mp-tinta-papel');
-          papeles.push(el);
-        }
-      }
-      // En oscuro deben quedar oscuros; si su blanco es fijo, no se tocan
-      root.classList.remove('is-mixto');
-      root.classList.add('is-dark');
-      for (const el of papeles) {
-        if (cerca(rgba(getComputedStyle(el).backgroundColor), [255, 255, 255], 3)) el.classList.remove('mp-tinta-papel');
-      }
-      root.classList.remove('is-dark');
-    } finally {
-      root.classList.toggle('is-dark', habia.dark);
-      root.classList.toggle('is-mixto', habia.mixto);
-      if (!habia.ya) root.classList.remove('mp-tema-ya');
-    }
-  }
-
-  // Texto naranja dentro de un bloque de tinta: en modo claro el bloque queda
-  // gris claro y el naranja de marca no se lee (2,8:1). Se marca para usar el
-  // naranja profundo solo en ese caso; los fondos naranjas no se tocan.
-  function marcarNaranjaSobreTinta() {
-    for (const bloque of document.querySelectorAll('.mp-tinta-bloque')) {
-      for (const el of bloque.querySelectorAll('*')) {
-        if (el.classList.contains('mp-naranja-texto') || el.closest('svg, .mp-fijo')) continue;
-        if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
-        if (cerca(rgba(getComputedStyle(el).color), NARANJA, 4)) el.classList.add('mp-naranja-texto');
-      }
-    }
-  }
-
-  function marcarFijos() {
-    const candidatos = document.body ? document.body.querySelectorAll('*') : [];
-    for (const el of candidatos) {
-      if (el.closest('.nav, .tema-toggle') || el.tagName === 'SCRIPT' || el.tagName === 'svg' || el.closest('svg')) continue;
-      if (el.classList.contains('mp-fijo')) continue;
-      const c = rgba(getComputedStyle(el).backgroundColor);
-      if (c && c[3] >= 0.5 && cerca(c, NARANJA, 4)) el.classList.add('mp-fijo');
-    }
-  }
+  /* ---------- Superficies ----------
+     Los bloques que cambian con el tema vienen marcados en el HTML
+     (.mp-fijo, .mp-tinta-bloque, .mp-tinta-papel, .mp-naranja-texto).
+     Así el tema no recorre ni mide la página al cargar. */
 
   /* ---------- Logo de la barra ---------- */
   const ORDEN_LOGO = {
@@ -540,7 +462,6 @@
 
   /* ---------- Inicio ---------- */
   function init() {
-    if (!PANEL) { try { marcarFijos(); marcarBloquesTinta(); marcarNaranjaSobreTinta(); } catch (e) { console.warn('[tema] superficies', e); } }
     try { crearBoton(); document.querySelectorAll('.tema-toggle').forEach(asegurarIconoMixto); } catch (e) { console.warn('[tema] botón', e); }
     vigilarLogosBarra();
     sincronizar();
@@ -575,9 +496,8 @@
     };
     try { sistema.addEventListener('change', alCambiarSistema); } catch (e) { /* navegador viejo */ }
 
-    // Bloques que cambian de tamaño (celular girado) pueden pasar a ser "grandes"
     let r = 0;
-    window.addEventListener('resize', () => { clearTimeout(r); r = setTimeout(() => { try { if (!PANEL) marcarFijos(); ajustarLogosPagina(); } catch (e) { /* nada */ } }, 300); });
+    window.addEventListener('resize', () => { clearTimeout(r); r = setTimeout(() => { try { ajustarLogosPagina(); } catch (e) { /* nada */ } }, 300); });
 
     if (document.startViewTransition && !reduceMotion.matches) {
       ('requestIdleCallback' in window ? requestIdleCallback : setTimeout)(prepararMascara);

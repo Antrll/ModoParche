@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cuenta de negocio - ModoParche</title>
+<link rel="canonical" href="https://modoparche.vercel.app/empresa">
 <meta name="description" content="Crea la cuenta de tu negocio en ModoParche, elige tu plan y publica parches con foto en el radar de Villavicencio.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
@@ -14,26 +15,21 @@
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#111111">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js" data-js data-auth="#entrar"></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
-<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="login.css">
 <link rel="stylesheet" href="paginas.css">
-<script>
-  document.documentElement.classList.add('mp-js');
-  if (/^#entrar/.test(location.hash)) document.documentElement.classList.add('auth-start-signup');
-</script>
 <link rel="stylesheet" href="legal.css">
 </head>
 <body class="page-auth page-biz-auth">
@@ -58,7 +54,7 @@
 <main id="main" class="auth-shell">
 
   <!-- Panel con la vista previa en vivo (escritorio) -->
-  <aside class="biz-aside" aria-label="Así se verá tu negocio">
+  <aside class="biz-aside mp-tinta-bloque" aria-label="Así se verá tu negocio">
     <img class="biz-aside-mark stk--float" src="src/assets/web/logo-isotipo-negro.webp" alt="" width="397" height="476" style="--float:8s">
     <div class="biz-aside-copy">
       <span class="tag-olive tag-olive--dark">Cuenta de negocio</span>
@@ -68,8 +64,8 @@
 
     <div class="biz-live" aria-live="polite">
       <p class="biz-live-label">Así te verán los parceros</p>
-      <article class="biz-live-card">
-        <div class="biz-live-cover">
+      <article class="biz-live-card mp-tinta-papel">
+        <div class="biz-live-cover mp-fijo">
           <img src="src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476">
           <span class="biz-live-badge">Aliado</span>
         </div>
@@ -132,6 +128,8 @@
                   <option value="Música en vivo" data-cat="conciertos">Música en vivo</option>
                   <option value="Cultura y talleres" data-cat="cultura">Cultura y talleres</option>
                   <option value="Gaming" data-cat="gaming">Gaming</option>
+                  <option value="Río y naturaleza" data-cat="rio">Río y naturaleza</option>
+                  <option value="Pet friendly" data-cat="pet">Pet friendly</option>
                 </select>
               </div>
               <div class="field">
@@ -167,7 +165,7 @@
 
             <div class="wz-actions">
               <span></span>
-              <button type="button" class="btn" data-bz-next="1">Continuar
+              <button type="button" class="btn mp-fijo" data-bz-next="1">Continuar
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
@@ -211,7 +209,7 @@
 
             <div class="wz-actions">
               <button type="button" class="btn btn--paper" data-bz-prev="2">Atrás</button>
-              <button type="button" class="btn" data-bz-next="2">Continuar
+              <button type="button" class="btn mp-fijo" data-bz-next="2">Continuar
                 <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
@@ -271,7 +269,7 @@
             </fieldset>
 
             <div class="status" id="bz-status" role="alert" tabindex="-1">
-              <span class="status-icon" aria-hidden="true">!</span>
+              <span class="status-icon mp-fijo" aria-hidden="true">!</span>
               <div class="status-text"></div>
             </div>
 
@@ -324,7 +322,7 @@
           </div>
 
           <div class="status" id="bz-login-status" role="alert" tabindex="-1">
-            <span class="status-icon" aria-hidden="true">!</span>
+            <span class="status-icon mp-fijo" aria-hidden="true">!</span>
             <div class="status-text"></div>
           </div>
 
@@ -345,7 +343,8 @@
   </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" defer></script>
+<script src="/src/vendor/supabase.js" defer></script>
+<script src="mp-seguro.js" defer></script>
 <script src="supabase-client.js" defer></script>
 <script src="mp-captcha.js" defer></script>
 <script src="mp-base.js" defer></script>

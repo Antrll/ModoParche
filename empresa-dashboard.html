@@ -4,21 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js"></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <title>Panel del negocio · ModoParche</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="empresa-dashboard.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="mp-mapa.css">
@@ -479,7 +479,7 @@
         <div class="form-grid">
           <div class="field"><label for="p-fecha">Fecha</label><input class="input num" type="date" id="p-fecha"><p class="field-msg"></p></div>
           <div class="field"><label for="p-hora">Hora de inicio</label><input class="input num" type="time" id="p-hora"><p class="field-msg"></p></div>
-          <div class="field"><label for="p-cupos">Cupos</label><input class="input num" type="number" id="p-cupos" min="2" max="500" inputmode="numeric"><p class="field-msg"></p></div>
+          <div class="field"><label for="p-cupos">Cupos</label><input class="input num" type="number" id="p-cupos" min="2" max="60" inputmode="numeric"><p class="field-msg"></p></div>
           <div class="field"><label for="p-consumo" id="p-consumo-label">Consumo por persona (COP)</label><input class="input num" type="number" id="p-consumo" min="0" step="1000" inputmode="numeric"><p class="field-msg"></p></div>
         </div>
         <div class="field"><label for="p-promo">Qué pasa ese día</label><textarea class="input" id="p-promo" rows="3" maxlength="200" placeholder="La música, la promo y qué gana quien llegue"></textarea><p class="field-msg"></p></div>
@@ -487,7 +487,7 @@
           <select class="input" id="p-cat">
             <option value="comida">Comida</option><option value="rumba">Rumba</option><option value="chill">Plan chill</option>
             <option value="conciertos">Música en vivo</option><option value="cultura">Cultura</option><option value="deportes">Deporte</option>
-            <option value="pueblear">Aventura</option><option value="gaming">Gaming</option>
+            <option value="pueblear">Aventura</option><option value="gaming">Gaming</option><option value="rio">Río</option><option value="pet">Pet friendly</option>
           </select>
         </div>
       </div>
@@ -537,7 +537,7 @@
       </div>
     </div>
     <div class="form-grid">
-      <div class="field"><label for="r-cupos">Cupos</label><input class="input num" type="number" id="r-cupos" min="2" max="300" value="20" inputmode="numeric"><p class="field-msg"></p></div>
+      <div class="field"><label for="r-cupos">Cupos</label><input class="input num" type="number" id="r-cupos" min="2" max="60" value="20" inputmode="numeric"><p class="field-msg"></p></div>
       <div class="field"><label for="r-cupon">Cupón para quien llegue</label><select class="input" id="r-cupon"></select></div>
     </div>
     <p class="hint" id="rel-summary"></p>
@@ -648,7 +648,7 @@
         <select class="input" id="e-cat">
           <option value="comida">Comida</option><option value="rumba">Rumba</option><option value="chill">Plan chill</option>
           <option value="conciertos">Música en vivo</option><option value="cultura">Cultura</option><option value="deportes">Deporte</option>
-          <option value="pueblear">Aventura</option><option value="gaming">Gaming</option>
+          <option value="pueblear">Aventura</option><option value="gaming">Gaming</option><option value="rio">Río</option><option value="pet">Pet friendly</option>
         </select>
       </div>
       <div class="field"><label for="e-tel">WhatsApp</label><input class="input num" id="e-tel" inputmode="numeric" maxlength="15"><p class="field-msg"></p></div>
@@ -711,32 +711,6 @@
   </form>
 </dialog>
 
-<dialog class="dialog" id="dlg-pago" aria-labelledby="dlg-pago-title">
-  <div class="dialog-body">
-    <header class="dialog-head">
-      <h2 id="dlg-pago-title">Pásate a Parche Villavo</h2>
-      <button class="icon-btn" data-action="cerrar-pago" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
-    </header>
-    <div class="pay-sum">
-      <div><b>Parche Villavo</b><small>30 días · parches sin límite con foto, relámpagos y métricas</small></div>
-      <span class="pay-price" id="pago-precio">$79.900</span>
-    </div>
-    <ul class="pay-methods" aria-label="Medios de pago">
-      <li><svg class="ic"><use href="#i-card"/></svg>Tarjeta débito o crédito</li>
-      <li><svg class="ic"><use href="#i-store"/></svg>PSE (cualquier banco)</li>
-      <li><svg class="ic"><use href="#i-send"/></svg>Nequi</li>
-      <li><svg class="ic"><use href="#i-shield"/></svg>Botón Bancolombia</li>
-    </ul>
-    <div class="pay-status" id="pago-status" role="status" aria-live="polite" hidden></div>
-    <p class="pay-test"><b>Prototipo académico: pago de prueba.</b> No se cobra dinero real. Usa las tarjetas o cuentas de prueba de Wompi (por ejemplo, la tarjeta 4242 4242 4242 4242).</p>
-    <p class="hint">El pago lo procesa <b>Wompi</b> (Bancolombia): ModoParche nunca ve ni guarda los datos de tu tarjeta. Sin permanencia y con 5 días hábiles de retracto. <a href="pagos.html" target="_blank" rel="noopener">Pagos y devoluciones</a></p>
-    <footer class="dialog-foot">
-      <button class="btn" data-action="cerrar-pago">Ahora no</button>
-      <button class="btn primary" id="pago-btn" data-action="pagar"><svg class="ic"><use href="#i-lock"/></svg>Pagar seguro con Wompi</button>
-    </footer>
-  </div>
-</dialog>
-
 <dialog class="dialog" id="dlg-qr" aria-labelledby="dlg-qr-title">
   <div class="dialog-body">
     <header class="dialog-head">
@@ -791,7 +765,7 @@
       <h2 id="dlg-scan-title">Escanear cupón</h2>
       <button class="icon-btn" data-action="cerrar-scan" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button>
     </header>
-    <div class="scan-box"><video id="scan-video" playsinline muted></video><span class="scan-frame" aria-hidden="true"><i></i></span></div>
+    <div class="scan-box"><div id="scan-reader"></div></div>
     <p class="hint" id="scan-hint">Apunta la cámara al QR del cupón.</p>
   </div>
 </dialog>
@@ -814,9 +788,10 @@
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="fx-layer" id="fx" aria-hidden="true"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/src/vendor/qrcode.js"></script>
+<script src="/src/vendor/supabase.js"></script>
+<script src="mp-utils.js"></script>
+<script src="mp-seguro.js"></script>
 <script src="supabase-client.js"></script>
 <script src="mp-mapa.js"></script>
 <script src="mp-checkin.js"></script>

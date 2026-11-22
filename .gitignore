@@ -13,3 +13,7 @@ mis-datos-*.json
 
 # Datos de prueba con nombres reales (no se suben al repo público)
 supabase/pruebas/
+
+# Trae cuentas y hashes reales: el repo usa 20261029120001_panel_admin_base.sql
+supabase/migrations/20261029120000_panel_admin.sql
+dist/

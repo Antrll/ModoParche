@@ -22,13 +22,11 @@
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
   const MIN = 6e4, HOUR = 36e5, DAY = 864e5;
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const { esc, norm } = window.MPUtil;
   const ic = n => `<svg class="ic" aria-hidden="true"><use href="#${n}"/></svg>`;
   const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const nf = new Intl.NumberFormat('es-CO');
-  const int = n => nf.format(Math.round(n || 0));
-  const money = n => '$' + nf.format(Math.round(n || 0));
+  const { int, money } = window.MPUtil;
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
   const ts = v => typeof v === 'number' ? v : Date.parse(v);
@@ -172,11 +170,33 @@
   }
   const metArgs = () => { const r = rangoFechas(); return { p_desde: r.desde, p_hasta: r.hasta }; };
 
+  // Las cuentas llegan en páginas de 200; más allá de 3.000 se encuentran con el buscador
+  async function traerCuentas() {
+    const filas = [];
+    for (let i = 0; i < 15; i++) {
+      let pag;
+      try { pag = await rpc('admin_cuentas_pagina', { p_q: null, p_limite: 200, p_offset: i * 200 }); }
+      catch (e) { if (/admin_cuentas_pagina|PGRST202/.test(String(e && e.message))) return rpc('admin_cuentas'); throw e; }
+      filas.push(...(pag || []));
+      if (!pag || pag.length < 200) break;
+    }
+    return filas;
+  }
+  async function buscarEnServidor(q) {
+    if (DEMO || S.cuentas.length < 3000 || q.trim().length < 3) return;
+    let r;
+    try { r = await rpc('admin_cuentas_pagina', { p_q: q.trim(), p_limite: 20, p_offset: 0 }); } catch (e) { return; }
+    const nuevos = (r || []).filter(c => !CUENTA.has(c.id));
+    if (!nuevos.length) return;
+    S.cuentas = S.cuentas.concat(nuevos);
+    CUENTA = byId();
+    if ($('#search').value.trim() === q.trim()) buscar(q);
+  }
   async function cargarRemoto() {
     const c = sb();
     const [met, cuentas, parches, negocios, mensajes, registro, reportes, cals, ret, equipo] = await Promise.all([
       rpc('admin_metricas', metArgs()),
-      rpc('admin_cuentas'),
+      traerCuentas(),
       c.from('parches').select('id,titulo,categoria,descripcion,inicio,lugar,barrio,lat,lng,costo,cupos_max,creador_id,creador_nombre,aliado,verificado,demo,relampago,promo,plan_b_activo,creado_en,oficial,oficial_info,imagen,parche_miembros(count)').order('inicio', { ascending: false }).limit(1500).then(unwrap),
       c.from('negocios').select('*').then(unwrap),
       c.from('mensajes').select('id,parche_id,autor_id,texto,creado_en').eq('tipo', 'user').not('autor_id', 'is', null).order('creado_en', { ascending: false }).limit(400).then(unwrap),
@@ -198,6 +218,7 @@
     S.registro = registro || [];
     // Clics a la boletería de los oficiales (si la base ya tiene la función)
     try { S.clics = (await rpc('admin_clics_oficiales')) || {}; } catch (e) { S.clics = {}; }
+    if (ES_ADMIN()) { try { S.ingreso = await rpc('admin_ingreso_mes'); } catch (e) { S.ingreso = null; } }
     S.cargado = Date.now();
     CUENTA = byId();
   }
@@ -471,6 +492,8 @@
   function niceMax(v) { if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
 
   function sparkline(vals, id) {
+    if (vals.length === 1) vals = [vals[0], vals[0]];
+    if (!vals.length) vals = [0, 0];
     const w = 200, h = 56, max = Math.max(1, ...vals), n = vals.length;
     const pts = vals.map((v, i) => [i / (n - 1) * w, h - 6 - v / max * (h - 14)]);
     const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
@@ -501,7 +524,7 @@
     for (let i = 1; i < P.length; i++) { const [x0, y0] = P[i - 1], [x1, y1] = P[i], cx = (x0 + x1) / 2; d += `C${cx} ${y0} ${cx} ${y1} ${x1} ${y1}`; }
     const pk = vals.indexOf(Math.max(...vals));
     const peak = total ? `<circle class="peak" cx="${x(pk)}" cy="${y(vals[pk])}" r="4.5"/><text class="peak-l" x="${Math.min(W - R - 30, Math.max(L + 30, x(pk)))}" y="${y(vals[pk]) - 12}" text-anchor="middle">Pico: ${int(vals[pk])}</text>` : '';
-    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(SERIES[key][0])} por día en los últimos 30 días. Total ${total}.">
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(SERIES[key][0])} por día · ${esc(rangoTitulo())}. Total ${total}.">
       <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF5A1F" stop-opacity=".3"/><stop offset="1" stop-color="#FF5A1F" stop-opacity="0"/></linearGradient></defs>
       <g class="grid">${grid}</g><g class="xax">${xl}</g>
       <g class="draw"><path class="area" d="${d}L${x(n - 1)} ${y(0)}L${x(0)} ${y(0)}Z"/><path class="line" d="${d}"/>${peak}</g>
@@ -566,7 +589,7 @@
     if (!prev) return `<span class="delta is-up">${ic('i-up')}nuevo</span>`;
     const p = Math.round((cur - prev) / prev * 100);
     if (p === 0) return '<span class="delta">igual</span>';
-    return `<span class="delta ${p > 0 ? 'is-up' : 'is-down'}" title="Contra los 7 días anteriores">${ic(p > 0 ? 'i-up' : 'i-down')}${Math.abs(p)} %</span>`;
+    return `<span class="delta ${p > 0 ? 'is-up' : 'is-down'}" title="Contra el periodo anterior">${ic(p > 0 ? 'i-up' : 'i-down')}${Math.abs(p)} %</span>`;
   }
 
   /* =====================================================================
@@ -762,6 +785,7 @@
     ['riesgo', 'Reputación baja', c => c.resenas >= 3 && Number(c.rating) < 3.5], ['suspendidas', 'Suspendidas', c => c.suspendido],
   ];
   function renderPersonas() {
+    cargarVerificaciones().catch(() => {});
     const F = S.f.personas, all = personas(), now = Date.now();
     const tabFn = (P_TABS.find(t => t[0] === F.tab) || P_TABS[0])[2];
     $('#personas-tabs').innerHTML = P_TABS.map(([k, l, f]) => `<button role="tab" aria-selected="${F.tab === k}" data-ptab="${k}">${l}<span class="tab-count">${int(all.filter(f).length)}</span></button>`).join('');
@@ -806,15 +830,46 @@
   let current = null;
   const RENDER = { resumen: renderResumen, personas: renderPersonas, negocios: renderNegocios, parches: renderParches, mapa: renderMapa, moderacion: renderModeracion, anuncios: renderAnuncios, registro: renderRegistro, reportes: renderReportes, reputacion: renderReputacion, cobros: renderCobros, equipo: renderEquipo };
   function go(route, { force = false } = {}) {
-    if (!ROUTES.includes(route) || (route === 'anuncios' && !ES_ADMIN())) route = 'resumen';
+    if (!ROUTES.includes(route) || ((route === 'anuncios' || route === 'cobros') && !ES_ADMIN())) route = 'resumen';
     const changed = route !== current;
     current = route;
     $$('.view').forEach(v => { const on = v.id === 'view-' + route; v.hidden = !on; if (on && (changed || force)) { v.classList.remove('in', 'quiet'); void v.offsetWidth; v.classList.add('in'); } });
     $$('.nav-item[data-route]').forEach(a => { if (a.dataset.route === route) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     document.title = `${TITLES[route]} · Admin ModoParche`;
     RENDER[route]();
+    if (route === 'reportes') cargarContacto();
     if (changed) window.scrollTo({ top: 0, behavior: REDUCED() ? 'auto' : 'smooth' });
     closeMenu();
+  }
+  const MOTIVO_CONTACTO = { contacto: 'Contacto', empleo: 'Empleo', negocio: 'Negocio', prensa: 'Prensa', otro: 'Otro' };
+  let contactos = [];
+  async function cargarContacto() {
+    const box = $('#contacto-list'); if (!box) return;
+    if (DEMO) contactos = [{ id: 1, nombre: 'Laura Gómez', correo: 'laura@ejemplo.co', motivo: 'empleo', mensaje: 'Quiero trabajar con ustedes en diseño.', estado: 'nuevo', creado_en: new Date().toISOString() }];
+    else {
+      try { contactos = (await rpc('admin_contacto')) || []; }
+      catch (e) { box.innerHTML = '<li class="empty">Falta correr la migración de la Fase 2 para ver estos mensajes.</li>'; return; }
+    }
+    pintarContacto();
+  }
+  function pintarContacto() {
+    const box = $('#contacto-list'); if (!box) return;
+    const nuevos = contactos.filter(c => c.estado === 'nuevo').length;
+    $('#contacto-meta').textContent = nuevos ? plural(nuevos, 'mensaje nuevo', 'mensajes nuevos') : 'Al día';
+    box.innerHTML = contactos.length ? contactos.map(c => `<li class="contacto ${c.estado === 'nuevo' ? 'is-nuevo' : ''}">
+        <div class="contacto-top"><b>${esc(c.nombre)}</b><span class="pill">${esc(MOTIVO_CONTACTO[c.motivo] || c.motivo)}</span><small>${esc(new Date(c.creado_en).toLocaleString('es-CO'))}</small></div>
+        <a href="mailto:${esc(encodeURIComponent(c.correo).replace(/%40/g, '@'))}">${esc(c.correo)}</a>
+        <p>${esc(c.mensaje)}</p>
+        <div class="contacto-acts">${c.estado !== 'atendido' ? `<button class="btn btn--xs" data-action="contacto-estado" data-id="${esc(c.id)}" data-estado="atendido">Marcar atendido</button>` : ''}${c.estado !== 'archivado' ? `<button class="btn btn--xs" data-action="contacto-estado" data-id="${esc(c.id)}" data-estado="archivado">Archivar</button>` : `<button class="btn btn--xs" data-action="contacto-estado" data-id="${esc(c.id)}" data-estado="nuevo">Reabrir</button>`}</div>
+      </li>`).join('') : '<li class="empty empty--ok">No hay mensajes.</li>';
+  }
+  async function estadoContacto(id, estado, btn) {
+    btn.disabled = true;
+    try {
+      if (!DEMO) await rpc('admin_contacto_estado', { p_id: Number(id), p_estado: estado });
+      const c = contactos.find(x => String(x.id) === String(id)); if (c) c.estado = estado;
+      pintarContacto();
+    } catch (e) { btn.disabled = false; toast('No se pudo guardar', errMsg(e), { error: true }); }
   }
   function updateCounts() {
     const set = (id, n) => { const el = $(id); if (!el) return; const old = el.textContent; el.textContent = n ? int(n) : ''; if (old && old !== el.textContent) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } };
@@ -850,10 +905,10 @@
   function renderNegocios() {
     const F = S.f.negocios, all = S.negocios, cuenta = byId();
     const nPlan = p => all.filter(n => n.plan === p).length;
-    const mrr = nPlan('villavo') * PLANES.villavo.precio;
+    const ing = S.ingreso || {}, mrr = Number(ing.causado) || 0;
     $('#negocios-sub').innerHTML = `<b>${plural(all.length, 'negocio aliado', 'negocios aliados')}</b>. Publicaron ${plural(S.parches.filter(p => p.aliado && !p.demo).length, 'parche')} en total.`;
     $('#plans').innerHTML = `
-      <div class="plan plan--mrr" data-rise><small>Ingreso mensual estimado</small><b data-n="${mrr}">$0</b><span>${plural(nPlan('villavo'), 'negocio')} en Parche Villavo</span></div>
+      <div class="plan plan--mrr" data-rise><small>Ingreso del mes (cobros reales)</small><b data-n="${mrr}">$0</b><span>${S.ingreso ? `${money(Number(ing.recaudado) || 0)} ya recaudado · ${plural(Number(ing.clientes) || 0, 'cliente')}` : `${plural(nPlan('villavo'), 'negocio')} en Parche Villavo`}</span></div>
       ${Object.entries(PLANES).map(([k, p]) => `<div class="plan" data-rise><small>${esc(p.nombre)}</small><b>${int(nPlan(k))}</b><span>${esc(p.txt)}</span><span class="track"><i data-v="${all.length ? (nPlan(k) / all.length).toFixed(3) : 0}"></i></span></div>`).join('')}`;
     const b = $('#plans [data-n]'); if (b) { const to = Number(b.dataset.n); if (REDUCED()) b.textContent = money(to); else { let t0; const st = n => { t0 = t0 || n; const k = Math.min(1, (n - t0) / 900); b.textContent = money(to * (1 - Math.pow(1 - k, 4))); if (k < 1) requestAnimationFrame(st); }; requestAnimationFrame(st); } }
     growBars($('#plans'));
@@ -943,6 +998,15 @@
   ===================================================================== */
   let map = null, layer = null;
   const CENTRO = [4.1420, -73.6266];
+  // Leaflet se descarga solo cuando hace falta un mapa
+  let leafletP = null;
+  const cargarLeaflet = () => leafletP || (leafletP = new Promise(res => {
+    if (window.L) { res(true); return; }
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/src/vendor/leaflet/leaflet.css'; document.head.appendChild(css);
+    const js = document.createElement('script'); js.src = '/src/vendor/leaflet/leaflet.js';
+    js.onload = () => res(true); js.onerror = () => { leafletP = null; res(false); };
+    document.head.appendChild(js);
+  }));
   function renderMapa() {
     const now = Date.now(), capa = S.f.mapa;
     $$('#mapa-seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.capa === capa)));
@@ -954,7 +1018,13 @@
     $('#mapa-count').textContent = plural(items.length, 'punto');
     $('#map-list').innerHTML = items.length ? items.map((it, i) => `<li><button data-mi="${i}"><i class="lg ${it.k === 'n' ? 'lg--n' : it.live ? 'lg--live' : 'lg--p'}"></i><span><b>${esc(it.k === 'n' ? it.o.nombre : it.o.titulo)}</b><small>${esc(it.k === 'n' ? `${it.o.tipo} · ${it.o.barrio}` : `${it.live ? 'En curso' : fmtCuando(ts(it.o.inicio))} · ${it.o.miembros}/${it.o.cupos_max}`)}</small></span></button></li>`).join('')
       : '<li class="empty">Nada para mostrar.</li>';
-    if (!window.L) { $('#map').innerHTML = '<div class="empty" style="height:100%">No cargó el mapa. Revisa tu conexión.</div>'; return; }
+    if (!window.L) {
+      cargarLeaflet().then(ok => {
+        if (ok) { if (current === 'mapa') renderMapa(); return; }
+        $('#map').innerHTML = '<div class="empty" style="height:100%">No cargó el mapa. Revisa tu conexión.</div>';
+      });
+      return;
+    }
     if (!map) {
       map = L.map('map', { zoomControl: true, attributionControl: true }).setView(CENTRO, 13);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
@@ -986,9 +1056,25 @@
   ];
   function banderas(t) { return REGLAS.filter(([, r]) => { r.lastIndex = 0; return r.test(t); }).map(([n]) => n); }
   function resaltar(t) {
-    let h = esc(t);
-    REGLAS.forEach(([, r]) => { r.lastIndex = 0; h = h.replace(r, m => `<mark>${m}</mark>`); });
-    return h;
+    const s = String(t ?? ''), rangos = [];
+    REGLAS.forEach(([, r]) => {
+      r.lastIndex = 0;
+      let m;
+      while ((m = r.exec(s))) {
+        if (m[0]) rangos.push([m.index, m.index + m[0].length]);
+        if (!r.global) break;
+        if (!m[0]) r.lastIndex++;
+      }
+    });
+    rangos.sort((a, b) => a[0] - b[0]);
+    let h = '', i = 0;
+    for (const [de, a] of rangos) {
+      if (a <= i) continue;
+      const desde = Math.max(de, i);
+      h += esc(s.slice(i, desde)) + '<mark>' + esc(s.slice(desde, a)) + '</mark>';
+      i = a;
+    }
+    return h + esc(s.slice(i));
   }
   function renderModeracion() {
     const F = S.f.mod, all = S.mensajes, fl = flagged();
@@ -1149,6 +1235,9 @@
   }
 
   const ACCIONES = {
+    parche_oficial: { txt: 'gestionó el parche oficial', l: 'Parche oficial', icon: 'i-crown' }, reclamo_aprobado: { txt: 'aprobó el reclamo de', l: 'Reclamo aprobado', icon: 'i-check' }, reclamo_rechazado: { txt: 'rechazó el reclamo de', l: 'Reclamo rechazado', icon: 'i-flag' },
+    exportar_liquidaciones: { txt: 'exportó las liquidaciones', l: 'Exportación', icon: 'i-card' }, liquidacion_pagada: { txt: 'marcó como pagada', l: 'Liquidación pagada', icon: 'i-card' }, liquidacion_anulada: { txt: 'anuló', l: 'Liquidación anulada', icon: 'i-card' }, liquidacion_reabierta: { txt: 'reabrió', l: 'Liquidación reabierta', icon: 'i-card' },
+    liquidaciones_generadas: { txt: 'generó liquidaciones:', l: 'Liquidaciones generadas', icon: 'i-card' }, contacto_atendido: { txt: 'atendió el mensaje', l: 'Contacto atendido', icon: 'i-check' }, contacto_archivado: { txt: 'archivó el mensaje', l: 'Contacto archivado', icon: 'i-list' }, contacto_nuevo: { txt: 'reabrió el mensaje', l: 'Contacto reabierto', icon: 'i-list' },
     suspender: { txt: 'suspendió a', l: 'Suspensión', icon: 'i-ban' }, reactivar: { txt: 'reactivó a', l: 'Reactivación', icon: 'i-check' },
     retirar_parche: { txt: 'retiró el parche', l: 'Parche retirado', icon: 'i-trash' }, cambiar_plan: { txt: 'cambió el plan de', l: 'Cambio de plan', icon: 'i-crown' },
     borrar_mensaje: { txt: 'borró un mensaje en', l: 'Mensaje borrado', icon: 'i-chat' }, anuncio: { txt: 'envió un anuncio a', l: 'Anuncio', icon: 'i-megaphone' },
@@ -1159,9 +1248,10 @@
   };
   function renderRegistro() {
     const F = S.f.log, all = S.registro;
-    const tabs = [['todo', 'Todo'], ['reportes', 'Reportes'], ['suspender', 'Suspensiones'], ['advertencia', 'Advertencias y notas'], ['retirar_parche', 'Parches'], ['borrar_mensaje', 'Mensajes'], ['verificar', 'Negocios'], ['anuncio', 'Anuncios']];
+    const tabs = [['todo', 'Todo'], ['reportes', 'Reportes'], ['suspender', 'Suspensiones'], ['advertencia', 'Advertencias y notas'], ['retirar_parche', 'Parches'], ['borrar_mensaje', 'Mensajes'], ['verificar', 'Negocios'], ['cobros', 'Cobros'], ['anuncio', 'Anuncios']];
     const GRUPOS = { reportes: ['resolver_reporte', 'descartar_reporte', 'reabrir_reporte'], suspender: ['suspender', 'reactivar'], advertencia: ['advertencia', 'nota', 'anular_calificacion'],
-      retirar_parche: ['retirar_parche', 'editar_parche', 'renovar_ejemplos'], verificar: ['verificar', 'quitar_verificado', 'cambiar_plan'] };
+      retirar_parche: ['retirar_parche', 'editar_parche', 'renovar_ejemplos', 'parche_oficial'], verificar: ['verificar', 'quitar_verificado', 'cambiar_plan'],
+      cobros: ['reclamo_aprobado', 'reclamo_rechazado', 'exportar_liquidaciones', 'liquidacion_pagada', 'liquidacion_anulada', 'liquidacion_reabierta', 'liquidaciones_generadas'] };
     const f = k => k === 'todo' ? all : all.filter(r => (GRUPOS[k] || [k]).includes(r.accion));
     $('#log-tabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" aria-selected="${F.tab === k}" data-ltab="${k}">${l}<span class="tab-count">${int(f(k).length)}</span></button>`).join('');
     const rows = f(F.tab);
@@ -1281,7 +1371,7 @@
   // Exportación para el contador: CSV con punto y coma (Excel en español lo abre en columnas)
   function exportarLiquidacionesCSV() {
     if (!liqs || !liqs.length) { toast('Sin datos', 'No hay estados de cuenta para exportar.'); return; }
-    const celda = v => { const s = v == null ? '' : String(v); return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const celda = v => window.MPSeguro.celdaCSV(v, ';');
     const fecha = v => v ? new Date(String(v).length === 10 ? v + 'T12:00:00' : v).toLocaleDateString('es-CO') : '';
     const filas = [['Referencia', 'Negocio', 'NIT', 'Plan', 'Periodo', 'Clientes', 'Total (COP)', 'Descuento (COP)', 'Pagado (COP)', 'Saldo (COP)', 'Estado', 'Vence', 'Pagada el', 'Ref. de pago', 'Nota']];
     for (const l of liqs) filas.push([l.referencia, l.negocio, l.nit || '', (PLANES[l.plan] || {}).nombre || l.plan, String(l.periodo).slice(0, 7), l.clientes, l.total_cop, l.descuento_cop || 0, l.pagado_cop || (l.estado === 'pagada' ? l.total_cop : 0), l.estado === 'pendiente' ? l.total_cop - (l.pagado_cop || 0) : 0, (ESTADO_LIQ[l.estado] || [l.estado])[0], fecha(l.vence), fecha(l.pagada_en), l.pago_ref || '', l.nota || '']);
@@ -1291,6 +1381,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     anotar('exportar_liquidaciones', 'CSV', `${liqs.length} filas`);
+    if (!DEMO) rpc('admin_registrar_exportacion', { p_filas: liqs.length }).catch(() => {});
   }
   async function marcarLiquidacion(id, estado) {
     const l = (liqs || []).find(x => String(x.id) === String(id)); if (!l) return;
@@ -1321,9 +1412,11 @@
      13. DETALLE, DIÁLOGOS Y ACCIONES
   ===================================================================== */
   let lastFocus = null;
+  const fondoInerte = on => { const a = $('#app'); if (a) a.inert = on; };
   function openDrawer(html) {
     lastFocus = document.activeElement;
     const d = $('#drawer');
+    fondoInerte(true);
     $('#drawer-body').innerHTML = html;
     d.classList.remove('is-out'); d.hidden = false;
     document.body.classList.add('no-scroll');
@@ -1333,6 +1426,7 @@
   function closeDrawer() {
     const d = $('#drawer'); if (d.hidden) return;
     d.classList.add('is-out');
+    fondoInerte(false);
     setTimeout(() => { d.hidden = true; d.classList.remove('is-out'); document.body.classList.remove('no-scroll'); }, REDUCED() ? 0 : 300);
     if (lastFocus) lastFocus.focus();
   }
@@ -1351,8 +1445,9 @@
         <section class="d-sec"><h3>Datos</h3><dl class="dl">
           <dt>Ciudad</dt><dd>${esc(c.ciudad)}${c.barrio ? ', ' + esc(c.barrio) : ''}</dd>
           <dt>Edad</dt><dd>${e ? `${e} años` : '—'}</dd>
-          ${ES_ADMIN() ? `<dt>Cédula</dt><dd>${c.cedula ? `<span id="ced">•••• ${esc(String(c.cedula).slice(-4))}</span><button class="icon-btn" data-action="ver-cedula" data-v="${esc(c.cedula)}" aria-label="Mostrar cédula completa">${ic('i-eye')}</button>` : '—'}</dd>
+          ${ES_ADMIN() ? `<dt>Cédula</dt><dd>${c.cedula ? `<span id="ced">•••• ${esc(String(c.cedula).slice(-4))}</span><button class="icon-btn" data-action="ver-cedula" data-id="${esc(c.id)}" aria-label="Mostrar cédula completa">${ic('i-eye')}</button>` : '—'}</dd>
           <dt>Teléfono</dt><dd>${tel ? `${esc(tel)} <a class="icon-btn" href="https://wa.me/57${esc(tel.replace(/\D/g, ''))}" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">${ic('i-phone')}</a>` : '—'}</dd>` : '<dt>Datos privados</dt><dd class="muted">Solo los ve un admin</dd>'}
+          ${ES_ADMIN() && c.tipo === 'persona' ? `<dt>Verificación</dt><dd>${esc(ESTADO_CEDULA[c.cedula_estado] || 'Sin enviar')}${['pendiente', 'aprobada'].includes(c.cedula_estado) ? ` <button class="btn btn--xs" data-action="ced-rechazar" data-id="${esc(c.id)}" data-nombre="${esc(c.nombre)}">${c.cedula_estado === 'aprobada' ? 'Revocar' : 'Rechazar'}</button>` : ''}${c.cedula_estado === 'pendiente' ? ` <button class="btn btn--xs primary" data-action="ced-aprobar" data-id="${esc(c.id)}" data-nombre="${esc(c.nombre)}">Aprobar</button>` : ''}</dd>` : ''}
           <dt>Instagram</dt><dd>${c.instagram ? esc(c.instagram) : '—'}</dd>
           <dt>Gustos</dt><dd><span class="tags">${(c.intereses || []).map(x => `<span class="tag">${esc(CATS[x] || x)}</span>`).join('') || '—'}</span></dd>
           <dt>Cuenta creada</dt><dd>${esc(fmtFecha(c.creado_en))}</dd>
@@ -1454,7 +1549,7 @@
         <section class="d-sec"><h3>Chat</h3><div class="d-chat" id="d-chat">${skel(3)}</div></section>
         <div class="d-actions">
           ${p.lat ? `<button class="btn btn--sm" data-action="ver-mapa" data-id="${esc(id)}">${ic('i-map')}Ver en mapa</button>` : ''}
-          <button class="btn btn--sm dark" data-action="editar" data-id="${esc(id)}"${SOLO}>${ic('i-edit')}Editar</button>
+          <button class="btn btn--sm dark" data-action="${p.oficial ? 'editar-oficial' : 'editar'}" data-id="${esc(id)}"${SOLO}>${ic('i-edit')}Editar</button>
           <button class="btn btn--sm danger" data-action="retirar" data-id="${esc(id)}"${SOLO}>${ic('i-trash')}Retirar parche</button>
         </div>
       </div>`);
@@ -1675,7 +1770,7 @@
       if (li && !REDUCED()) { li.classList.add('is-gone'); await new Promise(res => setTimeout(res, 280)); }
       S.cals = marcarCals(S.cals.filter(x => x !== c));
       const p = CUENTA.get(calificado);
-      if (p) { const mias = S.cals.filter(x => x.calificado_id === calificado); p.resenas = mias.length; p.rating = mias.length ? Math.round(mias.reduce((a, x) => a + x.estrellas, 0) / mias.length * 10) / 10 : 5; }
+      if (p) { const mias = S.cals.filter(x => x.calificado_id === calificado); p.resenas = mias.length; p.rating = mias.length ? Math.round(mias.reduce((a, x) => a + x.estrellas, 0) / mias.length * 10) / 10 : 0; }
       anotar('anular_calificacion', nombreDe(calificado), `${c.estrellas} estrellas. ${r.motivo}`);
       toast('Calificación anulada', `Reputación de ${nombreDe(calificado)} recalculada`, { icon: 'i-star' });
       rerender();
@@ -1828,7 +1923,7 @@
     const fila = (l, k) => `<tr><td>${l}</td><td class="n">${int(PE[k])}</td><td class="n">${int(PE[k + '_prev'])}</td><td class="n">${d(PE[k], PE[k + '_prev'])}</td></tr>`;
     const html = `<!doctype html><html lang="es-CO"><head><meta charset="utf-8"><title>Informe ModoParche ${esc(rf.desde)} a ${esc(rf.hasta)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>@font-face{font-family:Gagalin;src:url('${location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '')}src/assets/fonts/Gagalin-Regular.woff2') format('woff2')}
+<style>@font-face{font-family:Gagalin;src:url('/src/assets/fonts/Gagalin-Regular.woff2') format('woff2')}
 *{box-sizing:border-box}body{margin:0;padding:36px 40px;font:13px/1.5 Inter,system-ui,sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 h1,h2{font-family:Gagalin,'Arial Black',sans-serif;font-weight:400;text-transform:uppercase;margin:0}h1{font-size:34px;line-height:1}h1 span{color:#FF5A1F}h2{font-size:18px;margin:26px 0 10px}
 .top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding-bottom:16px;border-bottom:3px solid #111}.top p{margin:6px 0 0;color:#55555c}
@@ -1839,7 +1934,7 @@ i{font-style:normal;font-weight:700;font-size:11px}i.up{color:#1f7a4a}i.down{col
 .foot{margin-top:30px;padding-top:12px;border-top:1px solid #eee;color:#66666e;font-size:11px;display:flex;justify-content:space-between}
 @page{margin:14mm}@media print{body{padding:0}.no-print{display:none}}
 .no-print{position:fixed;top:14px;right:14px;padding:10px 16px;border:0;border-radius:999px;background:#FF5A1F;font:700 14px Inter;cursor:pointer;box-shadow:inset 0 0 0 2px #111}</style></head><body>
-<button class="no-print" onclick="print()">Guardar como PDF</button>
+<button class="no-print" id="imprimir">Guardar como PDF</button>
 <div class="top"><div><h1>Modo<span>Parche</span> · Informe</h1><p>${esc(rangoTitulo())} · del ${esc(fmtFecha(rf.desde + 'T12:00'))} al ${esc(fmtFecha(rf.hasta + 'T12:00'))} · comparado con los ${int(PE.dias)} días anteriores</p></div><p>Generado por ${esc(ME.nombre)}<br>${esc(new Date().toLocaleString('es-CO'))}</p></div>
 <div class="kp"><div class="k dark"><small>Personas en total</small><b>${int(T.personas)}</b></div><div class="k"><small>Negocios aliados</small><b>${int(T.negocios)}</b></div><div class="k"><small>Parches por venir</small><b>${int(T.parches_proximos)}</b></div><div class="k"><small>Ocupación del rango</small><b>${PE.ocupacion == null ? '—' : int(PE.ocupacion) + ' %'}</b></div></div>
 <h2>Lo que pasó en el rango</h2><table><tr><th>Indicador</th><th class="n">Este rango</th><th class="n">Rango anterior</th><th class="n">Cambio</th></tr>
@@ -1854,11 +1949,93 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
 <script>document.fonts.ready.then(()=>setTimeout(()=>print(),400))<\/script></body></html>`;
     const w = window.open('', '_blank');
     if (!w) { toast('Permite las ventanas emergentes', 'El navegador bloqueó el informe', { error: true }); return; }
+    w.opener = null;
     w.document.write(html); w.document.close();
+    { const bi = w.document.getElementById('imprimir'); if (bi) bi.addEventListener('click', () => w.print()); }
+  }
+
+  /* ---------- Revisión de cédulas ----------
+     Las fotos se ven con enlaces que vencen en 2 minutos. Al decidir, pasan a
+     la cola de borrado y se eliminan: queda solo sello, fecha y huella. */
+  const ESTADO_CEDULA = { sin_enviar: 'Sin enviar', pendiente: 'En revisión', aprobada: 'Aprobada', rechazada: 'Rechazada' };
+  let verifs = null, verifCargadas = 0;
+  async function cargarVerificaciones(forzar = false) {
+    const panel = $('#verif-panel');
+    if (!panel || !ES_ADMIN()) return;
+    if (!forzar && verifs && Date.now() - verifCargadas < 30000) { pintarVerificaciones(); return; }
+    verifCargadas = Date.now();
+    if (DEMO) verifs = verifs || [{ id: 'demo-v1', nombre: 'Laura Moreno', email: 'laura@ejemplo.co', cedula: '1121234567', fecha_nacimiento: '1998-04-12', estado: 'pendiente', frontal: null, trasera: null, enviada_en: new Date(Date.now() - 3 * 3600e3).toISOString() }];
+    else {
+      const { data, error } = await sb().rpc('admin_verificaciones');
+      if (error) { panel.hidden = true; return; }
+      verifs = data || [];
+    }
+    pintarVerificaciones();
+  }
+  function pintarVerificaciones() {
+    const panel = $('#verif-panel');
+    if (!panel) return;
+    const lista = verifs || [];
+    panel.hidden = !lista.length;
+    $('#verif-meta').textContent = lista.length ? plural(lista.length, 'por revisar', 'por revisar') : '';
+    $('#verif-list').innerHTML = lista.map(v => `<li class="verif-row">
+        <div class="verif-main"><b>${esc(v.nombre)}</b><small>${esc(v.email)} · cédula terminada en ${esc(String(v.cedula || '').slice(-4))} · ${esc(fmtRel(v.enviada_en))}${v.estado === 'aprobada' ? ' · aprobada sin revisión humana' : ''}</small>
+          <div class="verif-fotos" id="verif-fotos-${esc(v.id)}"></div></div>
+        <span class="verif-acts">
+          <button class="btn btn--sm" data-action="ced-fotos" data-id="${esc(v.id)}">Ver fotos</button>
+          <button class="btn btn--sm primary" data-action="ced-aprobar" data-id="${esc(v.id)}" data-nombre="${esc(v.nombre)}">Aprobar</button>
+          <button class="btn btn--sm danger" data-action="ced-rechazar" data-id="${esc(v.id)}" data-nombre="${esc(v.nombre)}">${v.estado === 'aprobada' ? 'Revocar' : 'Rechazar'}</button>
+        </span></li>`).join('');
+  }
+  async function verFotosCedula(btn) {
+    const v = (verifs || []).find(x => String(x.id) === btn.dataset.id);
+    const box = document.getElementById('verif-fotos-' + btn.dataset.id);
+    if (!v || !box) return;
+    if (DEMO || !v.frontal || !v.trasera) { box.innerHTML = '<p class="muted">Sin fotos para mostrar.</p>'; return; }
+    setBusy(btn, true);
+    const { data, error } = await sb().storage.from('documentos_identidad').createSignedUrls([v.frontal, v.trasera], 120);
+    setBusy(btn, false);
+    if (error || !data) { toast('No se pudieron abrir las fotos', errMsg(error), { error: true }); return; }
+    box.innerHTML = data.filter(x => x.signedUrl).map((x, i) => `<img src="${esc(x.signedUrl)}" alt="${i ? 'Respaldo' : 'Frente'} de la cédula" referrerpolicy="no-referrer">`).join('');
+    setTimeout(() => { if (box.isConnected) box.innerHTML = ''; }, 120000);
+  }
+  async function decidirCedula(id, nombre, aprobar, btn) {
+    const res = await confirmar(aprobar
+      ? { title: 'Aprobar la cédula', text: `Confirma que las fotos son de <b>${esc(nombre)}</b> y que el número coincide. Las fotos se borran al aprobar.`, ok: 'Aprobar', tone: 'ok', motivo: { label: 'Nota (opcional)' } }
+      : { title: 'No aprobar la cédula', text: `<b>${esc(nombre)}</b> pierde el sello y podrá enviar fotos nuevas. Las fotos actuales se borran.`, ok: 'No aprobar', motivo: { label: 'Motivo (queda en la bitácora)', placeholder: 'Ej: la foto está borrosa' } });
+    if (!res) return;
+    setBusy(btn, true);
+    try {
+      if (!DEMO) {
+        const { error } = await sb().rpc(aprobar ? 'admin_aprobar_verificacion' : 'admin_revocar_verificacion', aprobar ? { p_usuario: id, p_nota: res.motivo || '' } : { p_usuario: id, p_motivo: res.motivo || '' });
+        if (error) throw error;
+      }
+      verifs = (verifs || []).filter(x => String(x.id) !== String(id));
+      const c = CUENTA.get(id); if (c) c.cedula_estado = aprobar ? 'aprobada' : 'rechazada';
+      anotar(aprobar ? 'aprobar_verificacion_cedula' : 'quitar_verificacion_cedula', nombre, res.motivo || '');
+      pintarVerificaciones();
+      toast(aprobar ? 'Cédula aprobada' : 'Cédula no aprobada', `Le avisamos a ${nombre}.`);
+      depurarArchivos().catch(e => console.warn('[depurar]', e));
+    } catch (e) { toast('No se pudo', errMsg(e), { error: true }); }
+    setBusy(btn, false);
+  }
+  // Borra por la API de Storage lo que quedó en cola (cédulas revisadas, cuentas borradas)
+  async function depurarArchivos() {
+    if (DEMO || !ES_ADMIN()) return;
+    const { data, error } = await sb().rpc('admin_archivos_por_borrar');
+    if (error || !data || !data.length) return;
+    const porBucket = {};
+    data.forEach(x => { (porBucket[x.bucket] = porBucket[x.bucket] || []).push(x); });
+    for (const [bucket, filas] of Object.entries(porBucket)) {
+      const { error: eB } = await sb().storage.from(bucket).remove(filas.map(x => x.ruta));
+      if (eB) { console.warn('[depurar]', bucket, eB.message); continue; }
+      const { error: eF } = await sb().rpc('admin_archivos_borrados', { p_ids: filas.map(x => x.id) });
+      if (eF) console.warn('[depurar]', eF.message);
+    }
   }
 
   function exportar(what) {
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const q = v => window.MPSeguro.celdaCSV(v, ',');
     let head, rows;
     if (what === 'personas') {
       head = ['Nombre', 'Correo', 'Ciudad', 'Barrio', 'Gustos', 'Parches creados', 'Parches unidos', 'Check-ins', 'Mensajes', 'Calificación', 'Reseñas', 'Creada', 'Último ingreso', 'Confirmada', 'Suspendida'];
@@ -1963,7 +2140,10 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
         case 'exportar': exportar(a.dataset.what); break;
         case 'mas-personas': S.f.personas.n += 40; renderPersonas(); break;
         case 'copiar': navigator.clipboard?.writeText(a.dataset.v).then(() => toast('Copiado', a.dataset.v, { icon: 'i-copy', ms: 2000 })); break;
-        case 'ver-cedula': { const s = $('#ced'); if (s) s.textContent = a.dataset.v; a.remove(); break; }
+        case 'ced-fotos': verFotosCedula(a); break;
+        case 'ced-aprobar': decidirCedula(a.dataset.id, a.dataset.nombre, true, a); break;
+        case 'ced-rechazar': decidirCedula(a.dataset.id, a.dataset.nombre, false, a); break;
+        case 'ver-cedula': { const s = $('#ced'), x = CUENTA.get(a.dataset.id); if (s && x && x.cedula) s.textContent = x.cedula; a.remove(); break; }
         case 'ver-mapa': { const p = S.parches.find(x => x.id === id); if (p) { S._flyTo = p; closeDrawer(); if (current === 'mapa') renderMapa(); else location.hash = '#mapa'; } break; }
         case 'ver-mapa-neg': { const n = S.negocios.find(x => x.id === id); if (n) { S._flyTo = n; closeDrawer(); if (current === 'mapa') renderMapa(); else location.hash = '#mapa'; } break; }
         case 'resolver': accionReporte(id, 'resuelto'); break;
@@ -1974,6 +2154,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
         case 'borrar-nota': borrarNota(id, a.dataset.uid); break;
         case 'verificar': accionVerificar(id, a.dataset.on === '1'); break;
         case 'anular-cal': { const li = a.closest('[data-cal]'); accionAnularCal(li.dataset.cal, li); break; }
+        case 'contacto-estado': estadoContacto(a.dataset.id, a.dataset.estado, a); break;
         case 'editar': abrirEditar(id); break;
         case 'nuevo-oficial': abrirOficial(null); break;
         case 'editar-oficial': abrirOficial(id); break;
@@ -2008,9 +2189,11 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
     // Búsqueda global
     const si = $('#search');
     si.addEventListener('input', deb(e => buscar(e.target.value), 90));
+    si.addEventListener('input', deb(e => buscarEnServidor(e.target.value), 400));
     si.addEventListener('focus', () => si.value && buscar(si.value));
     si.addEventListener('keydown', e => {
       const items = $$('#search-pop .sp-item');
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !items.length) { e.preventDefault(); return; }
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); spSel = (spSel + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; items.forEach((it, i) => it.setAttribute('aria-selected', String(i === spSel))); items[spSel]?.scrollIntoView({ block: 'nearest' }); }
       if (e.key === 'Enter') { e.preventDefault(); (items[spSel] || items[0])?.click(); }
       if (e.key === 'Escape') { si.value = ''; hideSearch(); si.blur(); }
@@ -2019,7 +2202,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') { if (!$('#drawer').hidden) closeDrawer(); closeMenu(); return; }
       const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
-      if (typing || e.metaKey || e.ctrlKey || e.altKey || $('#dlg-confirm').open || $('#dlg-edit').open) return;
+      if (typing || e.metaKey || e.ctrlKey || e.altKey || $('#dlg-confirm').open || $('#dlg-edit').open || $('#dlg-oficial').open) return;
       if (e.key === '/') { e.preventDefault(); si.focus(); return; }
       const n = Number(e.key); if (n >= 1 && n <= 9) location.hash = '#' + ROUTES[n - 1];
     });
@@ -2036,7 +2219,8 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
   const hideSearch = () => { $('#search-pop').hidden = true; $('#search').setAttribute('aria-expanded', 'false'); };
 
   async function salir() {
-    if (!DEMO && sb()) { try { await sb().auth.signOut(); } catch (e) { /* salimos igual */ } }
+    if (!DEMO && sb()) { try { sb().removeAllChannels(); await sb().auth.signOut(); } catch (e) { /* salimos igual */ } }
+    try { Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1', 'mp_2fa_espera'].includes(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* nada */ }
     location.replace('login.html');
   }
 
@@ -2128,12 +2312,20 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
      La base también lo exige (private.exigir_admin / exigir_staff piden aal2
      cuando la cuenta ya tiene un factor). */
   async function verificacionDosPasos(c) {
-    if (!c.auth.mfa) return true; // librería vieja: la base igual protege
+    const bloquear = (titulo, texto) => {
+      setBoot(`<b>${esc(titulo)}</b><br>${esc(texto)}`, '<button class="btn primary" data-recargar>Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+      return false;
+    };
+    if (!c.auth.mfa) return bloquear('No pudimos pedir el segundo paso', 'Recarga la página. Sin verificación en dos pasos no se abre el panel.');
     let aal;
     try { ({ data: aal } = await c.auth.mfa.getAuthenticatorAssuranceLevel()); } catch (e) { aal = null; }
     if (aal && aal.currentLevel === 'aal2') return true;
     let factores = [];
-    try { const { data } = await c.auth.mfa.listFactors(); factores = (data && data.totp) || []; } catch (e) { factores = []; }
+    try {
+      const { data, error } = await c.auth.mfa.listFactors();
+      if (error) throw error;
+      factores = (data && data.totp) || [];
+    } catch (e) { return bloquear('No pudimos revisar tu verificación en dos pasos', 'Revisa tu conexión e intenta de nuevo.'); }
     const verificado = factores.find(f => f.status === 'verified');
     if (verificado) return pedirCodigo(c, verificado.id, false);
     // Limpia intentos de inscripción a medias para poder empezar de nuevo
@@ -2144,11 +2336,8 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       if (r.error) throw r.error;
       alta = r.data;
     } catch (e) {
-      // MFA apagado en el proyecto: se avisa y se deja entrar para no dejar al equipo afuera
-      const m = String(e && e.message || e);
-      console.warn('[2FA]', m);
-      toast('Verificación en dos pasos no disponible', 'Actívala en Supabase > Authentication > Multi-Factor (TOTP).', { error: true });
-      return true;
+      console.warn('[2FA]', String(e && e.message || e));
+      return bloquear('La verificación en dos pasos no está disponible', 'Actívala en Supabase > Authentication > Multi-Factor (TOTP) y vuelve a entrar.');
     }
     return pedirCodigo(c, alta.id, true, alta.totp);
   }
@@ -2168,9 +2357,23 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
       const input = $('#mfa-codigo'), err = $('#mfa-error'), ok = $('#mfa-ok');
       setTimeout(() => input && input.focus(), 60);
       input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 6); if (input.value.length === 6) $('#mfa-form').requestSubmit(); });
-      let intentos = 0;
+      const LLAVE_2FA = 'mp_2fa_espera', ESPERA = 60000;
+      let intentos = 0, reloj = 0;
+      const hastaCuando = () => { try { return Number(localStorage.getItem(LLAVE_2FA)) || 0; } catch (x) { return 0; } };
+      const bloquearIntentos = () => {
+        clearInterval(reloj);
+        const pinta = () => {
+          const faltan = Math.ceil((hastaCuando() - Date.now()) / 1000);
+          if (faltan <= 0) { clearInterval(reloj); ok.disabled = false; input.disabled = false; err.textContent = ''; intentos = 0; input.focus(); return; }
+          ok.disabled = true; input.disabled = true;
+          err.textContent = `Demasiados intentos. Espera ${faltan} s.`;
+        };
+        pinta(); reloj = setInterval(pinta, 1000);
+      };
+      if (hastaCuando() > Date.now()) bloquearIntentos();
       $('#mfa-form').addEventListener('submit', async e => {
         e.preventDefault();
+        if (hastaCuando() > Date.now()) return;
         const code = input.value.trim();
         if (!/^\d{6}$/.test(code)) { err.textContent = 'Escribe los 6 números.'; return; }
         ok.disabled = true; err.textContent = '';
@@ -2179,12 +2382,19 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
         if (r.error) {
           intentos++;
           const m = String(r.error.message || '');
+          if (/rate|too many/i.test(m) || intentos >= 5) {
+            try { localStorage.setItem(LLAVE_2FA, String(Date.now() + ESPERA)); } catch (x) { /* sin almacenamiento */ }
+            input.value = '';
+            bloquearIntentos();
+            return;
+          }
           err.textContent = /expired|vencid/i.test(m) ? 'Ese código ya cambió. Escribe el que aparece ahora.'
-            : /rate|too many/i.test(m) || intentos >= 5 ? 'Demasiados intentos. Espera un minuto.'
             : 'Código incorrecto. Revisa que la hora de tu celular esté en automático.';
           input.select();
           return;
         }
+        clearInterval(reloj);
+        try { localStorage.removeItem(LLAVE_2FA); } catch (x) { /* nada */ }
         setBoot('Listo. Entrando al centro de control…');
         resolve(true);
       });
@@ -2193,21 +2403,20 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
 
   async function bootRemoto() {
     const c = sb();
-    if (!c) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" onclick="location.reload()">Reintentar</button><a class="btn" href="admin.html?demo=1">Ver con datos de ejemplo</a>'); return false; }
+    if (!c) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" data-recargar>Reintentar</button><a class="btn" href="admin.html?demo=1">Ver con datos de ejemplo</a>'); return false; }
     let session = null;
     try { session = (await c.auth.getSession()).data.session; } catch (e) { /* sin sesión */ }
     if (!session) { location.replace('login.html'); return false; }
     setBoot('Revisando tu acceso…');
-    const { data: esAdmin, error } = await c.rpc('soy_admin');
-    if (error) {
-      const falta = /PGRST202|42883|Could not find the function/i.test(`${error.code} ${error.message}`);
-      setBoot(falta ? 'Falta activar el panel en la base de datos. Corre la migración <code>20261029120000_panel_admin.sql</code> en Supabase y recarga.' : `No pudimos revisar tu acceso. ${esc(error.message)}`,
-        '<button class="btn primary" onclick="location.reload()">Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+    // Quién es lo dice la base; los datos solo se abren después del 2FA
+    if (!window.MPSeguro) {
+      setBoot('No cargó la seguridad del panel. Recarga la página.', '<button class="btn primary" data-recargar>Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
       return false;
     }
-    if (esAdmin !== true) {
+    const cuenta = await window.MPSeguro.tipoCuenta(c, session.user);
+    if (cuenta.tipo !== 'admin') {
       setBoot('<b>Esta cuenta no tiene acceso de admin.</b><br>Los admins solo se crean desde la base de datos.',
-        `<a class="btn primary" href="${session.user.user_metadata && session.user.user_metadata.tipo === 'empresa' ? 'empresa-dashboard.html' : 'dashboard.html'}">Ir a mi panel</a><button class="btn" data-action="logout">Cerrar sesión</button>`);
+        `<a class="btn primary" href="${cuenta.tipo === 'negocio' ? 'empresa-dashboard.html' : 'dashboard.html'}">Ir a mi panel</a><button class="btn" data-action="logout">Cerrar sesión</button>`);
       return false;
     }
     c.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.replace('login.html'); });
@@ -2216,14 +2425,14 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
     if (eRol) {
       const falta = /PGRST202|42883|Could not find the function/i.test(`${eRol.code} ${eRol.message}`);
       setBoot(falta ? 'Falta la actualización del panel en la base de datos. Corre la migración <code>20261030120000_admin_v2.sql</code> en Supabase y recarga.' : `No pudimos revisar tu rol. ${esc(eRol.message)}`,
-        '<button class="btn primary" onclick="location.reload()">Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+        '<button class="btn primary" data-recargar>Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
       return false;
     }
     setBoot('Juntando lo que pasa en ModoParche…');
     try { await cargarRemoto(); }
     catch (e) {
       const falta = /PGRST202|PGRST205|42883|Could not find/i.test(`${e.code} ${e.message}`);
-      setBoot(falta ? 'Falta la actualización del panel en la base de datos. Corre la migración <code>20261030120000_admin_v2.sql</code> en Supabase y recarga.' : `No pudimos cargar los datos. ${esc(errMsg(e))}`, '<button class="btn primary" onclick="location.reload()">Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+      setBoot(falta ? 'Falta la actualización del panel en la base de datos. Corre la migración <code>20261030120000_admin_v2.sql</code> en Supabase y recarga.' : `No pudimos cargar los datos. ${esc(errMsg(e))}`, '<button class="btn primary" data-recargar>Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
       return false;
     }
     const yo = CUENTA.get(session.user.id) || {};
@@ -2254,6 +2463,8 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
     updateCounts(); stampRefresh();
     go(location.hash.slice(1) || 'resumen', { force: true });
     hideBoot();
+    cargarVerificaciones().catch(() => {});
+    depurarArchivos().catch(e => console.warn('[depurar]', e));
     tiempoReal();
     if (DEMO) setTimeout(() => toast('Datos de ejemplo', 'Así se ve el panel con la plataforma en movimiento. Nada se guarda.', { icon: 'i-info', ms: 6000 }), 900);
   }

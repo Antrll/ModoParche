@@ -42,6 +42,8 @@ function pagina({ origin, p }) {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#111111">
 <link rel="icon" href="/src/assets/Branding/favicon/favicon.ico">
+<link rel="canonical" href="${esc(url)}">
+${p ? `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Event', name: p.titulo, startDate: p.inicio, eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', image: img, url, location: { '@type': 'Place', name: p.lugar, address: { '@type': 'PostalAddress', addressLocality: p.barrio || 'Villavicencio', addressRegion: 'Meta', addressCountry: 'CO' } }, organizer: { '@type': 'Organization', name: 'ModoParche', url: origin } }).replace(/</g, '\\u003c')}</script>` : ''}
 <style>
   :root { --ink:#111; --paper:#fff; --orange:#FF5A1F; }
   * { box-sizing: border-box; margin: 0; }
@@ -73,7 +75,8 @@ function pagina({ origin, p }) {
 }
 
 module.exports = async (req, res) => {
-  const origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
+  // Origen fijo: el encabezado Host lo controla quien hace la petición
+  const origin = 'https://modoparche.vercel.app';
   const id = String((req.query && req.query.id) || '').trim();
   let p = null;
   if (UUID.test(id)) {
@@ -82,6 +85,7 @@ module.exports = async (req, res) => {
         method: 'POST',
         headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ p_id: id }),
+        signal: AbortSignal.timeout(5000),
       });
       if (r.ok) p = await r.json();
     } catch (e) { p = null; }

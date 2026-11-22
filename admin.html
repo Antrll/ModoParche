@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#111111">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js"></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <meta name="robots" content="noindex, nofollow">
@@ -13,13 +13,12 @@
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="admin.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="mp-mapa.css">
@@ -94,7 +93,7 @@
       <a class="nav-item" href="#resumen" data-route="resumen"><svg class="ic"><use href="#i-overview"/></svg><span>Resumen</span><kbd>1</kbd></a>
       <a class="nav-item" href="#personas" data-route="personas"><svg class="ic"><use href="#i-users"/></svg><span>Personas</span><b class="nav-count" id="count-personas"></b><kbd>2</kbd></a>
       <a class="nav-item" href="#negocios" data-route="negocios"><svg class="ic"><use href="#i-store"/></svg><span>Negocios</span><b class="nav-count" id="count-negocios"></b><kbd>3</kbd></a>
-      <a class="nav-item" href="#cobros" data-route="cobros"><svg class="ic"><use href="#i-card"/></svg><span>Cobros</span></a>
+      <a class="nav-item" href="#cobros" data-route="cobros" data-solo-admin><svg class="ic"><use href="#i-card"/></svg><span>Cobros</span></a>
       <a class="nav-item" href="#parches" data-route="parches"><svg class="ic"><use href="#i-calendar"/></svg><span>Parches</span><b class="nav-count" id="count-parches"></b><kbd>4</kbd></a>
       <a class="nav-item" href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-map"/></svg><span>Mapa en vivo</span><kbd>5</kbd></a>
       <p class="group-label">Cuidado de la comunidad</p>
@@ -266,6 +265,10 @@
           <div><h1 id="h-personas" class="display">Personas</h1><p class="sub" id="personas-sub"></p></div>
           <div class="title-actions"><button class="btn" data-solo-admin data-action="exportar" data-what="personas"><svg class="ic"><use href="#i-download"/></svg>Exportar CSV</button></div>
         </div>
+        <section class="panel verif-panel" id="verif-panel" aria-labelledby="h-verif" data-solo-admin hidden>
+          <header><h2 id="h-verif">Cédulas por revisar</h2><span class="meta" id="verif-meta"></span></header>
+          <ul class="verif-list" id="verif-list"></ul>
+        </section>
         <div class="mini-kpis" id="personas-kpis"></div>
         <div class="filters">
           <div class="tabs" role="tablist" id="personas-tabs"></div>
@@ -362,6 +365,10 @@
         <div class="title-row">
           <div><h1 id="h-reportes" class="display">Reportes</h1><p class="sub" id="rep-sub"></p></div>
         </div>
+        <section class="panel contacto-panel" aria-labelledby="h-contacto">
+          <div class="contacto-head"><h2 id="h-contacto">Mensajes de contacto y empleo</h2><span class="sub" id="contacto-meta"></span></div>
+          <ul class="contacto-list" id="contacto-list"></ul>
+        </section>
         <div class="mini-kpis" id="rep-kpis"></div>
         <div class="filters">
           <div class="tabs" role="tablist" id="rep-tabs"></div>
@@ -449,7 +456,7 @@
       <section class="view" id="view-cobros" aria-labelledby="h-cobros" hidden>
         <div class="title-row">
           <div><h1 id="h-cobros" class="display">Cobros</h1><p class="sub">Estados de cuenta de los negocios: cobro por resultados, sin mensualidades. Se arman solos el día 1 de cada mes. Los negocios pagan con un clic en Wompi (total o abonos) y quedan pagados solos; si pagan por otro medio, aquí los marcas.</p></div>
-          <div class="title-acts"><button class="btn" data-action="liq-recargar"><svg class="ic"><use href="#i-refresh"/></svg>Actualizar</button><button class="btn" data-action="liq-csv">Exportar para el contador</button><button class="btn primary" data-action="liq-generar" data-solo-admin>Armar liquidaciones</button></div>
+          <div class="title-acts"><button class="btn" data-action="liq-recargar"><svg class="ic"><use href="#i-refresh"/></svg>Actualizar</button><button class="btn" data-action="liq-csv" data-solo-admin>Exportar para el contador</button><button class="btn primary" data-action="liq-generar" data-solo-admin>Armar liquidaciones</button></div>
         </div>
         <div class="kpis liq-kpis" id="liq-resumen"></div>
         <div class="cobro-alertas">
@@ -600,8 +607,9 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/src/vendor/supabase.js"></script>
+<script src="mp-utils.js"></script>
+<script src="mp-seguro.js"></script>
 <script src="supabase-client.js"></script>
 <script src="mp-mapa.js"></script>
 <script src="admin.js"></script>

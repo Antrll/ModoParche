@@ -73,7 +73,7 @@
     clearTimeout(ocultar);
     barra.style.background = sinRed ? '#111' : '#0e6f31';
     barra.style.color = '#fff';
-    barra.textContent = sinRed ? 'Sin conexión. Lo que hagas se guarda cuando vuelva el internet.' : 'Volvió la conexión.';
+    barra.textContent = sinRed ? 'Sin conexión: modo solo lectura.' : 'Volvió la conexión.';
     requestAnimationFrame(function () { barra.style.transform = 'translate(-50%,0)'; });
     if (!sinRed) ocultar = setTimeout(function () { barra.style.transform = 'translate(-50%,140%)'; }, 2600);
   }

@@ -24,13 +24,11 @@
   const NOW = () => Date.now();
   const pad = n => String(n).padStart(2, '0'); // taste-skill-ignore: horas y fechas, no numeración
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const { esc, norm } = window.MPUtil;
   const ic = n => `<svg class="ic" aria-hidden="true"><use href="#${n}"/></svg>`;
   const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const nf = new Intl.NumberFormat('es-CO');
-  const int = n => nf.format(Math.round(n));
-  const money = n => '$' + nf.format(Math.round(n));
+  const { int, money } = window.MPUtil;
   const dec1 = n => n.toFixed(1).replace('.', ',');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   const REDUCED = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -55,7 +53,7 @@
   // Datáfono virtual de Wompi para pagar el estado de cuenta (monto abierto)
   const DATAFONO_WOMPI = 'https://checkout.wompi.co/l/VPOS_saHurm';
 
-  const CAT_NEG = { comida: 'Comida y Antojos', rumba: 'Rumba y Bares', chill: 'Planes Chill', conciertos: 'Conciertos y Toques', cultura: 'Cultura y Talleres', deportes: 'Deporte y Bienestar', pueblear: 'Turismo y Aventura', gaming: 'Gaming', rio: 'Planes Chill', pet: 'Planes Chill' };
+  const CAT_NEG = { comida: 'Comida y Antojos', rumba: 'Rumba y Bares', chill: 'Planes Chill', conciertos: 'Conciertos y Toques', cultura: 'Cultura y Talleres', deportes: 'Deporte y Bienestar', pueblear: 'Turismo y Aventura', gaming: 'Gaming', rio: 'Río y Naturaleza', pet: 'Pet Friendly' };
 
   const day0 = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -100,7 +98,7 @@
     cumple: 'Celebra su cumpleaños con 6 o más confirmados',
     relampago: 'Llega durante un parche relámpago',
   };
-  const TEMAS = { 'Rumba y Bares': 'noche', 'Conciertos y Toques': 'noche', 'Gaming': 'noche', 'Comida y Antojos': 'fuego', 'Deporte y Bienestar': 'fuego', 'Planes Chill': 'dia', 'Cultura y Talleres': 'dia', 'Turismo y Aventura': 'dia' };
+  const TEMAS = { 'Rumba y Bares': 'noche', 'Conciertos y Toques': 'noche', 'Gaming': 'noche', 'Comida y Antojos': 'fuego', 'Deporte y Bienestar': 'fuego', 'Planes Chill': 'dia', 'Cultura y Talleres': 'dia', 'Turismo y Aventura': 'dia', 'Río y Naturaleza': 'dia', 'Pet Friendly': 'dia' };
   const horarios = (o, c, extra = {}) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, { abierto: true, open: o, close: c, ...(extra[d] || {}) }]));
 
   function seed() {
@@ -214,9 +212,9 @@
       syncNegocio();
       const L = loc(), rem = L.parches.filter(p => p.remoto);
       localStorage.setItem(KEY, JSON.stringify({
-        v: 3, sonido: S.sonido, cupones: L.cupones, codigos: L.codigos, horarios: L.perfil.horarios,
+        v: 3, sonido: S.sonido, cupones: L.cupones, codigos: cuponesEnServidor ? [] : L.codigos, horarios: L.perfil.horarios,
         llegadas: Object.fromEntries(rem.map(p => [p.id, Object.fromEntries(p.asistentes.filter(a => a.llego).map(a => [a.id, a.llego]))])),
-        walkins: Object.fromEntries(rem.map(p => [p.id, p.asistentes.filter(a => a.walkin)])),
+        walkins: walkinsEnServidor ? {} : Object.fromEntries(rem.map(p => [p.id, p.asistentes.filter(a => a.walkin)])),
         durs: Object.fromEntries(rem.map(p => [p.id, p.dur])),
         cupRel: Object.fromEntries(rem.filter(p => p.cuponId).map(p => [p.id, p.cuponId])),
       }));
@@ -240,6 +238,7 @@
       horarios: horariosValidos(n.horarios) || horariosValidos(prev.horarios) || null,
       planVence: n.plan_vence ? Date.parse(n.plan_vence) : null,
       planPendiente: n.plan_pendiente || null,
+      planProgramado: n.plan_programado || null, planProgramadoEn: n.plan_programado_en || null,
       sinUbicacion: typeof n.lat !== 'number' || typeof n.lng !== 'number',
       ciudad: n.ciudad || 'Villavicencio',
     };
@@ -310,20 +309,76 @@
     }
     await cacheNombres(miembros.map(x => x.usuario_id));
     const m = meta(), L = loc(), prev = new Map(L.parches.map(p => [p.id, p]));
+    let walkinsBase = null;
+    if (rows.length) {
+      const w = await SB().from('parche_walkins').select('id, parche_id, nombre, llego_en, creado_en').in('parche_id', rows.map(r => r.id));
+      if (!w.error) { walkinsBase = w.data || []; walkinsEnServidor = true; }
+    }
     L.parches = rows.map(r => {
       const p = parcheDeFila(r, miembros.filter(x => x.parche_id === r.id), m);
+      if (walkinsBase) {
+        // Los que estaban solo en este navegador se suben una vez
+        const locales = p.asistentes.filter(a => a.walkin && !a.walkinId);
+        p.asistentes = p.asistentes.filter(a => !a.walkin).concat(walkinsBase.filter(w => w.parche_id === r.id).map(walkinDeFila));
+        locales.filter(a => !p.asistentes.some(x => x.walkin && x.nombre === a.nombre)).forEach(a => { p.asistentes.push(a); subirWalkin(p, a); });
+      }
       const old = prev.get(r.id);
       if (old) { p.chat = old.chat; p.chatCargado = old.chatCargado; p.asistentes.forEach(a => { const o = old.asistentes.find(x => x.id === a.id); if (o && o.llego && !a.llego && !esUuid(a.id)) a.llego = o.llego; }); }
       return p;
     });
   }
 
+  let walkinsEnServidor = false;
+  const walkinDeFila = w => ({ id: 'w' + w.id, walkinId: w.id, nombre: w.nombre, tono: hash(w.nombre) % 11, confirmo: Date.parse(w.creado_en) || NOW(), llego: w.llego_en ? Date.parse(w.llego_en) : null, walkin: true });
+  function subirWalkin(p, a) {
+    if (!REMOTE() || !p.remoto || a.walkinId) return;
+    const id = crypto.randomUUID();
+    a.walkinId = id;
+    SB().from('parche_walkins').insert({ id, parche_id: p.id, nombre: a.nombre.slice(0, 80), llego_en: a.llego ? new Date(a.llego).toISOString() : null })
+      .then(({ error }) => { if (error) { a.walkinId = null; console.warn('[walkin]', error.message); } });
+  }
   let recargaT = null;
   function recargarPronto() {
     clearTimeout(recargaT);
     recargaT = setTimeout(async () => {
-      try { await cargarParchesRemotos(); render(); } catch (e) { console.warn('[parches]', e.message); }
+      try { await cargarParchesRemotos(); syncCanalParches(); render(); } catch (e) { console.warn('[parches]', e.message); }
     }, 300);
+  }
+  // Escucha solo los parches propios vigentes (máximo 100), no toda la base
+  let canalNegocio = null, canalParches = null, firmaCanal = '';
+  function syncCanalParches() {
+    if (!REMOTE()) return;
+    const ids = loc().parches.filter(p => p.remoto && !p.cancelado && fin(p) > NOW() - 6 * HOUR).sort((a, b) => a.inicio - b.inicio).slice(0, 100).map(p => p.id);
+    const firma = ids.join(',');
+    if (firma === firmaCanal) return;
+    firmaCanal = firma;
+    if (canalParches) { SB().removeChannel(canalParches); canalParches = null; }
+    if (!ids.length) return;
+    const f = `parche_id=in.(${firma})`;
+    canalParches = SB().channel('mp-negocio-parches-' + ME.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'parche_miembros', filter: f }, pl => {
+        const pid = (pl.new && pl.new.parche_id) || (pl.old && pl.old.parche_id);
+        const p = pid && findParche(pid);
+        if (!p) return;
+        if (pl.eventType === 'INSERT' && pl.new.usuario_id !== ME.id) {
+          cacheNombres([pl.new.usuario_id]).catch(() => {}).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
+          tone('in');
+        }
+        recargarPronto();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: f }, async ({ new: r }) => {
+        const p = findParche(r.parche_id);
+        if (!p || !p.chatCargado || p.chat.some(x => x.id === r.id)) return;
+        if (r.autor_id === ME.id) { const mine = p.chat.find(x => x.autor === 'biz' && !x.id && x.texto === r.texto); if (mine) { mine.id = r.id; return; } }
+        await cacheNombres([r.autor_id]);
+        p.chat.push(msgDeFila(r));
+        if (route === 'asistentes' && asisState.id === p.id && asisState.tab === 'chat') renderChat(p, true);
+      })
+      .subscribe();
+  }
+  function cerrarCanalesNegocio() {
+    canalNegocio = canalParches = null; firmaCanal = '';
+    try { SB() && SB().removeAllChannels(); } catch (e) { /* ya cerrados */ }
   }
 
   function setBoot(msg, actions = '') {
@@ -343,13 +398,14 @@
 
   async function bootRemoto() {
     const sb = SB();
-    if (!sb) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" onclick="location.reload()">Reintentar</button><a class="btn" href="empresa-dashboard.html?demo=1">Ver el panel de ejemplo</a>'); return false; }
+    if (!sb) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" data-recargar>Reintentar</button><a class="btn" href="empresa-dashboard.html?demo=1">Ver el panel de ejemplo</a>'); return false; }
     let session = null;
     try { session = (await sb.auth.getSession()).data.session; } catch (e) { /* sin sesión */ }
     if (!session) { location.replace('empresa.html#entrar'); return false; }
     ME = session.user;
-    try { const { data: esAdmin } = await sb.rpc('soy_admin'); if (esAdmin === true) { location.replace('admin.html'); return false; } } catch (e) { /* cuenta normal */ }
-    if (!ME.user_metadata || ME.user_metadata.tipo !== 'empresa') {
+    const cuenta = window.MPSeguro ? await window.MPSeguro.tipoCuenta(sb, ME) : { tipo: 'persona' };
+    if (cuenta.tipo === 'admin') { location.replace('admin.html'); return false; }
+    if (cuenta.tipo !== 'negocio') {
       setBoot('<b>Esta es una cuenta personal.</b><br>El panel de negocios es para cuentas de negocio. Crea una aparte con el correo de tu local.',
         '<a class="btn primary" href="dashboard.html">Ir a mi radar</a><a class="btn" href="empresa.html">Crear cuenta de negocio</a>');
       ME = null; return false;
@@ -360,7 +416,7 @@
     if (error) {
       const sql = /PGRST205|42P01|Could not find the table/i.test(`${error.code} ${error.message}`);
       setBoot(sql ? 'Falta activar las cuentas de negocio en la base de datos. Corre la migración <code>20261027120000_cuentas_negocio.sql</code> en Supabase y recarga.' : `No pudimos cargar tu negocio. ${esc(error.message)}`,
-        '<button class="btn primary" onclick="location.reload()">Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
+        '<button class="btn primary" data-recargar>Reintentar</button><button class="btn" data-action="logout">Cerrar sesión</button>');
       return false;
     }
     if (!n) {
@@ -372,30 +428,16 @@
     ultimoSync = JSON.stringify({ horarios: S.locales[n.id].perfil.horarios || null, cupones: S.locales[n.id].cupones });
     if (!horariosValidos(n.horarios) && S.locales[n.id].perfil.horarios) ultimoSync = null; // horarios viejos del navegador: se suben a la base
     try { await cargarParchesRemotos(); }
-    catch (err) { setBoot(`No pudimos cargar tus parches. ${esc(err.message || '')}`, '<button class="btn primary" onclick="location.reload()">Reintentar</button>'); return false; }
+    catch (err) { setBoot(`No pudimos cargar tus parches. ${esc(err.message || '')}`, '<button class="btn primary" data-recargar>Reintentar</button>'); return false; }
     try { await cargarMesas(); } catch (e) { /* Modo Mesa todavía no activo */ }
+    try { await cargarCuponesRemotos(); } catch (e) { console.warn('[cupones]', e.message); }
 
-    sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.replace('empresa.html#entrar'); });
+    sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') { cerrarCanalesNegocio(); limpiarLocal(); location.replace('empresa.html#entrar'); } });
     // En vivo: cuando alguien confirma o se sale de uno de tus parches
-    sb.channel('mp-negocio-' + ME.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'parche_miembros' }, pl => {
-        const pid = (pl.new && pl.new.parche_id) || (pl.old && pl.old.parche_id);
-        const p = pid && findParche(pid);
-        if (!p) return;
-        if (pl.eventType === 'INSERT' && pl.new.usuario_id !== ME.id) {
-          cacheNombres([pl.new.usuario_id]).catch(() => {}).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
-          tone('in');
-        }
-        recargarPronto();
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, async ({ new: r }) => {
-        const p = findParche(r.parche_id);
-        if (!p || !p.chatCargado || p.chat.some(x => x.id === r.id)) return;
-        if (r.autor_id === ME.id) { const mine = p.chat.find(x => x.autor === 'biz' && !x.id && x.texto === r.texto); if (mine) { mine.id = r.id; return; } }
-        await cacheNombres([r.autor_id]);
-        p.chat.push(msgDeFila(r));
-        if (route === 'asistentes' && asisState.id === p.id && asisState.tab === 'chat') renderChat(p, true);
-      })
+    syncCanalParches();
+    window.addEventListener('pagehide', e => { if (!e.persisted) cerrarCanalesNegocio(); });
+    window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+    canalNegocio = sb.channel('mp-negocio-' + ME.id)
       // Modo Mesa: reservas nuevas y cancelaciones en vivo
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mesa_reservas', filter: `negocio_id=eq.${ME.id}` }, async pl => {
         const r = pl.new;
@@ -413,7 +455,8 @@
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pagos', filter: `negocio_id=eq.${ME.id}` }, async ({ new: g }) => {
         if (!g || g.estado !== 'APPROVED') return;
         await recargarNegocio();
-        toast('Pago aprobado', 'Ya tienes Parche Villavo por 30 días.');
+        cobrosCargados = 0; cargarCobros(true);
+        if (!pagosAvisados.has(g.referencia)) { pagosAvisados.add(g.referencia); toast('Pago aprobado', 'Ya quedó registrado en tu estado de cuenta.'); }
         render();
       })
       .subscribe();
@@ -575,6 +618,7 @@
   function go() {
     const r = (location.hash || '#resumen').slice(1).split('/')[0];
     route = ROUTES.includes(r) ? r : 'resumen';
+    syncGeoNegocio();
     $$('.view').forEach(v => { v.hidden = v.id !== 'view-' + route; });
     $$('.nav-item[data-route]').forEach(a => { if (a.dataset.route === route) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     toggleMenu(false);
@@ -650,7 +694,7 @@
     dia: `<svg class="lmotif" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="34"/>${Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, c = Math.cos(a), s = Math.sin(a); return `<path d="M${(110 + c * 52).toFixed(1)} ${(110 + s * 52).toFixed(1)}L${(110 + c * 100).toFixed(1)} ${(110 + s * 100).toFixed(1)}"/>`; }).join('')}</svg>`,
   };
   const siteBase = () => /^https?:/.test(location.protocol) ? location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') : 'https://modoparche.vercel.app/';
-  const localURL = L => `${siteBase()}dashboard.html?local=${L.perfil.idMP}`;
+  const localURL = L => `${siteBase()}dashboard?local=${REMOTE() && ME ? ME.id : L.perfil.idMP}`;
 
   function qrMatrix(text) {
     if (typeof window.qrcode !== 'function') return null;
@@ -718,7 +762,14 @@
     return `<span class="track" role="img" aria-label="${inn} llegaron, ${c - inn} por llegar, ${Math.max(0, p.cupos - c)} cupos libres de ${p.cupos}"><i class="in" style="width:${clamp(inn / p.cupos, 0, 1) * 100}%"></i><i class="pend" style="width:${clamp((c - inn) / p.cupos, 0, 1) * 100}%"></i></span>`;
   };
 
+  let resumenAl = 0;
   function renderResumen(entering) {
+    // Al abrir Resumen se traen cobros y reseñas recientes (máximo cada 30 s)
+    if (entering && REMOTE() && NOW() - resumenAl > 30000) {
+      resumenAl = NOW();
+      cargarCobros().catch(() => {});
+      cargarResenasReales().then(() => { if (route === 'resumen') renderShell(); }).catch(() => {});
+    }
     const L = loc(), P = L.perfil, hoy = deHoy();
     const hr = new Date(NOW()).getHours();
     const saludo = hr < 12 && hr >= 5 ? 'Buenos días' : hr < 19 && hr >= 12 ? 'Buenas tardes' : 'Buenas noches';
@@ -1027,19 +1078,59 @@
       ${kind === 'ok' ? '<span class="undo-line" aria-hidden="true"></span>' : ''}
     </article>`;
   }
-  function validar(raw) {
+  let cuponesEnServidor = false;
+  const deServidor = x => ({ codigo: x.codigo, cuponId: x.cuponId, cupNombre: x.cupNombre, cupBen: x.cupBen, persona: x.persona || 'Cliente', usuarioId: x.usuarioId || null, parcheId: x.parcheId || null, emitido: Date.parse(x.emitido), vence: Date.parse(x.vence), canjeado: x.canjeado ? Date.parse(x.canjeado) : null, auto: true });
+  function ponerCodigo(x) {
+    const L = loc(), c = deServidor(x), i = L.codigos.findIndex(y => y.codigo === c.codigo);
+    if (i >= 0) { L.codigos[i] = c; return c; }
+    L.codigos.push(c);
+    return c;
+  }
+  // Los códigos viven en la base; los que estaban solo en este navegador se suben una vez
+  async function cargarCuponesRemotos() {
+    const L = loc(), marca = 'mp_cupones_subidos_' + ME.id;
+    let subidos = false;
+    try { subidos = !!localStorage.getItem(marca); } catch (e) { /* sin almacenamiento */ }
+    if (!subidos && L.codigos.length) {
+      const { error } = await SB().rpc('importar_cupones_locales', { p_lista: L.codigos.slice(0, 500) });
+      if (error) { if (/importar_cupones|PGRST202/.test(error.message || '')) return; throw error; }
+    }
+    const { data, error } = await SB().rpc('cupones_del_negocio');
+    if (error) { if (/cupones_del_negocio|PGRST202/.test(error.message || '')) return; throw error; }
+    L.codigos = (data || []).map(deServidor);
+    cuponesEnServidor = true;
+    try { localStorage.setItem(marca, '1'); } catch (e) { /* nada */ }
+  }
+  async function validar(raw) {
     const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
     const out = $('#validator-result');
     clearTimeout(undoTimer);
     if (!code) { out.innerHTML = STAGE_HINT; $('#code-input').focus(); return; }
     const L = loc();
-    const c = L.codigos.find(x => x.codigo === code);
+    let c = L.codigos.find(x => x.codigo === code);
     const bad = (title, html, kicker = 'No se puede canjear') => {
       out.innerHTML = vtHTML('bad', { kicker, title, html, stubIc: 'i-close', stub: 'Rechazado' });
       tone('bad');
       const vt = $('.vt', out); vt.classList.remove('shake'); void vt.offsetWidth; vt.classList.add('shake');
       $('#code-input').select();
     };
+    let enServidor = false;
+    if (REMOTE() && cuponesEnServidor) {
+      const k0 = c && cupon(c.cuponId);
+      if (k0 && k0.estado === 'pausado' && !c.canjeado) return bad('El cupón está pausado', `Actívalo en <b>Tus cupones</b> si quieres aceptar ${esc(c.cupNombre)} hoy.`, 'Pausado por ti');
+      let res;
+      try { const r = await SB().rpc('canjear_cupon', { p_codigo: code }); if (r.error) throw r.error; res = r.data; }
+      catch (e) { return bad('No pudimos validar', 'Revisa tu conexión e intenta de nuevo. El cupón no se canjeó.', 'Sin validar'); }
+      if (res.cupon && res.codigo !== 'OTRO_LOCAL') c = ponerCodigo(res.cupon);
+      if (!res.ok) {
+        if (res.codigo === 'OTRO_LOCAL') return bad('Este código es de otro local', `<span class="code">${esc(code)}</span> es de otro negocio. Cada local solo canjea sus propios cupones.`);
+        if (res.codigo === 'YA_CANJEADO') return bad('Este código ya se usó', `Lo canjeó ${esc(c.persona)} ${esc(fmtCuando(c.canjeado).toLowerCase())} Beneficio: ${esc(c.cupBen)}.`);
+        if (res.codigo === 'VENCIDO') return bad('Este código venció', `Valía hasta ${esc(fmtCuando(c.vence).toLowerCase())} ${esc(c.persona)} puede ganar otro en tu próximo parche.`);
+        return bad(`${code} no existe`, 'Revisa que el parcero te muestre el código completo, con el guion. Si tiene QR, escanéalo.');
+      }
+      enServidor = true;
+    }
+    if (!enServidor) {
     if (!c) {
       const otro = allLocales().find(x => x.id !== L.id && x.codigos.some(y => y.codigo === code));
       if (otro) return bad('Este código es de otro local', `<span class="code">${esc(code)}</span> es un cupón de ${esc(otro.perfil.nombre)}. Cada local solo canjea sus propios cupones.`);
@@ -1051,6 +1142,7 @@
     if (k && k.estado === 'pausado') return bad('El cupón está pausado', `Actívalo en <b>Tus cupones</b> si quieres aceptar ${esc(c.cupNombre)} hoy.`, 'Pausado por ti');
 
     c.canjeado = NOW();
+    }
     lastCanje = c.codigo;
     save();
     out.innerHTML = vtHTML('ok', {
@@ -1072,9 +1164,13 @@
     renderShell();
     renderCupones();
   }
-  function deshacerCanje(code) {
+  async function deshacerCanje(code) {
     const c = loc().codigos.find(x => x.codigo === code);
     if (!c || !c.canjeado) return;
+    if (REMOTE() && cuponesEnServidor) {
+      const { data, error } = await SB().rpc('deshacer_canje', { p_codigo: code });
+      if (error || !data || !data.ok) { toast('No se pudo deshacer', 'Ese canje ya no se puede revertir.', { error: true }); return; }
+    }
     c.canjeado = null; lastCanje = null; clearTimeout(undoTimer);
     save();
     $('#validator-result').innerHTML = STAGE_HINT;
@@ -1085,52 +1181,58 @@
   function nuevoCodigo(prefijo) {
     const usados = new Set(allLocales().flatMap(L => L.codigos.map(c => c.codigo)));
     let codigo;
-    do { codigo = `${prefijo}-${1000 + Math.floor(Math.random() * 9000)}`; } while (usados.has(codigo));
+    const azar = () => { const b = new Uint32Array(1); crypto.getRandomValues(b); return 1000 + (b[0] % 9000); };
+    do { codigo = `${prefijo}-${azar()}`; } while (usados.has(codigo));
     return codigo;
   }
   // Entrega un cupón a un parcero si el local lo tiene activo y le quedan
-  function entregar(k, persona, p) {
+  function entregar(k, persona, p, usuario = null) {
     if (!k) return null;
     if (k.estado !== 'activo') return { skip: `${k.nombre} está pausado` };
     if (agotado(k)) return { skip: `${k.nombre} está agotado` };
     if (loc().codigos.some(c => c.cuponId === k.id && c.persona === persona && c.parcheId === p.id)) return null;
+    if (REMOTE() && cuponesEnServidor) {
+      // El código lo genera la base: es aleatorio y sirve en cualquier dispositivo
+      return { pend: SB().rpc('emitir_cupon', {
+        p_parche: p.remoto ? p.id : null, p_usuario: usuario && esUuid(usuario) ? usuario : null, p_cupon: k.id, p_persona: persona,
+        p_nombre: k.nombre, p_beneficio: k.beneficio, p_prefijo: k.prefijo, p_vence: new Date(NOW() + k.vigencia * DAY).toISOString(),
+      }).then(({ data, error }) => {
+        if (error) return { skip: `${k.nombre}: no se pudo entregar` };
+        if (!data.ok) return { skip: `${k.nombre} está ${data.codigo === 'PAUSADO' ? 'pausado' : 'agotado'}` };
+        const c = ponerCodigo(data.cupon);
+        renderShell();
+        return data.nuevo ? { c } : null;
+      }) };
+    }
     const c = { codigo: nuevoCodigo(k.prefijo), cuponId: k.id, cupNombre: k.nombre, cupBen: k.beneficio, persona, parcheId: p.id, emitido: NOW(), vence: NOW() + k.vigencia * DAY, canjeado: null, auto: true };
     loc().codigos.push(c);
     return { c };
   }
 
   /* ---------- Escáner de QR con la cámara ---------- */
-  let scanStream = null, scanLoop = null;
-  async function openScan() {
+  let lectorCupon = null;
+  function openScan() {
     const dlg = $('#dlg-scan'), hint = $('#scan-hint');
-    if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
-      toast('Este navegador no lee QR', 'Escribe el código a mano. En Chrome para Android sí funciona el escáner.', { error: true });
+    if (!window.MPCheckin || !navigator.mediaDevices?.getUserMedia) {
+      toast('No pudimos abrir la cámara', 'Escribe el código a mano.', { error: true });
       $('#code-input').focus();
       return;
     }
     hint.textContent = 'Apunta la cámara al QR del cupón.';
+    $('#scan-reader').innerHTML = '';
     dlg.showModal();
-    try {
-      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      const v = $('#scan-video'); v.srcObject = scanStream; await v.play();
-      const det = new window.BarcodeDetector({ formats: ['qr_code'] });
-      const tick = async () => {
-        if (!dlg.open) return;
-        try {
-          const r = await det.detect(v);
-          const val = r[0] && r[0].rawValue;
-          if (val) { closeScan(); $('#code-input').value = val.trim().toUpperCase(); validar(val); return; }
-        } catch (e) { /* sigue intentando */ }
-        scanLoop = setTimeout(tick, 220);
-      };
-      tick();
-    } catch (e) {
-      hint.textContent = e.name === 'NotAllowedError' ? 'Sin permiso de cámara. Actívalo en el candado del navegador o escribe el código.' : 'No pudimos abrir la cámara. Escribe el código a mano.';
-    }
+    lectorCupon = window.MPCheckin.escanear('scan-reader', r => {
+      lectorCupon = null;
+      closeScan();
+      $('#code-input').value = r.codigo;
+      validar(r.codigo);
+    }, (e, sigue) => { if (!sigue) hint.textContent = e.message; }, raw => {
+      const c = String(raw || '').trim().toUpperCase();
+      return /^[A-Z0-9]{1,8}-[A-Z0-9]{4,12}$/.test(c) ? { codigo: c } : null;
+    });
   }
   function closeScan() {
-    clearTimeout(scanLoop);
-    if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    if (lectorCupon) { lectorCupon.detener(); lectorCupon = null; }
     if ($('#dlg-scan').open) $('#dlg-scan').close();
   }
 
@@ -1243,18 +1345,22 @@
     const reglasQueAplican = L.cupones.filter(k => primeraVez(k) || k.regla === 'checkin' || (k.regla === 'temprano' && NOW() <= p.inicio + HOUR) || (k.regla === 'relampago' && p.tipo === 'relampago'));
     const extra = p.tipo === 'relampago' && p.cuponId ? L.cupones.find(k => k.id === p.cuponId) : null;
     if (extra && !reglasQueAplican.includes(extra)) reglasQueAplican.push(extra);
-    for (const k of reglasQueAplican) { const r = entregar(k, a.nombre, p); if (r) out.push(r); }
+    for (const k of reglasQueAplican) { const r = entregar(k, a.nombre, p, a.id); if (r) out.push(r); }
     save();
     return out;
   }
   function checkOut(p, a) {
-    a.llego = null;
-    marcarEnBase(p, a, false);
+    const antes = { llego: a.llego, metodo: a.metodo };
+    a.llego = null; a.metodo = null;
+    marcarEnBase(p, a, false, antes);
     const L = loc();
-    L.codigos = L.codigos.filter(c => !(c.auto && !c.canjeado && c.parcheId === p.id && c.persona === a.nombre && c.emitido >= p.inicio - 2 * HOUR));
+    const retirar = c => c.auto && !c.canjeado && c.parcheId === p.id && c.persona === a.nombre && c.emitido >= p.inicio - 2 * HOUR;
+    if (REMOTE() && cuponesEnServidor) L.codigos.filter(retirar).forEach(c => SB().rpc('anular_cupon', { p_codigo: c.codigo }).then(() => {}, () => {}));
+    L.codigos = L.codigos.filter(c => !retirar(c));
     save();
   }
-  function avisarCupones(nombre, res) {
+  async function avisarCupones(nombre, res0) {
+    const res = (await Promise.all(res0.map(r => (r && r.pend ? r.pend : r)))).filter(Boolean);
     const dados = res.filter(r => r.c), saltados = res.filter(r => r.skip);
     if (dados.length) {
       toast(`${nombre} ganó ${dados.length === 1 ? 'un cupón' : `${dados.length} cupones`}`, dados.map(r => `${r.c.codigo}: ${r.c.cupBen}`).join(' · '));
@@ -1298,7 +1404,7 @@
     const q = norm(doorState.q);
     const rows = [...p.asistentes].filter(a => !q || norm(a.nombre).includes(q)).sort((a, b) => (!!a.llego - !!b.llego) || a.nombre.localeCompare(b.nombre));
     let html = rows.map(a => a.llego
-      ? `<li><div class="door-person is-in ${a.id === doorState.justIn ? 'just-in' : ''}">${avatar(a)}<span><b>${esc(a.nombre)}</b><small>Adentro desde las ${fmtHora(a.llego)}</small></span><button class="door-go" data-action="door-out" data-uid="${a.id}">${ic('i-undo')}Deshacer</button></div></li>`
+      ? `<li><div class="door-person is-in ${a.id === doorState.justIn ? 'just-in' : ''}">${avatar(a)}<span><b>${esc(a.nombre)}</b><small>${a.metodo === 'gps' ? 'Avisó por GPS a las ' + fmtHora(a.llego) : 'Adentro desde las ' + fmtHora(a.llego)}</small></span>${botonPuerta(a)}</div></li>`
       : `<li><button class="door-person" data-action="door-in" data-uid="${a.id}">${avatar(a)}<span><b>${esc(a.nombre)}</b><small>${a.walkin ? 'Registrado en la puerta' : 'Confirmó en la app'}</small></span><span class="door-go">${ic('i-check')}Llegó</span></button></li>`).join('');
     const exacto = p.asistentes.some(a => norm(a.nombre) === q);
     if (doorState.q.trim().length >= 3 && !exacto) {
@@ -1308,6 +1414,12 @@
     }
     $('#door-people').innerHTML = html || `<li class="door-empty">${p.asistentes.length ? 'Nadie coincide con esa búsqueda.' : 'Nadie confirmó todavía. Escribe el nombre de quien llegue para registrarlo.'}</li>`;
     doorState.justIn = null;
+  }
+  // El GPS del cliente no cobra hasta que el local lo vea; el QR ya es una llegada firme
+  function botonPuerta(a) {
+    if (a.metodo === 'gps') return `<button class="door-go" data-action="door-confirmar" data-uid="${a.id}">${ic('i-check')}Confirmar</button>`;
+    if (a.metodo === 'qr') return `<span class="door-go">${ic('i-check')}Con QR</span>`;
+    return `<button class="door-go" data-action="door-out" data-uid="${a.id}">${ic('i-undo')}Deshacer</button>`;
   }
   function doorIn(uid) {
     const p = findParche(doorState.id), a = p && p.asistentes.find(x => x.id === uid);
@@ -1326,7 +1438,8 @@
     const a = { id: 'w' + NOW().toString(36), nombre: cap(nombre), tono: hash(nombre) % 11, confirmo: NOW(), llego: null, walkin: true };
     p.asistentes.push(a);
     const res = checkIn(p, a);
-    if (lleno(p)) for (const k of loc().cupones.filter(x => x.regla === 'lleno')) { const r = entregar(k, a.nombre, p); if (r) res.push(r); }
+    subirWalkin(p, a);
+    if (lleno(p)) for (const k of loc().cupones.filter(x => x.regla === 'lleno')) { const r = entregar(k, a.nombre, p, a.id); if (r) res.push(r); }
     save();
     doorState.justIn = a.id; doorState.q = ''; $('#door-search').value = '';
     burstFrom($('#door-counter .ring'), 30);
@@ -1341,6 +1454,15 @@
   let map = null, layer = null, meMarker = null, meCircle = null, watchId = null, flyMe = false, userPos = null, mapDirty = true;
   const timeState = { mode: 'hoy' };
   const markers = {};
+  // Leaflet se descarga solo cuando hace falta un mapa
+  let leafletP = null;
+  const cargarLeaflet = () => leafletP || (leafletP = new Promise(res => {
+    if (window.L) { res(true); return; }
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/src/vendor/leaflet/leaflet.css'; document.head.appendChild(css);
+    const js = document.createElement('script'); js.src = '/src/vendor/leaflet/leaflet.js';
+    js.onload = () => res(true); js.onerror = () => { leafletP = null; res(false); };
+    document.head.appendChild(js);
+  }));
   const tiles = () => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
   const bizIcon = (Lc, n = 0, flash = false, other = false) => L.divIcon({
     className: 'pin-icon',
@@ -1371,8 +1493,8 @@
       : `<li><p class="empty">No hay parches ${timeLabel()}. Es buen momento para un relámpago.</p></li>`;
 
     if (watchId === null) startGeo(false);
-    setTimeout(() => {
-      if (typeof L === 'undefined') return;
+    setTimeout(async () => {
+      if (!(await cargarLeaflet())) return;
       if (!map) {
         map = L.map('map', { zoomControl: true }).setView([own.perfil.lat, own.perfil.lng], 14);
         tiles().addTo(map);
@@ -1398,6 +1520,14 @@
     map.flyTo([Lc.perfil.lat, Lc.perfil.lng], 16, { duration: 0.9 });
     if (m) map.once('moveend', () => m.openPopup());
   }
+  // El GPS solo sigue activo con el mapa abierto y la pestaña a la vista
+  function syncGeoNegocio() {
+    if (watchId !== null && (route !== 'mapa' || document.hidden)) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    syncGeoNegocio();
+    if (!document.hidden && route === 'mapa' && watchId === null && map) startGeo(false);
+  });
   function startGeo(fly) {
     if (!('geolocation' in navigator)) { $('#geo-stamp').textContent = 'Este navegador no comparte la ubicación.'; return; }
     flyMe = flyMe || fly;
@@ -1447,8 +1577,8 @@
         return `<li class="${d === today ? 'is-today' : ''}"><b>${DIAS[d]}${d === today ? ' (hoy)' : ''}</b><span>${h.abierto ? `${horaTxt(h.open)} a ${horaTxt(h.close)}` : 'Cerrado'}</span></li>`;
       }).join('');
     $('#ubic-meta').textContent = `${P.direccion} · ${P.lat.toFixed(4)}, ${P.lng.toFixed(4)}`;
-    setTimeout(() => {
-      if (typeof L === 'undefined') return;
+    setTimeout(async () => {
+      if (!(await cargarLeaflet())) return;
       if (!mapPerfil) {
         mapPerfil = L.map('map-perfil', { scrollWheelZoom: false }).setView([P.lat, P.lng], 15);
         tiles().addTo(mapPerfil);
@@ -1484,6 +1614,8 @@
         ${lim !== Infinity ? `<span class="track" role="img" aria-label="${usados} de ${lim} parches usados"><i class="in" style="width:${clamp(usados / lim, 0, 1) * 100}%"></i></span>` : ''}
         <ul>${PLANES[cur].puntos.map(x => `<li>${ic('i-check')}${esc(x)}</li>`).join('')}</ul>
       </div>
+      ${P.planProgramado ? `<p class="hint"><b>Cambio programado:</b> pasas a Parche básico el ${esc(fechaPlan(P.planProgramadoEn))}.</p>` : ''}
+      ${P.planPendiente === 'sedes' && cur !== 'sedes' ? '<p class="hint"><b>Varias sedes en revisión:</b> el equipo lo activa cuando confirme tus sedes.</p>' : ''}
       <p class="mini-title">Cambiar de plan</p>
       <div class="plan-switch" role="group" aria-label="Cambiar de plan">${Object.entries(PLANES).map(([k, v]) => `<button class="plan-opt-b ${k === cur ? 'is-on' : ''}" data-action="cambiar-plan" data-plan="${k}" aria-pressed="${k === cur}"><b>${esc(v.nombre)}</b><small>${esc(v.precio)}</small></button>`).join('')}</div>
       <p class="hint">${t.cliente
@@ -1567,6 +1699,7 @@
           <span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}<small>${c.tipo === 'paquete' ? `${d.comision_pct}% de ${money(c.base_cop || 0)}` : `${c.personas} × ${money(d.tarifa_cliente)}`}</small></span>
         </li>`).join('')}</ul>
         <p class="hint">Puedes corregir una llegada hasta 48 horas después. Después de eso, reclama aquí (hasta 15 días) y el equipo lo revisa.</p>` : '<p class="meta">Todavía nadie ha llegado este mes por ModoParche. Cuando alguien llegue y lo validen (QR, GPS o en la puerta), aparece aquí.</p>'}
+      ${(d.reclamables_mes_anterior || []).length ? `<p class="mini-title">Del mes pasado: aún puedes reclamar</p><ul class="cobro-lista">${d.reclamables_mes_anterior.map(c => `<li><span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))}</small>${c.reclamo ? `<span class="pill ${c.reclamo === 'aprobado' ? 'pos' : c.reclamo === 'rechazado' ? 'neg' : 'warn'} cobro-rec">Reclamo ${esc(RECLAMO_TXT[c.reclamo] || c.reclamo)}</span>` : `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}">¿No llegó? Reclamar</button>`}</span><span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}</span></li>`).join('')}</ul>` : ''}
       ${(d.reclamos || []).length ? `<p class="mini-title">Tus reclamos</p><ul class="liq-hist">${d.reclamos.map(r => `<li><span>Código ${esc(r.codigo)}<small class="hint" style="display:block">${esc(r.respuesta || r.motivo)}</small></span><span class="num">${money(r.monto)}</span><span class="pill ${r.estado === 'aprobado' ? 'pos' : r.estado === 'rechazado' ? 'neg' : 'warn'}">${esc(RECLAMO_TXT[r.estado] || r.estado)}</span></li>`).join('')}</ul>` : ''}
       ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${ic('i-ticket')}${l.estado === 'pagada' ? 'Comprobante' : 'Detalle'}</button></li>`).join('')}</ul>` : ''}
       ${d.demo ? '<p class="meta">Panel de ejemplo: estos cobros no son reales.</p>' : ''}`;
@@ -1606,7 +1739,7 @@
 
   // Exportación (para el contador): los clientes validados del mes en CSV que abre Excel
   function descargarCSV(nombre, filas) {
-    const celda = v => { const s = v == null ? '' : String(v); return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const celda = v => window.MPSeguro.celdaCSV(v, ';');
     // Punto y coma + BOM: Excel en español lo abre en columnas y con tildes
     const csv = '﻿' + filas.map(f => f.map(celda).join(';')).join('\r\n');
     const a = document.createElement('a');
@@ -1665,9 +1798,10 @@ ${Number(x.descuento) ? `<div><span>Saldo a favor aplicado</span><span>− ${mon
 <div class="g"><span>${x.estado === 'pagada' ? 'Saldo' : 'Por pagar'}</span><span>${money(Math.max(0, (Number(x.total) || 0) - pagado))}</span></div></div>
 ${pagos ? `<p style="margin-top:16px"><b>Pagos recibidos</b></p><ul class="meta">${pagos}</ul>` : ''}
 <footer>ModoParche cobra solo por clientes que llegaron y quedaron validados (QR, GPS o en la puerta). Los paquetes se pagan en el local; este documento cubre la comisión del servicio. ${x.demo ? '<b>Documento de ejemplo, no es real.</b>' : ''}<br>Generado el ${esc(new Date().toLocaleString('es-CO'))}</footer>
-<div class="acc"><button onclick="window.print()">Imprimir o guardar en PDF</button></div>
+<div class="acc"><button id="imprimir">Imprimir o guardar en PDF</button></div>
 </div></body></html>`);
     w.document.close();
+    { const bi = w.document.getElementById('imprimir'); if (bi) bi.addEventListener('click', () => w.print()); }
     setTimeout(() => { try { w.focus(); w.print(); } catch (e) { /* el botón queda */ } }, 400);
   }
 
@@ -1675,7 +1809,7 @@ ${pagos ? `<p style="margin-top:16px"><b>Pagos recibidos</b></p><ul class="meta"
   let qrLocal = null;
   async function cargarQRLocal(nuevo = false) {
     const box = $('#qrlocal-box'); if (!box) return;
-    if (nuevo && !confirm('¿Cambiar el QR del local?\n\nEl QR impreso que tienes deja de funcionar y debes imprimir el nuevo.')) return;
+    if (nuevo && !(await confirmar('¿Cambiar el QR del local?', 'El QR impreso que tienes deja de funcionar y debes imprimir el nuevo.', 'Sí, cambiarlo'))) return;
     if (!REMOTE()) qrLocal = { negocio: 'demo', clave: 'demo' };
     else {
       const { data, error } = await SB().rpc('mi_qr_local', { p_nuevo: nuevo });
@@ -1718,6 +1852,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
 <div class="qr">${qrSVG(url)}</div><p><b>${esc(nombre)}</b></p><p class="m">ModoParche</p></div>
 <script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
     w.document.close();
+    { const bi = w.document.getElementById('imprimir'); if (bi) bi.addEventListener('click', () => w.print()); }
   }
 
   /* ---------- Referidos: invita a otro local y los dos ganan saldo a favor ---------- */
@@ -1736,7 +1871,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     box.innerHTML = `<div class="ref">
         <div class="ref-bono" data-tinta-fija><span class="ref-burst"><b>${money(PREMIO_REFERIDO)}</b><small>para cada uno</small></span></div>
         <div class="ref-info">
-          <p>Invita a otro local de Villavo. Cuando pague su primer estado de cuenta, <b>los dos ganan ${money(PREMIO_REFERIDO)}</b> de saldo a favor, que se descuenta solo.</p>
+          <p>Invita a otro local de Villavo. Cuando esté verificado, con NIT propio, y haya pagado <b>$50.000</b> o más, <b>los dos ganan ${money(PREMIO_REFERIDO)}</b> de saldo a favor, que se descuenta solo.</p>
           <div class="ref-code"><span>Tu código</span><code>${esc(d.codigo)}</code></div>
           <div class="ref-acts"><button type="button" class="btn primary" data-action="ref-copiar" data-link="${esc(link)}">${ic('i-copy')}Copiar invitación</button><a class="btn ref-wa" href="${esc(wa)}" target="_blank" rel="noopener">${ic('i-send')}WhatsApp</a></div>
           <div class="ref-stats"><span><b>${int(d.invitados || 0)}</b>${Number(d.invitados) === 1 ? 'local invitado' : 'locales invitados'}</span><span><b>${int(d.premiados || 0)}</b>${Number(d.premiados) === 1 ? 'bono ganado' : 'bonos ganados'}</span></div>
@@ -1778,6 +1913,32 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     el.className = 'liq-estado' + (tipo ? ' is-' + tipo : '');
     el.innerHTML = tipo === 'cargando' ? `<span class="pay-spin" aria-hidden="true"></span>${esc(texto)}` : esc(texto || '');
   }
+  const pagosAvisados = new Set();
+  const urlVueltaPago = ref => new URL('empresa-dashboard.html?pago=' + encodeURIComponent(ref), location.href).href;
+  function liqAlterno(id, monto, texto) {
+    liqEstado(id, 'error', texto);
+    const el = document.getElementById('liq-estado-' + id);
+    if (!el) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn--sm'; b.dataset.action = 'liq-datafono'; b.dataset.id = id;
+    if (monto) b.dataset.monto = String(monto);
+    b.textContent = 'Pagar con el datáfono de Wompi';
+    el.append(' ', b);
+  }
+  // Volvió de Wompi: se muestra el estado real del pago, no un mensaje genérico
+  async function volverDeWompi(ref, txId) {
+    if (txId) { try { await SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: txId } }); } catch (e) { /* el webhook lo confirma igual */ } }
+    let est = null;
+    for (let i = 0; i < 6; i++) {
+      try { const { data } = await SB().from('pagos').select('estado').eq('referencia', ref).maybeSingle(); est = data && data.estado; } catch (e) { /* se reintenta */ }
+      if (est && est !== 'PENDING') break;
+      await new Promise(r => setTimeout(r, 2500));
+    }
+    cobrosCargados = 0; cargarCobros(true);
+    if (est === 'APPROVED') { if (!pagosAvisados.has(ref)) { pagosAvisados.add(ref); toast('Pago aprobado', 'Ya quedó registrado en tu estado de cuenta.'); } }
+    else if (['DECLINED', 'VOIDED', 'ERROR'].includes(est)) toast('El pago no pasó', 'No se hizo ningún cobro. Prueba con otro medio.', { error: true });
+    else toast('Tu pago sigue en proceso', 'Apenas Wompi lo apruebe, el estado de cuenta se marca solo.');
+  }
   async function pagarLiquidacion(id, btn, monto = null) {
     if (!REMOTE()) { toast('Panel de ejemplo', monto ? `En tu cuenta real se abre Wompi para abonar ${money(monto)}.` : 'En tu cuenta real se abre Wompi con el valor y la referencia ya puestos.'); return; }
     btn.disabled = true;
@@ -1797,10 +1958,10 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       if (/DEMASIADOS/.test(m)) { liqEstado(id, 'error', 'Muchos intentos seguidos. Espera unos minutos.'); return; }
       if (/MONTO_INVALIDO/.test(m)) { liqEstado(id, 'error', 'Ese valor no sirve para abonar. Toca «Actualizar» y revisa el saldo.'); return; }
       if (/NO_SE_PUEDE_PAGAR|NO_ES_TUYO/.test(m)) { liqEstado(id, 'error', 'Este estado de cuenta ya no está pendiente. Toca «Actualizar».'); return; }
-      // Pago en línea sin activar (función sin desplegar o sin llaves): datáfono, pero con el
-      // valor exacto y la referencia a la vista y copiados, para que no haya errores al escribir.
-      liqEstado(id, '', '');
-      abrirDatafono(id, monto);
+      // Sin pago en línea no se salta solo a otro medio: el negocio ve qué pasó y decide
+      liqAlterno(id, monto, /COBROS_REALES_DESACTIVADOS/.test(m) ? 'Los cobros en línea están desactivados por ahora.'
+        : /PAGOS_SIN_CONFIGURAR/.test(m) ? 'El pago en línea todavía no está activo.'
+        : 'No pudimos conectar con el pago en línea. No se hizo ningún cobro.');
       return;
     }
     // El widget de Wompi no cargó (red o bloqueador): mismo pago, en el checkout web de Wompi
@@ -1810,7 +1971,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       location.href = 'https://checkout.wompi.co/p/?' + new URLSearchParams({
         'public-key': datos.publicKey, currency: datos.currency, 'amount-in-cents': String(datos.amountInCents),
         reference: datos.reference, 'signature:integrity': datos.signature,
-        'redirect-url': new URL('empresa-dashboard.html?pago=' + encodeURIComponent(datos.reference) + '#perfil', location.href).href,
+        'redirect-url': urlVueltaPago(datos.reference),
       }).toString();
       return;
     }
@@ -1824,7 +1985,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       checkout = new window.WidgetCheckout({
         currency: datos.currency, amountInCents: datos.amountInCents, reference: datos.reference, publicKey: datos.publicKey,
         signature: { integrity: datos.signature },
-        redirectUrl: new URL('empresa-dashboard.html?pago=' + encodeURIComponent(datos.reference) + '#perfil', location.href).href,
+        redirectUrl: urlVueltaPago(datos.reference),
         customerData: cliente,
       });
     } catch (e) { btn.disabled = false; liqEstado(id, 'error', 'No pudimos abrir Wompi. Recarga la página e intenta de nuevo.'); return; }
@@ -1847,7 +2008,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       if (est === 'APPROVED') {
         liqEstado(id, 'ok', '¡Pago aprobado! Ya quedó registrado en tu estado de cuenta.');
         tone('ok'); cargarCobros(true);
-        toast('Pago aprobado', 'Gracias. Tus parches siguen en el radar.');
+        if (!pagosAvisados.has(referencia)) { pagosAvisados.add(referencia); toast('Pago aprobado', 'Gracias. Tus parches siguen en el radar.'); }
         return;
       }
       if (['DECLINED', 'VOIDED', 'ERROR'].includes(est)) { liqEstado(id, 'error', 'El pago no pasó. No se hizo ningún cobro; prueba con otro medio.'); return; }
@@ -1918,16 +2079,28 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     const finCarga = window.MPCargando ? window.MPCargando.mostrar() : () => {};
     try { await aplicarCambioPlan(plan, P); } finally { finCarga(); }
   }
+  const fechaPlan = f => new Date(String(f).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
   async function aplicarCambioPlan(plan, P) {
     if (REMOTE()) {
-      let { error } = await SB().rpc('elegir_plan', { p_plan: plan, p_sedes: plan === 'sedes' ? Math.max(2, P.sedes || 2) : null });
+      let { data: res, error } = await SB().rpc('elegir_plan', { p_plan: plan, p_sedes: plan === 'sedes' ? Math.max(2, P.sedes || 2) : null });
       // Base sin el modelo nuevo: bajar a básico sigue funcionando con la función vieja
       if (error && /elegir_plan|PGRST202/.test(error.message || '') && plan === 'basico') ({ error } = await SB().rpc('cambiar_a_basico'));
       if (error) {
         const [tt, dd] = /elegir_plan|PGRST202/.test(error.message || '') ? ['Falta activar los planes nuevos', 'El equipo debe correr la migración del cobro por resultados.'] : errorDB(error);
         toast(tt, dd, { error: true }); return;
       }
+      if (res && res.solicitado) {
+        P.planPendiente = plan; save(); renderShell(); renderPlan();
+        toast('Solicitud enviada', 'El equipo revisa tus sedes y activa el plan. Mientras tanto sigues con tu plan actual.');
+        return;
+      }
+      if (res && res.programado_en) {
+        P.planProgramado = 'basico'; P.planProgramadoEn = res.programado_en; save(); renderPlan(); cargarCobros(true);
+        toast('Cambio programado', `Pasas a Parche básico el ${fechaPlan(res.programado_en)}. Hasta entonces sigue tu plan actual.`);
+        return;
+      }
     }
+    P.planProgramado = null; P.planProgramadoEn = null;
     P.plan = plan; P.planVence = null; P.planPendiente = null; if (plan === 'sedes') P.sedes = Math.max(2, P.sedes || 2);
     save(); renderShell(); renderPlan(); cargarCobros(true);
     const t = tarifas(plan);
@@ -1955,18 +2128,18 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     if (nuevo === 'basico') {
       cambios.push(`Solo puedes publicar <b>2 parches al mes</b>${usados ? ` (este mes ya llevas ${usados})` : ''}.`);
       cambios.push('Tus parches dejan de tener <b>prioridad en el radar</b> y foto destacada.');
-      cambios.push('Desde hoy no pagas comisión. Lo que llegó <b>antes de hoy</b> se cobra igual en tu estado de cuenta.');
+      cambios.push('Si tienes parches activos o cobros sin liquidar, el cambio queda <b>programado para el próximo ciclo</b>. Lo que ya llegó se cobra igual.');
       cambios.push('Lo que ya publicaste se queda publicado.');
     } else {
       cambios.push(`Desde hoy pagas <b>${N.pct}% por cada paquete redimido</b> y <b>${money(N.cliente)} por cada cliente</b> que llega a tu mesa.`);
       cambios.push('Se cobra una vez al mes en tu estado de cuenta. Si nadie llega, pagas <b>$0</b>.');
       if (A.limite !== Infinity) cambios.push('Parches ilimitados con foto destacada y prioridad en el radar.');
-      if (nuevo === 'sedes') cambios.push('Después te escribimos para crear el acceso de cada sede.');
+      if (nuevo === 'sedes') cambios.unshift('<b>El equipo revisa tus sedes antes de activarlo.</b> Hasta entonces sigues con tu plan actual.');
     }
     $('#plan-cambios').innerHTML = cambios.map(c => `<li>${c}</li>`).join('');
-    $('#plan-ack-txt').textContent = sube
+    $('#plan-ack-txt').textContent = nuevo === 'sedes' ? 'Entiendo que este plan se activa cuando el equipo lo apruebe.' : sube
       ? `Entiendo que desde hoy ModoParche cobra ${N.pct}% por paquete y ${money(N.cliente)} por cliente que llegue.`
-      : 'Entiendo que desde hoy tengo los límites de este plan.';
+      : 'Entiendo que tendré los límites de este plan cuando el cambio aplique.';
     const ack = $('#plan-ack'), hold = $('#plan-hold'), txt = $('#plan-hold-txt'), dlg = $('#dlg-plan');
     ack.checked = false; hold.disabled = true; hold.style.setProperty('--p', 0); txt.textContent = 'Mantén presionado para cambiar';
     ack.onchange = () => { hold.disabled = !ack.checked; };
@@ -2004,7 +2177,19 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       hold.onpointerup = hold.onpointercancel = hold.onpointerleave = parar;
       hold.onkeyup = e => { if (e.key === 'Enter' || e.key === ' ') parar(); };
       hold.oncontextmenu = e => e.preventDefault(); // mantener presionado en el celular no abre el menú
-      hold.onclick = e => { e.preventDefault(); if (!listo && !hold.disabled) { txt.textContent = 'Déjalo presionado hasta que se llene'; hold.classList.remove('nudge'); void hold.offsetWidth; hold.classList.add('nudge'); } };
+      let armado = 0;
+      hold.onclick = e => {
+        e.preventDefault();
+        if (listo || hold.disabled) return;
+        if (armado && Date.now() - armado < 6000) {
+          listo = true; hold.style.setProperty('--p', 1); txt.textContent = '¡Listo!';
+          setTimeout(() => { dlg.returnValue = 'ok'; dlg.close('ok'); }, 220);
+          return;
+        }
+        armado = Date.now();
+        txt.textContent = 'Toca otra vez para confirmar';
+        hold.classList.remove('nudge'); void hold.offsetWidth; hold.classList.add('nudge');
+      };
       dlg.returnValue = '';
       dlg.onclose = () => { cancelAnimationFrame(raf); res(dlg.returnValue === 'ok'); };
       dlg.showModal();
@@ -2113,13 +2298,15 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     if (!ok) return;
     if (!REMOTE()) { try { localStorage.clear(); } catch (e) { /* nada */ } location.replace('index.html'); return; }
     btn.disabled = true;
+    const chk = await SB().rpc('puedo_borrar_cuenta');
+    if (chk.data && chk.data.ok === false) { btn.disabled = false; toast('Aún no se puede borrar', chk.data.hint, { error: true, ms: 7000 }); return; }
     try {
       const { data: files } = await SB().storage.from('fotos').list(ME.id, { limit: 1000 });
       if (files && files.length) await SB().storage.from('fotos').remove(files.map(f => ME.id + '/' + f.name));
     } catch (e) { /* seguimos con la cuenta */ }
     const { error } = await SB().rpc('borrar_mi_cuenta');
     btn.disabled = false;
-    if (error) { toast('No se pudo borrar', error.message, { error: true }); return; }
+    if (error) { toast('No se pudo borrar', error.hint || error.message, { error: true, ms: 7000 }); return; }
     try { await SB().auth.signOut(); } catch (e) { /* la sesión ya no existe */ }
     try { localStorage.clear(); } catch (e) { /* nada */ }
     location.replace('index.html?cuenta=borrada');
@@ -2194,8 +2381,8 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       return;
     }
     $('#dlg-parche').showModal();
-    setTimeout(() => {
-      if (typeof L === 'undefined') { $('#pmap-coords').textContent = 'El mapa no cargó; el parche queda en tu local.'; return; }
+    setTimeout(async () => {
+      if (!(await cargarLeaflet())) { $('#pmap-coords').textContent = 'El mapa no cargó; el parche queda en tu local.'; return; }
       if (!mapDlg) {
         mapDlg = L.map('map-parche').setView([dlgPos.lat, dlgPos.lng], 15);
         tiles().addTo(mapDlg);
@@ -2502,7 +2689,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   const ESTADOS_MESA = { pendiente: ['Por confirmar', 'warn'], confirmada: ['Confirmada', 'pos'], rechazada: ['Rechazada', ''], cancelada: ['La cancelaron', ''], llego: ['Llegaron', 'pos'], no_llego: ['No llegaron', 'neg'] };
   const diasMesaTxt = dias => { const d = [...(dias || [])].sort(); if (d.length === 7) return 'Todos los días'; if (d.join() === '1,2,3,4,5') return 'Lunes a viernes'; return d.map(x => DIAS[x].slice(0, 3)).join(', '); };
   const mesaDeFila = r => ({ id: r.id, titulo: r.titulo, beneficio: r.beneficio, descripcion: r.descripcion || '', min: r.min_personas, max: r.max_personas, dias: r.dias || [], desde: String(r.hora_desde).slice(0, 5), hasta: String(r.hora_hasta).slice(0, 5), cupos: r.mesas_por_dia, activa: r.activa, vence: r.vence || '' });
-  const reservaDeFila = r => ({ id: r.id, promoId: r.promo_id, persona: persona(r.usuario_id), personas: r.personas, llegada: Date.parse(r.llegada), nota: r.nota || '', estado: r.estado, codigo: r.codigo, creado: Date.parse(r.creado_en) || NOW(), llegaron: r.llegaron || null, llegadaMetodo: r.llegada_metodo || null });
+  const reservaDeFila = r => ({ id: r.id, promoId: r.promo_id, persona: persona(r.usuario_id), personas: r.personas, llegada: Date.parse(r.llegada), nota: r.nota || '', estado: r.estado, codigo: r.codigo, creado: Date.parse(r.creado_en) || NOW(), llegaron: r.llegaron || null, llegadaMetodo: r.llegada_metodo || null, clienteLlego: r.cliente_llego_en ? Date.parse(r.cliente_llego_en) : null });
 
   async function cargarMesas() {
     if (!REMOTE()) return;
@@ -2532,7 +2719,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       const acciones = r.estado === 'pendiente'
         ? `<button class="btn primary btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="confirmada">${ic('i-check')}Confirmar</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="rechazada">No puedo</button>`
         : r.estado === 'confirmada' && hoyOPasada
-          ? `<button class="btn btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="llego">${ic('i-door')}Llegaron</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="no_llego">No llegaron</button>`
+          ? `${r.clienteLlego ? `<small class="mesa-gps">Avisó que llegó a las ${fmtHora(r.clienteLlego)}. Confírmalo</small>` : ''}<button class="btn btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="llego">${ic('i-door')}Llegaron</button><button class="btn ghost btn--sm" data-action="mesa-estado" data-id="${r.id}" data-estado="no_llego">No llegaron</button>`
           : r.estado === 'llego'
             ? `<label class="mesa-llegaron">Llegaron <select class="input" data-mesa-llegaron="${r.id}" aria-label="Cuántas personas llegaron">${Array.from({ length: r.personas }, (_, k) => k + 1).map(n => `<option value="${n}" ${n === (r.llegaron || r.personas) ? 'selected' : ''}>${n}</option>`).join('')}</select> de ${r.personas}</label>${r.llegadaMetodo === 'gps' ? '<small class="mesa-gps">Marcó su llegada con GPS</small>' : r.llegadaMetodo === 'qr' ? '<small class="mesa-gps">Escaneó el QR del local</small>' : ''}`
             : '';
@@ -2655,6 +2842,18 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     toast('Listo', `${cuantos} de ${r.personas} personas llegaron. Así queda en tus cobros.`);
     cobrosCargados = 0;
   }
+  async function terminarRelampago(id, btn) {
+    const p = findParche(id); if (!p) return;
+    btn.disabled = true;
+    if (REMOTE() && p.remoto) {
+      const { error } = await SB().rpc('terminar_relampago', { p_parche: p.id });
+      if (error && !/terminar_relampago|PGRST202/.test(error.message || '')) { btn.disabled = false; toast('No se pudo terminar', error.hint || error.message, { error: true }); return; }
+    }
+    p.dur = Math.max(1, Math.round((NOW() - p.inicio) / MIN));
+    save();
+    toast('Relámpago terminado', `${p.promo} salió del mapa.`);
+    render();
+  }
   async function estadoReserva(id, estado) {
     const r = (loc().reservas || []).find(x => x.id === id);
     if (!r) return;
@@ -2667,7 +2866,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     let regalos = [];
     if (estado === 'llego') {
       const L = loc();
-      for (const k of L.cupones.filter(k => k.regla === 'bienvenida' && !L.codigos.some(c => c.cuponId === k.id && c.persona === r.persona.nombre))) { const x = entregar(k, r.persona.nombre, { id: 'mesa-' + r.id }); if (x) regalos.push(x); }
+      for (const k of L.cupones.filter(k => k.regla === 'bienvenida' && !L.codigos.some(c => c.cuponId === k.id && c.persona === r.persona.nombre))) { const x = entregar(k, r.persona.nombre, { id: 'mesa-' + r.id }, r.persona.id); if (x) regalos.push(x); }
     }
     save();
     if (regalos.length) avisarCupones(r.persona.nombre, regalos);
@@ -2675,6 +2874,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     toast(txt[0], txt[1]);
     tone(estado === 'llego' || estado === 'confirmada' ? 'ok' : 'in');
     renderShell(); renderMesa();
+    if (estado === 'llego' && REMOTE()) { cobrosCargados = 0; cargarCobros(true); cargarResenasReales().catch(() => {}); }
   }
 
   /* ---------- Pago de planes con Wompi ----------
@@ -2694,94 +2894,13 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       document.head.appendChild(s);
     });
   }
-  function pagoEstado(tipo, titulo, texto = '') {
-    const b = $('#pago-status');
-    if (!tipo) { b.hidden = true; b.innerHTML = ''; return; }
-    b.hidden = false;
-    b.className = 'pay-status is-' + tipo;
-    b.innerHTML = `${tipo === 'cargando' ? '<span class="pay-spin" aria-hidden="true"></span>' : ic(tipo === 'ok' ? 'i-check' : tipo === 'error' ? 'i-alert' : 'i-clock')}<div><b>${esc(titulo)}</b>${texto ? `<small>${esc(texto)}</small>` : ''}</div>`;
-  }
-  function abrirPago() {
-    closeMenus();
-    pagoEstado(null);
-    $('#pago-btn').disabled = false;
-    $('#pago-precio').textContent = PLANES.villavo.precio.replace(' / mes', '');
-    if (!$('#dlg-pago').open) $('#dlg-pago').showModal();
-  }
-  async function pagar() {
-    const btn = $('#pago-btn');
-    if (!REMOTE()) { pagoEstado('info', 'Panel de ejemplo', 'En tu cuenta real aquí se abre Wompi para pagar con tarjeta, PSE, Nequi o Bancolombia. En el ejemplo no se cobra nada.'); return; }
-    btn.disabled = true;
-    pagoEstado('cargando', 'Preparando el pago seguro...');
-    let datos;
-    try {
-      const { data, error } = await SB().functions.invoke('wompi-checkout', { body: { plan: 'villavo' } });
-      if (error) {
-        let detalle = '';
-        try { detalle = (await error.context.json()).error || ''; } catch (e2) { /* sin cuerpo */ }
-        throw new Error(detalle || error.message);
-      }
-      if (!data || data.error) throw new Error((data && data.error) || 'SIN_RESPUESTA');
-      datos = data;
-      await cargarWompi();
-    } catch (e) {
-      btn.disabled = false;
-      const m = String((e && e.message) || e);
-      if (/PAGOS_SIN_CONFIGURAR|Failed to send|FunctionsFetchError|404|not found/i.test(m)) pagoEstado('error', 'Los pagos en línea aún no están activos', 'Estamos terminando de conectar Wompi. Escríbenos a modoparcheoficial@gmail.com y activamos tu plan.');
-      else if (/COBROS_REALES_DESACTIVADOS/.test(m)) pagoEstado('error', 'Cobros reales desactivados', 'ModoParche es un prototipo académico: los pagos solo funcionan en modo de pruebas.');
-      else if (/NO_ES_NEGOCIO/.test(m)) pagoEstado('error', 'Esta cuenta no es de negocio', 'Entra con la cuenta de tu local.');
-      else if (/DEMASIADOS/.test(m)) pagoEstado('error', 'Muchos intentos seguidos', 'Espera unos minutos e intenta de nuevo.');
-      else pagoEstado('error', 'No pudimos abrir el pago', m);
-      return;
-    }
-    const c = datos.customer || {}, cliente = {};
-    if (c.email) cliente.email = c.email;
-    if (c.fullName) cliente.fullName = c.fullName;
-    if (/^3\d{9}$/.test(c.phoneNumber || '')) { cliente.phoneNumber = c.phoneNumber; cliente.phoneNumberPrefix = '+57'; }
-    if (c.legalId) { cliente.legalId = c.legalId; cliente.legalIdType = c.legalIdType || 'NIT'; }
-    const checkout = new window.WidgetCheckout({
-      currency: datos.currency, amountInCents: datos.amountInCents, reference: datos.reference, publicKey: datos.publicKey,
-      signature: { integrity: datos.signature },
-      redirectUrl: new URL('empresa-dashboard.html?pago=' + encodeURIComponent(datos.reference) + '#perfil', location.href).href,
-      customerData: cliente,
-    });
-    pagoEstado('cargando', 'Completa el pago en la ventana de Wompi', 'No cierres esta página.');
-    checkout.open(result => {
-      btn.disabled = false;
-      const tx = result && result.transaction;
-      if (!tx) { pagoEstado(null); return; }
-      seguirPago(datos.reference, tx.id, tx.status);
-    });
-  }
   async function recargarNegocio() {
     const { data: n } = await SB().from('negocios').select('*').eq('id', ME.id).maybeSingle();
     if (!n) return;
     const P = loc().perfil;
     P.plan = n.plan; P.planVence = n.plan_vence ? Date.parse(n.plan_vence) : null; P.planPendiente = n.plan_pendiente || null;
+    P.planProgramado = n.plan_programado || null; P.planProgramadoEn = n.plan_programado_en || null;
   }
-  let siguiendoPago = null;
-  async function seguirPago(referencia, txId, estadoInicial) {
-    if (['DECLINED', 'ERROR', 'VOIDED'].includes(estadoInicial)) { pagoEstado('error', 'El pago no pasó', 'No se hizo ningún cobro. Intenta con otro medio de pago.'); return; }
-    const turno = siguiendoPago = {};
-    pagoEstado('cargando', 'Confirmando el pago con Wompi...', 'Con PSE o Nequi puede tardar un par de minutos.');
-    for (let i = 0; i < 26 && siguiendoPago === turno; i++) {
-      // Pide al servidor que le pregunte a Wompi (por si el aviso automático tarda)
-      if (txId && i % 2 === 0) { try { await SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: txId } }); } catch (e) { /* el webhook lo confirma igual */ } }
-      const { data } = await SB().from('pagos').select('estado').eq('referencia', referencia).maybeSingle();
-      const est = data && data.estado;
-      if (est === 'APPROVED') {
-        await recargarNegocio();
-        pagoEstado('ok', '¡Pago aprobado!', 'Ya tienes Parche Villavo por 30 días: parches sin límite.');
-        burstFrom($('#pago-btn'), 30); tone('ok');
-        render();
-        return;
-      }
-      if (['DECLINED', 'VOIDED', 'ERROR'].includes(est)) { pagoEstado('error', 'El pago no pasó', 'No se hizo ningún cobro. Intenta con otro medio de pago.'); return; }
-      await new Promise(r => setTimeout(r, i < 6 ? 2500 : 5000));
-    }
-    if (siguiendoPago === turno) pagoEstado('info', 'Tu pago sigue en proceso', 'Te avisamos apenas Wompi lo apruebe. Ya puedes cerrar esta ventana.');
-  }
-
   /* ---------- Derecho de retracto (Ley 1480, art. 47) ----------
      Abre el correo ya escrito con la referencia del último pago aprobado. */
   async function pedirRetracto() {
@@ -2849,10 +2968,19 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
 
   // Las llegadas que marca el local también quedan en la base (organizador_checkin)
   const esUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || ''));
-  function marcarEnBase(p, a, llego) {
+  function marcarEnBase(p, a, llego, antes = null) {
+    if (REMOTE() && a.walkin && a.walkinId) {
+      SB().from('parche_walkins').update({ llego_en: llego ? new Date(a.llego || NOW()).toISOString() : null }).eq('id', a.walkinId).then(() => {}, () => {});
+      return;
+    }
     if (!REMOTE() || !p.remoto || !esUuid(a.id)) return;
     SB().rpc('organizador_checkin', { p_parche: p.id, p_usuario: a.id, p_llego: llego }).then(({ error }) => {
-      if (error) toast(llego ? 'La llegada quedó solo en este panel' : 'No se deshizo en la base', error.hint || error.message, { error: true });
+      const previo = a.metodoAntes ? { llego: a.llegoAntes, metodo: a.metodoAntes } : antes;
+      a.metodoAntes = a.llegoAntes = undefined;
+      if (!error) return;
+      toast(llego ? 'No se confirmó la llegada' : 'No se deshizo la llegada', error.hint || error.message, { error: true });
+      // El panel vuelve a mostrar lo que dice la base
+      if (previo) { a.llego = previo.llego; a.metodo = previo.metodo; save(); if (!$('#door-mode').hidden) renderDoor(); else render(); }
     });
   }
 
@@ -2872,9 +3000,17 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     toast('Parche cancelado', `Avisamos a ${confirmados(p)} ${confirmados(p) === 1 ? 'persona' : 'personas'}.`);
     render();
   }
+  function limpiarLocal() {
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1'].includes(k) && !k.startsWith('mp_cupones_subidos_')).forEach(k => localStorage.removeItem(k));
+      Object.keys(sessionStorage).filter(k => k.startsWith('mp_')).forEach(k => sessionStorage.removeItem(k));
+    } catch (e) { /* sin almacenamiento */ }
+  }
   async function logout() {
     if (DEMO || !SB()) { location.href = 'empresa.html'; return; }
+    cerrarCanalesNegocio();
     try { await SB().auth.signOut(); } catch (e) { /* salimos igual */ }
+    limpiarLocal();
     location.replace('empresa.html#entrar');
   }
 
@@ -2901,6 +3037,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'cobros-recargar': conCarga(a, () => cargarCobros(true)); break;
         case 'liq-reportar': reportarPago(a.dataset.id); break;
         case 'liq-pagar': pagarLiquidacion(a.dataset.id, a); break;
+        case 'liq-datafono': abrirDatafono(a.dataset.id, Number(a.dataset.monto) || null); break;
         case 'liq-abonar': abonarLiquidacion(a.dataset.id, a); break;
         case 'df-copiar': copiarDato(a); break;
         case 'df-abrir': abrirWompiDatafono(a); break;
@@ -2911,7 +3048,6 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'qrlocal-nuevo': cargarQRLocal(true); break;
         case 'ref-copiar': copiarInvitacion(a.dataset.link); break;
         case 'copiar-ref': copiarRef(a.dataset.ref); break;
-        case 'cerrar-pago': siguiendoPago = null; $('#dlg-pago').close(); break;
         case 'editar-horarios': openHorarios(); break;
         case 'horario-copiar': copiarLunes(); break;
         case 'ir-ubicacion': if (route !== 'perfil') location.hash = '#perfil'; setTimeout(() => { const m = $('#map-perfil'); if (m) m.scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'center' }); }, 160); break;
@@ -2947,11 +3083,12 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'editar-cupon': openCupon(id); break;
         case 'duplicar-cupon': openCupon(id, true); break;
         case 'eliminar-cupon': closeMenus(); eliminarCupon(id); break;
-        case 'terminar-rel': { const p = findParche(id); if (p) { p.dur = Math.max(1, Math.round((NOW() - p.inicio) / MIN)); save(); toast('Relámpago terminado', `${p.promo} salió del mapa.`); render(); } break; }
+        case 'terminar-rel': terminarRelampago(id, a); break;
         case 'modo-puerta': openDoor(id || null); break;
         case 'cerrar-puerta': closeDoor(); break;
         case 'door-in': doorIn(a.dataset.uid); break;
         case 'door-out': { const p = findParche(doorState.id), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { checkOut(p, u); renderDoor(); toast('Llegada deshecha', u.nombre); } break; }
+        case 'door-confirmar': { const p = findParche(doorState.id), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { u.metodoAntes = u.metodo; u.llegoAntes = u.llego; u.llego = null; u.metodo = 'organizador'; doorIn(u.id); } break; }
         case 'door-walkin': doorWalkin(); break;
         case 'flip-card': { a.classList.toggle('is-flipped'); a.setAttribute('aria-pressed', String(a.classList.contains('is-flipped'))); break; }
       }
@@ -2976,7 +3113,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       if (e.key !== 'Enter') return;
       const q = e.target.value.trim();
       if (!q) return;
-      if (/^[a-z]{3,8}-\d{4}$/i.test(q)) { e.target.value = ''; irValidar(); setTimeout(() => { $('#code-input').value = q.toUpperCase(); validar(q); }, 80); return; }
+      if (/^[a-z0-9]{1,8}-[a-z0-9]{4,12}$/i.test(q)) { e.target.value = ''; irValidar(); setTimeout(() => { $('#code-input').value = q.toUpperCase(); validar(q); }, 80); return; }
       listState.q = q;
       const L = loc(), hit = p => norm(`${p.titulo} ${p.organizador}`).includes(norm(q));
       listState.tab = L.parches.some(p => activo(p) && hit(p)) ? 'proximos' : L.parches.some(hit) ? 'pasados' : 'proximos';
@@ -3042,7 +3179,6 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     document.addEventListener('change', e => { const sw = e.target.closest('[data-mesa-switch]'); if (sw) toggleMesa(sw.dataset.mesaSwitch, sw.checked); });
     $('#dlg-qr').addEventListener('close', pararQRLlegada);
     $('#bz-anuncios-sw').addEventListener('change', e => cambiarAnunciosNegocio(e.target.checked, e.target));
-    $('#dlg-pago').addEventListener('close', () => { siguiendoPago = null; });
 
     // Foto del parche: elegir, arrastrar o quitar
     $('#p-foto').addEventListener('change', e => elegirFoto(e.target.files && e.target.files[0]));
@@ -3056,8 +3192,9 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     bindTilt();
 
     // El reloj corre: cuenta regresiva del relámpago cada segundo y estados cada 30 s
-    setInterval(tickCountdown, 1000);
+    setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
     setInterval(() => {
+      if (document.hidden) return;
       renderShell();
       if (route === 'resumen' && !document.querySelector('dialog[open]')) { renderPulse(); renderNoche(); renderFeed(); }
       if (!$('#door-mode').hidden) renderDoor();
@@ -3089,12 +3226,13 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     aplicarReferidoPendiente().catch(() => {});
     cargarResenasReales().then(() => { if (route === 'perfil') renderPerfil(); }).catch(() => {});
     // Volvió de Wompi (PSE, Bancolombia): confirmamos y refrescamos el estado de cuenta
-    if (REMOTE() && qs.get('pago') && qs.get('id')) {
-      SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: qs.get('id') } })
-        .catch(() => {}).then(() => { cobrosCargados = 0; cargarCobros(true); toast('Revisando tu pago', 'Si Wompi lo aprobó, tu estado de cuenta queda pagado en unos segundos.'); });
+    if (REMOTE() && qs.get('pago')) {
+      volverDeWompi(qs.get('pago'), qs.get('id'));
+      if (!location.hash) location.hash = '#perfil';
     }
     // Eligió Villavo o Varias sedes al registrarse: se activa de una (sin pagos por adelantado)
-    if (REMOTE() && P.planPendiente && P.planPendiente !== P.plan && PLANES[P.planPendiente]) {
+    // Varias sedes lo aprueba el equipo: no se reintenta solo
+    if (REMOTE() && P.planPendiente && P.planPendiente !== 'sedes' && P.planPendiente !== P.plan && PLANES[P.planPendiente]) {
       const elegido = P.planPendiente;
       SB().rpc('elegir_plan', { p_plan: elegido, p_sedes: elegido === 'sedes' ? Math.max(2, P.sedes || 2) : null }).then(({ error }) => {
         if (error) { console.warn('[plan]', error.message); return; }

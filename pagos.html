@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cobros, pagos y devoluciones - ModoParche</title>
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://modoparche.vercel.app/pagos">
 <meta name="description" content="Cobro por resultados para negocios: sin mensualidad, solo por clientes que llegan. Cómo se calcula, cómo se paga y devoluciones.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ModoParche">
@@ -13,14 +15,14 @@
 <meta property="og:image" content="https://modoparche.vercel.app/src/assets/web/banner.jpg">
 <meta property="og:locale" content="es_CO">
 <meta name="theme-color" content="#111111">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js" data-js></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,16 +31,15 @@
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="paginas.css">
 <link rel="stylesheet" href="legal.css">
-<script>document.documentElement.classList.add('mp-js');</script>
 </head>
 <body class="page-legal">
 
 <a class="skip-link" href="#main">Saltar al contenido</a>
 
-<header class="nav nav--ink">
+<header class="nav nav--ink mp-tinta-bloque">
   <div class="wrap nav-row">
     <a href="index.html" class="logo" aria-label="ModoParche, inicio">
-      <span class="logo-mark"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b>Parche</b>
+      <span class="logo-mark"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b class="mp-naranja-texto">Parche</b>
     </a>
     <nav class="nav-links" aria-label="Principal">
       <a href="index.html">Inicio</a>
@@ -56,7 +57,7 @@
   </div>
 </header>
 
-<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+<div class="mobile-menu mp-tinta-bloque" id="mobileMenu" aria-hidden="true">
   <nav aria-label="Menú móvil">
     <a href="index.html">Inicio</a>
     <a href="comercio.html">Negocios</a>
@@ -66,16 +67,16 @@
     <a href="login.html">Iniciar sesión</a>
   </nav>
   <div class="mobile-menu-foot">
-    <a href="login.html#crear" class="btn btn--block">Crear mi cuenta</a>
+    <a href="login.html#crear" class="btn btn--block mp-fijo">Crear mi cuenta</a>
     <a href="empresa.html" class="btn btn--block btn--ghost">Tengo un negocio</a>
     <p>Villavicencio, Meta · @modoparcheoficial</p>
   </div>
 </div>
 
 <main id="main">
-  <section class="legal-hero" aria-labelledby="legal-title">
+  <section class="legal-hero mp-tinta-bloque" aria-labelledby="legal-title">
     <div class="wrap">
-      <span class="legal-kicker">Pagos y devoluciones</span>
+      <span class="legal-kicker mp-fijo">Pagos y devoluciones</span>
       <h1 id="legal-title">Precios claros, sin trampas</h1>
       <p>Para las personas ModoParche es gratis. Los negocios pueden elegir un plan pago. Aquí está todo lo que cobramos, cómo cancelar y cómo pedir la devolución de tu dinero.</p>
       <p class="legal-meta"><span>Versión <b><span data-legal="version"></span></b></span><span>Vigente desde el <b><span data-legal="vigencia"></span></b></span><span>Responsable: <b><span data-legal="responsable"></span></b></span></p>
@@ -158,7 +159,7 @@
   </div>
 </main>
 
-<footer class="foot">
+<footer class="foot mp-tinta-bloque">
   <div class="wrap">
     <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
       <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
@@ -166,22 +167,22 @@
     <div class="foot-grid">
       <div class="foot-intro">
         <p>Planes en grupo para Villavicencio. Sal, encuentra y conecta con gente de tu misma vibra.</p>
-        <a href="login.html#crear" class="btn btn--sm btn--on-ink">Crear mi cuenta</a>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink mp-fijo">Crear mi cuenta</a>
       </div>
       <div class="foot-col">
-        <h2>Explora</h2>
+        <h2 class="mp-naranja-texto">Explora</h2>
         <a href="index.html">Inicio</a>
         <a href="preguntas.html">Preguntas</a>
         <a href="marca.html">La marca</a>
       </div>
       <div class="foot-col">
-        <h2>Negocios</h2>
+        <h2 class="mp-naranja-texto">Negocios</h2>
         <a href="comercio.html">Para negocios</a>
         <a href="empresa.html">Crear cuenta de negocio</a>
         <a href="pagos.html">Pagos y devoluciones</a>
       </div>
       <div class="foot-col foot-contact">
-        <h2>Escríbenos</h2>
+        <h2 class="mp-naranja-texto">Escríbenos</h2>
         <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
         <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
         <a href="equipo.html">Equipo y contacto</a>

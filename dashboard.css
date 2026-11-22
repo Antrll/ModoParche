@@ -1455,7 +1455,7 @@ html.is-gesturing, html.is-gesturing * { -webkit-user-select: none; user-select:
 .msg-act .ic { width: 15px; height: 15px; }
 .msg:hover .msg-act, .msg-act:focus-visible { opacity: 1; }
 .msg-act:hover { background: var(--soft); color: var(--ink); }
-@media (hover: none) { .msg-act { display: none; } }
+@media (hover: none) { .msg-act { opacity: .7; } }
 .msg-quote {
   display: grid; gap: 1px; width: 100%; min-width: 0;
   margin: 2px 0 6px; padding: 6px 10px; text-align: left;
@@ -2286,3 +2286,32 @@ html:not(.is-dark):not(.is-mixto) .qk--ink { background: #f1f1f3; color: #111111
 html:not(.is-dark):not(.is-mixto) :is(.of-sold, .of-note) { color: #45454d; }
 html:not(.is-dark):not(.is-mixto) .of-sold b, html:not(.is-dark):not(.is-mixto) .of-map { color: #111111; }
 html:not(.is-dark):not(.is-mixto) .of-map::after { background: #b83709; }
+
+
+/* ---------- Fase 2: gustos, cupones, Plan B y accesibilidad ---------- */
+label:has(> input[type="file"].sr-only:focus-visible) { outline: 3px solid var(--orange, #FF5A1F); outline-offset: 2px; }
+.intereses { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.interes { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--line, rgba(17,17,17,.14)); border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .16s ease, color .16s ease, border-color .16s ease, transform .12s ease; }
+.interes .ic { width: 16px; height: 16px; }
+.interes:active { transform: scale(.97); }
+.interes.is-on { border-color: #FF5A1F; background: #FF5A1F; color: #111; }
+.interes:focus-visible, .mis-mas:focus-visible { outline: 3px solid #FF5A1F; outline-offset: 2px; }
+.pcard-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cupones-mios { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.cupon-mio { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--soft, rgba(17,17,17,.05)); }
+.cupon-mio span { display: grid; min-width: 0; }
+.cupon-mio b { overflow-wrap: anywhere; }
+.cupon-mio small { opacity: .75; }
+.cupon-mio.is-off { opacity: .6; }
+.cupon-ver { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.cupon-qr { width: min(240px, 70vw); aspect-ratio: 1; padding: 12px; border-radius: 16px; background: #fff; color: #111; }
+.cupon-qr svg { display: block; width: 100%; height: 100%; }
+.cupon-codigo { font-size: 20px; font-weight: 800; letter-spacing: .06em; overflow-wrap: anywhere; }
+.planb-switch { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
+.mis-mas { position: absolute; top: 14px; right: 8px; z-index: 3; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.mis-mas .ic { width: 18px; height: 18px; }
+.mis-row .mis-item { padding-right: 56px; }
+.mis-inline { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
+.mis-inline .mis-act { position: static; display: inline-flex; flex: 1 1 auto; flex-direction: row; align-items: center; justify-content: center; gap: 6px; width: auto; min-width: 88px; height: 44px; padding: 0 12px; opacity: 1; transform: none; translate: none; scale: 1; font-size: 13px; }
+.mis-inline .mis-act .ic { width: 16px; height: 16px; }
+.mis-inline[hidden] { display: none; }

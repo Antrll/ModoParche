@@ -6,18 +6,17 @@
 <title>Página no encontrada - ModoParche</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FF5A1F">
-<script>(function(){var t="sistema";try{t=localStorage.getItem("mp_tema")||"sistema";}catch(e){}var d=t==="oscuro"||(t!=="claro"&&t!=="mixto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("is-dark");else if(t==="mixto")document.documentElement.classList.add("is-mixto");})();</script>
+<script src="/mp-init.js"></script>
 <script src="/mp-errores.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" href="/src/assets/Branding/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/src/assets/Branding/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="/src/assets/Branding/favicon/apple-touch-icon.png">
-<link rel="manifest" href="/src/assets/web/site.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><!-- taste-skill-ignore -->
-<link rel="stylesheet" href="/mp-base.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/mp-base.css">
 <link rel="stylesheet" href="/mp-tema.css">
 <style>
   .nf { min-height: 100svh; display: grid; place-items: center; padding: 32px var(--margin); background: var(--orange); color: var(--ink); }
@@ -31,7 +30,7 @@
 <link rel="stylesheet" href="/legal.css">
 </head>
 <body data-raiz="/">
-<main class="nf">
+<main class="nf mp-fijo">
   <div class="nf-box">
     <img class="nf-mark" src="/src/assets/web/logo-isotipo-naranja.webp" alt="" width="397" height="476">
     <p class="nf-code" aria-hidden="true">404</p>

@@ -15,7 +15,7 @@
   var SUPABASE_URL = 'https://quxqqxnowlwiahorifpy.supabase.co';
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1eHFxeG5vd2x3aWFob3JpZnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MzMzMTIsImV4cCI6MjEwODIwOTMxMn0.rO4W027LLI5CR-wz753KFzyYiLAn-I-avLre7nbVoII';
 
-  window.MP_SUPABASE = { url: SUPABASE_URL };
+  window.MP_SUPABASE = { url: SUPABASE_URL, anon: SUPABASE_ANON_KEY };
 
   if (!window.supabase || typeof window.supabase.createClient !== 'function') {
     window.mpSupabase = null; // la librería no cargó (sin internet o página sin ella)

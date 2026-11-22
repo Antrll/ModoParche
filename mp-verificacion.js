@@ -26,7 +26,7 @@
   'use strict';
 
   /* ---------- Librerías por CDN (solo se cargan cuando hacen falta) ---------- */
-  var LIB_ZXING = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+  var LIB_ZXING = '/src/vendor/zxing.min.js';
   var LIB_TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
   var BUCKET = 'documentos_identidad';
 
@@ -414,7 +414,7 @@
       return ctx.sb.rpc('verificar_mi_cedula', { p_frontal: paths[0], p_trasera: paths[1], p_numero_leido: ctx.cedula, p_metodo: lectura.metodo || 'codigo' });
     }).then(function (r) {
       if (r.error) throw r.error;
-      fin(); exito();
+      fin(); exito(r.data);
     }).catch(function (err) {
       // Si algo falló, no dejamos fotos sueltas en el bucket
       if (subidas.length) ctx.sb.storage.from(BUCKET).remove(subidas).catch(function () { /* nada */ });
@@ -424,11 +424,18 @@
     });
   }
 
-  function exito() {
-    ctx.verificado = true;
+  // El servidor decide: con revisión humana queda "pendiente" y aún no da el sello
+  function exito(data) {
+    var pendiente = !!(data && data.pendiente);
+    ctx.verificado = !pendiente;
     $('#vf-form').hidden = true;
     $('#vf-done').hidden = false;
-    $('#vf-done-cta').textContent = ctx.motivo === 'crear' ? 'Abrir el parche' : 'Ver mi insignia';
+    $('#vf-done h3').textContent = pendiente ? 'Recibimos tu cédula' : 'Ya eres Parcero Verificado';
+    $('#vf-done p').textContent = pendiente
+      ? 'El equipo la revisa y te avisamos por notificación. Cuando quede aprobada podrás abrir parches y llevar el sello.'
+      : 'Tu sello sale en tu perfil y en los chats. Ya puedes abrir parches.';
+    $('#vf-done-cta').textContent = pendiente ? 'Entendido' : (ctx.motivo === 'crear' ? 'Abrir el parche' : 'Ver mi insignia');
+    if (pendiente && ctx.alPendiente) ctx.alPendiente();
     setTimeout(function () { var b = $('#vf-done-cta'); if (b) b.focus(); }, 80);
   }
 
