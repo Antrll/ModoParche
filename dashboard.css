@@ -336,7 +336,6 @@ select.input {
 @media (hover: hover) and (pointer: fine) { .hello-seal:hover .hello-iso { transform: rotate(6deg) scale(1.06); } }
 .hello-stk { position: absolute; height: auto; pointer-events: none; }
 .hello-stk--star { width: 70px; top: 6%; left: 4%; animation: popIn .8s .35s var(--ease-out) both, float 6s 1.2s ease-in-out infinite; }
-.hello-stk--bolt { width: 34px; bottom: 8%; right: 8%; animation: popIn .8s .45s var(--ease-out) both, float 7s 1.4s ease-in-out infinite reverse; }
 
 /* Funciones principales */
 .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px; }
@@ -866,7 +865,6 @@ select.input {
   .hello-copy { position: relative; z-index: 1; }
   .hello-title { margin-top: 34px; }
   .hello-stk--star { display: none; }
-  .hello-stk--bolt { display: none; }
 
   .quick { grid-template-columns: 1fr; gap: 10px; }
   .qk { min-height: 0; padding: 16px; align-items: center; }

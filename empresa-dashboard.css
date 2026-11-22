@@ -1076,7 +1076,6 @@ select.input { background-position: right 14px center; }
 @media (hover: hover) and (pointer: fine) { .hello-seal:hover .hello-iso { transform: rotate(6deg) scale(1.06); } }
 .hello-stk { position: absolute; height: auto; pointer-events: none; }
 .hello-stk--crown { width: 66px; top: 4%; left: 6%; }
-.hello-stk--bolt { width: 30px; bottom: 6%; right: 8%; }
 
 /* ---------- resumen ---------- */
 .kpis { gap: 12px; background: none; border: 0; border-radius: 0; }
@@ -1218,7 +1217,6 @@ select.input { background-position: right 14px center; }
   .view.in .hello-actions { animation: riseIn .7s .28s var(--ease-out) backwards; }
   .view.in .hello-seal { animation: popIn .9s .15s var(--ease-out) backwards; }
   .hello-stk--crown { animation: float 6s 1s ease-in-out infinite; }
-  .hello-stk--bolt { animation: float 7s 1.2s ease-in-out infinite reverse; }
   .view.in .kpi { animation: riseIn .6s var(--ease-out) backwards; }
   .view.in .kpi:nth-child(2) { animation-delay: .06s; }
   .view.in .kpi:nth-child(3) { animation-delay: .12s; }
@@ -1274,7 +1272,7 @@ select.input { background-position: right 14px center; }
   background: var(--accent) url("src/assets/web/stk/corona-armador.webp") right 70px center / 96px auto no-repeat; color: var(--text);
 }
 #dlg-cupon .dialog-head { background-image: url("src/assets/web/stk/ruleta.webp"); }
-#dlg-relampago .dialog-head { background-image: url("src/assets/web/stk/rayonaranjagrungequebrado.webp"); background-color: var(--night); color: #fff; }
+#dlg-relampago .dialog-head { background-image: url("src/assets/web/stk/chispasnaranjasimpactoesquina.webp"); background-color: var(--night); color: #fff; }
 #dlg-perfil .dialog-head { background-image: url("src/assets/web/stk/medalla-el-armador.webp"); }
 #dlg-parche .dialog-head h2, #dlg-cupon .dialog-head h2, #dlg-perfil .dialog-head h2 { color: #fff; font-size: 30px; }
 #dlg-relampago .dialog-head h2 { font-size: 30px; }

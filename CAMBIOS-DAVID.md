@@ -139,3 +139,9 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 - **Páginas del pie:** rediseño visual en `legal.css`; tablas como fichas en celular. En `cookies.html` solo cambió la etiqueta técnica de la sesión por "Tu sesión iniciada", a pedido de Julián.
 - **Cédula:** modal rediseñado (`mp-verificacion.css`), mismos textos y mismo flujo.
 - **Google:** `login.js` puede usar el botón oficial de Google desde el dominio propio. Queda **apagado** (`GOOGLE_DOMINIOS` vacío) hasta autorizar el dominio en Google Cloud; la CSP de `vercel.json` ya lo permite.
+
+## 17. Solo branding en el movimiento de las páginas (Julián, con Claude)
+- **Qué:** las páginas públicas ya no muestran stickers ilustrados. La animación usa solo piezas de branding. Se retiraron `fuegonegrobrochacontorno`, `rayoblancogrungequebrado` y `rayonaranjagrungequebrado` de la web; sus originales siguen en `src/assets/dec/`.
+- **Por qué:** decisión de Julián: no le convenció la implementación de los stickers ni esas tres piezas.
+- **Reemplazos:** en La marca, las tarjetas usan corona blanca y llama naranja. El saludo de los paneles queda sin rayo y el encabezado de Relámpago usa chispas.
+- **Archivos:** `mp-energia.js`, `mp-energia.css`, `marca.html`, `dashboard.html`, `dashboard.css`, `empresa-dashboard.html`, `empresa-dashboard.css`.

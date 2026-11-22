@@ -1,6 +1,6 @@
 /* =====================================================================
    ModoParche · mp-energia.css
-   Stickers en movimiento, cintas y barra de avance de las páginas públicas.
+   Piezas de branding en movimiento, cintas y barra de avance de las páginas públicas.
 ===================================================================== */
 .mp-con-stk { overflow-x: clip; }
 .mp-stk { position: absolute; z-index: 0; display: block; pointer-events: none; will-change: transform; }

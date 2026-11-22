@@ -1,14 +1,14 @@
 /* =====================================================================
    ModoParche · mp-energia.js
-   Le da vida a las páginas públicas: stickers de la marca en los espacios
+   Le da vida a las páginas públicas: piezas de branding en los espacios
    libres de cada sección (nunca encima del contenido), cintas en
    movimiento y barra de avance. Se apaga con "reducir movimiento".
 ===================================================================== */
 (function () {
   'use strict';
   var STK = function (n) { return '/src/assets/web/stk/' + n + '.webp'; };
-  var VIVOS = ['rayonaranjagrungequebrado', 'sneaker', 'coronanaranjabrochaarmador', 'rumba-coctel', 'chispasnaranjasimpactoesquina', 'deporte-balon-fuego', 'fuego-2-naranja', 'comida-asado', 'ruleta', 'aventura-camping', 'corona-armador', 'chill-juegosmesa', 'radar', 'aventura-camara'];
-  var SOBRE_NARANJA = ['fuegonegrobrochacontorno', 'estrellablancagrunge5puntas', 'rayoblancogrungequebrado', 'estrellanegratrazografiti', 'coronablancabrochabasquiat'];
+  var VIVOS = ['coronanaranjabrochaarmador', 'chispasnaranjasimpactoesquina', 'fuego-2-naranja'];
+  var SOBRE_NARANJA = ['estrellablancagrunge5puntas', 'estrellanegratrazografiti', 'coronablancabrochabasquiat'];
   var CONTENIDO = 'h1,h2,h3,h4,p,li,a,button,input,select,textarea,img:not(.mp-stk img),figure,article,dl,summary,svg,table,label';
   var TEXTOS = 'h1,h2,h3,h4,p,li,a,button,input,select,textarea,label,dt,dd,summary';
   var ANCLAS = 'figure.media,.plan-main,.plan-tier,.cobro-caso,.manifesto-block,.member,.biz-join-card,.photo-card,.value,.stage';
