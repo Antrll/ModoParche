@@ -46,3 +46,39 @@ describe('Publicación', () => {
     }
   });
 });
+
+describe('Vista previa al compartir (Open Graph / WhatsApp)', () => {
+  const RAIZ = new URL('../../', import.meta.url);
+  const leer = n => fs.readFileSync(new URL(n, RAIZ), 'utf8');
+  const existe = ruta => fs.existsSync(new URL(ruta.replace(/^\//, ''), RAIZ));
+  // https://modoparche.vercel.app/src/... -> src/...
+  const local = u => new URL(u, 'https://modoparche.vercel.app').pathname;
+
+  it('las imágenes og:image y twitter:image de las páginas existen', () => {
+    const htmls = fs.readdirSync(RAIZ).filter(x => x.endsWith('.html'));
+    let total = 0;
+    for (const f of htmls) {
+      for (const m of leer(f).matchAll(/<meta\s+(?:property|name)="(?:og:image|twitter:image)"\s+content="([^"]+)"/g)) {
+        total++;
+        expect(existe(local(m[1])), `${f}: ${m[1]}`).toBe(true);
+      }
+    }
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it('la imagen por defecto de api/p.js existe', () => {
+    const rutas = [...leer('api/p.js').matchAll(/\$\{origin\}(\/src\/[^`'"\s]+\.(?:jpe?g|png|webp))/g)].map(m => m[1]);
+    expect(rutas.length).toBeGreaterThan(0);
+    for (const r of rutas) expect(existe(r), r).toBe(true);
+  });
+
+  it('cada afiche oficial .webp tiene su versión -og.jpg para compartir', () => {
+    const sql = fs.readdirSync(new URL('supabase/migrations/', RAIZ)).map(f => leer(`supabase/migrations/${f}`)).join('\n');
+    const usadas = new Set([...sql.matchAll(/\/src\/assets\/web\/oficiales\/[a-z0-9-]+\.webp/g)].map(m => m[0]));
+    const carpeta = fs.readdirSync(new URL('src/assets/web/oficiales/', RAIZ)).filter(x => x.endsWith('.webp')).map(x => `/src/assets/web/oficiales/${x}`);
+    for (const r of new Set([...usadas, ...carpeta])) {
+      expect(existe(r), r).toBe(true);
+      expect(existe(r.replace(/\.webp$/, '-og.jpg')), r.replace(/\.webp$/, '-og.jpg')).toBe(true);
+    }
+  });
+});

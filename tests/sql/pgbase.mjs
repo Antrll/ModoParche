@@ -56,7 +56,7 @@ export async function base({ hasta = null, solo = null } = {}) {
   for (const f of fs.readdirSync(DIR).filter(x => x.endsWith('.sql') && x !== '20261029120000_panel_admin.sql').sort()) {
     if (hasta && f > hasta) break;
     if (solo && !solo(f)) continue;
-    try { await db.exec('begin;' + limpiar(fs.readFileSync(path.join(DIR, f), 'utf8')) + ';commit;'); }
+    try { await db.exec('begin;' + limpiar(fs.readFileSync(path.join(DIR, f), 'utf8').replace(/\r\n/g, '\n')) + ';commit;'); }
     catch (e) { errores.push(`${f}: ${e.message}`); try { await db.exec('rollback'); } catch (x) { /* nada */ } }
   }
   return { db, errores };

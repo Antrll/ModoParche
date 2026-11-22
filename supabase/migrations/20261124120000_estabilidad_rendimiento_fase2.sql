@@ -8,8 +8,11 @@
 
 create or replace function private.parchear2(p_fn regprocedure, p_de text, p_a text)
 returns void language plpgsql security definer set search_path = '' as $$
-declare d text := pg_get_functiondef(p_fn);
+declare d text := replace(pg_get_functiondef(p_fn), E'\r\n', E'\n');
 begin
+  -- Normaliza saltos de línea (por si la función se creó desde Windows con CRLF)
+  p_de := replace(p_de, E'\r\n', E'\n');
+  p_a := replace(p_a, E'\r\n', E'\n');
   if position(p_a in d) > 0 then return; end if;
   if position(p_de in d) = 0 then raise exception 'No encontré el texto a cambiar en %: %', p_fn, left(p_de, 60); end if;
   execute replace(d, p_de, p_a);
@@ -727,7 +730,7 @@ grant execute on function public.parches_radar(timestamptz, integer, timestamptz
 
 -- Cuentas del panel con búsqueda y páginas en el servidor
 do $$
-declare d text := pg_get_functiondef('public.admin_cuentas()'::regprocedure);
+declare d text := replace(pg_get_functiondef('public.admin_cuentas()'::regprocedure), E'\r\n', E'\n');
 begin
   d := replace(d, 'public.admin_cuentas()', 'public.admin_cuentas_pagina(p_q text default null, p_limite integer default 100, p_offset integer default 0)');
   d := replace(d, E'    order by u.created_at desc\n    limit 3000',

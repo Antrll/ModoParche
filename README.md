@@ -19,6 +19,29 @@ Convertir a Parchemos en una plataforma líder de experiencias sociales locales 
 
 ---
 
+## Despliegue de las Fases 1 y 2 (seguridad, estabilidad y rendimiento)
+
+Sobre la base que ya está en producción, en este orden:
+
+1. **Supabase > SQL Editor**, en una pestaña nueva para cada archivo, pega y corre (**Run**):
+   1. `supabase/migrations/20261123120000_seguridad_y_antifraude_fase1.sql`
+   2. `supabase/migrations/20261124120000_estabilidad_rendimiento_fase2.sql`
+
+   Los dos se pueden correr más de una vez y no borran datos. No corras la Fase 2 sin haber corrido antes la Fase 1.
+2. **Redespliega las 3 Edge Functions** (con la CLI de Supabase, desde la raíz del proyecto):
+   ```bash
+   supabase functions deploy wompi-checkout
+   supabase functions deploy wompi-webhook --no-verify-jwt
+   supabase functions deploy enviar-push --no-verify-jwt
+   ```
+3. **Despliega en Vercel.** El sitio que se publica es la carpeta `dist`, que sale de `npm run build` (comando de build `npm run build`, carpeta de salida `dist`). Para probarlo antes en tu computador:
+   ```bash
+   npm ci
+   npm run build
+   ```
+
+---
+
 ## Dashboard de usuarios con Supabase
 
 El panel (`dashboard.html`) es para usuarios con cuenta. El login y el registro (`login.html`) usan Supabase Auth.
@@ -269,7 +292,7 @@ Pasos en los paneles:
 1. **Supabase > Authentication > Multi-Factor:** deja activado *TOTP*.
 2. **Login con Google:** en Google Cloud Console crea un *OAuth Client ID* (tipo Web) con la URL de redirección `https://quxqqxnowlwiahorifpy.supabase.co/auth/v1/callback`. En Supabase > Authentication > Sign In / Providers > Google pega el Client ID y el Secret. Mientras no esté activo, el botón dice que Google todavía no está disponible.
 3. **Vercel > Analytics:** toca *Enable* (Web Analytics). El script ya está en todas las páginas.
-4. **Respaldos:** en GitHub > Settings > Secrets and variables > Actions crea `SUPABASE_DB_URL` (Supabase > Connect > *Session pooler*) y `RESPALDO_CLAVE` (una frase larga que guardes aparte). Lleva `.github/workflows/respaldo.yml` a la rama `main`: desde ahí corre cada lunes. Para restaurar: descarga el artefacto, `gpg -d respaldo-modoparche-FECHA.tgz.gpg > r.tgz`, `tar xzf r.tgz` y en una base vacía corre `roles.sql`, `esquema.sql` y `datos.sql` con `psql`. Las fotos del almacenamiento y los usuarios de Auth no van en este respaldo.
+4. **Respaldos:** ver [Respaldos de la base](#respaldos-de-la-base).
 
 ### Panel de administración
 
@@ -277,7 +300,10 @@ Pasos en los paneles:
 
 - **Se entra por el mismo login** (`login.html`). Si la cuenta es admin, la manda sola a `admin.html`.
 - **Los admins solo se crean desde la base de datos.** La tabla `admins` no tiene permiso de escritura desde la app; quién es admin nunca depende de datos que el usuario pueda editar.
-- Activar: correr `supabase/migrations/20261029120000_panel_admin.sql` en el SQL Editor. Crea la tabla, los permisos, las funciones del panel y los 2 primeros admins.
+- Activar (solo en una instalación desde cero): correr `supabase/migrations/20261029120001_panel_admin_base.sql` en el SQL Editor. Crea la tabla, los permisos y las funciones del panel. No trae cuentas ni claves: el primer admin se crea con `private.crear_admin` (abajo).
+
+> [!WARNING]
+> **En la base de datos que YA está en producción NO corras `20261029120001_panel_admin_base.sql`.** Es solo para instalar la base desde cero. Allá el panel ya existe y las migraciones posteriores cambiaron esas funciones; volver a correrlo puede deshacer esos cambios.
 - Crear otro admin: `select private.crear_admin('correo@dominio.com', 'ContraseñaSegura123', 'Nombre');`
 - Volver admin a una cuenta existente: `select private.crear_admin('correo@existente.com', null, 'Nombre');`
 - Quitar el rol: `delete from public.admins where id = (select id from auth.users where email = 'correo@dominio.com');`
@@ -296,3 +322,41 @@ Pasos en los paneles:
 | Reputación | Calificaciones con "pelea cruzada" o "racha de castigo" marcadas; se pueden anular y la reputación se recalcula. |
 | Retención | Tabla por semana de registro: qué parte de la gente vuelve a usar la app. |
 | Editar parches | Cualquier parche o ejemplo (título, fecha, lugar, cupos, costo, categoría). En el chat se avisa que el equipo hizo el cambio. |
+
+---
+
+## Respaldos de la base
+
+`.github/workflows/respaldo.yml` saca un respaldo de la base cada lunes a las 3:00 a. m. (hora de Colombia), y también cuando lo corres a mano en **Actions > Respaldo de la base > Run workflow**:
+
+1. Saca roles, estructura y datos con la CLI de Supabase.
+2. Los comprime y los **cifra con AES-256** usando `RESPALDO_CLAVE`.
+3. Los sube a un **bucket privado de Cloudflare R2 o S3**, en `respaldos/respaldo-modoparche-FECHA-ID.tgz.gpg`. Ya no se usan los artefactos de GitHub, porque este repositorio es público.
+
+**Activarlo:** en GitHub > Settings > Secrets and variables > Actions crea estos 6 secretos (si falta alguno, el respaldo se detiene con un error):
+
+| Secreto | Qué va |
+| --- | --- |
+| `SUPABASE_DB_URL` | Supabase > Connect > *Session pooler* (URI con la contraseña). |
+| `RESPALDO_CLAVE` | Una frase larga que solo sepa el equipo. Guárdala aparte: sin ella no se puede abrir el respaldo. |
+| `RESPALDO_S3_BUCKET` | Nombre del bucket privado. |
+| `RESPALDO_S3_ENDPOINT` | R2: `https://<cuenta>.r2.cloudflarestorage.com` · S3: `https://s3.<region>.amazonaws.com` |
+| `RESPALDO_S3_KEY` | Llave de acceso con permiso solo sobre ese bucket. |
+| `RESPALDO_S3_SECRET` | Secreto de esa llave. |
+
+Las tareas programadas de GitHub solo corren desde la rama `main`, así que el archivo tiene que estar ahí. Para borrar los respaldos viejos, pon una regla de ciclo de vida de 30 días en el bucket.
+
+**Restaurar:**
+
+1. Descarga el respaldo del bucket (desde el panel de R2 / S3, o con la CLI de AWS usando la misma llave):
+   ```bash
+   aws s3 cp s3://BUCKET/respaldos/respaldo-modoparche-FECHA-ID.tgz.gpg . --endpoint-url ENDPOINT
+   ```
+2. Descífralo (pide `RESPALDO_CLAVE`) y descomprímelo:
+   ```bash
+   gpg -d respaldo-modoparche-FECHA-ID.tgz.gpg > r.tgz
+   tar xzf r.tgz
+   ```
+3. En una base vacía corre, en este orden, `roles.sql`, `esquema.sql` y `datos.sql` con `psql`.
+
+Las fotos del almacenamiento y los usuarios de Auth no van en este respaldo.
