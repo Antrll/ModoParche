@@ -54,8 +54,6 @@
 
 /* Enlaces legales en el pie de página */
 .foot-legal { flex-wrap: wrap; row-gap: 6px; }
-.foot-entity { margin-top: 10px; font-size: .8125rem; color: color-mix(in srgb, var(--paper) 66%, transparent); line-height: 1.5; }
-.foot-entity a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .legal-mini { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 18px; font-size: .8125rem; color: var(--muted); }
 .legal-mini a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .legal-mini a:hover { color: var(--ink); }
