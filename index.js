@@ -328,6 +328,9 @@
       frame.classList.add('is-loading');
       lbImg.onload = () => frame.classList.remove('is-loading');
       lbImg.onerror = () => frame.classList.remove('is-loading');
+      // Mismas proporciones que la foto: el visor reserva el espacio y no salta
+      lbImg.width = Number(img.getAttribute('width')) || img.naturalWidth || 1000;
+      lbImg.height = Number(img.getAttribute('height')) || img.naturalHeight || 1500;
       lbImg.src = src;
       lbImg.alt = img.alt;
       lbCap.textContent = $('figcaption', fig)?.textContent || '';

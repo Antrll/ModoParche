@@ -23,9 +23,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/src/assets/fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/mp-fuentes.css"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="login.css">
@@ -52,6 +50,7 @@
 </header>
 
 <main id="main" class="auth-shell">
+  <h1 class="sr-only">Cuenta de negocio en ModoParche</h1>
 
   <!-- Panel con la vista previa en vivo (escritorio) -->
   <aside class="biz-aside mp-tinta-bloque" aria-label="Así se verá tu negocio">
@@ -108,7 +107,7 @@
 
           <!-- PASO 1 -->
           <div class="wz-step active" id="bz-step-1">
-            <h1>Cuéntanos de tu negocio</h1>
+            <h2>Cuéntanos de tu negocio</h2>
             <p class="sub">Así aparecerás en el radar y en el mapa.</p>
 
             <div class="field">
@@ -173,7 +172,7 @@
 
           <!-- PASO 2 -->
           <div class="wz-step" id="bz-step-2">
-            <h1>Datos de acceso</h1>
+            <h2>Datos de acceso</h2>
             <p class="sub">Con este correo entrarás al panel de tu negocio.</p>
 
             <div class="field-row">
@@ -217,7 +216,7 @@
 
           <!-- PASO 3 -->
           <div class="wz-step" id="bz-step-3">
-            <h1>Elige tu plan</h1>
+            <h2>Elige tu plan</h2>
             <p class="sub">Empiezas gratis. Puedes cambiarlo o cancelarlo cuando quieras desde tu panel, sin permanencia.</p>
 
             <fieldset class="plan-pick">
@@ -289,7 +288,7 @@
            ENTRAR COMO NEGOCIO
       ======================================================== -->
       <div class="auth-view" id="view-entrar" role="tabpanel" aria-labelledby="tab-entrar" hidden>
-        <h1>Hola de nuevo</h1>
+        <h2>Hola de nuevo</h2>
         <p class="sub">Entra al panel de tu negocio.</p>
 
         <form action="#" method="POST" id="form-entrar" data-validate>

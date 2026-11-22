@@ -62,8 +62,10 @@
       return new Promise(function (ok, falla) {
         var caja = cajaDe(form);
         var w = widgets.get(form);
-        var reloj = setTimeout(function () { falla(new Error('CAPTCHA_TIEMPO')); }, 90000);
-        var listo = function (fn, v) { clearTimeout(reloj); fn(v); };
+        var reloj = setTimeout(function () { listo(falla, new Error('CAPTCHA_TIEMPO')); }, 90000);
+        var hecho = false;
+        // Una sola respuesta por pedido: lo que llegue después se ignora
+        var listo = function (fn, v) { if (hecho) return; hecho = true; clearTimeout(reloj); fn(v); };
         if (!w) {
           w = {};
           widgets.set(form, w);
@@ -76,7 +78,9 @@
             action: form.id || 'form',
             callback: function (t) { if (w.ok) w.ok(t); },
             'error-callback': function () { if (w.err) w.err(new Error('CAPTCHA_ERROR')); return true; },
-            'expired-callback': function () { window.turnstile.reset(w.id); },
+            // Si caduca o se agota el desafío, el formulario se entera ya (no a los 90 s)
+            'expired-callback': function () { window.turnstile.reset(w.id); if (w.err) w.err(new Error('CAPTCHA_VENCIO')); },
+            'timeout-callback': function () { window.turnstile.reset(w.id); if (w.err) w.err(new Error('CAPTCHA_VENCIO')); },
           });
         } else {
           window.turnstile.reset(w.id); // los tokens sirven una sola vez
@@ -92,6 +96,7 @@
     var m = String((err && err.message) || err || '');
     if (/CAPTCHA_NO_CARGA/.test(m)) return ['No cargó la verificación', 'Revisa tu conexión o desactiva el bloqueador de anuncios para este sitio y vuelve a intentar.'];
     if (/CAPTCHA_TIEMPO/.test(m)) return ['La verificación tardó mucho', 'Vuelve a tocar el botón.'];
+    if (/CAPTCHA_VENCIO/.test(m)) return ['La verificación venció', 'Vuelve a tocar el botón para intentarlo de nuevo.'];
     return ['No pudimos confirmar que eres una persona', 'Vuelve a intentar. Si sigue pasando, recarga la página.'];
   }
 

@@ -1,5 +1,3 @@
-*.php
-includes/
 .agents/
 .taste-skill/
 skills-lock.json

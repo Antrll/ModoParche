@@ -23,8 +23,7 @@
 ===================================================================== */
 @font-face {
   font-family: 'Gagalin';
-  src: url('src/assets/fonts/Gagalin-Regular.woff2') format('woff2'),
-       url('src/assets/fonts/Gagalin-Regular.woff') format('woff');
+  src: url('src/assets/fonts/Gagalin-Regular.woff2') format('woff2');
   font-display: swap;
 }
 

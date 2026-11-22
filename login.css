@@ -142,7 +142,7 @@
 .auth-view.active { display: block; animation: auth-in .4s var(--ease-out) both; }
 @keyframes auth-in { from { opacity: 0; transform: translateY(10px); filter: blur(2px); } }
 
-.auth-view h1 {
+.auth-view h2 {
   font-size: var(--t-xl);
   line-height: .9;
   margin-bottom: 8px;
@@ -338,7 +338,7 @@
   .auth-back { padding: 0 10px; }
   .pill-group { grid-template-columns: repeat(2, 1fr); }
   .wz-actions .btn { flex: 1; }
-  .auth-view h1 { font-size: 2.2rem; }
+  .auth-view h2 { font-size: 2.2rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

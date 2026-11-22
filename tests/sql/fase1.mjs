@@ -75,7 +75,6 @@ let r4 = await uno(`select public.verificar_mi_cedula($1,$2,'10000001','codigo')
 pasa('4 el cliente no se autoverifica', r4.v.verificado === false && r4.v.pendiente === true);
 pasa('4 sigue sin verificar', (await uno('select cedula_verificada v from public.perfiles_privados where id=$1', [U.ana])).v === false);
 await falla('4 pendiente no abre parches', `insert into public.parches (titulo,categoria,inicio,lugar,lat,lng,cupos_max) values ('Parche ana','chill',now()+interval '1 day','Lugar',4.1,-73.6,5)`, [], /SIN_VERIFICAR/);
-const antes = (await q(`select count(*)::int n from storage.objects where bucket_id='documentos_identidad'`))[0];
 await db.query(`delete from storage.objects where bucket_id='documentos_identidad' and name like $1`, [`cedulas/${U.ana}/%`]);
 await raiz(); pasa('4 no puede borrar sus fotos en revisión', (await uno(`select count(*)::int n from storage.objects where name like $1`, [`cedulas/${U.ana}/%`])).n === 2);
 await como(U.adm, 'aal1'); await falla('4 admin sin 2FA no aprueba', 'select public.admin_aprobar_verificacion($1)', [U.ana], /NO_ADMIN|MFA/);

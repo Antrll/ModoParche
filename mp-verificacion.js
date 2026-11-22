@@ -369,6 +369,15 @@
     if (btn) btn.disabled = !(fotos.frontal && fotos.trasera && lectura.ok && $('#vf-consent').checked);
   }
 
+  var subiendo = false;
+  /* Al cerrar el modal: suelta las fotos de la cédula de la memoria (vistas
+     previas blob: y lienzos). Si se están subiendo, espera a la próxima vez. */
+  function liberar() {
+    if (subiendo) return;
+    ['frontal', 'trasera'].forEach(function (l) { if (fotos[l] && fotos[l].url) URL.revokeObjectURL(fotos[l].url); fotos[l] = null; });
+    lectura = { ok: false, metodo: null, para: null };
+    pintarSlot('frontal'); pintarSlot('trasera'); // las <img> sueltan la foto
+  }
   function limpiar() {
     ['frontal', 'trasera'].forEach(function (l) { if (fotos[l] && fotos[l].url) URL.revokeObjectURL(fotos[l].url); fotos[l] = null; });
     lectura = { ok: false, metodo: null, para: null };
@@ -445,8 +454,9 @@
     var btn = $('#vf-submit');
     if (btn.disabled) return;
     btn.disabled = true; btn.classList.add('is-loading');
+    subiendo = true;
     estado('cargando', 'Subiendo tus fotos', 'Van comprimidas (' + (fotos.frontal.kb + fotos.trasera.kb) + ' KB en total) a un espacio privado.');
-    var fin = function () { btn.classList.remove('is-loading'); actualizarBoton(); };
+    var fin = function () { subiendo = false; btn.classList.remove('is-loading'); actualizarBoton(); };
 
     if (ctx.demo || !ctx.sb) {
       setTimeout(function () { fin(); exito(); }, 700);
@@ -528,6 +538,7 @@
 
   window.MPVerificacion = {
     abrir: abrir,
+    liberar: liberar,
     comprimirImagen: comprimirImagen,
     leerNumero: leerNumero,
     contieneCedula: contieneCedula,

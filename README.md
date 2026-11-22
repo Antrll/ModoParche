@@ -100,6 +100,27 @@ Responde `{ ok, revisados, borrados, fallos }`. El botón del panel admin sigue 
 
 ---
 
+## Fase 3B: rendimiento, limpieza y mantenibilidad
+
+No necesita migraciones ni secretos nuevos: basta con desplegar en Vercel.
+
+> [!IMPORTANT]
+> **Node 22.12 o más nuevo** para correr `npm test` (vitest 5) y `npm run lint` (eslint 10). En Windows: instala la versión LTS desde nodejs.org y luego corre `npm ci`.
+
+| Tema | Qué cambió |
+| --- | --- |
+| Buscador del mapa | Un fallo de red ya no queda guardado como "sin resultados"; caché de 120 búsquedas por 15 min; cada búsqueda nueva cancela la anterior; el campo tiene su etiqueta. |
+| Batería y memoria | El QR de llegada se pausa con la pantalla oculta; el aviso de "QR ajeno" sale máximo cada 1,5 s; si no hay cámara trasera usa otra; se liberan las fotos (álbum, panel de negocios y cédula al cerrar el modal); el reloj de 1 s del panel de negocios solo corre con un relámpago activo; el captcha avisa enseguida si vence. |
+| Fuentes | Inter se sirve desde el sitio (`mp-fuentes.css`, `src/assets/fonts/Inter-*.woff2`, licencia OFL) en vez de Google Fonts; Gagalin solo en WOFF2. |
+| Caché de librerías | `npm run build` pone hash en el nombre de `src/vendor/*.js` y `*.css` (y deja también la copia sin hash para `api/seguro.js`). |
+| Revisión del build | Si una página de `dist/` enlaza un archivo que no existe, `npm run build` falla y dice cuál. |
+| Accesibilidad y SEO | Un solo `<h1>` en login y cuenta de negocio, salto al contenido y descripción en 404 y sin conexión, foco correcto al cerrar el Modo Puerta y la ficha del admin, `/comercios` redirige con 301 a `/comercio`. |
+| Limpieza | Sin PHP viejo ni 23 imágenes sin uso; ESLint revisa variables sin usar y `==`; los fallos de cargas en segundo plano quedan en la consola (y en la bitácora los importantes); los errores del navegador se asocian a la cuenta si hay sesión. |
+
+**Originales en alta resolución (`src/assets/fuentes/`, ~15 MB):** se quedan en Git porque son la fuente de las imágenes optimizadas de `src/assets/web/todo-villavo/`, pero **nunca se publican**: `scripts/build.mjs` no los copia a `dist/` y `.vercelignore` los excluye.
+
+---
+
 ## Dashboard de usuarios con Supabase
 
 El panel (`dashboard.html`) es para usuarios con cuenta. El login y el registro (`login.html`) usan Supabase Auth.

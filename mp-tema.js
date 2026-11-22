@@ -19,7 +19,6 @@
 
   const root = document.documentElement;
   const LLAVE = 'mp_tema';
-  const NARANJA = [255, 90, 31];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   // Tres modos: claro (casi todo claro), mixto (el diseño de marca: blanco,
@@ -61,8 +60,6 @@
     return [+m[1], +m[2], +m[3], a];
   }
 
-  const cerca = (c, ref, tol = 6) => c && Math.abs(c[0] - ref[0]) <= tol && Math.abs(c[1] - ref[1]) <= tol && Math.abs(c[2] - ref[2]) <= tol;
-
   function luminancia([r, g, b]) {
     const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
     return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
@@ -91,7 +88,6 @@
   // Texto naranja sobre un bloque que era negro: en modo oscuro ese bloque queda
   // crema y el naranja de marca no se lee (2,8:1). Se marca para usar el naranja
   // profundo solo en el texto; los fondos naranjas no se tocan.
-  const TINTA = [17, 17, 17];
 
   /* ---------- Superficies ----------
      Los bloques que cambian con el tema vienen marcados en el HTML
@@ -138,7 +134,6 @@
 
   /* ---------- Logos dentro de la página ---------- */
   // Familias de isotipo: versión para fondo claro, oscuro y naranja.
-  const DIR = 'src/assets/web/';
   const FAMILIAS = [
     { claro: 'logo-isotipo.webp', oscuro: 'logo-isotipo-negro.webp', naranja: 'logo-isotipo-naranja.webp' },
     { claro: 'isotipo.png', oscuro: 'isotipo-negro.png', naranja: 'isotipo-naranja.png' },

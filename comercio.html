@@ -23,9 +23,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/src/assets/fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/mp-fuentes.css"><link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="mp-base.css">
 <link rel="stylesheet" href="mp-tema.css">
 <link rel="stylesheet" href="comercio.css">
@@ -106,7 +104,7 @@
 
     <figure class="biz-hero-art" data-reveal="scale">
       <div class="biz-hero-photo media" data-error="No pudimos cargar la imagen">
-        <img src="src/assets/web/restaurante.webp" alt="Tablero de ModoParche en la entrada de un restaurante en la noche" width="1000" height="1500" srcset="src/assets/web/restaurante-640.webp 640w, src/assets/web/restaurante.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
+        <img fetchpriority="high" src="src/assets/web/restaurante.webp" alt="Tablero de ModoParche en la entrada de un restaurante en la noche" width="1000" height="1500" srcset="src/assets/web/restaurante-640.webp 640w, src/assets/web/restaurante.webp 1000w" sizes="(max-width: 700px) 100vw, 50vw">
       </div>
       <div class="biz-stamp mp-fijo" aria-hidden="true">
         <b>2x1</b>

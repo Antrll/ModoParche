@@ -2262,8 +2262,8 @@
     $('#p-tel').value = perfil.tel || ''; $('#p-city').value = perfil.ciudad; $('#p-pass').value = '';
     // Cuentas vinculadas y dispositivos (se piden aparte y no frenan el resto)
     try { pintarVinculos(); } catch (e) { /* nada */ }
-    if (identidades === null) cargarIdentidades().then(pintarVinculos).catch(() => {});
-    if (state.view === 'perfil') cargarSesiones().catch(() => {});
+    if (identidades === null) cargarIdentidades().then(pintarVinculos).catch(fallo('identidades'));
+    if (state.view === 'perfil') cargarSesiones().catch(fallo('sesiones'));
     renderInsignias();
     renderIntereses();
     renderCuponesUsuario();
@@ -2970,6 +2970,7 @@
     if (id === 'modal-escaner') cerrarEscaner();
     if (id === 'modal-qrscan') cerrarLectorQR();
     if (id === 'modal-qrid') clearTimeout(qridTimer);
+    if (id === 'modal-verificacion' && window.MPVerificacion && window.MPVerificacion.liberar) window.MPVerificacion.liberar();
     if (!modalStack.length) document.body.classList.remove('no-scroll');
     syncInert();
     if (entry && entry.ret && document.contains(entry.ret)) entry.ret.focus({ preventScroll: true });
@@ -2979,6 +2980,14 @@
   /* =====================================================================
      12. SUPABASE
   ===================================================================== */
+  // Libera la memoria de las vistas previas blob: del álbum que ya no se muestran
+  const soltarBlobs = lista => (lista || []).forEach(x => { if (x && typeof x.url === 'string' && x.url.startsWith('blob:')) { try { URL.revokeObjectURL(x.url); } catch (e) { /* ya liberada */ } } });
+  // Fallo de una carga en segundo plano: queda en la consola (y en la bitácora si importa)
+  const fallo = (nombre, bitacora = false) => e => {
+    const m = (e && (e.message || e.hint)) || String(e);
+    console.warn(`[${nombre}]`, m);
+    if (bitacora && window.MPErrores) window.MPErrores.reportar(`Falló ${nombre}: ${m}`);
+  };
   const isUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || ''));
   const shortName = n => { const [a, b] = String(n || 'Parcero').trim().split(/\s+/); return b ? `${a} ${b.charAt(0)}.` : a; };
 
@@ -3331,7 +3340,7 @@
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_directos', filter: `para_id=eq.${me.id}` }, ({ new: r }) => { dmEntrante(r); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${me.id}` }, ({ new: r }) => {
         if (document.hidden) marcarInsignia(1);
-        if (r.icono === 'i-ticket') cargarCupones().catch(() => {});
+        if (r.icono === 'i-ticket') cargarCupones().catch(fallo('cupones'));
         // Chat abierto: no hace falta avisar de lo que ya estás leyendo
         if (r.icono === 'i-chat' && state.chatId === r.parche_id) return;
         if (r.parche_id && findP(r.parche_id)) reloadParche(r.parche_id);
@@ -3366,7 +3375,7 @@
       const n = findP(r.id);
       if (n) toast('Nuevo parche en vivo', `${n.titulo} · ${fmtKm(distKm(n))}`, { icon: 'i-live', action: { label: 'Ver', id: r.id } });
     }
-    if (Date.now() - ultimaRecarga > 5 * 60 * 1000 && !interactuando()) { ultimaRecarga = Date.now(); refreshData().catch(() => {}); }
+    if (Date.now() - ultimaRecarga > 5 * 60 * 1000 && !interactuando()) { ultimaRecarga = Date.now(); refreshData().catch(fallo('recargar radar')); }
     if (state.chatId && isUuid(state.chatId)) extrasPronto(state.chatId);
   }
   const interactuando = () => !!holding || modalStack.length > 0 || !!document.querySelector('#cards :focus, #cards .is-holding, #chat-input:focus');
@@ -3572,11 +3581,6 @@
     const q = findP(btn.dataset.id);
     if (!q || !btn.isConnected) return;
     if (await confirmarModal('¿Le caes a este parche?', `${q.titulo} · ${fmtCuando(q.inicio)}`, 'Sí, le caigo')) holdDone(btn);
-  }
-  function holdHint(btn) {
-    btn.classList.remove('is-hint'); void btn.offsetWidth; btn.classList.add('is-hint');
-    clearTimeout(btn._hintT);
-    btn._hintT = setTimeout(() => btn.classList.remove('is-hint'), 1700);
   }
   function holdDone(btn) {
     holding = null;
@@ -4269,6 +4273,7 @@
     const yo = u => u === me.id ? 'me' : u;
     if (!vj.error) p.viajes = (vj.data || []).map(v => ({ id: v.id, autor: yo(v.usuario_id), medio: v.medio, puestos: v.puestos, desde: v.desde, hora: v.hora, pasajeros: (v.viaje_pasajeros || []).map(x => yo(x.usuario_id)) }));
     if (!en.error) p.encuestas = Object.fromEntries((en.data || []).map(e => [e.id, { pregunta: e.pregunta, opciones: e.opciones, votos: Object.fromEntries((e.encuesta_votos || []).map(v => [yo(v.usuario_id), v.opcion])) }]));
+    if (!fo.error) soltarBlobs(p.album); // las vistas previas locales se cambian por las firmadas
     if (!fo.error) p.album = (fo.data || []).filter(f => !f.ruta || firmadas[f.ruta]).map(f => ({ id: f.id, autor: yo(f.usuario_id), ruta: f.ruta || null, url: f.ruta ? firmadas[f.ruta] : f.url }));
     await cachePeople([].concat((vj.data || []).map(v => v.usuario_id), (fo.data || []).map(f => f.usuario_id)));
     if (state.chatId === id) renderChat();
@@ -4469,6 +4474,7 @@
       if (eArch) console.warn('[album]', eArch.message);
     }
     p.album = p.album.filter(x => x !== f);
+    soltarBlobs([f]);
     renderAlbum(); renderChat();
   }
   function verFoto(fid) {
@@ -4910,17 +4916,17 @@
         const u = new URL(location.href); u.searchParams.delete('llegue'); u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + u.search + u.hash);
         setTimeout(() => llegarPorQRLocal(ll[0], String(ll[1]).slice(0, 64)), 600);
       } }
-    cargarLocalesPorCalificar().catch(() => {});
-    cargarInsignias().catch(() => {});
-    cargarCupones().catch(() => {});
-    cargarAmigos().catch(() => {});
+    cargarLocalesPorCalificar().catch(fallo('locales por calificar'));
+    cargarInsignias().catch(fallo('insignias'));
+    cargarCupones().catch(fallo('cupones'));
+    cargarAmigos().catch(fallo('amigos'));
     if (qs.get('amigos') !== null || window.location.hash === '#amigos') { state.misTab = 'amigos'; go('mis'); }
-    cargarDestacados().catch(() => {});
+    cargarDestacados().catch(fallo('destacados'));
     initApp();
     consejoPeriodico();
     if (!DEMO && ubicacionViva.token) seguirUbicacion();
-    cargarBloqueados().then(() => { if (state.chatId) renderChatMsgs(); }).catch(() => {});
-    revisarRegistro().catch(() => {});
+    cargarBloqueados().then(() => { if (state.chatId) renderChatMsgs(); }).catch(fallo('bloqueados'));
+    revisarRegistro().catch(fallo('registro incompleto'));
     limpiarInsignia();
     marcarTema();
     // El botón sol/luna de la barra (mp-tema.js) avisa: se marca el selector de Ajustes

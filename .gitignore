@@ -6,6 +6,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+# Copia local vieja del panel (solo en algunos computadores): nunca se sube
 respaldo-dashboard-anterior/
 
 # Descargas de datos personales (Ley 1581): nunca a git

@@ -5,20 +5,39 @@
    Supabase y el equipo lo ve en el panel admin (Bitácora > Errores).
 
    - Máximo 5 reportes por visita y sin repetir el mismo error.
-   - No manda datos personales: solo página, mensaje, archivo:línea y
-     navegador. Las rutas con tokens (/seguro/, /p/) se recortan.
+   - Manda solo página, mensaje, archivo:línea y navegador. Las rutas con
+     tokens (/seguro/, /p/) se recortan. Si hay sesión, el reporte va con su
+     token y la base anota quién fue (usuario_id = auth.uid()) para poder
+     ayudarle; nunca se manda el correo ni otros datos de la cuenta.
    - Ignora ruido conocido: extensiones del navegador, "Script error."
      de otros dominios y avisos de ResizeObserver.
    - Si falla el reporte, no pasa nada (nunca rompe la página).
 ===================================================================== */
 (function () {
   'use strict';
-  var URL_SB = 'https://quxqqxnowlwiahorifpy.supabase.co/rest/v1/errores_cliente';
+  var BASE = 'https://quxqqxnowlwiahorifpy.supabase.co';
   var LLAVE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1eHFxeG5vd2x3aWFob3JpZnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MzMzMTIsImV4cCI6MjEwODIwOTMxMn0.rO4W027LLI5CR-wz753KFzyYiLAn-I-avLre7nbVoII'; // pública (anon)
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; // en desarrollo no se reporta
 
   var enviados = 0, vistos = {};
   var RUIDO = /ResizeObserver loop|^Script error\.?$|chrome-extension:|moz-extension:|safari-extension:|Non-Error promise rejection|AbortError|The user aborted|Load failed|Failed to fetch|NetworkError/i;
+
+  // Usa la configuración de supabase-client.js si ya cargó (este archivo va antes)
+  function config() {
+    var c = window.MP_SUPABASE;
+    return { url: (c && c.url) || BASE, anon: (c && c.anon) || LLAVE };
+  }
+  // Token de la sesión guardada por supabase-js, si existe y no ha vencido
+  function tokenSesion(url) {
+    try {
+      var ref = String(url).replace(/^https:\/\//, '').split('.')[0];
+      var d = JSON.parse(localStorage.getItem('sb-' + ref + '-auth-token') || 'null');
+      var t = d && (d.access_token || (d.currentSession && d.currentSession.access_token));
+      var vence = d && (d.expires_at || (d.currentSession && d.currentSession.expires_at));
+      if (typeof t === 'string' && t.split('.').length === 3 && (!vence || vence * 1000 > Date.now() + 30000)) return t;
+    } catch (e) { /* sin almacenamiento */ }
+    return null;
+  }
 
   function pagina() { return location.pathname.replace(/\/(seguro|p)\/[^/]+/, '/$1/…').slice(0, 200); }
 
@@ -29,9 +48,10 @@
     vistos[mensaje] = 1; enviados++;
     try {
       var cuerpo = JSON.stringify({ pagina: pagina(), mensaje: mensaje, detalle: String(detalle || '').slice(0, 2000) || null, navegador: navigator.userAgent.slice(0, 300) });
-      fetch(URL_SB, {
+      var c = config(), token = tokenSesion(c.url);
+      fetch(c.url + '/rest/v1/errores_cliente', {
         method: 'POST', keepalive: true,
-        headers: { apikey: LLAVE, Authorization: 'Bearer ' + LLAVE, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        headers: { apikey: c.anon, Authorization: 'Bearer ' + (token || c.anon), 'Content-Type': 'application/json', Prefer: 'return=minimal' },
         body: cuerpo,
       }).catch(function () { /* sin red: se pierde y ya */ });
     } catch (e) { /* nunca romper la página */ }
@@ -81,5 +101,5 @@
   window.addEventListener('online', function () { aviso(false); });
   if (navigator.onLine === false) document.addEventListener('DOMContentLoaded', function () { aviso(true); });
 
-  window.MPErrores = { reportar: reportar };
+  window.MPErrores = { reportar: reportar, tokenSesion: tokenSesion };
 })();

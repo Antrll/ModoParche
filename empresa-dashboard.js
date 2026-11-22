@@ -27,7 +27,6 @@
   const { esc, norm } = window.MPUtil;
   const ic = n => `<svg class="ic" aria-hidden="true"><use href="#${n}"/></svg>`;
   const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const nf = new Intl.NumberFormat('es-CO');
   const { int, money } = window.MPUtil;
   const dec1 = n => n.toFixed(1).replace('.', ',');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -346,7 +345,7 @@
     }, 300);
   }
   // Escucha solo los parches propios vigentes (máximo 100), no toda la base
-  let canalNegocio = null, canalParches = null, firmaCanal = '';
+  let canalParches = null, firmaCanal = '';
   function syncCanalParches() {
     if (!REMOTE()) return;
     const ids = loc().parches.filter(p => p.remoto && !p.cancelado && fin(p) > NOW() - 6 * HOUR).sort((a, b) => a.inicio - b.inicio).slice(0, 100).map(p => p.id);
@@ -362,7 +361,7 @@
         const p = pid && findParche(pid);
         if (!p) return;
         if (pl.eventType === 'INSERT' && pl.new.usuario_id !== ME.id) {
-          cacheNombres([pl.new.usuario_id]).catch(() => {}).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
+          cacheNombres([pl.new.usuario_id]).catch(fallo('nombres')).then(() => toast('Nuevo confirmado', `${persona(pl.new.usuario_id).nombre} se sumó a ${p.titulo}.`));
           tone('in');
         }
         recargarPronto();
@@ -378,7 +377,7 @@
       .subscribe();
   }
   function cerrarCanalesNegocio() {
-    canalNegocio = canalParches = null; firmaCanal = '';
+    canalParches = null; firmaCanal = '';
     try { SB() && SB().removeAllChannels(); } catch (e) { /* ya cerrados */ }
   }
 
@@ -397,6 +396,12 @@
     setTimeout(() => { b.hidden = true; }, 380);
   }
 
+  // Fallo de una carga en segundo plano: queda en la consola (y en la bitácora si importa)
+  const fallo = (nombre, bitacora = false) => e => {
+    const m = (e && (e.message || e.hint)) || String(e);
+    console.warn(`[${nombre}]`, m);
+    if (bitacora && window.MPErrores) window.MPErrores.reportar(`Falló ${nombre}: ${m}`);
+  };
   /* ---------- Sin conexión: copia local (solo lectura) y cola de cambios ----------
      La copia sirve para abrir el panel sin señal y consultar la lista en el
      Modo Puerta. Se borra al cerrar sesión (limpiarLocal). */
@@ -504,7 +509,8 @@
     syncCanalParches();
     window.addEventListener('pagehide', e => { if (!e.persisted) cerrarCanalesNegocio(); });
     window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
-    canalNegocio = sb.channel('mp-negocio-' + ME.id)
+    // Se cierra con removeAllChannels() en cerrarCanalesNegocio
+    sb.channel('mp-negocio-' + ME.id)
       // Modo Mesa: reservas nuevas y cancelaciones en vivo
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mesa_reservas', filter: `negocio_id=eq.${ME.id}` }, async pl => {
         const r = pl.new;
@@ -549,13 +555,22 @@
 
   // Foto del parche: se reduce en el navegador antes de subirla
   async function prepararFoto(file, max = 1400) {
-    let src;
+    let src, url = null;
     try { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
-    catch (e) { src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); }); }
+    catch (e) {
+      url = URL.createObjectURL(file);
+      try { src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); }
+      catch (err) { URL.revokeObjectURL(url); throw err; }
+    }
     const k = Math.min(1, max / Math.max(src.width, src.height));
     const cv = document.createElement('canvas');
     cv.width = Math.round(src.width * k); cv.height = Math.round(src.height * k);
-    cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+    try { cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height); }
+    finally {
+      // Libera la foto original (puede pesar decenas de MB en memoria)
+      if (src && typeof src.close === 'function') src.close();
+      if (url) URL.revokeObjectURL(url);
+    }
     const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.84));
     return { blob, dataUrl: cv.toDataURL('image/jpeg', DEMO ? 0.72 : 0.84) };
   }
@@ -722,6 +737,7 @@
   const monoHTML = (L, cls = 'mono-logo') => `<span class="${cls} mono-logo--${L.perfil.tema}" aria-hidden="true">${esc(L.perfil.corto)}</span>`;
   const prevCounts = { c: null, p: null };
   function renderShell() {
+    ajustarReloj();
     const L = loc(), P = L.perfil;
     $('#local-logo-side').className = `local-logo mono-logo--${P.tema}`;
     $('#local-logo-side').textContent = P.corto;
@@ -839,8 +855,8 @@
     // Al abrir Resumen se traen cobros y reseñas recientes (máximo cada 30 s)
     if (entering && REMOTE() && NOW() - resumenAl > 30000) {
       resumenAl = NOW();
-      cargarCobros().catch(() => {});
-      cargarResenasReales().then(() => { if (route === 'resumen') renderShell(); }).catch(() => {});
+      cargarCobros().catch(fallo('cobros'));
+      cargarResenasReales().then(() => { if (route === 'resumen') renderShell(); }).catch(fallo('reseñas'));
     }
     const L = loc(), P = L.perfil, hoy = deHoy();
     const hr = new Date(NOW()).getHours();
@@ -927,6 +943,13 @@
     } else {
       box.innerHTML = `<div class="pulse"><span class="pulse-ic" aria-hidden="true">${ic('i-moon')}</span><div><b>Cerrado ahora</b><p>${w.abre ? `Hoy abres a las ${fmtHora(w.abre)}` : 'Hoy no abres.'} Los parceros ya pueden confirmar en tus próximos parches.</p></div></div>`;
     }
+  }
+  // Reloj de cada segundo: solo mientras haya un parche relámpago en vivo (ahorra batería)
+  let relojT = null;
+  function ajustarReloj() {
+    const hace = !!(S && relampagoVivo());
+    if (hace && !relojT) relojT = setInterval(() => { if (!document.hidden) tickCountdown(); ajustarReloj(); }, 1000);
+    else if (!hace && relojT) { clearInterval(relojT); relojT = null; tickCountdown(); }
   }
   function tickCountdown() {
     const el = $('#cd-ring'), rel = relampagoVivo();
@@ -1449,15 +1472,23 @@
     doorState.id = id && hoy.some(p => p.id === id) ? id : (hoy.find(enVivo) || hoy[0])?.id || null;
     doorState.q = ''; $('#door-search').value = '';
     const dm = $('#door-mode');
+    // Al cerrar, el foco vuelve a donde estaba; mientras tanto el resto del panel no recibe el Tab
+    if (dm.hidden) doorFoco = document.activeElement;
     dm.hidden = false; dm.classList.remove('is-open'); void dm.offsetWidth; dm.classList.add('is-open');
     document.body.classList.add('no-scroll');
+    const app = $('#app'); if (app) app.inert = true;
     renderDoor();
     setTimeout(() => $('#door-search').focus(), 60);
   }
+  let doorFoco = null;
   function closeDoor() {
     $('#door-mode').hidden = true;
     document.body.classList.remove('no-scroll');
+    const app = $('#app'); if (app) app.inert = false;
     render();
+    const volver = doorFoco && document.contains(doorFoco) && !doorFoco.closest('[hidden]') ? doorFoco : $('[data-action="modo-puerta"]');
+    doorFoco = null;
+    if (volver && volver.focus) volver.focus({ preventScroll: true });
   }
   function renderDoor() {
     const L = loc(), hoy = deHoy();
@@ -1671,8 +1702,8 @@
     $('#reviews').innerHTML = [...Lc.resenas].sort((a, b) => b.fecha - a.fecha).map(r => `<li class="review"><div class="review-top">${stars(r.estrellas)}<b>${esc(r.autor)}</b><small>${esc(fmtDia(r.fecha))}</small></div><p>${esc(r.texto)}</p><p class="on">En ${esc(r.parche)}</p></li>`).join('')
       || '<li><p class="empty">Las reseñas aparecen cuando los parceros califican tus parches.</p></li>';
     renderPlan();
-    cargarCobros().catch(() => {});
-    if (!qrLocal) cargarQRLocal().catch(() => {});
+    cargarCobros().catch(fallo('cobros'));
+    if (!qrLocal) cargarQRLocal().catch(fallo('QR del local'));
     if (!$('#referidos-box').dataset.ok) { $('#referidos-box').dataset.ok = '1'; cargarReferidos().catch(() => { delete $('#referidos-box').dataset.ok; }); }
   }
 
@@ -2946,7 +2977,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     toast(txt[0], txt[1]);
     tone(estado === 'llego' || estado === 'confirmada' ? 'ok' : 'in');
     renderShell(); renderMesa();
-    if (estado === 'llego' && REMOTE()) { cobrosCargados = 0; cargarCobros(true); cargarResenasReales().catch(() => {}); }
+    if (estado === 'llego' && REMOTE()) { cobrosCargados = 0; cargarCobros(true); cargarResenasReales().catch(fallo('reseñas')); }
   }
 
   /* ---------- Pago de planes con Wompi ----------
@@ -2973,21 +3004,6 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     P.plan = n.plan; P.planVence = n.plan_vence ? Date.parse(n.plan_vence) : null; P.planPendiente = n.plan_pendiente || null;
     P.planProgramado = n.plan_programado || null; P.planProgramadoEn = n.plan_programado_en || null;
   }
-  /* ---------- Derecho de retracto (Ley 1480, art. 47) ----------
-     Abre el correo ya escrito con la referencia del último pago aprobado. */
-  async function pedirRetracto() {
-    const P = loc().perfil;
-    let ref = '';
-    if (REMOTE()) {
-      const { data } = await SB().from('pagos').select('referencia, creado_en').eq('negocio_id', ME.id).eq('estado', 'APPROVED').order('creado_en', { ascending: false }).limit(1).maybeSingle();
-      if (data) ref = data.referencia;
-    }
-    const ok = await confirmar('Me arrepiento de la compra', 'Tienes 5 días hábiles desde el pago para arrepentirte sin dar explicaciones. Te devolvemos el 100 % por el mismo medio de pago en máximo 30 días y tu cuenta vuelve al plan gratis. Te abrimos el correo ya escrito.', 'Abrir el correo');
-    if (!ok) return;
-    const cuerpo = `Hola, quiero ejercer el derecho de retracto.\nNegocio: ${P.nombre}\nCorreo de la cuenta: ${(ME && ME.email) || ''}\nReferencia del pago: ${ref || '(no la encontré)'}\n`;
-    location.href = `mailto:modoparcheoficial@gmail.com?subject=${encodeURIComponent('Retracto · ' + P.nombre)}&body=${encodeURIComponent(cuerpo)}`;
-  }
-
   /* ---------- Anuncios: darse de baja ---------- */
   async function cambiarAnunciosNegocio(on, input) {
     if (!REMOTE()) { toast(on ? 'Anuncios activados' : 'Te diste de baja', 'En el panel de ejemplo no se guarda.'); return; }
@@ -3267,7 +3283,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     bindTilt();
 
     // El reloj corre: cuenta regresiva del relámpago cada segundo y estados cada 30 s
-    setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
+    ajustarReloj(); // el reloj de 1 s solo corre con un relámpago activo
     setInterval(() => {
       if (document.hidden) return;
       renderShell();
@@ -3304,8 +3320,8 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       }, 400);
     }
     // Se registró con la invitación de otro local; y reseñas reales (solo de clientes que llegaron)
-    aplicarReferidoPendiente().catch(() => {});
-    cargarResenasReales().then(() => { if (route === 'perfil') renderPerfil(); }).catch(() => {});
+    aplicarReferidoPendiente().catch(fallo('código de referido', true));
+    cargarResenasReales().then(() => { if (route === 'perfil') renderPerfil(); }).catch(fallo('reseñas'));
     // Volvió de Wompi (PSE, Bancolombia): confirmamos y refrescamos el estado de cuenta
     if (REMOTE() && qs.get('pago')) {
       volverDeWompi(qs.get('pago'), qs.get('id'));
@@ -3319,14 +3335,14 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         if (error) { console.warn('[plan]', error.message); return; }
         P.plan = elegido; P.planPendiente = null; save(); renderShell();
         toast(`${PLANES[elegido].nombre} activo`, 'Sin mensualidad: solo pagas por clientes que llegan.');
-      }).catch(() => {});
+      }).catch(fallo('activar plan elegido', true));
     }
     else if (qs.has('bienvenida') && !P.horarios) setTimeout(openHorarios, 1200);
     if (['bienvenida', 'pago', 'pagar', 'id', 'env'].some(k => qs.has(k)) && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
     // Si el local no tiene punto en el mapa, lo buscamos con su dirección
     setTimeout(ubicarLocalAuto, 1500);
     // Estado actual de los anuncios (link de baja)
-    if (REMOTE()) SB().from('perfiles').select('recibe_anuncios').eq('id', ME.id).maybeSingle().then(({ data }) => { if (data) $('#bz-anuncios-sw').checked = !!data.recibe_anuncios; }).catch(() => {});
+    if (REMOTE()) SB().from('perfiles').select('recibe_anuncios').eq('id', ME.id).maybeSingle().then(({ data }) => { if (data) $('#bz-anuncios-sw').checked = !!data.recibe_anuncios; }).catch(fallo('preferencia de anuncios'));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

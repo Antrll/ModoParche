@@ -24,7 +24,21 @@
   // Caja del área de servicio: Villavicencio, Acacías, Restrepo y alrededores
   var BBOX = { minLng: -74.25, minLat: 3.70, maxLng: -73.25, maxLat: 4.50 };
 
+  // Caché de búsquedas: máximo 120 entradas y 15 minutos cada una.
+  // Solo se guardan respuestas reales (nunca un fallo de red).
+  var CACHE_MAX = 120, CACHE_TTL = 15 * 60 * 1000;
   var cache = new Map();
+  function deCache(clave) {
+    var e = cache.get(clave);
+    if (!e) return undefined;
+    if (Date.now() - e.ts > CACHE_TTL) { cache.delete(clave); return undefined; }
+    return e.valor;
+  }
+  function aCache(clave, valor) {
+    cache.delete(clave);
+    cache.set(clave, { valor: valor, ts: Date.now() });
+    while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value); // sale la más vieja
+  }
   var ultimaNominatim = 0;
 
   function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
@@ -38,20 +52,30 @@
     return 2 * R * Math.asin(Math.sqrt(s));
   }
 
-  function getJSON(url, ms) {
+  // externa: señal de quien llama (cancela la búsqueda si la persona sigue escribiendo)
+  function getJSON(url, ms, externa) {
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var t = ctrl ? setTimeout(function () { ctrl.abort(); }, ms || 8000) : null;
+    var cortar = function () { if (ctrl) ctrl.abort(); };
+    if (cancelada(externa)) { if (t) clearTimeout(t); return Promise.reject(cancelada(externa)); }
+    if (externa) { if (externa.aborted) cortar(); else externa.addEventListener('abort', cortar); }
     return fetch(url, { signal: ctrl ? ctrl.signal : undefined, headers: { Accept: 'application/json' } })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .finally(function () { if (t) clearTimeout(t); });
+      .finally(function () { if (t) clearTimeout(t); if (externa) externa.removeEventListener('abort', cortar); });
+  }
+  function cancelada(signal) {
+    var e = new Error('Búsqueda cancelada');
+    e.name = 'AbortError';
+    return signal && signal.aborted ? e : null;
   }
 
   // Nominatim pide 1 consulta por segundo: las ponemos en fila
-  function nominatim(path) {
+  function nominatim(path, signal) {
     var espera = Math.max(0, ultimaNominatim + 1100 - Date.now());
     ultimaNominatim = Date.now() + espera;
     return esperar(espera).then(function () {
-      return getJSON('https://nominatim.openstreetmap.org/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'format=jsonv2&accept-language=es');
+      if (cancelada(signal)) throw cancelada(signal);
+      return getJSON('https://nominatim.openstreetmap.org/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'format=jsonv2&accept-language=es', 8000, signal);
     });
   }
 
@@ -90,33 +114,39 @@
     });
   }
 
-  /* ---------- Buscar lugares y direcciones ---------- */
+  /* ---------- Buscar lugares y direcciones ----------
+     opts.signal: AbortSignal para cancelar (rechaza con AbortError).
+     Si no hubo red, devuelve [] con la marca .sinRed = true y no lo guarda. */
   function buscar(q, opts) {
     opts = opts || {};
     q = String(q || '').trim();
     if (q.length < 3) return Promise.resolve([]);
-    var limite = opts.limite || 6;
-    var clave = 'b:' + q.toLowerCase();
-    if (cache.has(clave)) return Promise.resolve(cache.get(clave));
+    var limite = opts.limite || 6, signal = opts.signal;
+    var clave = 'b:' + (opts.soloRapido ? 'r:' : '') + q.toLowerCase();
+    var guardada = deCache(clave);
+    if (guardada) return Promise.resolve(guardada);
     var qq = limpiarDireccion(q);
     var cerca = opts.cerca || CENTRO;
+    var fallos = 0;
     var photon = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(qq) + '&limit=' + (limite + 4)
       + '&lat=' + cerca.lat + '&lon=' + cerca.lng
       + '&bbox=' + [BBOX.minLng, BBOX.minLat, BBOX.maxLng, BBOX.maxLat].join(',');
-    return getJSON(photon, 6000)
-      .then(function (j) { return sinRepetidos((j.features || []).map(resultadoPhoton)); })
-      .catch(function () { return []; })
+    var siCancelada = function (e) { if (cancelada(signal)) throw cancelada(signal); fallos++; return []; };
+    return getJSON(photon, 6000, signal)
+      .then(function (j) { return sinRepetidos((j.features || []).map(resultadoPhoton)); }, siCancelada)
       .then(function (lista) {
         if (lista.length || opts.soloRapido) return lista;
         // Respaldo: Nominatim dentro del área de servicio
         return nominatim('search?q=' + encodeURIComponent(qq) + '&countrycodes=co&addressdetails=1&limit=' + limite
-          + '&viewbox=' + [BBOX.minLng, BBOX.maxLat, BBOX.maxLng, BBOX.minLat].join(',') + '&bounded=1')
-          .then(function (r) { return sinRepetidos((r || []).map(resultadoNominatim)); })
-          .catch(function () { return []; });
+          + '&viewbox=' + [BBOX.minLng, BBOX.maxLat, BBOX.maxLng, BBOX.minLat].join(',') + '&bounded=1', signal)
+          .then(function (r) { return sinRepetidos((r || []).map(resultadoNominatim)); }, siCancelada);
       })
       .then(function (lista) {
+        if (cancelada(signal)) throw cancelada(signal); // llegó tarde: otra búsqueda la reemplazó
         lista = lista.slice(0, limite);
-        cache.set(clave, lista);
+        // Vacío porque no hubo red: no se guarda (si no, la búsqueda quedaría vacía toda la sesión)
+        if (!lista.length && fallos) { lista.sinRed = true; return lista; }
+        aCache(clave, lista);
         return lista;
       });
   }
@@ -124,7 +154,8 @@
   /* ---------- Del punto a la dirección ---------- */
   function inverso(lat, lng) {
     var clave = 'r:' + (+lat).toFixed(5) + ',' + (+lng).toFixed(5);
-    if (cache.has(clave)) return Promise.resolve(cache.get(clave));
+    var guardada = deCache(clave);
+    if (guardada) return Promise.resolve(guardada);
     return nominatim('reverse?lat=' + lat + '&lon=' + lng + '&zoom=18&addressdetails=1')
       .then(function (r) {
         var a = (r && r.address) || {};
@@ -136,7 +167,7 @@
           lugar: lugar, direccion: direccion, barrio: barrio, ciudad: ciudad,
           texto: [lugar || direccion, barrio, ciudad].filter(Boolean).join(', ') || (r && r.display_name) || '',
         };
-        cache.set(clave, out);
+        aCache(clave, out);
         return out;
       })
       .catch(function () { return null; });
@@ -203,18 +234,20 @@
   /* ---------- Caja de búsqueda dentro de un mapa de Leaflet ----------
      opts.onElegir(resultado) recibe { nombre, detalle, lat, lng }.
      opts.extras(q) devuelve lugares propios (ej. los lugares sugeridos). */
+  var buscadores = 0; // para que cada buscador tenga su propio id
   function buscador(map, opts) {
     opts = opts || {};
     if (!map || typeof L === 'undefined') return null;
     var Control = L.Control.extend({
       options: { position: opts.posicion || 'topleft' },
       onAdd: function () {
+        var idInput = 'mpm-q-' + (++buscadores);
         var box = L.DomUtil.create('div', 'mpm-search');
         box.innerHTML =
           '<form class="mpm-form" role="search">' +
             '<svg class="mpm-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>' +
-            '<label class="mpm-sr">Buscar un lugar o dirección</label>' +
-            '<input class="mpm-input" type="search" autocomplete="off" spellcheck="false" ">' +
+            '<label class="mpm-sr" for="' + idInput + '">Buscar un lugar o dirección</label>' +
+            '<input class="mpm-input" id="' + idInput + '" type="search" autocomplete="off" spellcheck="false">' +
             '<button class="mpm-clear" type="button" aria-label="Limpiar" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>' +
           '</form>' +
           '<ul class="mpm-list" role="listbox" hidden></ul>' +
@@ -242,23 +275,31 @@
           map.flyTo([r.lat, r.lng], Math.max(map.getZoom(), 17), { duration: 0.8 });
           if (opts.onElegir) opts.onElegir(r);
         }
+        var enVuelo = null; // búsqueda en curso: se cancela si llega otra
         function consultar(q, completo) {
           var mio = ++turno;
+          if (enVuelo) enVuelo.abort();
+          enVuelo = typeof AbortController !== 'undefined' ? new AbortController() : null;
           var propios = opts.extras ? (opts.extras(q) || []) : [];
           msg.textContent = 'Buscando...';
           var c = map.getCenter();
-          buscar(q, { cerca: { lat: c.lat, lng: c.lng }, soloRapido: !completo }).then(function (r) {
+          buscar(q, { cerca: { lat: c.lat, lng: c.lng }, soloRapido: !completo, signal: enVuelo ? enVuelo.signal : undefined }).then(function (r) {
             if (mio !== turno) return;
             resultados = propios.concat(r).slice(0, 7); activo = resultados.length ? 0 : -1;
-            msg.textContent = resultados.length ? '' : (completo ? 'No encontramos ese lugar. Prueba con el barrio o toca el mapa.' : '');
+            msg.textContent = resultados.length ? ''
+              : r.sinRed ? 'Sin conexión para buscar. Revisa tu internet o toca el mapa.'
+                : (completo ? 'No encontramos ese lugar. Prueba con el barrio o toca el mapa.' : '');
             pintar();
+          }, function (e) {
+            if (e && e.name === 'AbortError') return; // la reemplazó otra búsqueda
+            if (mio === turno) { msg.textContent = 'No pudimos buscar. Intenta de nuevo.'; }
           });
         }
         input.addEventListener('input', function () {
           clear.hidden = !input.value;
           clearTimeout(t);
           var q = input.value.trim();
-          if (q.length < 3) { resultados = []; pintar(); msg.textContent = ''; return; }
+          if (q.length < 3) { if (enVuelo) enVuelo.abort(); turno++; resultados = []; pintar(); msg.textContent = ''; return; }
           t = setTimeout(function () { consultar(q, false); }, 350);
         });
         input.addEventListener('keydown', function (e) {

@@ -266,3 +266,114 @@ describe('PWA y Edge Functions (revisión del código)', () => {
     expect(fs.existsSync(new URL('../../src/vendor/tesseract/worker.min.js', import.meta.url))).toBe(true);
   });
 });
+
+describe('Buscador del mapa (mp-mapa.js)', () => {
+  // Carga mp-mapa.js con un fetch de mentiras que se puede cambiar
+  const cargarMapa = () => {
+    const red = { caida: true, llamadas: 0 };
+    const respuesta = { features: [{ properties: { name: 'Parque Los Fundadores', city: 'Villavicencio' }, geometry: { coordinates: [-73.63, 4.14] } }] };
+    const fetch = () => { red.llamadas++; return red.caida ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ ok: true, json: () => Promise.resolve(respuesta) }); };
+    const ctx = vm.createContext({ window: {}, fetch, AbortController, setTimeout, clearTimeout, Promise, Math, Date, Map, String, Number, encodeURIComponent, isFinite });
+    vm.runInContext(fs.readFileSync(new URL('../../mp-mapa.js', import.meta.url), 'utf8'), ctx);
+    return { M: ctx.window.MPMapa, red };
+  };
+  it('una búsqueda sin red no queda guardada vacía', async () => {
+    const { M, red } = cargarMapa();
+    const r1 = await M.buscar('parque fundadores', { soloRapido: true });
+    expect(r1.length).toBe(0);
+    expect(r1.sinRed).toBe(true);
+    red.caida = false;
+    const r2 = await M.buscar('parque fundadores', { soloRapido: true });
+    expect(r2.length).toBe(1);
+  });
+  it('una respuesta real sí se guarda', async () => {
+    const { M, red } = cargarMapa();
+    red.caida = false;
+    await M.buscar('parque fundadores', { soloRapido: true });
+    const antes = red.llamadas;
+    await M.buscar('parque fundadores', { soloRapido: true });
+    expect(red.llamadas).toBe(antes);
+  });
+  it('se puede cancelar una búsqueda en vuelo', async () => {
+    const { M, red } = cargarMapa();
+    red.caida = false;
+    const c = new AbortController(); c.abort();
+    await expect(M.buscar('parque fundadores', { soloRapido: true, signal: c.signal })).rejects.toMatchObject({ name: 'AbortError' });
+  });
+  it('el campo de búsqueda es válido y tiene su etiqueta', () => {
+    const src = fs.readFileSync(new URL('../../mp-mapa.js', import.meta.url), 'utf8');
+    expect(src).not.toContain('spellcheck="false" ">');
+    expect(src).toMatch(/<label class="mpm-sr" for="' \+ idInput/);
+    expect(src).toMatch(/class="mpm-input" id="' \+ idInput/);
+  });
+});
+
+describe('Edge Functions: la sintaxis TypeScript compila', () => {
+  it('cada supabase/functions/*/index.ts se puede transpilar', async () => {
+    const { transform } = await import('esbuild');
+    const dir = new URL('../../supabase/functions/', import.meta.url);
+    const funciones = fs.readdirSync(dir).filter(f => fs.existsSync(new URL(`${f}/index.ts`, dir)));
+    expect(funciones.length).toBeGreaterThanOrEqual(4);
+    for (const f of funciones) {
+      const ts = fs.readFileSync(new URL(`${f}/index.ts`, dir), 'utf8');
+      await expect(transform(ts, { loader: 'ts', format: 'esm' }), f).resolves.toBeTruthy();
+    }
+  });
+});
+
+describe('Páginas públicas: accesibilidad, SEO y limpieza', () => {
+  const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+  const htmls = fs.readdirSync(new URL('../../', import.meta.url)).filter(x => x.endsWith('.html'));
+  it('cada página pública tiene un solo <h1>', () => {
+    // Los paneles (admin, dashboards) tienen un título por vista y no se indexan
+    for (const f of htmls.filter(x => !/^(admin|dashboard|empresa-dashboard)\.html$/.test(x))) expect((raiz(f).match(/<h1\b/g) || []).length, f).toBeLessThanOrEqual(1);
+    for (const f of ['login.html', 'empresa.html']) expect((raiz(f).match(/<h1\b/g) || []).length, f).toBe(1);
+  });
+  it('404 y sin conexión: descripción, noindex y salto al contenido', () => {
+    for (const f of ['404.html', 'offline.html']) {
+      const s = raiz(f);
+      expect(s, f).toContain('<meta name="description"');
+      expect(s, f).toContain('noindex');
+      expect(s, f).toMatch(/class="skip-link" href="#main"/);
+      expect(s, f).toMatch(/<main id="main"/);
+    }
+  });
+  it('/comercios redirige con 301 y el archivo viejo ya no existe', () => {
+    const r = JSON.parse(raiz('vercel.json')).redirects;
+    expect(r.some(x => x.source === '/comercios' && x.destination === '/comercio' && x.statusCode === 301)).toBe(true);
+    expect(fs.existsSync(new URL('../../comercios.html', import.meta.url))).toBe(false);
+  });
+  it('Inter es local: ninguna página llama a Google Fonts', () => {
+    for (const f of htmls) expect(raiz(f), f).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+    expect(raiz('mp-fuentes.css')).toContain('Inter-latin.woff2');
+    expect(fs.existsSync(new URL('../../src/assets/fonts/Inter-latin.woff2', import.meta.url))).toBe(true);
+  });
+  it('solo WOFF2 para Gagalin', () => {
+    for (const f of ['mp-base.css', 'dashboard.css', 'admin.css', 'empresa-dashboard.css']) expect(raiz(f), f).not.toMatch(/Gagalin-Regular\.woff'/);
+    expect(fs.existsSync(new URL('../../src/assets/fonts/Gagalin-Regular.woff', import.meta.url))).toBe(false);
+  });
+  it('sin código PHP viejo', () => {
+    for (const f of ['registro.php', 'includes/conexion.php', 'includes/procesar_login.php']) expect(fs.existsSync(new URL(`../../${f}`, import.meta.url)), f).toBe(false);
+  });
+});
+
+describe('Imágenes que piden el JS y el CSS', () => {
+  const RAIZ = new URL('../../', import.meta.url);
+  const leer = n => fs.readFileSync(new URL(n, RAIZ), 'utf8');
+  const existe = r => fs.existsSync(new URL(r.replace(/^\//, ''), RAIZ));
+  const fuentes = fs.readdirSync(RAIZ).filter(f => /\.(js|css)$/.test(f) && !/config\.js$/.test(f));
+  it('toda ruta src/assets/… escrita en el código existe', () => {
+    const faltan = [];
+    for (const f of fuentes) {
+      for (const m of leer(f).matchAll(/\/?src\/assets\/[A-Za-z0-9_./-]+\.(?:webp|png|jpe?g|svg|gif|ico|woff2)/g)) if (!existe(m[0])) faltan.push(`${f}: ${m[0]}`);
+    }
+    expect(faltan).toEqual([]);
+  });
+  it('todo sticker de STK() y de las categorías (dashboard.js) existe', () => {
+    const js = leer('dashboard.js');
+    const nombres = new Set([...js.matchAll(/STK\('([a-z0-9-]+)'\)|\bart: '([a-z0-9-]+)'/g)].map(m => m[1] || m[2]));
+    expect(nombres.size).toBeGreaterThan(5);
+    const faltan = [...nombres].filter(n => !existe(`src/assets/web/stk/${n}.webp`));
+    expect(faltan).toEqual([]);
+  });
+});

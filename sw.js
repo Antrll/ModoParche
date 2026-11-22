@@ -14,7 +14,7 @@ const BASICO = [
   '/dashboard', '/offline', '/offline.js', '/manifest.webmanifest', '/mp-init.js', '/mp-errores.js', '/dashboard.css', '/dashboard.js', '/mp-utils.js', '/mp-seguro.js',
   '/mp-mapa.js', '/mp-mapa.css', '/mp-checkin.js', '/mp-verificacion.js', '/mp-verificacion.css', '/mp-tema.js', '/mp-tema.css', '/mp-cargando.js', '/mp-base.css', '/legal.js',
   '/supabase-client.js', '/src/vendor/supabase.js', '/src/vendor/leaflet/leaflet.js', '/src/vendor/leaflet/leaflet.css',
-  '/src/assets/web/isotipo-96.png', '/src/assets/web/isotipo-light-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2',
+  '/src/assets/web/isotipo-96.png', '/src/assets/web/isotipo-light-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2', '/mp-fuentes.css', '/src/assets/fonts/Inter-latin.woff2',
   // Panel de negocios: abre sin señal en solo lectura (lista del Modo Puerta)
   '/empresa-dashboard', '/empresa-dashboard.js', '/empresa-dashboard.css', '/mp-seguridad-biz.js', '/legal.css', '/src/vendor/qrcode.js',
 ];

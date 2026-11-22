@@ -25,7 +25,6 @@
   const { esc, norm } = window.MPUtil;
   const ic = n => `<svg class="ic" aria-hidden="true"><use href="#${n}"/></svg>`;
   const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const nf = new Intl.NumberFormat('es-CO');
   const { int, money } = window.MPUtil;
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -785,7 +784,7 @@
     ['riesgo', 'Reputación baja', c => c.resenas >= 3 && Number(c.rating) < 3.5], ['suspendidas', 'Suspendidas', c => c.suspendido],
   ];
   function renderPersonas() {
-    cargarVerificaciones().catch(() => {});
+    cargarVerificaciones().catch(fallo('verificaciones'));
     const F = S.f.personas, all = personas(), now = Date.now();
     const tabFn = (P_TABS.find(t => t[0] === F.tab) || P_TABS[0])[2];
     $('#personas-tabs').innerHTML = P_TABS.map(([k, l, f]) => `<button role="tab" aria-selected="${F.tab === k}" data-ptab="${k}">${l}<span class="tab-count">${int(all.filter(f).length)}</span></button>`).join('');
@@ -1298,7 +1297,7 @@
       }
     }
     const pend = liqs.filter(l => l.estado === 'pendiente'), mora = pend.filter(l => l.en_mora), reportadas = pend.filter(l => l.reportada_en);
-    renderAlertasCobro().catch(() => {});
+    renderAlertasCobro().catch(fallo('alertas de cobro'));
     resumen.innerHTML = `<div class="kpi"><span class="kpi-label">Por cobrar</span><b class="kpi-value">${money(pend.reduce((a, l) => a + l.total_cop - (l.pagado_cop || 0), 0))}</b><span class="kpi-sub">${int(pend.length)} estados de cuenta</span></div>
       <div class="kpi"><span class="kpi-label">Avisaron que pagaron</span><b class="kpi-value">${int(reportadas.length)}</b><span class="kpi-sub">Revisa en Wompi y márcalas</span></div>
       <div class="kpi"><span class="kpi-label">En mora</span><b class="kpi-value">${int(mora.length)}</b><span class="kpi-sub">Sus parches no salen en el radar</span></div>`;
@@ -1381,7 +1380,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     anotar('exportar_liquidaciones', 'CSV', `${liqs.length} filas`);
-    if (!DEMO) rpc('admin_registrar_exportacion', { p_filas: liqs.length }).catch(() => {});
+    if (!DEMO) rpc('admin_registrar_exportacion', { p_filas: liqs.length }).catch(fallo('registro de la exportación', true));
   }
   async function marcarLiquidacion(id, estado) {
     const l = (liqs || []).find(x => String(x.id) === String(id)); if (!l) return;
@@ -1423,12 +1422,21 @@
     setTimeout(() => $('.drawer-x').focus(), 50);
     growBars(d);
   }
+  // Fallo de una carga en segundo plano: queda en la consola (y en la bitácora si importa)
+  const fallo = (nombre, bitacora = false) => e => {
+    const m = (e && (e.message || e.hint)) || String(e);
+    console.warn(`[${nombre}]`, m);
+    if (bitacora && window.MPErrores) window.MPErrores.reportar(`Falló ${nombre}: ${m}`);
+  };
   function closeDrawer() {
     const d = $('#drawer'); if (d.hidden) return;
     d.classList.add('is-out');
     fondoInerte(false);
     setTimeout(() => { d.hidden = true; d.classList.remove('is-out'); document.body.classList.remove('no-scroll'); }, REDUCED() ? 0 : 300);
-    if (lastFocus) lastFocus.focus();
+    // El botón que abrió la ficha puede ya no existir (la lista se volvió a pintar)
+    if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+    else { const m = $('#main') || document.querySelector('main'); if (m) { if (!m.hasAttribute('tabindex')) m.setAttribute('tabindex', '-1'); m.focus({ preventScroll: true }); } }
+    lastFocus = null;
   }
   const skel = n => Array.from({ length: n }, () => '<div class="skel" style="height:36px"></div>').join('');
 
@@ -1922,7 +1930,7 @@
     const repR = S.reportes.filter(r => enR(r.creado_en));
     const fila = (l, k) => `<tr><td>${l}</td><td class="n">${int(PE[k])}</td><td class="n">${int(PE[k + '_prev'])}</td><td class="n">${d(PE[k], PE[k + '_prev'])}</td></tr>`;
     const html = `<!doctype html><html lang="es-CO"><head><meta charset="utf-8"><title>Informe ModoParche ${esc(rf.desde)} a ${esc(rf.hasta)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>@font-face{font-family:'Inter';font-weight:100 900;font-display:swap;src:url('${location.origin}/src/assets/fonts/Inter-latin.woff2') format('woff2')}</style>
 <style>@font-face{font-family:Gagalin;src:url('/src/assets/fonts/Gagalin-Regular.woff2') format('woff2')}
 *{box-sizing:border-box}body{margin:0;padding:36px 40px;font:13px/1.5 Inter,system-ui,sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 h1,h2{font-family:Gagalin,'Arial Black',sans-serif;font-weight:400;text-transform:uppercase;margin:0}h1{font-size:34px;line-height:1}h1 span{color:#FF5A1F}h2{font-size:18px;margin:26px 0 10px}
@@ -2463,7 +2471,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
     updateCounts(); stampRefresh();
     go(location.hash.slice(1) || 'resumen', { force: true });
     hideBoot();
-    cargarVerificaciones().catch(() => {});
+    cargarVerificaciones().catch(fallo('verificaciones'));
     depurarArchivos().catch(e => console.warn('[depurar]', e));
     tiempoReal();
     if (DEMO) setTimeout(() => toast('Datos de ejemplo', 'Así se ve el panel con la plataforma en movimiento. Nada se guarda.', { icon: 'i-info', ms: 6000 }), 900);

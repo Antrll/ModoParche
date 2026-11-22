@@ -91,11 +91,14 @@
           opts.qr.replaceChildren(aviso);
         });
       }
-      timer = setTimeout(tick, 1000);
+      // Con la pantalla oculta no se gasta batería: se retoma al volver
+      timer = document.hidden ? null : setTimeout(tick, 1000);
     }
+    function alVolver() { if (vivo && !document.hidden && !timer) tick(); }
     return cargar(LIB_QR, function () { return typeof window.qrcode === 'function'; }).then(function () {
+      document.addEventListener('visibilitychange', alVolver);
       tick();
-      return function detener() { vivo = false; clearTimeout(timer); };
+      return function detener() { vivo = false; clearTimeout(timer); timer = null; document.removeEventListener('visibilitychange', alVolver); };
     });
   }
 
@@ -104,6 +107,8 @@
   function escanear(elId, onLeido, onError, lector_) {
     var leer = lector_ || parsear; // otro formato (por ejemplo el QR de identidad)
     var lector = null, parado = false, yaLeyo = false, arranque = Promise.resolve();
+    // El lector revisa 10 cuadros por segundo: el aviso de "QR ajeno" sale máximo cada 1,5 s
+    var ultimoAviso = 0, PAUSA_AVISO = 1500;
     // Si se cierra mientras la cámara arranca, se espera y se apaga: no queda encendida
     function apagar() {
       if (!lector) return Promise.resolve();
@@ -119,16 +124,29 @@
     arranque = cargar(LIB_SCAN, function () { return typeof window.Html5Qrcode === 'function'; }).then(function () {
       if (parado) return;
       lector = new window.Html5Qrcode(elId, { verbose: false });
-      return lector.start({ facingMode: 'environment' }, { fps: 10, qrbox: function (w, h) { var s = Math.floor(Math.min(w, h) * 0.72); return { width: s, height: s }; } },
-        function (raw) {
-          if (yaLeyo) return;
-          var r = leer(raw);
-          if (!r) { if (onError) onError(new Error('Ese QR no es de ModoParche.'), true); return; }
-          yaLeyo = true;
-          parado = true;
-          apagar().then(function () { onLeido(r); });
-        },
-        function () { /* sin QR en este cuadro */ });
+      var config = { fps: 10, qrbox: function (w, h) { var s = Math.floor(Math.min(w, h) * 0.72); return { width: s, height: s }; } };
+      var alLeer = function (raw) {
+        if (yaLeyo) return;
+        var r = leer(raw);
+        if (!r) {
+          var ahora = Date.now();
+          if (onError && ahora - ultimoAviso >= PAUSA_AVISO) { ultimoAviso = ahora; onError(new Error('Ese QR no es de ModoParche.'), true); }
+          return;
+        }
+        yaLeyo = true;
+        parado = true;
+        apagar().then(function () { onLeido(r); });
+      };
+      var sinQR = function () { /* sin QR en este cuadro */ };
+      return lector.start({ facingMode: 'environment' }, config, alLeer, sinQR).catch(function (e) {
+        // Portátiles y tabletas sin cámara trasera: se prueba con otra cámara (no si negó el permiso)
+        if (parado || /NotAllowed|Permission/i.test(String(e && (e.name || e.message || e)))) throw e;
+        return Promise.resolve(window.Html5Qrcode.getCameras ? window.Html5Qrcode.getCameras() : []).then(function (camaras) {
+          if (parado || !camaras || !camaras.length) throw e;
+          var trasera = camaras.filter(function (c) { return /back|rear|trasera|environment/i.test(c.label || ''); })[0];
+          return lector.start((trasera || camaras[camaras.length - 1]).id, config, alLeer, sinQR);
+        }, function () { throw e; });
+      });
     }).then(function () { if (parado && !yaLeyo) return apagar(); }).catch(function (e) {
       if (parado) return;
       var msg = /NotAllowed|Permission/i.test(String(e && (e.name || e.message || e)))
