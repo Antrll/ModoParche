@@ -89,3 +89,16 @@ Lo que antes no se había podido probar, ahora se probó de verdad: Deno 2.9.6 p
 - **`CLAUDE.md` (nuevo):** guía corta que Claude Code lee solo al abrir el proyecto (reglas del repositorio, comandos, cosas que no son obvias).
 - **`README.md`:** al inicio, un aviso que manda a esos dos documentos.
 - **Dato nuevo documentado:** para probar en un despliegue Preview de Vercel hay que agregar ese dominio a `ORIGENES_EXTRA` (Supabase) y al widget de Cloudflare Turnstile; si no, el contacto y los pagos responden 403 y el captcha falla.
+
+## 10. Fase 4: mantenimiento del backend
+Migración nueva `supabase/migrations/20261126120000_backend_mantenimiento_fase4.sql` (se puede correr más de una vez). Detalle completo en `docs/CONTEXTO-SubidaDavidClaudeWeb.md`, sección 5.12, y en el README ("Fase 4").
+
+1. **Índices en las 25 claves foráneas que no tenían** (por ejemplo `rutas.usuario_id`, `viajes.usuario_id`, `invitaciones.invitado_id`). Borrar una cuenta o un parche ya no recorre tablas enteras. Se crean con un bloque que revisa todas; una prueba falla si aparece una nueva sin índice.
+2. **Retención de datos:** `private.limpieza_retencion()` cada día (pg_cron `modo-parche-retencion`, 3:45 a. m. Colombia). Notificaciones leídas de más de 90 días y sin leer de más de 1 año; contacto archivado de más de 1 año y atendido de más de 2; errores del navegador de más de 30 días. Nunca pagos, cobros, liquidaciones, bitácora ni mensajes sin atender.
+3. **Conciliación de pagos:** nueva Edge Function `conciliar-pagos` (secreto `x-cron-secret`, cada hora con `.github/workflows/conciliar-pagos.yml`), con `sistema_pagos_por_conciliar()` y `sistema_pago_abandonado()`. Pregunta a Wompi por los pagos `PENDIENTE` de más de 15 min y los aplica con `aplicar_pago_wompi`. Sin transacción después de 48 h quedan "Abandonado" (si después llega un aviso aprobado, se aplica igual). Opcional: `WOMPI_PRIVATE_KEY` para buscar por referencia.
+4. **Salud del backend:** tabla `private.tareas_ejecutadas`, `sistema_anotar_tarea()` (las tareas anotan cuándo corrieron) y `admin_salud()`. Panel admin > Bitácora > "Salud del backend" (`admin.html`, `admin.js` → `verSalud()`, `admin.css`): tareas, pg_cron, pagos sin confirmar, errores, archivos por borrar, contacto sin atender y mora, en verde o naranja. Probado en Chromium.
+5. **Tope de tamaño a los JSON de `parches`** (`parches_json_tamano`, NOT VALID): 8 KB `cupon`/`clima`/`demo_regla`, 32 KB `oficial_info`.
+6. **Código compartido de Edge Functions:** `supabase/functions/_shared/utilidades.ts`. Las 6 funciones lo usan; se borraron las copias de `mismoSecreto`, `sha256hex`, CORS y cliente. Si falta un secreto de cron o de webhook, responde `503 SIN_CONFIGURAR`.
+
+**Pruebas:** nueva suite `tests/sql/fase4.mjs` (28 comprobaciones: índices, migración que se corre dos veces, retención, conciliación, aviso tardío, permisos, salud, tope de JSON); `tests/edge/conciliar-pagos.test.ts` (7 pruebas); `depurar-archivos` revisa que anote su tarea; 4 pruebas unitarias nuevas. `tests/sql/sql.test.mjs` ahora exige un mínimo de comprobaciones por suite.
+Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL) · Edge Functions 39/39 + `deno check` · build sin errores.

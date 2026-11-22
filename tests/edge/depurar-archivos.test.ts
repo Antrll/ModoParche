@@ -13,6 +13,7 @@ Deno.test('sin la clave del cron: 401', async () => {
 Deno.test('borra por bucket y solo cierra los que salieron bien', async () => {
   const borrados: Record<string, string[]> = {};
   let cerrados: number[] = [];
+  let tarea: Record<string, unknown> = {};
   responder(
     rpc('sistema_archivos_por_borrar', () => json([
       { id: 1, bucket: 'album', ruta: 'p/u/a.jpg' }, { id: 2, bucket: 'documentos_identidad', ruta: 'cedulas/u/f.webp' },
@@ -24,7 +25,8 @@ Deno.test('borra por bucket y solo cierra los que salieron bien', async () => {
       borrados[m[1]] = JSON.parse(l.cuerpo).prefixes;
       return m[1] === 'fotos' ? json({ message: 'falló' }, 500) : json([]);
     },
-    rpc('sistema_archivos_borrados', (c) => { cerrados = c.p_ids as number[]; return json(cerrados.length); }));
+    rpc('sistema_archivos_borrados', (c) => { cerrados = c.p_ids as number[]; return json(cerrados.length); }),
+    rpc('sistema_anotar_tarea', (c) => { tarea = c; return json(null); }));
   const r = await post();
   const d = await r.json();
   assertEquals(r.status, 200);
@@ -33,5 +35,8 @@ Deno.test('borra por bucket y solo cierra los que salieron bien', async () => {
   assertEquals(borrados.otro, undefined);
   assertEquals(cerrados.sort(), [1, 2]);
   assertEquals(d.fallos, 1);
+  // Queda anotada para la revisión de salud (con fallos: ok = false)
+  assertEquals(tarea.p_nombre, 'depurar-archivos');
+  assertEquals(tarea.p_ok, false);
   void SB;
 });

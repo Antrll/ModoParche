@@ -129,6 +129,38 @@ No necesita migraciones ni secretos nuevos: basta con desplegar en Vercel.
 
 ---
 
+## Fase 4: mantenimiento del backend
+
+Va después de la Fase 3A. **Orden:**
+
+1. Supabase > Edge Functions > Secrets: si quieres que se puedan conciliar los pagos que nunca llegaron a Wompi, crea `WOMPI_PRIVATE_KEY` (Wompi > Desarrolladores, `prv_test_…` o `prv_prod_…`). Es opcional: sin ella, solo se concilian los pagos que ya tienen transacción.
+2. Despliega las Edge Functions. Todas cambiaron porque ahora usan `supabase/functions/_shared/utilidades.ts`; `conciliar-pagos` es nueva:
+   ```bash
+   supabase functions deploy conciliar-pagos --no-verify-jwt
+   ```
+   (y las demás como en la Fase 3A: `contacto`, `wompi-checkout`, `wompi-webhook`, `enviar-push`, `depurar-archivos`).
+3. Supabase > SQL Editor, pestaña nueva: corre `supabase/migrations/20261126120000_backend_mantenimiento_fase4.sql`. Se puede correr más de una vez.
+4. Programa `conciliar-pagos` cada hora: `.github/workflows/conciliar-pagos.yml` ya está listo (necesita el secreto `CRON_SECRET` en GitHub y estar en `main`). Alternativa con pg_cron + pg_net (cambia `TU_CRON_SECRET`):
+   ```sql
+   select cron.schedule('conciliar-pagos', '23 * * * *', $$
+     select net.http_post(
+       url := 'https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/conciliar-pagos',
+       headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', 'TU_CRON_SECRET'),
+       body := '{}'::jsonb)
+   $$);
+   ```
+
+| Tema | Qué hace |
+| --- | --- |
+| Índices | Crea un índice para cada clave foránea de `public` que no tenía (eran 25). Borrar una cuenta o un parche ya no recorre tablas enteras. Una prueba falla si aparece una nueva sin índice. |
+| Retención | `private.limpieza_retencion()` cada día a las 3:45 a. m. (hora de Colombia) por pg_cron: notificaciones leídas de más de 90 días y sin leer de más de 1 año; mensajes de contacto archivados de más de 1 año y atendidos de más de 2 años; errores del navegador de más de 30 días. **Nunca** borra pagos, cobros, liquidaciones, la bitácora del admin ni mensajes sin atender. |
+| Conciliación de pagos | `conciliar-pagos` pregunta a Wompi por los pagos `PENDIENTE` de más de 15 minutos y aplica el resultado. Un pago sin transacción en Wompi después de 48 h queda como abandonado (`ERROR`); si luego llega el aviso aprobado, se aplica igual. |
+| Salud del backend | Panel admin > Bitácora > **Salud del backend**: cuándo corrieron las tareas (retención, borrado de archivos, conciliación y las de pg_cron), pagos sin confirmar, errores de 24 h, archivos por borrar, mensajes sin atender y negocios en mora. Lo que necesita atención sale en naranja. |
+| Tope de JSON | Las columnas JSON de `parches` (`cupon`, `clima`, `demo_regla`: 8 KB; `oficial_info`: 32 KB) ya no aceptan datos enormes. |
+| Código compartido | Las Edge Functions comparten `supabase/functions/_shared/utilidades.ts` (comparación segura de secretos, CORS, SHA-256, cliente del servidor y URL de Wompi). Un arreglo ahí llega a todas. |
+
+---
+
 ## Dashboard de usuarios con Supabase
 
 El panel (`dashboard.html`) es para usuarios con cuenta. El login y el registro (`login.html`) usan Supabase Auth.

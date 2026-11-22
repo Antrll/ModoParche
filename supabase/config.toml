@@ -20,3 +20,7 @@ verify_jwt = false
 # Formulario público de equipo.html: se valida el captcha de Turnstile
 [functions.contacto]
 verify_jwt = false
+
+# La llama un cron cada hora: se valida CRON_SECRET (o PUSH_WEBHOOK_SECRET)
+[functions.conciliar-pagos]
+verify_jwt = false

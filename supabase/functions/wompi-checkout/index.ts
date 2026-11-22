@@ -20,26 +20,14 @@
 // Desplegar: supabase functions deploy wompi-checkout
 // =====================================================================
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
+import { apiWompi, clienteServidor, corsDe, json as respuesta, origenesPermitidos, sha256hex } from '../_shared/utilidades.ts';
 
-const ORIGENES = new Set(['https://modoparche.vercel.app',
-  ...(Deno.env.get('ORIGENES_EXTRA') ?? '').split(',').map((o) => o.trim()).filter(Boolean)]);
-const corsDe = (origen: string) => ({
-  ...(ORIGENES.has(origen) ? { 'Access-Control-Allow-Origin': origen } : {}),
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Vary': 'Origin',
-});
-
-async function sha256hex(texto: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+const ORIGENES = origenesPermitidos();
 
 Deno.serve(async (req) => {
   const origen = req.headers.get('origin') ?? '';
-  const CORS = corsDe(origen);
-  const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  const CORS = corsDe(origen, ORIGENES, 'authorization, x-client-info, apikey, content-type');
+  const json = (body: unknown, status = 200) => respuesta(body, status, CORS);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (origen && !ORIGENES.has(origen)) return json({ error: 'ORIGEN' }, 403);
   if (req.method !== 'POST') return json({ error: 'METODO' }, 405);
@@ -52,18 +40,17 @@ Deno.serve(async (req) => {
   if (PUBLIC_KEY.startsWith('pub_prod_') && Deno.env.get('PERMITIR_COBROS_REALES') !== 'si') {
     return json({ error: 'COBROS_REALES_DESACTIVADOS' }, 403);
   }
-  const API = PUBLIC_KEY.startsWith('pub_prod_') ? 'https://production.wompi.co/v1' : 'https://sandbox.wompi.co/v1';
+  const API = apiWompi(PUBLIC_KEY);
 
   const url = Deno.env.get('SUPABASE_URL')!;
   const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
   // Quién llama (con su propia sesión)
   const comoUsuario = createClient(url, anon, { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
   const { data: { user } } = await comoUsuario.auth.getUser();
   if (!user) return json({ error: 'SIN_SESION' }, 401);
 
-  const admin = createClient(url, service, { auth: { persistSession: false } });
+  const admin = clienteServidor();
   const body = await req.json().catch(() => ({}));
 
   // ---------- Confirmar una transacción con Wompi ----------

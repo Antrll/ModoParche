@@ -14,11 +14,8 @@
 //
 // Desplegar: supabase functions deploy enviar-push --no-verify-jwt
 // =====================================================================
-import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
+import { clienteServidor, exigirSecreto, json } from '../_shared/utilidades.ts';
 import webpush from 'npm:web-push@3.6.7';
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 // El texto de las notificaciones trae <b>…</b>: se quita para el aviso del sistema
 const limpiar = (t: string) => String(t ?? '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').slice(0, 180);
@@ -39,19 +36,11 @@ export function armarAviso(n: { id?: unknown; texto?: string; parche_id?: string
   };
 }
 
-// Compara huellas de igual largo para no filtrar el secreto por tiempo
-async function mismoSecreto(a: string, b: string): Promise<boolean> {
-  const h = async (t: string) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
-  const [x, y] = await Promise.all([h(a), h(b)]);
-  let dif = 0;
-  for (let i = 0; i < x.length; i++) dif |= x[i] ^ y[i];
-  return dif === 0;
-}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'METODO' }, 405);
-  const secreto = Deno.env.get('PUSH_WEBHOOK_SECRET') ?? '';
-  if (!secreto || !(await mismoSecreto(req.headers.get('x-webhook-secret') ?? '', secreto))) return json({ error: 'NO_AUTORIZADO' }, 401);
+  const negado = await exigirSecreto(req, 'x-webhook-secret', 'PUSH_WEBHOOK_SECRET');
+  if (negado) return negado;
 
   const pub = Deno.env.get('VAPID_PUBLIC_KEY') ?? '', prv = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
   if (!pub || !prv) return json({ error: 'PUSH_SIN_CONFIGURAR' }, 503);
@@ -66,7 +55,7 @@ Deno.serve(async (req) => {
   const n = body?.record;
   if (body?.type !== 'INSERT' || !n?.usuario_id) return json({ ok: true, enviados: 0 });
 
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const admin = clienteServidor();
   const { data: subs, error } = await admin.from('push_suscripciones').select('id, endpoint, p256dh, auth').eq('usuario_id', n.usuario_id).order('id', { ascending: false }).limit(5);
   if (error) { console.error('[push]', error.message); return json({ error: 'ERROR_INTERNO' }, 500); }
   if (!subs?.length) return json({ ok: true, enviados: 0 });

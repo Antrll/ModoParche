@@ -14,20 +14,11 @@
 // Desplegar SIN verificación de JWT (es un formulario público):
 //   supabase functions deploy contacto --no-verify-jwt
 // =====================================================================
-import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
+import { clienteServidor, corsDe, json as respuesta, origenesPermitidos } from '../_shared/utilidades.ts';
 
 const VERIFICAR = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const ACCION = 'contactForm'; // mp-captcha.js usa el id del formulario como acción
-const ORIGENES = new Set(['https://modoparche.vercel.app',
-  ...(Deno.env.get('ORIGENES_EXTRA') ?? '').split(',').map((o) => o.trim()).filter(Boolean)]);
-
-const corsDe = (origen: string) => ({
-  ...(ORIGENES.has(origen) ? { 'Access-Control-Allow-Origin': origen } : {}),
-  'Access-Control-Allow-Headers': 'content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-  'Vary': 'Origin',
-});
+const ORIGENES = origenesPermitidos();
 
 // IP real de quien escribe (Supabase está detrás de Cloudflare)
 export function ipDe(h: Headers): string {
@@ -58,9 +49,8 @@ async function captchaValido(token: string, ip: string, secreto: string): Promis
 
 Deno.serve(async (req) => {
   const origen = req.headers.get('origin') ?? '';
-  const CORS = corsDe(origen);
-  const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  const CORS = corsDe(origen, ORIGENES);
+  const json = (body: unknown, status = 200) => respuesta(body, status, CORS);
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (origen && !ORIGENES.has(origen)) return json({ ok: false, codigo: 'ORIGEN' }, 403);
   if (req.method !== 'POST') return json({ ok: false, codigo: 'METODO' }, 405);
@@ -76,7 +66,7 @@ Deno.serve(async (req) => {
     return json({ ok: false, codigo: 'CAPTCHA', hint: 'No pudimos confirmar que eres una persona. Vuelve a intentar.' }, 400);
   }
 
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const admin = clienteServidor();
   let { data, error } = await admin.rpc('enviar_contacto_verificado', {
     p_nombre: datos.nombre, p_correo: datos.correo, p_motivo: datos.motivo, p_mensaje: datos.mensaje, p_sitio: '', p_ip: ip,
   });

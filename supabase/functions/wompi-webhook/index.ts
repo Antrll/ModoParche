@@ -15,12 +15,7 @@
 // URL para Wompi > Desarrolladores > URL de eventos:
 //   https://<tu-proyecto>.supabase.co/functions/v1/wompi-webhook
 // =====================================================================
-import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
-
-async function sha256hex(texto: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+import { clienteServidor, mismoSecreto, sha256hex } from '../_shared/utilidades.ts';
 
 // "transaction.amount_in_cents" -> data.transaction.amount_in_cents
 function valor(data: Record<string, unknown>, ruta: string): string {
@@ -28,13 +23,6 @@ function valor(data: Record<string, unknown>, ruta: string): string {
   return v === undefined || v === null ? '' : String(v);
 }
 
-// Compara sin revelar por tiempo en qué carácter falla
-function iguales(a: string, b: string): boolean {
-  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
-  let dif = x.length ^ y.length;
-  for (let i = 0; i < Math.max(x.length, y.length); i++) dif |= (x[i] ?? 0) ^ (y[i] ?? 0);
-  return dif === 0;
-}
 // Entorno esperado: el configurado o, si no hay, el que dice el prefijo del secreto
 function entornoEsperado(configurado: string | undefined, secreto: string): string | null {
   const c = String(configurado ?? '').trim().toLowerCase();
@@ -59,7 +47,7 @@ Deno.serve(async (req) => {
   if (!OBLIGATORIAS.every((c) => props.includes(c))) return new Response('firma incompleta', { status: 401 });
   const cadena = props.map((p) => valor(evento.data, p)).join('') + String(evento.timestamp ?? '') + SECRETO;
   const esperado = await sha256hex(cadena);
-  if (!iguales(esperado, String(evento.signature.checksum ?? '').toLowerCase())) {
+  if (!(await mismoSecreto(esperado, String(evento.signature.checksum ?? '').toLowerCase()))) {
     return new Response('firma invalida', { status: 401 });
   }
   // El timestamp puede venir en segundos o milisegundos
@@ -74,7 +62,7 @@ Deno.serve(async (req) => {
   const tx = evento.data.transaction ?? {};
   if (!String(tx.reference ?? '').startsWith('MP-')) return new Response('ok'); // no es de ModoParche
 
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const admin = clienteServidor();
   const { data, error } = await admin.rpc('aplicar_pago_wompi', {
     p_referencia: tx.reference, p_estado: tx.status, p_wompi_id: tx.id,
     p_metodo: tx.payment_method_type ?? null, p_monto: tx.amount_in_cents, p_moneda: tx.currency,

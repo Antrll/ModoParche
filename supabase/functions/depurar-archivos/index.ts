@@ -15,30 +15,18 @@
 //   supabase functions deploy depurar-archivos --no-verify-jwt
 // Programarla una vez al día: ver README > "Depuración automática de archivos".
 // =====================================================================
-import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
+import { clienteServidor, exigirSecreto, json } from '../_shared/utilidades.ts';
 
 const BUCKETS = new Set(['documentos_identidad', 'album', 'fotos']);
 const LOTE = 100; // la API de Storage borra hasta 1000 por llamada; vamos de a 100
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-
-// Compara huellas de igual largo para no filtrar el secreto por tiempo
-async function mismoSecreto(a: string, b: string): Promise<boolean> {
-  const h = async (t: string) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
-  const [x, y] = await Promise.all([h(a), h(b)]);
-  let dif = 0;
-  for (let i = 0; i < x.length; i++) dif |= x[i] ^ y[i];
-  return dif === 0;
-}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'METODO' }, 405);
-  const secreto = Deno.env.get('CRON_SECRET') || Deno.env.get('PUSH_WEBHOOK_SECRET') || '';
-  if (!secreto) return json({ error: 'SIN_CONFIGURAR' }, 503);
-  if (!(await mismoSecreto(req.headers.get('x-cron-secret') ?? '', secreto))) return json({ error: 'NO_AUTORIZADO' }, 401);
+  const negado = await exigirSecreto(req, 'x-cron-secret', 'CRON_SECRET', 'PUSH_WEBHOOK_SECRET');
+  if (negado) return negado;
 
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const admin = clienteServidor();
   const { data: filas, error } = await admin.rpc('sistema_archivos_por_borrar', { p_limite: 500 });
   if (error) { console.error('[depurar] cola', error.message); return json({ error: 'ERROR_INTERNO' }, 500); }
 
@@ -67,5 +55,7 @@ Deno.serve(async (req) => {
     if (eQ) { console.error('[depurar] cerrar', eQ.message); return json({ error: 'ERROR_INTERNO' }, 500); }
     quitados = Number(n ?? 0);
   }
-  return json({ ok: true, revisados: (filas ?? []).length, borrados: quitados, fallos });
+  const resumen = { revisados: (filas ?? []).length, borrados: quitados, fallos };
+  await admin.rpc('sistema_anotar_tarea', { p_nombre: 'depurar-archivos', p_ok: fallos === 0, p_detalle: resumen });
+  return json({ ok: true, ...resumen });
 });

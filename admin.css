@@ -1135,3 +1135,6 @@ html.is-dark :is(.rep-copia, .sp-item, .msg-text) mark { background: #ff9a6b; co
 .contacto p { overflow-wrap: anywhere; white-space: pre-wrap; }
 .contacto a { width: fit-content; overflow-wrap: anywhere; }
 .contacto-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Salud del backend (Bitácora) */
+.salud-list .salud.is-alerta { box-shadow: inset 4px 0 0 var(--orange, #FF5A1F); }
+.salud-list .salud.is-alerta .pill { background: var(--orange, #FF5A1F); color: #15110e; }

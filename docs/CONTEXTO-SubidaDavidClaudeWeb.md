@@ -16,8 +16,9 @@
   2. Compatibilidad con Windows (saltos de línea en los `.sql`).
   3. **Fase 3A:** seguridad (registro de negocios, cupones, contacto con captcha, pagos de Wompi), notificaciones y el panel de negocios como app que abre sin señal.
   4. **Fase 3B:** rendimiento, limpieza de archivos, accesibilidad, dependencias al día y ESLint más estricto.
-  5. **Despliegue probado:** el formulario de contacto pasó a una Edge Function, hay pruebas reales de las 5 Edge Functions, el sitio publicado bajó de 51 MB a 13 MB y se corrigió una fuga de privacidad.
-- Estado de las pruebas: lint con 0 errores, 57/57 en Vitest (incluye 290 comprobaciones SQL), 32/32 pruebas de Edge Functions con Deno, `npm run build` y `vercel build` sin errores, y `npm audit` con 0 vulnerabilidades.
+  5. **Despliegue probado:** el formulario de contacto pasó a una Edge Function, hay pruebas reales de las Edge Functions, el sitio publicado bajó de 51 MB a 13 MB y se corrigió una fuga de privacidad.
+  6. **Fase 4, mantenimiento del backend:** índices en todas las claves foráneas, retención de datos viejos, conciliación automática de pagos con Wompi, revisión de salud en el panel admin, tope de tamaño a los JSON y código compartido entre Edge Functions.
+- Estado de las pruebas: lint con 0 errores, 62/62 en Vitest (58 unitarias + 4 suites SQL con 318 comprobaciones), 39/39 pruebas de Edge Functions con Deno, `npm run build` y `vercel build` sin errores, y `npm audit` con 0 vulnerabilidades.
 
 ## 2. Ramas: qué es cada una
 
@@ -77,12 +78,12 @@ Para pasar los cambios a la rama principal: abrir un **pull request** de `Subida
 | Utilidades compartidas | `mp-*.js` / `mp-*.css` | `mp-utils.js` (incluye `registrarSW`, `barra`, `colaAgregar`), `mp-mapa.js`, `mp-checkin.js`, `mp-verificacion.js`, `mp-captcha.js`, `mp-errores.js`, `mp-fuentes.css` (nuevo). |
 | Service worker (app instalable) | `sw.js` | Modo sin conexión, notificaciones push, aviso de versión nueva. |
 | Funciones de Vercel | `api/p.js` (vista para compartir `/p/<id>`), `api/seguro.js` (`/seguro/<token>`) | `api/contacto.js` **se borró** (ver 5.2). |
-| Edge Functions de Supabase | `supabase/functions/*/index.ts` | `contacto` (nueva), `depurar-archivos` (nueva), `wompi-checkout`, `wompi-webhook`, `enviar-push`. Configuración en `supabase/config.toml`. |
-| Base de datos | `supabase/migrations/*.sql` | Nueva: `20261125120000_pulido_seguridad_y_pwa_fase3.sql`. |
+| Edge Functions de Supabase | `supabase/functions/*/index.ts` | `contacto`, `depurar-archivos` y `conciliar-pagos` (nuevas), `wompi-checkout`, `wompi-webhook`, `enviar-push`. Utilidades comunes en `supabase/functions/_shared/utilidades.ts`. Configuración en `supabase/config.toml`. |
+| Base de datos | `supabase/migrations/*.sql` | Nuevas: `20261125120000_pulido_seguridad_y_pwa_fase3.sql` y `20261126120000_backend_mantenimiento_fase4.sql`. |
 | Build | `scripts/build.mjs` → carpeta `dist/` | Es lo que publica Vercel (`vercel.json`). |
 | Pruebas | `tests/unit` (Vitest), `tests/sql` (PGlite, Postgres en memoria), `tests/edge` (Deno) | Ver sección 8. |
 | CI | `.github/workflows/ci.yml` | Lint, pruebas, build y Edge Functions en cada push. |
-| Respaldos / cron | `.github/workflows/respaldo.yml`, `.github/workflows/depurar-archivos.yml` | Solo corren desde `main`. |
+| Respaldos / cron | `.github/workflows/respaldo.yml`, `depurar-archivos.yml` (diario), `conciliar-pagos.yml` (cada hora) | Solo corren desde `main`. |
 
 ## 5. Todos los cambios, por área
 
@@ -203,6 +204,21 @@ Para pasar los cambios a la rama principal: abrir un **pull request** de `Subida
 
 eslint 9 → **10**, vitest 3 → **5**, globals 15 → **17**, esbuild 0.25 → **0.28**. Se quitaron las 3 vulnerabilidades (2 críticas) de `npm audit`.
 
+### 5.12 Fase 4: mantenimiento del backend
+
+**Migración nueva:** `supabase/migrations/20261126120000_backend_mantenimiento_fase4.sql`. Se puede correr más de una vez.
+
+| # | Qué | Dónde | Cómo funciona | Qué pasa |
+| --- | --- | --- | --- | --- |
+| 1 | Índices en claves foráneas | Migración, sección 1 | Un bloque recorre todas las claves foráneas de `public` y crea `<tabla>_<columna>_fk_idx` donde falte. Había 25 sin índice (por ejemplo `rutas.usuario_id`, `viajes.usuario_id`, `invitaciones.invitado_id`, `cupones_emitidos.parche_id`). | Borrar una cuenta (Ley 1581) o un parche ya no recorre tablas enteras; las consultas por esas columnas son más rápidas. La prueba `fase4.mjs` falla si aparece una clave nueva sin índice. |
+| 2 | Retención | `private.limpieza_retencion()`, tarea pg_cron `modo-parche-retencion` (`45 8 * * *` UTC = 3:45 a. m. Colombia) | Borra notificaciones leídas de más de 90 días y sin leer de más de 1 año; contacto archivado de más de 1 año y atendido de más de 2; errores del navegador de más de 30 días. | Las tablas no crecen para siempre. **Nunca** se borran pagos, cobros, liquidaciones, la bitácora ni mensajes sin atender. |
+| 3 | Conciliación de pagos | Edge Function `conciliar-pagos` + `sistema_pagos_por_conciliar()` y `sistema_pago_abandonado()` + `.github/workflows/conciliar-pagos.yml` (cada hora) | Pide los pagos `PENDIENTE` de más de 15 min (máx. 50). Con `wompi_id`, consulta el endpoint público; sin él, busca por referencia con `WOMPI_PRIVATE_KEY` (opcional). Aplica con `aplicar_pago_wompi` (ya ignora repetidos). Sin transacción después de 48 h, el pago queda `ERROR` "Abandonado". | Si el webhook de Wompi se pierde, el pago se confirma solo en menos de una hora. Si después llega el aviso aprobado de un pago marcado como abandonado, se aplica igual. |
+| 4 | Registro de tareas y salud | `private.tareas_ejecutadas`, `public.sistema_anotar_tarea()` (servidor), `public.admin_salud()` (admin con 2FA), panel admin > Bitácora > **Salud del backend** (`admin.html`, `admin.js` `verSalud()`) | Cada tarea anota cuándo corrió y qué hizo (retención, `depurar-archivos`, `conciliar-pagos`). `admin_salud()` junta eso, el historial de pg_cron (si existe), pagos sin confirmar, errores de 24 h, archivos por borrar, contacto sin atender, mora y total de notificaciones. | El equipo ve de un vistazo si algo se trabó. Lo que necesita atención sale en naranja (una tarea que no corrió en el doble de su tiempo, pagos pendientes, más de 50 errores, etc.). |
+| 5 | Tope de JSON | Restricción `parches_json_tamano` (NOT VALID) | `cupon`, `clima` y `demo_regla` hasta 8 KB; `oficial_info` hasta 32 KB. | Nadie puede guardar datos enormes en un parche. Las filas viejas no se revisan. |
+| 6 | Código compartido de Edge Functions | `supabase/functions/_shared/utilidades.ts` | `json`, `sha256hex`, `mismoSecreto`, `exigirSecreto`, `origenesPermitidos`, `corsDe`, `clienteServidor` y `apiWompi`. Las 6 funciones las importan (una prueba revisa que ninguna las copie). | Un arreglo de seguridad se hace en un solo lugar. Si falta un secreto de cron o de webhook, ahora responde `503 SIN_CONFIGURAR` (antes algunas daban 401). |
+
+Otros detalles: `depurar-archivos` ahora anota su tarea; el texto de "Errores de la app" en el admin ya dice que, si había sesión, se sabe quién fue; `tests/sql/sql.test.mjs` exige un mínimo de comprobaciones por suite.
+
 ## 6. Reglas nuevas que notan los usuarios
 
 | Quién | Antes | Ahora |
@@ -223,10 +239,11 @@ eslint 9 → **10**, vitest 3 → **5**, globals 15 → **17**, esbuild 0.25 →
 | --- | --- | --- | --- |
 | Supabase > Edge Functions > Secrets | `TURNSTILE_SECRET` | Edge Function `contacto` (Secret Key de Turnstile) | **Sí** |
 | Supabase | `CRON_SECRET` | `depurar-archivos` | **Sí** |
+| Supabase | `WOMPI_PRIVATE_KEY` | Opcional: `conciliar-pagos` busca por referencia los pagos sin transacción (Fase 4) | Opcional, nuevo |
 | Supabase | `ORIGENES_EXTRA` | Opcional: dominios extra para `contacto` y `wompi-checkout` (por ejemplo, el de Preview) | Opcional |
 | Supabase | `PUSH_WEBHOOK_SECRET`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `enviar-push` | Ya existían |
 | Supabase | `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET`, `WOMPI_ENTORNO` (opcional), `PERMITIR_COBROS_REALES` | Pagos | Ya existían |
-| GitHub > Settings > Secrets > Actions | `CRON_SECRET` (mismo valor que en Supabase) | Workflow `depurar-archivos.yml` | **Sí** |
+| GitHub > Settings > Secrets > Actions | `CRON_SECRET` (mismo valor que en Supabase) | Workflows `depurar-archivos.yml` y `conciliar-pagos.yml` | **Sí** |
 | GitHub | `SUPABASE_DB_URL`, `RESPALDO_CLAVE`, `RESPALDO_S3_BUCKET`, `RESPALDO_S3_ENDPOINT`, `RESPALDO_S3_KEY`, `RESPALDO_S3_SECRET` | Respaldos | Ya existían |
 | Vercel | **Ninguno** | — | — |
 
@@ -249,9 +266,12 @@ eslint 9 → **10**, vitest 3 → **5**, globals 15 → **17**, esbuild 0.25 →
    ```bash
    supabase functions deploy depurar-archivos --no-verify-jwt
    ```
+   ```bash
+   supabase functions deploy conciliar-pagos --no-verify-jwt
+   ```
 3. Desplegar en Vercel (sin variables de entorno).
-4. Supabase > SQL Editor > pestaña nueva: correr `supabase/migrations/20261125120000_pulido_seguridad_y_pwa_fase3.sql`.
-5. Programar la depuración diaria (GitHub Actions ya listo en `main`, o pg_cron: ver README).
+4. Supabase > SQL Editor > pestaña nueva: correr `supabase/migrations/20261125120000_pulido_seguridad_y_pwa_fase3.sql`. Luego, en otra pestaña nueva, `supabase/migrations/20261126120000_backend_mantenimiento_fase4.sql`.
+5. Programar las tareas: la depuración diaria y la conciliación cada hora. Los workflows de GitHub ya están listos y corren desde `main`; la alternativa con pg_cron está en el README.
 6. En el panel admin, **verificar a los negocios reales** que publiquen más de 6 parches al día.
 
 Si se hace en otro orden, lo único que se afecta un rato es el formulario de contacto. La Edge Function tiene un respaldo para el caso "migración todavía no corrida".
@@ -275,8 +295,8 @@ Pruebas manuales recomendadas en Preview:
 | Comando | Qué prueba |
 | --- | --- |
 | `npm run lint` | ESLint (incluye variables sin usar y `==`). |
-| `npm test` | **Vitest:** 54 pruebas unitarias (`tests/unit/utilidades.test.mjs`) y las 3 suites SQL sobre Postgres en memoria (`tests/sql/fase1.mjs`: 153 comprobaciones, `fase2.mjs`: 67, `fase3.mjs`: 70, incluida la auditoría de seguridad de la base). |
-| `npm run test:edge` | `deno check` de las 5 Edge Functions y 32 pruebas de comportamiento con un Supabase simulado (`tests/edge/simular.ts`). Necesita internet la primera vez. |
+| `npm test` | **Vitest:** 58 pruebas unitarias (`tests/unit/utilidades.test.mjs`) y las 4 suites SQL sobre Postgres en memoria (`tests/sql/fase1.mjs`: 153 comprobaciones, `fase2.mjs`: 67, `fase3.mjs`: 70, incluida la auditoría de seguridad de la base, y `fase4.mjs`: 28). |
+| `npm run test:edge` | `deno check` de las 6 Edge Functions y 39 pruebas de comportamiento con un Supabase simulado (`tests/edge/simular.ts`). Necesita internet la primera vez. |
 | `npm run build` | Genera `dist/` y revisa enlaces, manifiesto y modo sin conexión. |
 
 Las pruebas SQL corren **todas las migraciones** desde cero. Si una migración nueva rompe algo anterior, se ve ahí.
@@ -301,11 +321,15 @@ Las pruebas SQL corren **todas las migraciones** desde cero. Si una migración n
 | Una imagen no aparece en el sitio publicado pero sí localmente | Está fuera de `src/assets/web`, `fonts` o `Branding/favicon` | Moverla a `src/assets/web/` (el build solo publica esas carpetas). |
 | Formulario: "El formulario no está disponible" | Falta `TURNSTILE_SECRET` en Supabase | Crear el secreto y redesplegar `contacto`. |
 | Formulario o pago: 403 en Preview | El dominio de Preview no está en `ORIGENES_EXTRA` | Ver 7.3. |
+| Salud del backend: "Nunca ha corrido" | La tarea no está programada o falta `CRON_SECRET` | Revisar los workflows en `main`, el secreto en GitHub y en Supabase, o programarla con pg_cron (README > Fase 4). |
+| Pagos que siguen sin confirmar | No hay `WOMPI_PRIVATE_KEY` y el pago no tiene transacción | Crear la llave privada en Supabase (opcional) o revisar el pago en Wompi. |
 | Push: `503 PUSH_MAL_CONFIGURADO` en los logs | Llaves VAPID mal copiadas | Revisar `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY`. |
 | Un negocio dice "Ya abriste 6 parches hoy" | No está verificado | Verificarlo desde el panel admin. |
 | `npm run test:edge` no descarga | Sin internet o proxy | Necesita acceso a npm y jsr.io la primera vez. |
 
 ## 11. Próximas mejoras propuestas (en orden de prioridad)
+
+**Ya hechas en la Fase 4 (sección 5.12):** índices de claves foráneas, retención de datos, conciliación de pagos, revisión de salud, tope de JSON y código compartido de las Edge Functions.
 
 **Alta (antes o justo después de publicar)**
 1. **Probar en Preview** con servicios reales (7.3): Wompi sandbox, captcha y push.
@@ -317,7 +341,7 @@ Las pruebas SQL corren **todas las migraciones** desde cero. Si una migración n
 **Media (calidad y operación)**
 
 6. **Pruebas de navegador permanentes** (Playwright en el CI): las comprobaciones que se hicieron a mano (sin conexión, versión nueva, OCR, páginas sin errores ni archivos faltantes) como pruebas automáticas.
-7. **Alertas:** un aviso al equipo cuando el webhook de Wompi falle varias veces o lleguen muchos errores a `errores_cliente`.
+7. **Alertas activas:** el panel "Salud del backend" (Fase 4) ya muestra los problemas; falta que **avise solo** (push o correo al equipo) cuando algo sale en naranja.
 8. **OCR 100 % propio:** alojar también el núcleo WebAssembly y el modelo de Tesseract (unos MB) para quitar jsDelivr y tessdata de la CSP.
 9. **LCP en celular:** el texto principal de `index` y `comercio` aparece con una animación hacia 1,1 s. Mostrarlo sin esperar la animación mejora la nota de rendimiento.
 10. **Un `<h1>` por vista visible en los paneles** (o `<h2>` en las vistas ocultas).
@@ -339,4 +363,5 @@ Las pruebas SQL corren **todas las migraciones** desde cero. Si una migración n
 | `bc6c626` | Fase 3A: seguridad restante, notificaciones y PWA del panel de negocios. |
 | `fa2e61b` | Fase 3B: rendimiento, limpieza, accesibilidad y mantenibilidad. |
 | `32986d0` | Despliegue probado: contacto como Edge Function, pruebas con Deno, sitio de 13 MB, `es_miembro`. |
-| (este) | Documentación completa (`docs/CONTEXTO-SubidaDavidClaudeWeb.md`, `CLAUDE.md`). |
+| `c6dad03` | Documentación completa (`docs/CONTEXTO-SubidaDavidClaudeWeb.md`, `CLAUDE.md`). |
+| (este) | Fase 4: mantenimiento del backend. |

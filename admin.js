@@ -1259,6 +1259,46 @@
       : '<li class="empty empty--ok">Sin movimientos todavía.</li>';
     animateIn($('#view-registro'));
   }
+  /* ---------- Salud del backend (admin_salud, migración 20261126120000) ---------- */
+  // Cada cuánto debe correr cada tarea; si pasó más del doble, sale en alerta
+  const TAREAS = { 'retencion': ['Limpieza de datos viejos', 24], 'depurar-archivos': ['Borrado de archivos', 24], 'conciliar-pagos': ['Conciliación de pagos con Wompi', 1] };
+  function filasSalud(d) {
+    const h = t => (Date.now() - ts(t)) / 36e5;
+    const fila = (alerta, titulo, detalle) => `<li class="err salud${alerta ? ' is-alerta' : ''}"><div class="err-top"><b>${esc(titulo)}</b><span class="pill">${alerta ? 'Revisar' : 'Bien'}</span></div><small>${esc(detalle)}</small></li>`;
+    const out = [];
+    for (const [nombre, [titulo, cada]] of Object.entries(TAREAS)) {
+      const t = (d.tareas || []).find(x => x.nombre === nombre);
+      if (!t) { out.push(fila(true, titulo, 'Nunca ha corrido. Revisa que esté programada (README > Fase 4).')); continue; }
+      const resumen = Object.entries(t.detalle || {}).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(' · ');
+      out.push(fila(!t.ok || h(t.ultima_vez) > cada * 2, titulo, `${t.ok ? 'Última vez' : 'Falló la última vez'} ${fmtRel(t.ultima_vez)}${resumen ? ' · ' + resumen : ''}`));
+    }
+    for (const c of d.cron || []) out.push(fila(c.estado && c.estado !== 'succeeded', `pg_cron: ${c.nombre.replace('modo-parche-', '')}`, c.ultima_vez ? `${c.estado === 'succeeded' ? 'Bien' : c.estado} ${fmtRel(c.ultima_vez)}${c.mensaje && c.estado !== 'succeeded' ? ' · ' + c.mensaje : ''}` : 'Sin ejecuciones registradas'));
+    const n = v => int(v || 0);
+    out.push(fila(d.pagos_pendientes_viejos > 0, 'Pagos sin confirmar (más de 1 hora)', `${n(d.pagos_pendientes_viejos)} · con error en 7 días: ${n(d.pagos_con_error_7d)}`));
+    out.push(fila(d.errores_24h > 50, 'Errores de la app (24 horas)', n(d.errores_24h)));
+    out.push(fila(d.archivos_por_borrar > 0 && d.archivo_mas_viejo && h(d.archivo_mas_viejo) > 48, 'Archivos por borrar', `${n(d.archivos_por_borrar)}${d.archivo_mas_viejo ? ' · el más viejo ' + fmtRel(d.archivo_mas_viejo) : ''}`));
+    out.push(fila(d.contacto_sin_atender > 0, 'Mensajes de contacto sin atender', n(d.contacto_sin_atender)));
+    out.push(fila(false, 'Negocios en mora', n(d.negocios_en_mora)));
+    out.push(fila(false, 'Notificaciones guardadas', n(d.notificaciones)));
+    return out.join('');
+  }
+  async function verSalud() {
+    const ul = $('#salud-list');
+    if (!ul) return;
+    if (DEMO) {
+      const hace = horas => new Date(Date.now() - horas * 36e5).toISOString();
+      ul.innerHTML = filasSalud({ tareas: [{ nombre: 'retencion', ultima_vez: hace(5), ok: true, detalle: { notificaciones: 312, contacto: 0, errores: 4 } }, { nombre: 'depurar-archivos', ultima_vez: hace(3), ok: true, detalle: { borrados: 2, fallos: 0 } }, { nombre: 'conciliar-pagos', ultima_vez: hace(0.4), ok: true, detalle: { aplicados: 1, siguen_pendientes: 0 } }], cron: [], pagos_pendientes_viejos: 0, pagos_con_error_7d: 0, errores_24h: 3, archivos_por_borrar: 0, contacto_sin_atender: 2, negocios_en_mora: 1, notificaciones: 4210 });
+      return;
+    }
+    ul.innerHTML = '<li class="empty">Cargando…</li>';
+    const { data, error } = await sb().rpc('admin_salud');
+    if (error) {
+      const falta = /admin_salud|PGRST202/.test(error.message);
+      ul.innerHTML = `<li class="empty">${falta ? 'Falta correr la migración 20261126120000_backend_mantenimiento_fase4.sql.' : esc(errMsg(error))}</li>`;
+      return;
+    }
+    ul.innerHTML = filasSalud(data || {});
+  }
   /* ---------- Errores de la app (mp-errores.js → errores_cliente) ---------- */
   async function verErrores() {
     const ul = $('#errores-list');
@@ -2139,6 +2179,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
         case 'rec-aprobar': resolverReclamo(a.dataset.id, true); break;
         case 'rec-rechazar': resolverReclamo(a.dataset.id, false); break;
         case 'ver-errores': conCarga(a, () => verErrores()); break;
+        case 'ver-salud': conCarga(a, () => verSalud()); break;
         case 'ir-anuncio': location.hash = '#anuncios'; setTimeout(() => $('#an-texto').focus(), 300); break;
         case 'cerrar-drawer': closeDrawer(); break;
         case 'suspender': accionSuspender(id, a.dataset.on === '1', a); break;

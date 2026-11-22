@@ -472,9 +472,14 @@
         </div>
         <div class="filters"><div class="tabs" role="tablist" id="log-tabs"></div></div>
         <ol class="timeline" id="timeline"></ol>
+        <section class="panel errores-panel" aria-labelledby="h-salud">
+          <header class="errores-head"><h2 id="h-salud">Salud del backend</h2><button class="btn btn--icon-sm" data-action="ver-salud"><svg class="ic"><use href="#i-refresh"/></svg><span>Revisar</span></button></header>
+          <p class="sub">Tareas programadas, pagos sin confirmar, errores, archivos por borrar y mensajes sin atender. Si algo sale en naranja, revísalo.</p>
+          <ul class="errores-list salud-list" id="salud-list"><li class="empty">Toca «Revisar» para cargarla.</li></ul>
+        </section>
         <section class="panel errores-panel" aria-labelledby="h-errores">
           <header class="errores-head"><h2 id="h-errores">Errores de la app (7 días)</h2><button class="btn btn--icon-sm" data-action="ver-errores"><svg class="ic"><use href="#i-refresh"/></svg><span>Revisar</span></button></header>
-          <p class="sub">Lo que falló en el navegador de la gente. Sin datos personales: página, mensaje y navegador.</p>
+          <p class="sub">Lo que falló en el navegador de la gente: página, mensaje, navegador y, si tenía sesión, quién era.</p>
           <ul class="errores-list" id="errores-list"><li class="empty">Toca «Revisar» para cargarlos.</li></ul>
         </section>
       </section>

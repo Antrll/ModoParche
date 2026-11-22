@@ -342,3 +342,31 @@ describe('Imágenes que piden el JS y el CSS', () => {
     expect(faltan).toEqual([]);
   });
 });
+
+describe('Fase 4: backend (revisión del código)', () => {
+  const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+  const funciones = fs.readdirSync(new URL('../../supabase/functions/', import.meta.url)).filter(f => !f.startsWith('_') && fs.existsSync(new URL(`../../supabase/functions/${f}/index.ts`, import.meta.url)));
+  it('ninguna Edge Function repite las utilidades compartidas', () => {
+    for (const f of funciones) {
+      const ts = raiz(`supabase/functions/${f}/index.ts`);
+      expect(ts, f).not.toMatch(/async function (mismoSecreto|sha256hex)\(/);
+      expect(ts, f).not.toMatch(/createClient\(Deno\.env\.get\('SUPABASE_URL'\)!, Deno\.env\.get\('SUPABASE_SERVICE_ROLE_KEY'\)/);
+      expect(ts, f).toContain("../_shared/utilidades.ts");
+    }
+  });
+  it('cada Edge Function tiene su verify_jwt en config.toml', () => {
+    const toml = raiz('supabase/config.toml');
+    for (const f of funciones) expect(toml, f).toMatch(new RegExp(`\\[functions\\.${f}\\]\\s*\\nverify_jwt = (true|false)`));
+  });
+  it('conciliar-pagos queda programada cada hora con el secreto del cron', () => {
+    const yml = raiz('.github/workflows/conciliar-pagos.yml');
+    expect(yml).toContain('/functions/v1/conciliar-pagos');
+    expect(yml).toMatch(/cron: '\d+ \* \* \* \*'/);
+    expect(yml).toContain('secrets.CRON_SECRET');
+  });
+  it('el admin tiene la revisión de salud', () => {
+    expect(raiz('admin.html')).toContain('id="salud-list"');
+    expect(raiz('admin.js')).toContain("rpc('admin_salud')");
+    expect(raiz('admin.js')).toContain("case 'ver-salud'");
+  });
+});
