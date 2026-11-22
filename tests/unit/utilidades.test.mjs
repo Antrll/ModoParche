@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 
 const cargar = (archivo, ctx) => vm.runInContext(fs.readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8'), ctx);
 let U, S;
@@ -80,5 +82,187 @@ describe('Vista previa al compartir (Open Graph / WhatsApp)', () => {
       expect(existe(r), r).toBe(true);
       expect(existe(r.replace(/\.webp$/, '-og.jpg')), r.replace(/\.webp$/, '-og.jpg')).toBe(true);
     }
+  });
+});
+
+describe('Service worker: aviso de versión nueva (MPUtil.registrarSW)', () => {
+  // navigator.serviceWorker y window de mentiras para probar sin navegador
+  const falso = ({ controller = {}, waiting = null, protocolo = 'https:' } = {}) => {
+    const oyentes = {}, mensajes = [], estado = { recargas: 0 };
+    const reg = { waiting, addEventListener: () => {}, update: () => Promise.resolve() };
+    if (waiting) waiting.postMessage = m => mensajes.push(m);
+    const sw = { controller, addEventListener: (ev, fn) => { oyentes[ev] = fn; }, register: () => Promise.resolve(reg) };
+    const win = { location: { protocol: protocolo, hostname: 'modoparche.vercel.app', reload: () => { estado.recargas++; } }, document: { addEventListener: () => {}, visibilityState: 'visible' } };
+    return { nav: { serviceWorker: sw }, win, oyentes, mensajes, estado };
+  };
+
+  it('avisa si hay una versión esperando y "Actualizar" la activa', async () => {
+    const f = falso({ waiting: {} });
+    let aplicar = null;
+    await U.registrarSW({ alHaberNueva: a => { aplicar = a; } }, f.nav, f.win);
+    expect(typeof aplicar).toBe('function');
+    aplicar();
+    expect(f.mensajes).toEqual([{ tipo: 'ACTUALIZAR' }]);
+  });
+  it('recarga una sola vez cuando la versión nueva toma el control', async () => {
+    const f = falso({ waiting: {} });
+    await U.registrarSW({}, f.nav, f.win);
+    f.oyentes.controllerchange(); f.oyentes.controllerchange();
+    expect(f.estado.recargas).toBe(1);
+  });
+  it('la primera instalación no recarga ni avisa', async () => {
+    const f = falso({ controller: null, waiting: null });
+    let avisos = 0;
+    await U.registrarSW({ alHaberNueva: () => avisos++ }, f.nav, f.win);
+    f.oyentes.controllerchange();
+    expect(f.estado.recargas).toBe(0);
+    expect(avisos).toBe(0);
+  });
+  it('sin https no registra nada', async () => {
+    const f = falso({ protocolo: 'http:' });
+    expect(await U.registrarSW({}, f.nav, f.win)).toBe(null);
+  });
+  it('sin soporte de service worker no rompe', async () => {
+    expect(await U.registrarSW({}, {}, { location: { protocol: 'https:' } })).toBe(null);
+  });
+});
+
+describe('Cola de llegadas sin conexión (MPUtil.colaAgregar)', () => {
+  it('guarda solo lo último por persona', () => {
+    let c = U.colaAgregar([], { clave: 'c:p1:u1', llego: true });
+    c = U.colaAgregar(c, { clave: 'c:p1:u2', llego: true });
+    c = U.colaAgregar(c, { clave: 'c:p1:u1', llego: false });
+    expect(c.length).toBe(2);
+    expect(c.find(x => x.clave === 'c:p1:u1').llego).toBe(false);
+  });
+  it('acepta una cola dañada', () => expect(U.colaAgregar(null, { clave: 'a' }).length).toBe(1));
+  it('no crece sin límite', () => {
+    let c = [];
+    for (let i = 0; i < 600; i++) c = U.colaAgregar(c, { clave: 'k' + i });
+    expect(c.length).toBe(500);
+  });
+});
+
+// Respuesta de mentiras al estilo de Vercel
+const respuesta = () => {
+  const r = { code: 200, headers: {}, body: null };
+  r.setHeader = (k, v) => { r.headers[k.toLowerCase()] = v; };
+  r.status = c => { r.code = c; return r; };
+  r.send = b => { r.body = b; return r; };
+  r.json = b => { r.body = b; return r; };
+  return r;
+};
+
+describe('api/p.js (vista para compartir)', () => {
+  const P = require('../../api/p.js');
+  it('un error del servidor nunca se guarda en caché', () => expect(P.cacheDe(null, true)).toBe('no-store'));
+  it('un 404 real se guarda poco', () => expect(P.cacheDe(null, false)).toMatch(/s-maxage=60\b/));
+  it('un parche existente se guarda 5 minutos', () => expect(P.cacheDe({ id: 'x' }, false)).toMatch(/s-maxage=300\b/));
+  it('rechaza POST con 405', async () => {
+    const res = respuesta();
+    await P({ method: 'POST', query: {} }, res);
+    expect(res.code).toBe(405);
+    expect(res.headers.allow).toBe('GET, HEAD');
+  });
+  it('un id inválido es 404 sin llamar a la base', async () => {
+    const res = respuesta();
+    await P({ method: 'GET', query: { id: 'no-es-uuid' } }, res);
+    expect(res.code).toBe(404);
+    expect(res.headers['cache-control']).toMatch(/s-maxage=60\b/);
+  });
+});
+
+describe('api/contacto.js (formulario con Turnstile)', () => {
+  const C = require('../../api/contacto.js');
+  const guardado = { ...process.env };
+  const conEnv = async (env, fn) => { Object.assign(process.env, env); try { return await fn(); } finally { for (const k of Object.keys(env)) { if (k in guardado) process.env[k] = guardado[k]; else delete process.env[k]; } } };
+  it('toma la IP real de Vercel', () => {
+    expect(C.ipDe({ headers: { 'x-real-ip': '181.50.1.2' } })).toBe('181.50.1.2');
+    expect(C.ipDe({ headers: { 'x-forwarded-for': '181.50.1.3, 10.0.0.1' } })).toBe('181.50.1.3');
+    expect(C.ipDe({ headers: { 'x-real-ip': '<script>' } })).toBe('');
+  });
+  it('recorta los campos y descarta los extra', () => {
+    const d = C.limpiarCuerpo({ nombre: 'a'.repeat(200), mensaje: 'm'.repeat(5000), rol: 'admin' });
+    expect(d.p_nombre.length).toBe(80);
+    expect(d.p_mensaje.length).toBe(1500);
+    expect('rol' in d).toBe(false);
+  });
+  it('solo acepta POST', async () => {
+    const res = respuesta();
+    await C({ method: 'GET', headers: {} }, res);
+    expect(res.code).toBe(405);
+  });
+  it('sin llaves configuradas no guarda nada', async () => {
+    const res = respuesta();
+    await conEnv({ TURNSTILE_SECRET: '', SUPABASE_SERVICE_ROLE_KEY: '' }, () => C({ method: 'POST', headers: {}, body: { nombre: 'Ana' } }, res));
+    expect(res.code).toBe(503);
+  });
+  it('sin token de captcha se rechaza (antes de tocar la base)', async () => {
+    const res = respuesta();
+    await conEnv({ TURNSTILE_SECRET: 's', SUPABASE_SERVICE_ROLE_KEY: 'k' }, () => C({ method: 'POST', headers: {}, body: { nombre: 'Ana', correo: 'a@b.co', mensaje: 'Hola equipo de ModoParche' } }, res));
+    expect(res.code).toBe(400);
+    expect(res.body.codigo).toBe('CAPTCHA');
+  });
+  it('el campo oculto (bot) recibe ok sin guardar', async () => {
+    const res = respuesta();
+    await conEnv({ TURNSTILE_SECRET: 's', SUPABASE_SERVICE_ROLE_KEY: 'k' }, () => C({ method: 'POST', headers: {}, body: { sitio: 'spam' } }, res));
+    expect(res.code).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+  it('el formulario va a /api/contacto con el captcha cargado', () => {
+    const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+    expect(raiz('equipo.js')).toContain("fetch('/api/contacto'");
+    expect(raiz('equipo.js')).not.toContain('rpc/enviar_contacto');
+    expect(raiz('equipo.html')).toContain('mp-captcha.js');
+  });
+});
+
+describe('PWA y Edge Functions (revisión del código)', () => {
+  const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+  it('el service worker guarda el panel de negocios para abrir sin señal', () => {
+    const sw = raiz('sw.js');
+    for (const f of ['/empresa-dashboard', '/empresa-dashboard.js', '/empresa-dashboard.css']) expect(sw).toContain(`'${f}'`);
+    expect(sw).toMatch(/PANELES = \['\/empresa-dashboard', '\/dashboard'\]/);
+  });
+  it('la versión nueva espera a que la persona actualice', () => {
+    const sw = raiz('sw.js');
+    expect(sw).toContain("e.data.tipo === 'ACTUALIZAR'");
+    expect(sw).toMatch(/if \(primeraVez\) return self\.skipWaiting\(\)/);
+  });
+  it('el ícono muestra el número real de avisos', () => expect(raiz('sw.js')).toMatch(/setAppBadge\(Math\.min\(Math\.round\(n\), 999\)\)/));
+  it('los dos paneles registran el service worker con aviso', () => {
+    for (const f of ['dashboard.js', 'empresa-dashboard.js']) expect(raiz(f)).toContain('registrarSW');
+  });
+  it('enviar-push acepta los subdominios de Apple igual que la base', () => {
+    const ts = raiz('supabase/functions/enviar-push/index.ts');
+    const re = new RegExp(/HOSTS_PUSH = \/(.+)\/i;/.exec(ts)[1], 'i');
+    for (const h of ['web.push.apple.com', 'api.push.apple.com', 'a.b.push.apple.com', 'fcm.googleapis.com']) expect(re.test(h), h).toBe(true);
+    for (const h of ['push.apple.com.evil.co', 'evilpush.apple.com.co', 'apple.com']) expect(re.test(h), h).toBe(false);
+    expect(ts).toContain("'/admin'");
+    expect(ts).toContain('badge:');
+  });
+  it('wompi-webhook responde 405 y deduce el entorno del secreto', () => {
+    const ts = raiz('supabase/functions/wompi-webhook/index.ts');
+    expect(ts).toMatch(/status: 405/);
+    expect(ts).toContain("startsWith('prod_events_')");
+    expect(ts).toContain("startsWith('test_events_')");
+  });
+  it('wompi-checkout revisa negocio y frena antes de llamar a Wompi', () => {
+    const ts = raiz('supabase/functions/wompi-checkout/index.ts');
+    const i = ts.indexOf("body.accion === 'confirmar'");
+    const bloque = ts.slice(i, ts.indexOf('/transactions/', i));
+    expect(bloque).toContain('NO_ES_NEGOCIO');
+    expect(bloque).toContain('sistema_permitir_intento');
+  });
+  it('depurar-archivos está protegida y sin JWT en config.toml', () => {
+    expect(raiz('supabase/functions/depurar-archivos/index.ts')).toContain('x-cron-secret');
+    expect(raiz('supabase/config.toml')).toMatch(/\[functions\.depurar-archivos\]\s*\nverify_jwt = false/);
+  });
+  it('Tesseract se sirve desde el sitio y con un solo lector por revisión', () => {
+    const v = raiz('mp-verificacion.js');
+    expect(v).toContain("'/src/vendor/tesseract/tesseract.min.js'");
+    expect(v).not.toContain('cdn.jsdelivr.net/npm/tesseract.js');
+    expect((v.match(/createWorker\(/g) || []).length).toBe(1);
+    expect(fs.existsSync(new URL('../../src/vendor/tesseract/worker.min.js', import.meta.url))).toBe(true);
   });
 });

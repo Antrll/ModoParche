@@ -195,7 +195,7 @@
   // que no se pierdan al cambiar de celular o de navegador
   let syncT = null, ultimoSync = null;
   function syncNegocio() {
-    if (!REMOTE()) return;
+    if (!REMOTE() || SOLO_LECTURA) return; // sin señal no se intenta subir nada
     clearTimeout(syncT);
     syncT = setTimeout(async () => {
       const L = loc(), campos = { horarios: L.perfil.horarios || null, cupones: L.cupones };
@@ -210,6 +210,7 @@
     try {
       if (!REMOTE()) { localStorage.setItem(KEY, JSON.stringify(S)); return; }
       syncNegocio();
+      programarCopia();
       const L = loc(), rem = L.parches.filter(p => p.remoto);
       localStorage.setItem(KEY, JSON.stringify({
         v: 3, sonido: S.sonido, cupones: L.cupones, codigos: cuponesEnServidor ? [] : L.codigos, horarios: L.perfil.horarios,
@@ -396,6 +397,69 @@
     setTimeout(() => { b.hidden = true; }, 380);
   }
 
+  /* ---------- Sin conexión: copia local (solo lectura) y cola de cambios ----------
+     La copia sirve para abrir el panel sin señal y consultar la lista en el
+     Modo Puerta. Se borra al cerrar sesión (limpiarLocal). */
+  let SOLO_LECTURA = false, copiaT = null;
+  const COPIA_MAX = 7 * DAY;
+  const llaveCopia = () => 'mp_business_copia_' + (ME && ME.id);
+  const llaveCola = () => 'mp_business_cola_' + (ME && ME.id);
+  const sinRed = e => navigator.onLine === false || /failed to fetch|fetch failed|network|load failed|timeout|aborted/i.test(String((e && (e.message || e.details)) || e || ''));
+  function guardarCopia() {
+    if (!REMOTE() || SOLO_LECTURA || !S || !ME) return;
+    try {
+      const copia = JSON.parse(JSON.stringify(S));
+      // El chat no se guarda: solo lo necesario para consultar
+      for (const L of Object.values(copia.locales || {})) for (const p of L.parches || []) { p.chat = []; p.chatCargado = false; }
+      localStorage.setItem(llaveCopia(), JSON.stringify({ v: 1, ts: Date.now(), S: copia }));
+    } catch (e) { /* sin espacio: no hay copia, el panel sigue igual */ }
+  }
+  function programarCopia() { clearTimeout(copiaT); copiaT = setTimeout(guardarCopia, 1500); }
+  function abrirCopia() {
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem(llaveCopia()) || 'null'); } catch (e) { c = null; }
+    if (!c || c.v !== 1 || !c.S || !c.S.locales || !c.S.locales[c.S.actual] || !(Date.now() - c.ts < COPIA_MAX)) return false;
+    S = c.S; SOLO_LECTURA = true;
+    document.body.classList.add('is-solo-lectura');
+    const hora = new Date(c.ts).toLocaleString('es-CO', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+    MPUtil.barra('mp-sin-red', `Sin conexión · solo lectura (datos del ${hora})`, 'Reintentar', () => location.reload());
+    window.addEventListener('online', () => MPUtil.barra('mp-sin-red', 'Volvió la conexión', 'Recargar', () => location.reload()));
+    return true;
+  }
+  const leerCola = () => { try { const c = JSON.parse(localStorage.getItem(llaveCola()) || '[]'); return Array.isArray(c) ? c : []; } catch (e) { return []; } };
+  const guardarCola = c => { try { if (c.length) localStorage.setItem(llaveCola(), JSON.stringify(c)); else localStorage.removeItem(llaveCola()); } catch (e) { /* nada */ } };
+  function pintarCola() {
+    const n = leerCola().length;
+    MPUtil.barra('mp-cola', n ? `${n} ${n === 1 ? 'llegada por enviar' : 'llegadas por enviar'} cuando vuelva la señal` : '', SOLO_LECTURA ? '' : 'Enviar ahora', () => vaciarCola());
+  }
+  function encolar(accion) {
+    const antes = leerCola().length;
+    guardarCola(MPUtil.colaAgregar(leerCola(), { ...accion, ts: Date.now() }));
+    if (!antes) toast('Sin conexión', 'Lo marcado queda guardado en este celular y se envía solo cuando vuelva la señal.', { error: true });
+    pintarCola();
+  }
+  // Devuelve el error (o null si salió bien)
+  const enviarAccion = x => Promise.resolve(x.tipo === 'walkin'
+    ? SB().from('parche_walkins').update({ llego_en: x.llego }).eq('id', x.id)
+    : SB().rpc('organizador_checkin', { p_parche: x.parche, p_usuario: x.usuario, p_llego: x.llego })
+  ).then(r => (r && r.error) || null, e => e || new Error('network'));
+  let vaciando = false;
+  async function vaciarCola() {
+    if (vaciando || SOLO_LECTURA || !REMOTE() || navigator.onLine === false) return;
+    vaciando = true;
+    let enviados = 0, rechazados = 0;
+    try {
+      for (const x of leerCola()) {
+        const error = await enviarAccion(x);
+        if (error && sinRed(error)) break; // sigue sin señal: se intenta después
+        guardarCola(leerCola().filter(y => y.clave !== x.clave));
+        if (error) { rechazados++; console.warn('[cola]', error.message); } else enviados++;
+      }
+    } finally { vaciando = false; pintarCola(); }
+    if (enviados) toast('Llegadas enviadas', `${enviados} ${enviados === 1 ? 'cambio guardado' : 'cambios guardados'} en la nube.`);
+    if (rechazados) toast('Algunas llegadas no se guardaron', `${rechazados} ${rechazados === 1 ? 'cambio fue rechazado' : 'cambios fueron rechazados'} por el servidor. Revisa la lista.`, { error: true });
+  }
+
   async function bootRemoto() {
     const sb = SB();
     if (!sb) { setBoot('No pudimos conectar con el servidor. Revisa tu internet.', '<button class="btn primary" data-recargar>Reintentar</button><a class="btn" href="empresa-dashboard.html?demo=1">Ver el panel de ejemplo</a>'); return false; }
@@ -413,6 +477,7 @@
     KEY = 'mp_business_v3_' + ME.id;
     setBoot('Cargando tu negocio…');
     const { data: n, error } = await sb.from('negocios').select('*').eq('id', ME.id).maybeSingle();
+    if (error && sinRed(error) && abrirCopia()) return true;
     if (error) {
       const sql = /PGRST205|42P01|Could not find the table/i.test(`${error.code} ${error.message}`);
       setBoot(sql ? 'Falta activar las cuentas de negocio en la base de datos. Corre la migración <code>20261027120000_cuentas_negocio.sql</code> en Supabase y recarga.' : `No pudimos cargar tu negocio. ${esc(error.message)}`,
@@ -428,7 +493,9 @@
     ultimoSync = JSON.stringify({ horarios: S.locales[n.id].perfil.horarios || null, cupones: S.locales[n.id].cupones });
     if (!horariosValidos(n.horarios) && S.locales[n.id].perfil.horarios) ultimoSync = null; // horarios viejos del navegador: se suben a la base
     try { await cargarParchesRemotos(); }
-    catch (err) { setBoot(`No pudimos cargar tus parches. ${esc(err.message || '')}`, '<button class="btn primary" data-recargar>Reintentar</button>'); return false; }
+    catch (err) {
+      if (sinRed(err) && abrirCopia()) return true;
+      setBoot(`No pudimos cargar tus parches. ${esc(err.message || '')}`, '<button class="btn primary" data-recargar>Reintentar</button>'); return false; }
     try { await cargarMesas(); } catch (e) { /* Modo Mesa todavía no activo */ }
     try { await cargarCuponesRemotos(); } catch (e) { console.warn('[cupones]', e.message); }
 
@@ -460,6 +527,11 @@
         render();
       })
       .subscribe();
+    // Copia para abrir sin señal y envío de lo que quedó pendiente
+    guardarCopia();
+    window.addEventListener('online', () => vaciarCola());
+    vaciarCola();
+    pintarCola();
     return true;
   }
 
@@ -1194,11 +1266,11 @@
     if (REMOTE() && cuponesEnServidor) {
       // El código lo genera la base: es aleatorio y sirve en cualquier dispositivo
       return { pend: SB().rpc('emitir_cupon', {
-        p_parche: p.remoto ? p.id : null, p_usuario: usuario && esUuid(usuario) ? usuario : null, p_cupon: k.id, p_persona: persona,
+        p_parche: p.remoto ? p.id : null, p_usuario: p.remoto && usuario && esUuid(usuario) ? usuario : null, // la persona va siempre con su parche p_cupon: k.id, p_persona: persona,
         p_nombre: k.nombre, p_beneficio: k.beneficio, p_prefijo: k.prefijo, p_vence: new Date(NOW() + k.vigencia * DAY).toISOString(),
       }).then(({ data, error }) => {
         if (error) return { skip: `${k.nombre}: no se pudo entregar` };
-        if (!data.ok) return { skip: `${k.nombre} está ${data.codigo === 'PAUSADO' ? 'pausado' : 'agotado'}` };
+        if (!data.ok) return { skip: data.codigo === 'DEMASIADOS' ? `${k.nombre}: ${data.hint || 'espera un rato'}` : `${k.nombre} está ${data.codigo === 'PAUSADO' ? 'pausado' : 'agotado'}` };
         const c = ponerCodigo(data.cupon);
         renderShell();
         return data.nuevo ? { c } : null;
@@ -2969,16 +3041,19 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   // Las llegadas que marca el local también quedan en la base (organizador_checkin)
   const esUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || ''));
   function marcarEnBase(p, a, llego, antes = null) {
-    if (REMOTE() && a.walkin && a.walkinId) {
-      SB().from('parche_walkins').update({ llego_en: llego ? new Date(a.llego || NOW()).toISOString() : null }).eq('id', a.walkinId).then(() => {}, () => {});
-      return;
-    }
-    if (!REMOTE() || !p.remoto || !esUuid(a.id)) return;
-    SB().rpc('organizador_checkin', { p_parche: p.id, p_usuario: a.id, p_llego: llego }).then(({ error }) => {
-      const previo = a.metodoAntes ? { llego: a.llegoAntes, metodo: a.metodoAntes } : antes;
-      a.metodoAntes = a.llegoAntes = undefined;
+    if (!REMOTE()) return;
+    let accion = null;
+    if (a.walkin && a.walkinId) accion = { tipo: 'walkin', clave: 'w:' + a.walkinId, id: a.walkinId, llego: llego ? new Date(a.llego || NOW()).toISOString() : null };
+    else if (p.remoto && esUuid(a.id)) accion = { tipo: 'checkin', clave: `c:${p.id}:${a.id}`, parche: p.id, usuario: a.id, llego };
+    if (!accion) return;
+    const previo = a.metodoAntes ? { llego: a.llegoAntes, metodo: a.metodoAntes } : antes;
+    a.metodoAntes = a.llegoAntes = undefined;
+    // Sin señal: queda en la cola y se envía al volver (la lista del Modo Puerta sigue sirviendo)
+    if (SOLO_LECTURA || navigator.onLine === false) { encolar(accion); return; }
+    enviarAccion(accion).then(error => {
       if (!error) return;
-      toast(llego ? 'No se confirmó la llegada' : 'No se deshizo la llegada', error.hint || error.message, { error: true });
+      if (sinRed(error)) { encolar(accion); return; }
+      toast(llego ? 'No se confirmó la llegada' : 'No se deshizo la llegada', error.hint || error.message || 'Intenta de nuevo.', { error: true });
       // El panel vuelve a mostrar lo que dice la base
       if (previo) { a.llego = previo.llego; a.metodo = previo.metodo; save(); if (!$('#door-mode').hidden) renderDoor(); else render(); }
     });
@@ -3209,6 +3284,12 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   async function init() {
     // Los botones de la pantalla de carga (cerrar sesión) funcionan desde el principio
     $('#boot').addEventListener('click', e => { if (e.target.closest('[data-action="logout"]')) logout(); });
+    // PWA: abre sin señal y avisa cuando hay una versión nueva
+    if (window.MPUtil && window.MPUtil.registrarSW) {
+      window.MPUtil.registrarSW({
+        alHaberNueva: aplicar => window.MPUtil.barra('mp-version', 'Hay una versión nueva de ModoParche', 'Actualizar', b => { b.disabled = true; b.textContent = 'Actualizando…'; aplicar(); }),
+      }).catch(() => { /* sin service worker: el panel funciona igual */ });
+    }
     if (DEMO) load();
     else if (!(await bootRemoto())) return;
     verificar();

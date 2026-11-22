@@ -7,7 +7,8 @@
 //
 // Secretos:
 //   WOMPI_EVENTS_SECRET  test_events_... o prod_events_...
-//   WOMPI_ENTORNO        opcional: 'test' o 'prod' para rechazar eventos del otro entorno
+//   WOMPI_ENTORNO        opcional: 'test' o 'prod' para rechazar eventos del otro entorno.
+//                        Si no está, se deduce del secreto (prod_events_ -> prod, test_events_ -> test).
 //
 // Desplegar SIN verificación de JWT (Wompi no manda sesión de Supabase):
 //   supabase functions deploy wompi-webhook --no-verify-jwt
@@ -34,11 +35,19 @@ function iguales(a: string, b: string): boolean {
   for (let i = 0; i < Math.max(x.length, y.length); i++) dif |= (x[i] ?? 0) ^ (y[i] ?? 0);
   return dif === 0;
 }
+// Entorno esperado: el configurado o, si no hay, el que dice el prefijo del secreto
+function entornoEsperado(configurado: string | undefined, secreto: string): string | null {
+  const c = String(configurado ?? '').trim().toLowerCase();
+  if (c === 'prod' || c === 'test') return c;
+  if (secreto.startsWith('prod_events_')) return 'prod';
+  if (secreto.startsWith('test_events_')) return 'test';
+  return null;
+}
 const OBLIGATORIAS = ['transaction.id', 'transaction.status', 'transaction.amount_in_cents'];
 const VENTANA_MS = 72 * 3600_000; // Wompi reintenta hasta por un día
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') return new Response('ok');
+  if (req.method !== 'POST') return new Response('metodo no permitido', { status: 405, headers: { Allow: 'POST' } });
   const SECRETO = Deno.env.get('WOMPI_EVENTS_SECRET') ?? '';
   if (!SECRETO) return new Response('sin configurar', { status: 503 });
 
@@ -58,7 +67,7 @@ Deno.serve(async (req) => {
   const ms = ts < 1e12 ? ts * 1000 : ts;
   if (!Number.isFinite(ms) || Math.abs(Date.now() - ms) > VENTANA_MS) return new Response('evento vencido', { status: 401 });
 
-  const entorno = Deno.env.get('WOMPI_ENTORNO');
+  const entorno = entornoEsperado(Deno.env.get('WOMPI_ENTORNO'), SECRETO);
   if (entorno && evento.environment !== entorno) return new Response('otro entorno');
   if (evento.event !== 'transaction.updated') return new Response('ok');
 

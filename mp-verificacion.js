@@ -27,7 +27,9 @@
 
   /* ---------- Librerías por CDN (solo se cargan cuando hacen falta) ---------- */
   var LIB_ZXING = '/src/vendor/zxing.min.js';
-  var LIB_TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  // Tesseract.js 5.1.1 servido desde el propio sitio (copia exacta del paquete de npm)
+  var LIB_TESSERACT = '/src/vendor/tesseract/tesseract.min.js';
+  var WORKER_TESSERACT = '/src/vendor/tesseract/worker.min.js';
   var BUCKET = 'documentos_identidad';
 
   var cargas = {};
@@ -232,47 +234,90 @@
   }
 
   // c) Tesseract.js: OCR de números (respaldo y, si hace falta, el frente)
-  function leerOCR(canvases, onEstado) {
-    return cargarScript(LIB_TESSERACT, function () { return !!(window.Tesseract && window.Tesseract.createWorker); }).then(function () {
-      return window.Tesseract.createWorker('eng', 1, {
-        logger: function (m) {
-          if (onEstado && m && m.status === 'recognizing text') onEstado('Leyendo el número... ' + Math.round((m.progress || 0) * 100) + ' %');
-        },
-      });
-    }).then(function (worker) {
-      return worker.setParameters({ tessedit_char_whitelist: '0123456789.<ABCDEFGHIJKLMNOPQRSTUVWXYZ ' }).then(function () {
-        var textos = [], i = 0;
-        function siguiente() {
-          if (i >= canvases.length) return Promise.resolve(textos);
-          var c = canvases[i++];
-          if (!c) return siguiente();
-          return worker.recognize(paraOCR(c)).then(function (r) { textos.push((r && r.data && r.data.text) || ''); return siguiente(); });
-        }
-        return siguiente();
-      }).finally(function () { worker.terminate(); });
-    }).catch(function () { return []; });
+  // Un solo lector por revisión: se crea una vez y lee el respaldo y el
+  // frente seguidos. Si no se puede descargar el lector o su modelo, el
+  // error dice "sin conexión" (no es culpa de la foto).
+  var ERROR_RED = 'OCR_SIN_RED';
+  function errorDeRed(e) {
+    var err = new Error(ERROR_RED);
+    err.causa = e;
+    return err;
+  }
+  function crearLectorOCR(onEstado) {
+    var worker = null, creando = null;
+    function asegurar() {
+      if (worker) return Promise.resolve(worker);
+      if (creando) return creando;
+      creando = cargarScript(LIB_TESSERACT, function () { return !!(window.Tesseract && window.Tesseract.createWorker); })
+        .then(function () {
+          return window.Tesseract.createWorker('eng', 1, {
+            workerPath: new URL(WORKER_TESSERACT, location.href).href,
+            workerBlobURL: false,
+            logger: function (m) {
+              if (onEstado && m && m.status === 'recognizing text') onEstado('Leyendo el número... ' + Math.round((m.progress || 0) * 100) + ' %');
+            },
+          });
+        })
+        .then(function (w) {
+          return w.setParameters({ tessedit_char_whitelist: '0123456789.<ABCDEFGHIJKLMNOPQRSTUVWXYZ ' }).then(function () { worker = w; return w; });
+        })
+        // No cargó la librería, el núcleo o el modelo de idioma: es la conexión
+        .catch(function (e) { creando = null; throw errorDeRed(e); });
+      return creando;
+    }
+    return {
+      // Lee varios lienzos con el mismo lector; un fallo al leer una foto no es de red
+      leer: function (canvases) {
+        return asegurar().then(function (w) {
+          var textos = [], i = 0;
+          function siguiente() {
+            if (i >= canvases.length) return Promise.resolve(textos);
+            var c = canvases[i++];
+            if (!c) return siguiente();
+            return w.recognize(paraOCR(c)).then(function (r) { textos.push((r && r.data && r.data.text) || ''); }, function () { textos.push(''); }).then(siguiente);
+          }
+          return siguiente();
+        });
+      },
+      cerrar: function () {
+        var w = worker;
+        worker = null; creando = null;
+        if (w) { try { return Promise.resolve(w.terminate()).catch(function () {}); } catch (e) { /* ya estaba cerrado */ } }
+        return Promise.resolve();
+      },
+    };
   }
 
   /* Lee el número y dice si coincide con la cédula del registro.
-     Devuelve { ok, metodo: 'codigo' | 'ocr' | null } */
+     Devuelve { ok, metodo: 'codigo' | 'ocr' | null, leido, sinRed } */
   function leerNumero(trasera, frontal, cedula, onEstado) {
     var estado = onEstado || function () {};
+    var lector = null;
     estado('Buscando el código de barras del respaldo...');
     return leerNativo(trasera).then(function (t) {
       if (t && contieneCedula(t, cedula)) return { ok: true, metodo: 'codigo' };
       return leerZXing(trasera).then(function (t2) {
         if (t2 && contieneCedula(t2, cedula)) return { ok: true, metodo: 'codigo' };
+        var leido = !!(t || t2);
         estado('No vimos el código. Probando con lectura de texto (puede tardar unos segundos)...');
-        return leerOCR([trasera], estado).then(function (txts) {
+        lector = crearLectorOCR(estado);
+        return lector.leer([trasera]).then(function (txts) {
           if (txts.some(function (x) { return contieneCedula(x, cedula); })) return { ok: true, metodo: 'ocr' };
-          if (!frontal) return { ok: false, metodo: null, leido: !!(t || t2) };
+          if (!frontal) return { ok: false, metodo: null, leido: leido };
           estado('Revisando el número en el frente...');
-          return leerOCR([frontal], estado).then(function (t3) {
+          // El mismo lector: no se descarga ni se arranca otra vez
+          return lector.leer([frontal]).then(function (t3) {
             if (t3.some(function (x) { return contieneCedula(x, cedula); })) return { ok: true, metodo: 'ocr' };
-            return { ok: false, metodo: null, leido: !!(t || t2) };
+            return { ok: false, metodo: null, leido: leido };
           });
+        }).catch(function (e) {
+          if (e && e.message === ERROR_RED) return { ok: false, metodo: null, leido: leido, sinRed: true };
+          return { ok: false, metodo: null, leido: leido };
         });
       });
+    }).then(function (r) {
+      if (!lector) return r;
+      return lector.cerrar().then(function () { return r; });
     });
   }
 
@@ -347,6 +392,8 @@
       lectura = { ok: r.ok, metodo: r.metodo, para: turno };
       if (r.ok) {
         estado('ok', 'El número coincide con tu registro', 'Cédula terminada en ' + String(ctx.cedula).slice(-3) + '. Ya puedes verificar.');
+      } else if (r.sinRed && !r.leido) {
+        estado('error', 'No se pudo descargar el lector', 'Parece un problema de conexión, no de la foto. Revisa tu internet y vuelve a tomar la foto del respaldo.');
       } else if (r.leido) {
         estado('error', 'El número no coincide con tu registro', 'Revisa que sea tu cédula. Si la digitaste mal al registrarte, escríbenos a modoparcheoficial@gmail.com.');
       } else {

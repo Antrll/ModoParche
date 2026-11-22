@@ -12,3 +12,7 @@ verify_jwt = false
 # Lo llama el Database Webhook: se valida PUSH_WEBHOOK_SECRET
 [functions.enviar-push]
 verify_jwt = false
+
+# La llama un cron una vez al día: se valida CRON_SECRET (o PUSH_WEBHOOK_SECRET)
+[functions.depurar-archivos]
+verify_jwt = false

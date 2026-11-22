@@ -42,6 +42,64 @@ Sobre la base que ya está en producción, en este orden:
 
 ---
 
+## Despliegue de la Fase 3A (seguridad restante, notificaciones y PWA)
+
+Va después de las Fases 1 y 2, en este orden:
+
+1. **Supabase > SQL Editor**, pestaña nueva: corre `supabase/migrations/20261125120000_pulido_seguridad_y_pwa_fase3.sql`. Se puede correr más de una vez y no borra datos.
+2. **Secretos de Edge Functions** (Supabase > Edge Functions > Secrets): crea `CRON_SECRET` (una frase larga al azar). Si no existe, `depurar-archivos` usa `PUSH_WEBHOOK_SECRET`.
+3. **Despliega las Edge Functions** que cambiaron y la nueva:
+   ```bash
+   supabase functions deploy wompi-checkout
+   supabase functions deploy wompi-webhook --no-verify-jwt
+   supabase functions deploy enviar-push --no-verify-jwt
+   supabase functions deploy depurar-archivos --no-verify-jwt
+   ```
+4. **Vercel > Settings > Environment Variables**: crea `TURNSTILE_SECRET` (la *Secret Key* del widget de Turnstile, la misma de Supabase > Attack Protection) y `SUPABASE_SERVICE_ROLE_KEY` (Supabase > Project Settings > API > `service_role`). Las usa `/api/contacto`. **Nunca** las pongas en archivos del repositorio.
+5. **Programa la depuración diaria** (sección siguiente) y vuelve a desplegar en Vercel.
+
+> [!IMPORTANT]
+> Desde esta fase el formulario de `equipo.html` ya no llama la base directo: va a `/api/contacto`, que verifica el captcha de Turnstile en el servidor. Si faltan las variables del paso 4, el formulario responde que no está disponible (y muestra el correo del equipo).
+
+Qué cambia:
+
+| Tema | Qué hace |
+| --- | --- |
+| Registro de negocios | Exige nombre del negocio, responsable y teléfono o NIT válidos. |
+| Parches por día | Solo un negocio **verificado** por el equipo abre parches sin tope diario. Los demás (personas y negocios sin verificar) tienen máximo 6 al día. |
+| Cupones | Un cupón para una persona exige el parche donde está, no se entrega si alguno bloqueó al otro y hay máximo 120 cupones con aviso por negocio cada hora. |
+| Contacto | Captcha verificado en el servidor y aviso (push) a los admins activos cuando llega un mensaje. |
+| Wompi | `wompi-checkout` revisa que quien confirma sea un negocio y frena a 20 confirmaciones cada 10 minutos. `wompi-webhook` responde 405 a lo que no sea POST y deduce el entorno del secreto si falta `WOMPI_ENTORNO`. |
+| `/p/<id>` | No muestra parches terminados ni de negocios en mora. Un error de Supabase ya no se guarda en caché como "no existe". |
+| Push | Acepta todos los subdominios de Apple, los admins abren `/admin` y el ícono de la app muestra el número de avisos sin leer. |
+| Panel de negocios | Se instala como app, abre sin señal en **solo lectura** (útil para la lista del Modo Puerta) y guarda las llegadas marcadas sin señal para enviarlas al volver. |
+| Versión nueva | Los dos paneles avisan «Hay una versión nueva de ModoParche · Actualizar» y recargan de forma segura. |
+| Verificación de cédula | Tesseract se sirve desde el sitio (`src/vendor/tesseract/`), usa un solo lector para el respaldo y el frente, y si no se puede descargar dice que es la conexión, no la foto. |
+
+### Depuración automática de archivos
+
+`supabase/functions/depurar-archivos` vacía la cola `public.archivos_por_borrar` (cédulas, álbum y fotos de parches que ya no deben existir) sin que nadie abra `admin.html`. Solo saca de la cola lo que de verdad ya no está en Storage. Prográmala una vez al día con **una** de estas dos opciones:
+
+- **GitHub Actions (ya está lista):** `.github/workflows/depurar-archivos.yml` corre todos los días a las 4:00 a. m. (hora de Colombia). Crea el secreto `CRON_SECRET` en GitHub > Settings > Secrets and variables > Actions con el mismo valor de Supabase. Tiene que estar en la rama `main`.
+- **pg_cron + pg_net (dentro de Supabase):** activa las extensiones `pg_cron` y `pg_net` en Database > Extensions y corre en el SQL Editor (cambia `TU_CRON_SECRET`):
+  ```sql
+  select cron.schedule('depurar-archivos', '0 9 * * *', $$
+    select net.http_post(
+      url := 'https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/depurar-archivos',
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', 'TU_CRON_SECRET'),
+      body := '{}'::jsonb)
+  $$);
+  ```
+  Ojo: así la clave queda guardada en la tabla `cron.job` de la base.
+
+Para probarla a mano:
+```bash
+curl -X POST https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/depurar-archivos -H "x-cron-secret: TU_CRON_SECRET"
+```
+Responde `{ ok, revisados, borrados, fallos }`. El botón del panel admin sigue funcionando igual.
+
+---
+
 ## Dashboard de usuarios con Supabase
 
 El panel (`dashboard.html`) es para usuarios con cuenta. El login y el registro (`login.html`) usan Supabase Auth.

@@ -113,3 +113,20 @@ html.is-dark .mp-cargando-txt { background: rgba(255,255,255,.9); color: #111111
   .mp-cargando-badge img, .is-cargando .ic { animation: none; }
   .mp-cargando-ring { animation-duration: 1.6s; }
 }
+
+/* ---------- Barra de aviso fija (mp-utils.js: versión nueva, sin conexión) ---------- */
+.mp-barra {
+  position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 9999; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+  width: max-content; max-width: calc(100vw - 32px); padding: 10px 12px 10px 16px; border-radius: 999px;
+  background: #15110e; color: #fff; font: 600 14px/1.35 Inter, system-ui, sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+}
+.mp-barra + .mp-barra { bottom: calc(72px + env(safe-area-inset-bottom)); }
+.mp-barra-btn {
+  border: 0; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  background: var(--orange, #FF5A1F); color: #15110e; font: 800 13px/1 Inter, system-ui, sans-serif;
+}
+.mp-barra-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.mp-barra-btn[disabled] { opacity: .6; cursor: default; }
+@media (max-width: 480px) { .mp-barra { border-radius: 18px; } }

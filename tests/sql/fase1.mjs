@@ -25,7 +25,7 @@ await falla('1 sin fecha se rechaza', `insert into auth.users (id,email,raw_user
 await falla('1 tipo=admin ya no se salta la edad', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(903)}','d@a.co','{"tipo":"admin","nombre":"Juan Perez","cedula":"1234567"}','{"provider":"email"}')`, [], /MENOR/);
 await sirve('1 registro normal funciona', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(904)}','e@a.co','${JSON.stringify(persona('1234599'))}','{"provider":"email"}')`);
 await sirve('1 Google entra y completa después', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(905)}','g@a.co','{"full_name":"Ana Gomez"}','{"provider":"google"}')`);
-await sirve('1 empresa se registra', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(906)}','n@a.co','{"tipo":"empresa","negocio":"Negocio Registro","nit":"900111222"}','{"provider":"email"}')`);
+await sirve('1 empresa se registra', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(906)}','n@a.co','{"tipo":"empresa","negocio":"Negocio Registro","nit":"900111222","responsable":"Ana Dueña","telefono":"3001234567"}','{"provider":"email"}')`);
 await raiz();
 
 await nuevo('ana', 1, persona('10000001')); await nuevo('beto', 2, persona('10000002')); await nuevo('caro', 3, persona('10000003'));

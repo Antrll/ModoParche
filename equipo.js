@@ -39,21 +39,30 @@
     e.preventDefault();
     if (btn.disabled) return;
     if (window.MPValidar && !window.MPValidar(form)) return;
-    const cfg = window.MP_SUPABASE;
     btn.disabled = true; btn.classList.add('is-loading'); btn.setAttribute('aria-busy', 'true');
     status.classList.remove('is-visible');
+    // Captcha de Cloudflare (casi siempre invisible). El servidor lo verifica antes de guardar.
+    let token;
+    try { token = window.MPCaptcha ? await window.MPCaptcha.token(form) : undefined; }
+    catch (err) {
+      const [t, d] = window.MPCaptcha ? window.MPCaptcha.mensaje(err) : ['No pudimos verificarte', 'Recarga la página e intenta de nuevo.'];
+      aviso(t, d, true);
+      btn.disabled = false; btn.classList.remove('is-loading'); btn.removeAttribute('aria-busy');
+      return;
+    }
     try {
-      const r = await fetch(cfg.url + '/rest/v1/rpc/enviar_contacto', {
+      const r = await fetch('/api/contacto', {
         method: 'POST',
-        headers: { apikey: cfg.anon, Authorization: 'Bearer ' + cfg.anon, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          p_nombre: form.name.value, p_correo: form.email.value, p_motivo: MOTIVOS[form.topic.value] || 'contacto',
-          p_mensaje: form.msg.value, p_sitio: form.sitio ? form.sitio.value : '',
+          nombre: form.name.value, correo: form.email.value, motivo: MOTIVOS[form.topic.value] || 'contacto',
+          mensaje: form.msg.value, sitio: form.sitio ? form.sitio.value : '', token: token || '',
         }),
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(15000),
       });
       const d = await r.json().catch(() => null);
-      if (!r.ok) throw new Error('servidor');
+      // El servidor explica qué pasó (captcha, sin configurar) aunque no sea 200
+      if (!r.ok && !(d && d.hint)) throw new Error('servidor');
       if (!d || d.ok !== true) { aviso('No se envió', (d && d.hint) || 'Revisa los datos e intenta de nuevo.', true); return; }
       aviso('¡Mensaje enviado!', 'Lo leemos y te respondemos al correo que dejaste.', false);
       form.reset();

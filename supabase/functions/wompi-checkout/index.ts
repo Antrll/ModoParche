@@ -70,6 +70,16 @@ Deno.serve(async (req) => {
   if (body.accion === 'confirmar') {
     const id = String(body.transaccion ?? '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 64);
     if (!id) return json({ error: 'SIN_TRANSACCION' }, 400);
+    // Solo un negocio registrado (o alguien con un pago a su nombre) puede pedir confirmaciones
+    const [{ data: esNegocio }, { count: susPagos }] = await Promise.all([
+      admin.from('negocios').select('id').eq('id', user.id).maybeSingle(),
+      admin.from('pagos').select('id', { count: 'exact', head: true }).eq('negocio_id', user.id),
+    ]);
+    if (!esNegocio && !(susPagos ?? 0)) return json({ error: 'NO_ES_NEGOCIO' }, 403);
+    // Freno antes de preguntarle a Wompi: máximo 20 confirmaciones cada 10 minutos por cuenta
+    const { data: permitido, error: eFreno } = await admin.rpc('sistema_permitir_intento', { p_clave: `wompi-confirmar:${user.id}`, p_max: 20, p_segundos: 600 });
+    if (eFreno) { console.error('[confirmar] freno', eFreno.message); return json({ error: 'ERROR_INTERNO' }, 500); }
+    if (permitido !== true) return json({ error: 'DEMASIADOS' }, 429);
     let tx;
     try {
       const r = await fetch(`${API}/transactions/${id}`, { signal: AbortSignal.timeout(8000) });

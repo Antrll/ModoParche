@@ -75,10 +75,20 @@ ${p ? `<script type="application/ld+json">${JSON.stringify({ '@context': 'https:
 }
 
 module.exports = async (req, res) => {
+  // Solo se lee: cualquier otro método no tiene sentido aquí
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD');
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(405).send('Método no permitido');
+    return;
+  }
   // Origen fijo: el encabezado Host lo controla quien hace la petición
   const origin = 'https://modoparche.vercel.app';
   const id = String((req.query && req.query.id) || '').trim();
   let p = null;
+  // falloServidor: Supabase no respondió o dio error. No es lo mismo que
+  // "este parche no existe" y no se debe guardar en caché.
+  let falloServidor = false;
   if (UUID.test(id)) {
     try {
       const r = await fetch(`${SB_URL}/rest/v1/rpc/parche_publico`, {
@@ -88,9 +98,18 @@ module.exports = async (req, res) => {
         signal: AbortSignal.timeout(5000),
       });
       if (r.ok) p = await r.json();
-    } catch (e) { p = null; }
+      else falloServidor = r.status >= 500 || r.status === 429;
+    } catch (e) { p = null; falloServidor = true; }
   }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-  res.status(p ? 200 : 404).send(pagina({ origin, p }));
+  res.setHeader('Cache-Control', cacheDe(p, falloServidor));
+  res.status(p ? 200 : falloServidor ? 503 : 404).send(pagina({ origin, p }));
 };
+
+// Caché según el resultado: un error de red nunca se guarda; un 404 real, poco
+function cacheDe(p, falloServidor) {
+  if (falloServidor) return 'no-store';
+  if (!p) return 'public, s-maxage=60, stale-while-revalidate=60';
+  return 'public, s-maxage=300, stale-while-revalidate=600';
+}
+module.exports.cacheDe = cacheDe;

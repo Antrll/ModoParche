@@ -1,0 +1,39 @@
+# =====================================================================
+# ModoParche · Depuración diaria de archivos (Edge Function depurar-archivos)
+#
+# Todos los días a las 4:00 a. m. (hora de Colombia) y cuando lo corras a
+# mano (Actions > Depurar archivos > Run workflow), llama la función que
+# borra de Storage los archivos de public.archivos_por_borrar.
+#
+# Secreto (GitHub > Settings > Secrets and variables > Actions):
+#   CRON_SECRET  el mismo valor de CRON_SECRET en Supabase > Edge Functions > Secrets
+# Ojo: las tareas programadas de GitHub solo corren desde la rama main.
+# Alternativa sin GitHub: pg_cron + pg_net (ver README > "Depuración automática de archivos").
+# =====================================================================
+name: Depurar archivos
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  depurar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Llamar depurar-archivos
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Falta el secreto CRON_SECRET: no se depuró nada."
+            exit 0
+          fi
+          curl -fsS -X POST "https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/depurar-archivos" \
+            -H "x-cron-secret: $CRON_SECRET" -H "Content-Type: application/json" -d '{}'
+          echo

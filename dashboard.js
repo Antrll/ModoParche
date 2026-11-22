@@ -4543,9 +4543,11 @@
   const b64u = s => { const pad = '='.repeat((4 - s.length % 4) % 4); const raw = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
   async function pushActual() { try { return swReg && swReg.pushManager ? await swReg.pushManager.getSubscription() : null; } catch (e) { return null; } }
   function initApp() {
-    const seguro = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
-    if ('serviceWorker' in navigator && seguro) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(r => { swReg = r; renderApp(); }).catch(() => renderApp());
+    // Registra el service worker y avisa cuando hay una versión nueva de la app
+    if (window.MPUtil && window.MPUtil.registrarSW) {
+      window.MPUtil.registrarSW({
+        alHaberNueva: aplicar => window.MPUtil.barra('mp-version', 'Hay una versión nueva de ModoParche', 'Actualizar', b => { b.disabled = true; b.textContent = 'Actualizando…'; aplicar(); }),
+      }).then(r => { if (r) { swReg = r; renderApp(); } }).catch(() => renderApp());
     }
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; renderApp(); });
     window.addEventListener('appinstalled', () => { installEvt = null; renderApp(); toast('¡ModoParche instalado!', 'Ya lo tienes en tu pantalla de inicio.', { icon: 'i-check' }); });

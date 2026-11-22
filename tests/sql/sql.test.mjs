@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const correr = archivo => spawnSync(process.execPath, [fileURLToPath(new URL(archivo, import.meta.url))], { encoding: 'utf8', timeout: 240000, maxBuffer: 1e8 });
 
 describe('Base de datos', () => {
-  for (const [nombre, archivo] of [['registro, cobros, check-in y permisos (Fase 1)', './fase1.mjs'], ['estabilidad y datos persistentes (Fase 2)', './fase2.mjs']]) {
+  for (const [nombre, archivo] of [['registro, cobros, check-in y permisos (Fase 1)', './fase1.mjs'], ['estabilidad y datos persistentes (Fase 2)', './fase2.mjs'], ['negocios, cupones, contacto y vista pública (Fase 3A)', './fase3.mjs']]) {
     it(nombre, () => {
       const r = correr(archivo);
       const m = /PASARON (\d+) · FALLARON (\d+)/.exec(r.stdout || '');

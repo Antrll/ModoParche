@@ -25,7 +25,7 @@ await falla('1 sin fecha se rechaza', `insert into auth.users (id,email,raw_user
 await falla('1 tipo=admin ya no se salta la edad', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(903)}','d@a.co','{"tipo":"admin","nombre":"Juan Perez","cedula":"1234567"}','{"provider":"email"}')`, [], /MENOR/);
 await sirve('1 registro normal funciona', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(904)}','e@a.co','${JSON.stringify(persona('1234599'))}','{"provider":"email"}')`);
 await sirve('1 Google entra y completa después', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(905)}','g@a.co','{"full_name":"Ana Gomez"}','{"provider":"google"}')`);
-await sirve('1 empresa se registra', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(906)}','n@a.co','{"tipo":"empresa","negocio":"Negocio Registro","nit":"900111222"}','{"provider":"email"}')`);
+await sirve('1 empresa se registra', `insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ('${ID(906)}','n@a.co','{"tipo":"empresa","negocio":"Negocio Registro","nit":"900111222","responsable":"Ana Dueña","telefono":"3001234567"}','{"provider":"email"}')`);
 await raiz();
 
 await nuevo('ana', 1, persona('10000001')); await nuevo('beto', 2, persona('10000002')); await nuevo('caro', 3, persona('10000003'));
@@ -38,7 +38,7 @@ await db.query(`update public.perfiles_privados set cedula_verificada=true, cedu
 
 // ---------- FASE 2
 const sinTrg = async (t, fn) => { await raiz(); await db.exec(`alter table public.${t} disable trigger user`); await fn(); await db.exec(`alter table public.${t} enable trigger user`); };
-const regN = async (k, i, plan) => { await raiz(); await db.exec('set session authorization supabase_auth_admin'); await db.query(`insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ($1,$2,$3,'{"provider":"email"}')`, [ID(i), `${k}@neg.co`, JSON.stringify({ tipo: 'empresa', negocio: 'Negocio ' + k, nit: '90011122' + i, plan })]); await raiz(); return (await uno(`select plan, plan_pendiente from public.negocios where id=$1`, [ID(i)])); };
+const regN = async (k, i, plan) => { await raiz(); await db.exec('set session authorization supabase_auth_admin'); await db.query(`insert into auth.users (id,email,raw_user_meta_data,raw_app_meta_data) values ($1,$2,$3,'{"provider":"email"}')`, [ID(i), `${k}@neg.co`, JSON.stringify({ tipo: 'empresa', negocio: 'Negocio ' + k, nit: '900111' + i, responsable: 'Ana Dueña', telefono: '3001234567', plan })]); await raiz(); return (await uno(`select plan, plan_pendiente from public.negocios where id=$1`, [ID(i)])); };
 let r = await regN('b', 300, 'basico'); pasa('16 básico', r.plan === 'basico' && !r.plan_pendiente, JSON.stringify(r));
 r = await regN('v', 301, 'villavo'); pasa('16 villavo directo', r.plan === 'villavo' && !r.plan_pendiente, JSON.stringify(r));
 r = await regN('s', 302, 'sedes'); pasa('16 sedes = villavo pendiente', r.plan === 'villavo' && r.plan_pendiente === 'sedes', JSON.stringify(r));
@@ -48,13 +48,14 @@ pasa('16 zona Bogotá en facturación', tz[0].n === 7, String(tz[0].n));
 const per = await uno(`select pg_get_expr(adbin,adrelid) e from pg_attrdef d join pg_attribute a on a.attrelid=d.adrelid and a.attnum=d.adnum where d.adrelid='public.cobros'::regclass and a.attname='periodo'`);
 pasa('16 periodo por defecto en Bogotá', /America\/Bogota/.test(per.e));
 
-await anon();
+// Desde la Fase 3 el contacto solo lo llama el servidor (/api/contacto con service_role)
+await raiz(); await db.exec('set role service_role');
 const cont = (n, c = 'a@b.co', m = 'Hola quiero trabajar con ustedes', s = '') => uno(`select public.enviar_contacto($1,$2,'empleo',$3,$4) r`, [n, c, m, s]);
 pasa('17 honeypot', (await cont('Bot', 'x', 'y', 'spam')).r.ok === true);
 pasa('17 correo inválido', (await cont('Ana', 'malo')).r.ok === false);
 pasa('17 envía', (await cont('Ana')).r.ok === true); await cont('Ana'); await cont('Ana');
 pasa('17 rate limit', (await cont('Ana')).r.codigo === 'DEMASIADOS');
-await falla('17 anon no lee', `select * from public.mensajes_contacto`);
+await anon(); await falla('17 anon no lee', `select * from public.mensajes_contacto`);
 await raiz(); pasa('17 solo 3 guardados', (await uno(`select count(*)::int n from public.mensajes_contacto`)).n === 3);
 await como(U.ana); await falla('17 usuario no ve panel', `select public.admin_contacto()`);
 await como(U.mod, 'aal2'); pasa('17 staff ve', (await uno(`select public.admin_contacto() r`)).r.length === 3);

@@ -23,7 +23,8 @@ const json = (body: unknown, status = 200) =>
 // El texto de las notificaciones trae <b>…</b>: se quita para el aviso del sistema
 const limpiar = (t: string) => String(t ?? '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').slice(0, 180);
 
-const HOSTS_PUSH = /^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)$/i;
+// Igual que la regla de la base (private.push_valido): Apple usa varios subdominios de push.apple.com
+const HOSTS_PUSH = /^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.notify\.windows\.com|([a-z0-9-]+\.)*push\.apple\.com)$/i;
 const endpointValido = (u: string) => { try { const x = new URL(u); return x.protocol === 'https:' && !x.username && !x.password && HOSTS_PUSH.test(x.hostname); } catch { return false; } };
 // Compara huellas de igual largo para no filtrar el secreto por tiempo
 async function mismoSecreto(a: string, b: string): Promise<boolean> {
@@ -50,15 +51,22 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
   const { data: subs, error } = await admin.from('push_suscripciones').select('id, endpoint, p256dh, auth').eq('usuario_id', n.usuario_id).order('id', { ascending: false }).limit(5);
   if (error) { console.error('[push]', error.message); return json({ error: 'ERROR_INTERNO' }, 500); }
-  // Un negocio abre su panel; una persona, su radar
-  const { data: negocio } = await admin.from('negocios').select('id').eq('id', n.usuario_id).maybeSingle();
-  const base = negocio ? '/empresa-dashboard' : '/dashboard';
+  if (!subs?.length) return json({ ok: true, enviados: 0 });
+  // El equipo abre el panel admin; un negocio, su panel; una persona, su radar
+  const [{ data: esAdmin }, { data: negocio }, { count: noLeidas }] = await Promise.all([
+    admin.from('admins').select('id').eq('id', n.usuario_id).maybeSingle(),
+    admin.from('negocios').select('id').eq('id', n.usuario_id).maybeSingle(),
+    admin.from('notificaciones').select('id', { count: 'exact', head: true }).eq('usuario_id', n.usuario_id).eq('leida', false),
+  ]);
+  const base = esAdmin ? '/admin' : negocio ? '/empresa-dashboard' : '/dashboard';
 
   const payload = JSON.stringify({
     title: 'ModoParche',
     body: limpiar(n.texto),
-    url: negocio ? base : (n.parche_id ? `${base}?parche=${n.parche_id}` : base),
+    url: esAdmin || negocio ? base : (n.parche_id ? `${base}?parche=${n.parche_id}` : base),
     tag: n.parche_id ? `parche-${n.parche_id}` : `mp-${n.id}`,
+    // Número del ícono de la app (avisos sin leer)
+    badge: Math.max(0, Math.min(Number(noLeidas ?? 0), 999)),
   });
 
   let enviados = 0;
@@ -71,6 +79,7 @@ Deno.serve(async (req) => {
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;
       if (code === 404 || code === 410) vencidas.push(s.id); // el navegador ya no la acepta
+      else console.error('[push] no se envió', code ?? '', (e as Error)?.message ?? e);
     }
   }));
   if (vencidas.length) await admin.from('push_suscripciones').delete().in('id', vencidas);
