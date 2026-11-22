@@ -1,4 +1,6 @@
   📍 ModoParche
+
+> **¿Vienes de otro computador o de otra sesión?** Lee primero [`docs/CONTEXTO-SubidaDavidClaudeWeb.md`](docs/CONTEXTO-SubidaDavidClaudeWeb.md): qué se cambió en la rama `SubidaDavidClaudeWeb`, dónde, cómo funciona, cómo desplegar y probar, y qué falta. El historial punto por punto está en [`CAMBIOS-DAVID.md`](CAMBIOS-DAVID.md).
 "ModoParche" es una plataforma regional diseñada para conectar personas con planes, actividades y experiencias en su ciudad. Su objetivo es solucionar una situación cotidiana: querer salir, hacer algo diferente o conocer personas, pero no saber qué hacer, con quién hacerlo o dónde ir.
 
 Los usuarios pueden descubrir planes cercanos, crear su propio parche, unirse a actividades existentes y encontrar personas con intereses, horarios y presupuestos compatibles. Una de sus principales funcionalidades es Open the Parche, que permite crear encuentros abiertos para que otros usuarios puedan unirse.

@@ -83,3 +83,9 @@ Lo que antes no se había podido probar, ahora se probó de verdad: Deno 2.9.6 p
 - `vitest.config.mjs`: Vitest corre solo `tests/unit` y `tests/sql` (las de `tests/edge` son de Deno).
 
 **Pruebas:** `npm run lint` 0 errores · `npm test` 57/57 (incluye 153 + 67 + 70 comprobaciones SQL) · `npm run test:edge` 32/32 + `deno check` de las 5 funciones · `npm run build` y `vercel build` sin errores · `npm audit` 0 vulnerabilidades.
+
+## 9. Documentación completa para el otro computador
+- **`docs/CONTEXTO-SubidaDavidClaudeWeb.md` (nuevo):** el documento para retomar el trabajo. Trae: ramas, cómo traer esto en Windows, mapa del proyecto, todos los cambios por área (base de datos, Edge Functions, paneles, utilidades, service worker, páginas, build/CI, borrados, dependencias), reglas nuevas que notan los usuarios, tabla de secretos (qué va en Supabase, GitHub y Vercel), despliegue en orden y prueba en Preview, cómo probar, riesgos, solución de problemas, próximas mejoras por prioridad e historial de commits.
+- **`CLAUDE.md` (nuevo):** guía corta que Claude Code lee solo al abrir el proyecto (reglas del repositorio, comandos, cosas que no son obvias).
+- **`README.md`:** al inicio, un aviso que manda a esos dos documentos.
+- **Dato nuevo documentado:** para probar en un despliegue Preview de Vercel hay que agregar ese dominio a `ORIGENES_EXTRA` (Supabase) y al widget de Cloudflare Turnstile; si no, el contacto y los pagos responden 403 y el captcha falla.
