@@ -736,16 +736,17 @@ body.no-scroll .toast { background: var(--night-2); border: 1px solid var(--nigh
   .flow li + li::before { display: none; }
 }
 @media (max-width: 860px) {
-  :root { --pad: 16px; --topbar: 56px; }
+  :root { --pad: 16px; --topbar: 62px; --control-height: 42px; --nav-row: 44px; }
   .app { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { position: fixed; inset: 0; z-index: 50; width: 100%; height: 100%; background: var(--surface); border: 0; transform: translateX(-100%); transition: transform var(--t-ui) var(--ease-out); }
+  .sidebar { position: fixed; inset: 0; z-index: 50; width: 100%; height: 100%; height: 100dvh; padding: 6px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--surface); border: 0; transform: translateX(-100%); transition: transform var(--t-ui) var(--ease-out); }
   .sidebar.open { transform: none; }
-  .icon-btn.menu-close, .icon-btn.menu-toggle { display: inline-grid; }
+  .icon-btn.menu-close, .icon-btn.menu-toggle { display: inline-grid; width: 42px; height: 42px; background: var(--raised); }
+  .icon-btn.menu-close .ic, .icon-btn.menu-toggle .ic { width: 20px; height: 20px; }
   .topbar { gap: 8px; }
   .topbar .search { display: none; }
   .topbar-right { gap: 6px; }
-  .topbar-right .btn span { display: none; }
-  .topbar-right .btn { width: 36px; padding: 0; }
+  .topbar-right .btn.sos-biz span { display: none; }
+  .topbar-right .btn.sos-biz { width: 38px; height: 38px; padding: 0; }
   .kbd--in { display: none; }
   .canvas { padding: 20px var(--pad) 48px; }
   .display { font-size: 26px; }
@@ -1237,29 +1238,39 @@ select.input { background-position: right 14px center; }
   .hello { grid-template-columns: minmax(0, 1fr) 200px; }
 }
 @media (max-width: 860px) {
-  .topbar { height: 62px; }
-  .hello { grid-template-columns: 1fr; min-height: 0; padding: 24px 20px; border-radius: 24px; }
-  .hello-art { position: absolute; right: -14px; top: -14px; width: 120px; height: 120px; min-height: 0; }
-  .hello-kicker { max-width: calc(100% - 100px); }
+  .topbar { height: 62px; padding: 0 12px; }
+  .hello { grid-template-columns: 1fr; min-height: 0; padding: 22px 20px; border-radius: 24px; }
+  .hello-art { position: absolute; right: 12px; top: 14px; width: 92px; height: 92px; min-height: 0; }
+  .hello-kicker { max-width: calc(100% - 104px); }
   .hello-stk { display: none; }
-  .hello-title { margin-top: 28px; font-size: clamp(36px, 11vw, 52px); }
-  .hello-actions .btn { flex: 1 1 auto; }
+  .hello-title { margin-top: 22px; font-size: clamp(36px, 11vw, 52px); }
+  .hello-actions .btn { flex: 1 1 100%; min-height: 46px; font-size: 15px; }
+  .biz-tip .btn { min-height: 42px; font-size: 14px; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi:nth-child(n + 3), .kpi:nth-child(2n) { border: 0; }
   .kpi-value { font-size: 34px; }
-  .sidebar { padding-top: 6px; box-shadow: none; }
+  .sidebar { box-shadow: none; }
+  .sidebar .nav { gap: 4px; padding-top: 4px; }
+  .sidebar .nav-item { height: 42px; padding: 0 16px; font-size: 15px; }
+  .sidebar .group-label { margin: 10px 14px 2px; }
+  .sidebar .side-bottom { grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; }
+  .sidebar .door-cta { grid-column: 1 / -1; padding: 14px 16px; }
+  .sidebar .side-bottom .nav-item { justify-content: center; height: 42px; padding: 0 12px; background: var(--raised); font-size: 14px; font-weight: 700; }
   .tabs { display: flex; }
-  .tabs button { flex: 1; padding: 0 10px; }
+  .tabs button { flex: 1; padding: 0 10px; min-height: 42px; }
   .panel > header { align-items: flex-start; }
-  .topbar { padding: 0 12px; }
   .topbar-right { gap: 6px; }
   .demo-chip > span, #sound-btn { display: none; }
   .demo-chip { padding: 0 3px; }
-  .live-chip #live-text { display: none; }
-  .live-chip { padding: 0 11px; }
-  .topbar-right .btn.primary { width: 42px; padding: 0; }
+  .live-chip { height: 36px; padding: 0 11px; font-size: 12px; }
+  .topbar-right .btn.primary { width: auto; height: 38px; padding: 0 14px; font-size: 13px; }
+  .topbar-right .btn.primary span { display: inline; }
   .dialog { border-radius: 28px 28px 0 0; }
   .dialog[open] { animation: sheetIn .45s var(--ease-drawer); }
+}
+@media (max-width: 390px) {
+  .live-chip #live-text { display: none; }
+  .live-chip { padding: 0 11px; }
 }
 @keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) {
