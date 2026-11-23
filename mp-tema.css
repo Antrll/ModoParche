@@ -44,6 +44,8 @@ html.mp-tinta::view-transition-new(root) {
 }
 html.mp-tinta header.nav, html.mp-tinta header.top, html.mp-tinta header.topbar { view-transition-name: mp-barra-sup; }
 ::view-transition-group(mp-barra-sup) { z-index: 2; animation: none; }
+::view-transition-old(mp-barra-sup),
+::view-transition-new(mp-barra-sup) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(mp-barra-sup) { opacity: 0; }
 /* Sin View Transitions: cambio de color suave */
 html.mp-tema-fade, html.mp-tema-fade *, html.mp-tema-fade *::before, html.mp-tema-fade *::after {

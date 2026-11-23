@@ -338,7 +338,7 @@
     ultimoCambio = ahora;
     if (transicion || esperando || seguido) { terminarTinta(); cambiarConFundido(oscuro); return; }
 
-    if (!document.startViewTransition || reduceMotion.matches || window.matchMedia('(pointer: coarse)').matches) { cambiarConFundido(oscuro); return; }
+    if (!document.startViewTransition || reduceMotion.matches) { cambiarConFundido(oscuro); return; }
 
     if (!siguienteMascara) prepararMascara();
     esperando = true;
