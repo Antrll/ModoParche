@@ -40,9 +40,6 @@ html.is-dark .pa-fab {
   width: 100%; height: 100%; object-fit: contain; display: block;
   pointer-events: none; user-select: none; -webkit-user-drag: none;
 }
-.pa .pa-img-dk { display: none; }
-html.is-dark .pa .pa-img-lt { display: none; }
-html.is-dark .pa .pa-img-dk { display: block; }
 .pa-fab:active { transform: scale(.86, .92) rotate(-6deg); }
 .pa.is-abierto .pa-fab { animation: pa-jelly .55s var(--pa-spring); }
 .pa-fab:focus-visible, .pa-x:focus-visible, .pa-sug-toggle:focus-visible, .pa-sug-lista button:focus-visible, .pa-form button:focus-visible { outline: 3px solid #FF5A1F; outline-offset: 3px; }
@@ -88,6 +85,9 @@ html.is-dark .pa .pa-img-dk { display: block; }
   .pa-head:hover .pa-sello { transform: translateY(-3px) rotate(-6deg) scale(1.06); }
 }
 .pa-sello .pa-avatar-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+.pa-sello .pa-img-dk { display: none; }
+html.is-dark .pa-sello .pa-img-lt { display: none; }
+html.is-dark .pa-sello .pa-img-dk { display: block; }
 .pa-head div { flex: 1; min-width: 0; display: grid; }
 .pa-head b { font-family: var(--font-display, 'Gagalin', sans-serif); font-weight: 400; font-size: 1.5rem; line-height: 1; text-transform: uppercase; }
 .pa-head small { margin-top: 3px; font-size: .78rem; font-weight: 700; }

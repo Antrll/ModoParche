@@ -38,7 +38,8 @@
     ORIGEN: 'Recarga la página para volver a hablar conmigo.',
   };
   var FALLO = 'Ahora no pude responder. Puedes mirar /preguntas o escribirnos a modoparcheoficial@gmail.com.';
-  var IMG_PARCE =
+  var IMG_BOTON = '<img class="pa-avatar-img" src="/src/assets/web/parce-asistente.png" alt="" width="76" height="79" decoding="async">';
+  var IMG_CABECERA =
     '<img class="pa-avatar-img pa-img-lt" src="/src/assets/web/parce-asistente-negra.png" alt="" width="76" height="79" decoding="async">' +
     '<img class="pa-avatar-img pa-img-dk" src="/src/assets/web/parce-asistente-blanca.png" alt="" width="76" height="79" decoding="async">';
   var CERRAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
@@ -133,7 +134,7 @@
     raiz.className = 'pa' + (document.getElementById('toasts') || document.querySelector('.bottom-nav') ? ' pa--panel' : '');
     raiz.innerHTML =
       '<section class="pa-panel" role="dialog" aria-label="Parce, asistente virtual de ModoParche" hidden>' +
-        '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + IMG_PARCE + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
+        '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + IMG_CABECERA + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
         '<button type="button" class="pa-x" aria-label="Cerrar el asistente">' + CERRAR + '</button></header>' +
         '<div class="pa-lista" role="log" aria-live="polite"></div>' +
         '<div class="pa-sug">' +
@@ -146,7 +147,7 @@
         '<input id="pa-campo" maxlength="' + MAX + '" placeholder="Pregúntame lo que quieras"><button type="submit" aria-label="Enviar">' + ENVIAR + '</button></form>' +
         '<p class="pa-nota">Puede equivocarse. No escribas cédula, claves ni datos de pago.</p>' +
       '</section>' +
-      '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir a Parce, asistente virtual">' + IMG_PARCE + '</button>';
+      '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir a Parce, asistente virtual">' + IMG_BOTON + '</button>';
     document.body.appendChild(raiz);
     panel = raiz.querySelector('.pa-panel'); lista = raiz.querySelector('.pa-lista');
     campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button');

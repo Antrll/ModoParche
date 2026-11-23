@@ -17,7 +17,7 @@ const BASICO = [
   '/src/assets/web/isotipo-96.png', '/src/assets/web/isotipo-light-96.png', '/src/assets/web/logo-isotipo.webp', '/src/assets/fonts/Gagalin-Regular.woff2', '/mp-fuentes.css', '/src/assets/fonts/Inter-latin.woff2',
   // Panel de negocios: abre sin señal en solo lectura (lista del Modo Puerta)
   '/empresa-dashboard', '/empresa-dashboard.js', '/empresa-dashboard.css', '/mp-seguridad-biz.js', '/legal.css', '/src/vendor/qrcode.js',
-  '/mp-asistente.js', '/mp-asistente.css', '/src/assets/web/parce-asistente-negra.png', '/src/assets/web/parce-asistente-blanca.png',
+  '/mp-asistente.js', '/mp-asistente.css', '/src/assets/web/parce-asistente.png', '/src/assets/web/parce-asistente-negra.png', '/src/assets/web/parce-asistente-blanca.png',
 ];
 // Panel al que vuelve cada ruta cuando no hay conexión
 const PANELES = ['/empresa-dashboard', '/dashboard'];
