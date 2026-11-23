@@ -100,17 +100,33 @@
     capa.setAttribute('aria-modal', 'true');
     capa.setAttribute('aria-labelledby', 'mp-edad-titulo');
     capa.innerHTML =
+      '<svg class="mp-edad-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>' +
+        '<filter id="mp-edad-goo">' +
+          '<feGaussianBlur in="SourceGraphic" stdDeviation="4.6" result="blur"/>' +
+          '<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="goo"/>' +
+          '<feComposite in="SourceGraphic" in2="goo" operator="atop"/>' +
+        '</filter>' +
+      '</defs></svg>' +
       '<div class="mp-edad-card">' +
         '<div class="mp-edad-top">' +
-          '<span class="mp-edad-logo" aria-hidden="true"><img src="' + base + 'src/assets/web/isotipo-light-96.png" alt="" width="40" height="40"></span>' +
-          '<span class="mp-edad-badge">+18</span>' +
+          '<span class="mp-edad-logo" aria-hidden="true">' +
+            '<span class="mp-edad-tinta mp-edad-tinta--logo"><i></i><i></i><i></i><i></i></span>' +
+            '<img src="' + base + 'src/assets/web/isotipo-light-96.png" alt="" width="40" height="40">' +
+          '</span>' +
+          '<span class="mp-edad-badge">' +
+            '<span class="mp-edad-tinta mp-edad-tinta--badge" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
+            '<b>+18</b>' +
+          '</span>' +
         '</div>' +
         '<div class="mp-edad-body" id="mp-edad-paso-1">' +
           '<p class="mp-edad-kicker">Acceso responsable · Villavicencio</p>' +
           '<h2 class="mp-edad-title" id="mp-edad-titulo">Solo para mayores de 18</h2>' +
           '<p class="mp-edad-desc">ModoParche conecta personas en planes presenciales, bares y eventos locales. Confirma que eres mayor de edad para continuar.</p>' +
           '<div class="mp-edad-acts">' +
-            '<button type="button" class="mp-edad-ok" id="mp-edad-si">Tengo más de 18 años</button>' +
+            '<button type="button" class="mp-edad-ok" id="mp-edad-si">' +
+              '<span class="mp-edad-tinta mp-edad-tinta--btn" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
+              '<span class="mp-edad-ok-txt">Tengo más de 18 años</span>' +
+            '</button>' +
             '<button type="button" class="mp-edad-no" id="mp-edad-no">Soy menor de 18 años</button>' +
           '</div>' +
           '<p class="mp-edad-foot">Al entrar aceptas nuestros <a href="' + base + 'terminos.html">Términos</a> y <a href="' + base + 'privacidad.html">Privacidad</a>.</p>' +
@@ -120,7 +136,10 @@
           '<h2 class="mp-edad-title">Te esperamos cuando cumplas 18</h2>' +
           '<p class="mp-edad-desc">Por seguridad y normativa local, ModoParche es exclusivo para personas mayores de edad.</p>' +
           '<div class="mp-edad-acts">' +
-            '<a class="mp-edad-ok" href="https://www.google.com">Salir del sitio</a>' +
+            '<a class="mp-edad-ok" href="https://www.google.com">' +
+              '<span class="mp-edad-tinta mp-edad-tinta--btn" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
+              '<span class="mp-edad-ok-txt">Salir del sitio</span>' +
+            '</a>' +
             '<button type="button" class="mp-edad-no" id="mp-edad-volver">Me equivoqué, volver</button>' +
           '</div>' +
         '</div>' +
