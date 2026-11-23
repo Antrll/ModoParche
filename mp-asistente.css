@@ -67,7 +67,7 @@ html.is-dark .pa-fab {
 /* Cabecera naranja: Parce con corona naranja sobre mancha de tinta negra líquida en movimiento */
 .pa-head {
   position: relative; z-index: 2;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 22px;
   padding: 13px 14px 13px 14px;
   border-radius: 26px 26px 0 0;
   background: #FF5A1F; color: #111111;
@@ -75,8 +75,8 @@ html.is-dark .pa-fab {
 .pa-sello {
   position: relative; isolation: isolate;
   display: grid; place-items: center; flex: none;
-  width: 74px; height: 78px;
-  margin: -28px 2px -12px -2px;
+  width: 72px; height: 76px;
+  margin: -28px 6px -12px -2px;
   background: transparent;
   transform-origin: 50% 80%;
   transition: transform .55s var(--pa-spring);
@@ -93,7 +93,7 @@ html.is-dark .pa-fab {
 
 /* Mancha de tinta negra líquida (gooey filter) que enmascara detrás de Parce y su corona naranja */
 .pa-tinta {
-  position: absolute; inset: -14px -18px -12px -16px; z-index: 1;
+  position: absolute; inset: -14px -10px -12px -16px; z-index: 1;
   pointer-events: none;
   filter: url(#pa-goo);
 }
@@ -104,29 +104,29 @@ html.is-dark .pa-fab {
 }
 /* Núcleo principal detrás de la cara y la corona */
 .pa-tinta i:nth-child(1) {
-  inset: 8px 14px 10px 14px;
+  inset: 8px 12px 10px 14px;
   border-radius: 54% 46% 48% 52% / 58% 54% 46% 42%;
   animation: pa-tinta-nucleo 4.8s ease-in-out infinite;
 }
 /* Lóbulo superior que envuelve las 3 puntas de la corona naranja */
 .pa-tinta i:nth-child(2) {
-  top: 4px; left: 11px; right: 13px; height: 52px;
+  top: 4px; left: 10px; right: 12px; height: 50px;
   border-radius: 58% 42% 52% 48% / 62% 58% 42% 38%;
   animation: pa-tinta-corona 3.9s ease-in-out infinite;
 }
-/* Gota líquida derecha que se estira hacia el apartado naranja y los rayos */
+/* Gota líquida derecha: se mantiene a raya para no tocar la P de PARCE */
 .pa-tinta i:nth-child(3) {
-  top: 22px; right: 4px; width: 38px; height: 38px;
+  top: 22px; right: 8px; width: 30px; height: 30px;
   animation: pa-tinta-gota-der 4.3s ease-in-out infinite;
 }
 /* Gota líquida izquierda que ondula alrededor de la corona */
 .pa-tinta i:nth-child(4) {
-  top: 10px; left: 6px; width: 34px; height: 36px;
+  top: 10px; left: 5px; width: 34px; height: 36px;
   animation: pa-tinta-gota-izq 3.6s ease-in-out infinite;
 }
 /* Gota líquida inferior que se funde dentro de la barra naranja */
 .pa-tinta i:nth-child(5) {
-  bottom: 4px; left: 22px; width: 44px; height: 32px;
+  bottom: 4px; left: 18px; width: 40px; height: 30px;
   animation: pa-tinta-base 5.1s ease-in-out infinite;
 }
 
@@ -244,8 +244,8 @@ html.is-dark .pa-msg--yo { background: #FF5A1F; color: #111111; }
 }
 @keyframes pa-tinta-gota-der {
   0%, 100% { transform: translate(0, 0) scale(.92); }
-  45% { transform: translate(11px, -6px) scale(1.12, .9); }
-  75% { transform: translate(5px, 6px) scale(.86, 1.08); }
+  45% { transform: translate(5px, -5px) scale(1.06, .92); }
+  75% { transform: translate(2px, 5px) scale(.88, 1.06); }
 }
 @keyframes pa-tinta-gota-izq {
   0%, 100% { transform: translate(0, 0) scale(1); }
@@ -253,7 +253,7 @@ html.is-dark .pa-msg--yo { background: #FF5A1F; color: #111111; }
 }
 @keyframes pa-tinta-base {
   0%, 100% { transform: translate(0, 0) scaleX(1); }
-  50% { transform: translate(10px, 4px) scaleX(1.22) scaleY(.88); }
+  50% { transform: translate(4px, 4px) scaleX(1.12) scaleY(.9); }
 }
 
 @keyframes pa-gota {

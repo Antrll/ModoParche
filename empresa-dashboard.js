@@ -46,7 +46,7 @@
     villavo: { nombre: 'Parche Villavo', precio: '10% o $2.500 / cliente', limite: Infinity, cliente: 2500, pct: 10,
       puntos: ['Parches ilimitados con foto destacada', 'Promos relámpago destacadas en el radar', 'Prioridad cuando filtran tu categoría', 'Métricas de quién llega, qué día y a qué hora', '10% en paquetes cerrados redimidos', '$2.500 por cliente validado en consumo libre', '$0 fijos: sin mensualidad ni permanencia'] },
     sedes: { nombre: 'Varias sedes', precio: '8% o $2.000 / cliente', limite: Infinity, cliente: 2000, pct: 8,
-      puntos: ['8% en paquetes cerrados redimidos', '$2.000 por cliente validado en consumo libre', 'Parches ilimitados en todas tus sedes', 'Panel central con acceso por sede', 'Métricas comparativas sede por sede', 'Acompañamiento directo del equipo'] },
+      puntos: ['8% en paquetes cerrados redimidos', '$2.000 por cliente validado en consumo libre', 'Parches ilimitados en todas tus ubicaciones', 'Prioridad destacada en el radar multizona', 'Acompañamiento directo del equipo'] },
   };
   const tarifas = plan => { const p = PLANES[plan] || PLANES.basico; return { cliente: p.cliente, pct: p.pct }; };
   // Datáfono virtual de Wompi para pagar el estado de cuenta (monto abierto)

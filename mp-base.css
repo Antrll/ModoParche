@@ -984,3 +984,146 @@ html.is-dark .nav--ink:not(.is-scrolled) .logo b { color: #b83709; }
 html:not(.is-dark):not(.is-mixto) .mp-tinta-bloque .mp-fijo {
   --ink: #111111; --paper: #ffffff; --soft: #f4f4f5; --soft-2: #e9e9eb; --muted: #38383f;
 }
+
+/* =====================================================================
+   PROMO DE PARCE (index.html y comercio.html)
+   Sección editorial con la mancha de tinta negra líquida en movimiento.
+===================================================================== */
+.parce-svg-defs { position: absolute; width: 0; height: 0; pointer-events: none; overflow: hidden; }
+.parce-promo { padding: clamp(44px, 6vw, 84px) 0; }
+.parce-card {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: minmax(260px, .82fr) minmax(0, 1.18fr); gap: clamp(28px, 4.5vw, 56px);
+  align-items: center;
+  padding: clamp(28px, 4.5vw, 52px);
+  border-radius: 32px;
+  background: #FF5A1F; color: #111111;
+  box-shadow: 0 28px 60px -30px rgba(255, 90, 31, .55), 0 4px 14px rgba(17, 17, 17, .12);
+}
+.parce-stage {
+  position: relative; display: grid; justify-items: center; gap: 22px;
+  padding: 16px 8px 6px;
+}
+.parce-blob-box {
+  position: relative; isolation: isolate;
+  width: clamp(178px, 22vw, 224px); height: clamp(185px, 23vw, 232px);
+  display: grid; place-items: center;
+}
+.parce-img {
+  position: relative; z-index: 2;
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .48));
+  animation: parce-flota 4.2s ease-in-out infinite;
+}
+.parce-tinta {
+  position: absolute; inset: -28px -34px -24px -34px; z-index: 1;
+  pointer-events: none;
+  filter: url(#parce-goo);
+}
+.parce-tinta i {
+  position: absolute; display: block;
+  background: #111111; border-radius: 50%;
+}
+.parce-tinta i:nth-child(1) {
+  inset: 20px 26px 22px 26px;
+  border-radius: 54% 46% 48% 52% / 58% 54% 46% 42%;
+  animation: parce-tinta-nucleo 5.4s ease-in-out infinite;
+}
+.parce-tinta i:nth-child(2) {
+  top: 8px; left: 24px; right: 24px; height: 122px;
+  border-radius: 58% 42% 52% 48% / 62% 58% 42% 38%;
+  animation: parce-tinta-corona 4.3s ease-in-out infinite;
+}
+.parce-tinta i:nth-child(3) {
+  top: 56px; right: 12px; width: 78px; height: 78px;
+  animation: parce-tinta-der 4.7s ease-in-out infinite;
+}
+.parce-tinta i:nth-child(4) {
+  top: 26px; left: 10px; width: 74px; height: 80px;
+  animation: parce-tinta-izq 3.9s ease-in-out infinite;
+}
+.parce-tinta i:nth-child(5) {
+  bottom: 10px; left: 48px; width: 112px; height: 68px;
+  animation: parce-tinta-base 5.6s ease-in-out infinite;
+}
+.parce-bubble {
+  position: relative; z-index: 2; max-width: 300px;
+  padding: 13px 16px; border-radius: 18px 18px 18px 6px;
+  background: #111111; color: #ffffff;
+  font-size: .875rem; font-weight: 600; line-height: 1.42; text-align: left;
+  box-shadow: 0 14px 28px -16px rgba(0, 0, 0, .65);
+}
+.parce-copy { display: grid; gap: 14px; align-content: center; }
+.parce-kicker {
+  display: inline-flex; align-items: center; gap: 6px; width: max-content; max-width: 100%;
+  padding: 6px 13px; border-radius: 999px;
+  background: #111111; color: #ffffff;
+  font-size: .78rem; font-weight: 800; letter-spacing: .02em; text-transform: uppercase;
+}
+.parce-kicker--biz { background: #2D4030; color: #FAF7F2; }
+.parce-title {
+  margin: 0; font-family: var(--font-display, 'Gagalin', sans-serif); font-weight: 400;
+  font-size: clamp(2.1rem, 4.4vw, 3.35rem); line-height: .96; text-transform: uppercase;
+  color: #111111;
+}
+.parce-lede { margin: 0; font-size: 1.03rem; font-weight: 600; line-height: 1.5; color: rgba(17, 17, 17, .88); max-width: 54ch; }
+.parce-list { display: grid; gap: 10px; margin: 4px 0 2px; padding: 0; list-style: none; }
+.parce-list li {
+  position: relative; padding-left: 22px;
+  font-size: .95rem; line-height: 1.45; color: rgba(17, 17, 17, .92);
+}
+.parce-list li::before {
+  content: ""; position: absolute; left: 0; top: .48em;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #111111;
+}
+.parce-list b { font-weight: 800; color: #111111; }
+.parce-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.parce-chips span {
+  padding: 6px 13px; border-radius: 999px;
+  background: rgba(17, 17, 17, .12); color: #111111;
+  font-size: .8125rem; font-weight: 700;
+}
+.parce-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 6px; }
+.parce-actions .btn--ink { background: #111111; color: #ffffff; border-color: #111111; }
+.parce-actions .btn--ink:hover { background: #26262a; border-color: #26262a; }
+.parce-link {
+  font-weight: 800; font-size: .95rem; color: #111111;
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px;
+}
+.parce-link:hover { opacity: .75; }
+
+@keyframes parce-flota {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(-3deg); }
+}
+@keyframes parce-tinta-nucleo {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); border-radius: 54% 46% 48% 52% / 58% 54% 46% 42%; }
+  33% { transform: scale(1.06, .95) rotate(6deg); border-radius: 44% 56% 54% 46% / 48% 62% 38% 52%; }
+  66% { transform: scale(.96, 1.05) rotate(-5deg); border-radius: 60% 40% 44% 56% / 52% 44% 56% 48%; }
+}
+@keyframes parce-tinta-corona {
+  0%, 100% { transform: translate(0, 0) scale(1, 1); }
+  50% { transform: translate(5px, -8px) scale(1.08, 1.06) rotate(-4deg); }
+}
+@keyframes parce-tinta-der {
+  0%, 100% { transform: translate(0, 0) scale(.92); }
+  45% { transform: translate(16px, -10px) scale(1.12, .9); }
+  75% { transform: translate(8px, 10px) scale(.86, 1.08); }
+}
+@keyframes parce-tinta-izq {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-14px, -8px) scale(1.14, .88); }
+}
+@keyframes parce-tinta-base {
+  0%, 100% { transform: translate(0, 0) scaleX(1); }
+  50% { transform: translate(14px, 8px) scaleX(1.18) scaleY(.88); }
+}
+@media (max-width: 860px) {
+  .parce-card { grid-template-columns: 1fr; gap: 26px; padding: 28px 20px; border-radius: 26px; }
+  .parce-stage { padding-top: 22px; }
+  .parce-actions .btn--ink { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .parce-img, .parce-tinta i { animation: none; }
+}
