@@ -145,3 +145,11 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 - **Por qué:** decisión de Julián: no le convenció la implementación de los stickers ni esas tres piezas.
 - **Reemplazos:** en La marca, las tarjetas usan corona blanca y llama naranja. El saludo de los paneles queda sin rayo y el encabezado de Relámpago usa chispas.
 - **Archivos:** `mp-energia.js`, `mp-energia.css`, `marca.html`, `dashboard.html`, `dashboard.css`, `empresa-dashboard.html`, `empresa-dashboard.css`.
+
+## 14. Pasada visual del 23/11: menos piezas, sin barra, login en brasa y asistente en los paneles
+- **`mp-energia.js` / `.css`:** de hasta 10 piezas por sección a máximo 1 por sección, una sección sí y otra no, con tope por página (4 computador, 2 tablet y celular, 1 legales). Miden cada línea de texto real de toda la página, fotos, botones, tarjetas, menú y pie, con margen; en pantallas anchas usan los márgenes laterales; si no hay sitio libre, no ponen nada. Movimiento suave sin efecto de scroll; se reubican si cambia el tamaño. Se quitaron las piezas "pegadas" en fotos. Verificado: 10 páginas × 4 pantallas, 0 piezas sobre texto, fotos o botones.
+- **Barra de avance superior eliminada** (`mp-energia.js` y `.css`).
+- **`login.css`:** la estrella pequeña del panel de acceso de personas pasa de negra a naranja brasa `#e8430c`.
+- **Asistente solo en los paneles:** quitado de 10 páginas públicas y legales. `supabase/functions/asistente` exige sesión (`verify_jwt = true` en `config.toml`, `usuarioDe()` nuevo en `_shared/utilidades.ts`) y frena por cuenta (20 cada 10 min). `mp-asistente.js` manda la sesión, cambia las sugerencias para personas y negocios, y en los paneles de ejemplo no llama al servidor. `mp-asistente.css`: el chat abierto va sobre los avisos y el botón se oculta mientras está el aviso de cookies.
+- **Pruebas:** 2 pruebas nuevas del asistente con Deno (sin sesión → 401; freno por cuenta y CORS con `authorization`) y 5 unitarias (sin barra, tope de piezas, solo branding existente, login en brasa y asistente solo en paneles).
+- **Seguridad:** la llave de Groq que se pegó en el chat debe revocarse y crearse otra solo en Supabase.

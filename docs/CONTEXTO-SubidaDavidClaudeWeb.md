@@ -378,7 +378,23 @@ Producción tiene `a2e2bae` más la mejora visual (`fd307e7` sin el resto de la 
 
 ## 14. Asistente Parce y Google (pendiente de activar)
 
-- **Asistente:** crear el secreto `GROQ_API_KEY` en Supabase > Edge Functions > Secrets (nunca en el código ni en Vercel) y correr `supabase functions deploy asistente --no-verify-jwt`. Necesita la migración de la Fase 3 (`sistema_permitir_intento`). Modelo por defecto: `openai/gpt-oss-120b`; se cambia con el secreto opcional `GROQ_MODEL`. En un Preview, el dominio debe estar en `ORIGENES_EXTRA`.
+- **Asistente (solo en los paneles, exige sesión desde el 23/11):** crear el secreto `GROQ_API_KEY` en Supabase > Edge Functions > Secrets (nunca en el código, en un chat ni en Vercel) y correr `supabase functions deploy asistente` (CON verificación de JWT). Necesita la migración de la Fase 3 (`sistema_permitir_intento`). Modelo por defecto: `openai/gpt-oss-120b`; se cambia con el secreto opcional `GROQ_MODEL`. En un Preview, el dominio debe estar en `ORIGENES_EXTRA`.
 - **Migración nueva:** `20261127120000_quitar_vaca.sql`, después de la Fase 4.
 - **Google sin el dominio de Supabase:** en Google Cloud > Google Auth Platform > Clientes, agregar `https://modoparche.vercel.app` en Orígenes autorizados de JavaScript; en Branding, poner ModoParche como nombre de la app. Después se agrega el dominio a `GOOGLE_DOMINIOS` en `login.js`. La alternativa es un dominio personalizado de Supabase, que es pago.
 - **Decisiones legales pendientes:** `terminos.html` aún menciona la vaca, y la Política de Privacidad debe decir que las preguntas al asistente se procesan con Groq antes de activarlo.
+
+## 15. Pasada visual del 23 de noviembre (pedido de David)
+
+- **Piezas de branding (`mp-energia.js` / `.css`):** antes salían hasta 6 por sección más 4 "pegadas" en las fotos, y algunas tapaban palabras. Ahora:
+  - Máximo 1 por sección, una sección sí y otra no, y un tope por página: 4 en computador, 2 en tablet y celular, 1 en las páginas legales.
+  - Miden cada línea de texto real de toda la página (no solo etiquetas), además de fotos, botones, tarjetas, el menú y el pie, con un margen igual a lo que se mueven.
+  - En pantallas anchas usan los márgenes vacíos a los lados del contenido. Si no hay lugar libre, no se pone nada.
+  - Siguen con movimiento suave (máximo unos 10 px), pero sin el efecto de scroll que las arrastraba encima del texto. Se reubican si cambia el alto o el ancho de la página.
+  - Verificado en Chromium: 10 páginas × 4 pantallas (iPhone, iPad, portátil 1366 px y pantalla de 1920 px), con 0 piezas sobre texto, fotos o botones.
+- **Barra de avance superior:** eliminada.
+- **Acceso de personas (`login.css`):** la estrella pequeña del panel naranja era negra; ahora es naranja brasa (`#e8430c`), como la grande de al lado.
+- **Asistente Parce:** quedó solo en los paneles (`dashboard.html`, `empresa-dashboard.html`); se quitó de las 10 páginas públicas y legales.
+  - La Edge Function exige la sesión (`verify_jwt = true`, usa `usuarioDe()` de `_shared`) y el freno es por cuenta: 20 preguntas cada 10 min.
+  - Las sugerencias cambian para personas y para negocios. En los paneles de ejemplo dice que responde solo con una cuenta real.
+  - El chat abierto va por encima de los avisos del panel, y el botón se oculta mientras está el aviso de cookies (que lo tapaba en el celular).
+- **Llave de Groq:** se pegó una en el chat. **Hay que revocarla** en console.groq.com y crear otra directamente en Supabase como `GROQ_API_KEY`.

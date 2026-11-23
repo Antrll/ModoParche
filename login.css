@@ -408,6 +408,7 @@
 
 /* El verde oliva es de las empresas: en el acceso de personas todo va en naranja */
 .page-auth:not(.page-biz-auth) { --olive: var(--orange); --olive-deep: var(--orange-deep); --olive-soft: var(--orange-soft); }
-.page-auth:not(.page-biz-auth) .brand-panel::after { background: #111111; }
+/* Misma brasa que la estrella grande de al lado (antes era negra) */
+.page-auth:not(.page-biz-auth) .brand-panel::after { background: #e8430c; }
 
 .google-directo { display: flex; justify-content: center; min-height: 44px; margin-bottom: 4px; }

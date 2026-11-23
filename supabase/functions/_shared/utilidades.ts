@@ -49,6 +49,19 @@ export function corsDe(origen: string, origenes: Set<string>, encabezados = 'con
   };
 }
 
+// Usuario de la sesión que manda el navegador (encabezado Authorization), o null
+export async function usuarioDe(req: Request): Promise<{ id: string; email?: string } | null> {
+  const auth = req.headers.get('Authorization') ?? '';
+  if (!/^Bearer\s+\S+/.test(auth)) return null;
+  const cliente = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: auth } }, auth: { persistSession: false },
+  });
+  try {
+    const { data } = await cliente.auth.getUser();
+    return data?.user ? { id: data.user.id, email: data.user.email } : null;
+  } catch (_e) { return null; }
+}
+
 // Cliente con la llave del servidor (salta RLS: usar solo después de validar quién llama)
 export const clienteServidor = () =>
   createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });

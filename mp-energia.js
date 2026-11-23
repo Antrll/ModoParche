@@ -1,97 +1,118 @@
 /* =====================================================================
    ModoParche · mp-energia.js
-   Le da vida a las páginas públicas: piezas de branding en los espacios
-   libres de cada sección (nunca encima del contenido), cintas en
-   movimiento y barra de avance. Se apaga con "reducir movimiento".
+   Le da vida a las páginas públicas con POCAS piezas del branding en
+   movimiento y cintas de frases. Reglas:
+   - Pocas: máximo 1 por sección y un tope por página (4 en computador,
+     2 en tablet y celular, 1 en las páginas legales).
+   - Nunca encima de nada: mide cada línea de texto real (no solo
+     etiquetas), fotos, botones y tarjetas, con un margen igual a lo que
+     se mueve la animación. En pantallas anchas usa los márgenes vacíos a
+     los lados del contenido. Si no hay un lugar libre, no pone nada.
+   - Se reubican cuando cambia el alto de la página (fotos que cargan
+     tarde) o el ancho de la pantalla.
+   - Se apagan con "reducir movimiento" (quedan quietas) y al imprimir.
 ===================================================================== */
 (function () {
   'use strict';
   var STK = function (n) { return '/src/assets/web/stk/' + n + '.webp'; };
   var VIVOS = ['coronanaranjabrochaarmador', 'chispasnaranjasimpactoesquina', 'fuego-2-naranja'];
   var SOBRE_NARANJA = ['estrellablancagrunge5puntas', 'estrellanegratrazografiti', 'coronablancabrochabasquiat'];
-  var CONTENIDO = 'h1,h2,h3,h4,p,li,a,button,input,select,textarea,img:not(.mp-stk img),figure,article,dl,summary,svg,table,label';
-  var TEXTOS = 'h1,h2,h3,h4,p,li,a,button,input,select,textarea,label,dt,dd,summary';
-  var ANCLAS = 'figure.media,.plan-main,.plan-tier,.cobro-caso,.manifesto-block,.member,.biz-join-card,.photo-card,.value,.stage';
+  // Lo que una pieza nunca puede tapar (además de cada línea de texto)
+  var SOLIDOS = 'img:not(.mp-stk img),video,canvas,svg,iframe,input,select,textarea,button,a,figure,form,table,details,article,[class*="card"],[class*="tile"],.media,.plan-main,.plan-tier,.member,.photo-card,.value,.stage,.manifesto-block';
   var CINTAS = { '': '.how', equipo: '.team-hero', preguntas: '.faq-hero', marca: '.br-hero' };
   var FRASES = ['Sal', 'Encuentra', 'Conecta', '¿Qué se arma hoy?', 'Hecho en Villavo'];
   var LECTURA = ['pagos', 'legal', 'privacidad', 'terminos', 'cookies'];
-  var reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var MARGEN = 26; // lo que se mueve la animación + aire alrededor
   var pagina = location.pathname.replace(/^\/+|\.html$/g, '').replace(/^index$/, '');
 
-  // Azar repetible: la misma página siempre se ve igual
-  function azar(semilla) { var x = semilla * 9301 + 49297; return function () { x = (x * 9301 + 49297) % 233280; return x / 233280; }; }
   function choca(a, b, m) { return a.left < b.right + m && a.right > b.left - m && a.top < b.bottom + m && a.bottom > b.top - m; }
   function esNaranja(el) {
     var c = (getComputedStyle(el).backgroundColor.match(/[\d.]+/g) || []).map(Number);
     return c.length >= 3 && c[0] > 215 && c[1] > 60 && c[1] < 125 && c[2] < 70;
   }
+  function visible(r) { return r.width > 0 && r.height > 0; }
 
-  var observador = null, enVista = new Set();
-  function poner(sec, i, lectura) {
-    sec.querySelectorAll(':scope > .mp-stk').forEach(function (x) { x.remove(); });
-    var ancho = window.innerWidth, chico = ancho < 760;
-    var caja = sec.getBoundingClientRect();
-    if (caja.height < 170) return;
-    var maxStk = lectura ? (chico ? 1 : 3) : chico ? 2 : Math.min(6, Math.max(3, Math.round(caja.height / 240)));
-    var lado = chico ? 56 : Math.round(Math.min(124, Math.max(84, ancho * .075)));
-    var ocupados = Array.prototype.filter.call(sec.querySelectorAll(CONTENIDO), function (e) {
-      if (e.closest('.mp-stk')) return false;
-      var r = e.getBoundingClientRect();
-      return r.width > 0 && r.height > 0;
-    }).map(function (e) { return e.getBoundingClientRect(); });
-    // Tampoco encima de la cinta ni debajo de la barra de navegación
-    document.querySelectorAll('.mp-cinta, .marquee, .nav').forEach(function (e) { ocupados.push(e.getBoundingClientRect()); });
-    var rnd = azar(i + 7), celdas = [], cols = chico ? 4 : 9, filas = Math.max(3, Math.round(caja.height / (lado * 1.25)));
-    for (var f = 0; f < filas; f++) for (var c = 0; c < cols; c++) celdas.push([c, f, rnd()]);
-    celdas.sort(function (a, b) { return a[2] - b[2]; });
-    var banco = esNaranja(sec) ? SOBRE_NARANJA : VIVOS, puestos = [], usado = 0;
-    for (var k = 0; k < celdas.length && puestos.length < maxStk; k++) {
-      var x = (celdas[k][0] + .1 + rnd() * .3) * ((caja.width - lado) / Math.max(1, cols - 1));
-      var y = 8 + celdas[k][1] * ((caja.height - lado - 16) / Math.max(1, filas - 1));
-      x = Math.max(4, Math.min(caja.width - lado - 4, x));
-      var r = { left: caja.left + x, right: caja.left + x + lado, top: caja.top + y, bottom: caja.top + y + lado };
-      if (ocupados.some(function (o) { return choca(r, o, 20); }) || puestos.some(function (o) { return choca(r, o, lado * .55); })) continue;
-      puestos.push(r);
-      var s = document.createElement('span'), img = document.createElement('img');
-      s.className = 'mp-stk mp-stk--' + (usado % 3);
-      s.setAttribute('aria-hidden', 'true');
-      s.style.cssText = 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;width:' + lado + 'px;--giro:' + Math.round(rnd() * 34 - 17) + 'deg;--d:' + (-rnd() * 6).toFixed(2) + 's;--vel:' + (.03 + rnd() * .07).toFixed(3);
-      img.src = STK(banco[(i * 3 + usado) % banco.length]); img.alt = ''; img.width = lado; img.height = lado; img.loading = 'lazy'; img.decoding = 'async';
-      s.appendChild(img); sec.appendChild(s); usado++;
-      if (observador) observador.observe(s);
+  // Cajas de todo lo que hay en la sección Y alrededor (menús que sobresalen,
+  // sellos que giran, el pie de página justo debajo): cada línea de texto y
+  // cada elemento sólido de la página que quede cerca de la sección.
+  function obstaculos(sec) {
+    var zona = sec.getBoundingClientRect(), cerca = 160, cajas = [];
+    var dentro = function (r) { return visible(r) && r.bottom > zona.top - cerca && r.top < zona.bottom + cerca; };
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        var p = n.parentElement;
+        return n.nodeValue.trim() && p && !p.closest('.mp-stk,script,style,noscript') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      },
+    });
+    var rango = document.createRange(), n;
+    while ((n = w.nextNode())) {
+      rango.selectNodeContents(n);
+      Array.prototype.forEach.call(rango.getClientRects(), function (r) { if (dentro(r)) cajas.push(r); });
     }
-    if (!lectura) pegar(sec, i, VIVOS, i * 3 + usado + 2);
+    document.querySelectorAll(SOLIDOS + ',.nav,.mp-cinta').forEach(function (e) {
+      if (e.closest('.mp-stk')) return;
+      var r = e.getBoundingClientRect(); if (dentro(r)) cajas.push(r);
+    });
+    return cajas;
   }
 
-  // Stickers "pegados" en la esquina de fotos y tarjetas, sin tapar ningún texto
-  function pegar(sec, i, banco, inicio) {
-    var chico = window.innerWidth < 760, lado = chico ? 50 : 76, caja = sec.getBoundingClientRect();
-    var textos = Array.prototype.filter.call(sec.querySelectorAll(TEXTOS), function (e) {
-      if (e.closest('.mp-stk')) return false;
-      var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0;
-    }).map(function (e) { return e.getBoundingClientRect(); });
-    document.querySelectorAll('.mp-cinta, .marquee, .nav').forEach(function (e) { textos.push(e.getBoundingClientRect()); });
-    var puestos = Array.prototype.map.call(sec.querySelectorAll(':scope > .mp-stk'), function (e) { return e.getBoundingClientRect(); });
-    var anclas = Array.prototype.slice.call(sec.querySelectorAll(ANCLAS)), max = chico ? 2 : 4, n = 0;
-    for (var a = 0; a < anclas.length && n < max; a++) {
-      var b = anclas[a].getBoundingClientRect();
-      if (b.width < 120 || b.height < 110) continue;
-      var esquinas = [[b.right, b.top], [b.left, b.bottom], [b.right, b.bottom], [b.left, b.top]];
-      for (var e = 0; e < 4; e++) {
-        var q = esquinas[(a + i + e) % 4], x = q[0] - caja.left - lado * (q[0] === b.right ? .62 : .38), y = q[1] - caja.top - lado * (q[1] === b.bottom ? .62 : .38);
-        if (x < 2 || y < 2 || x + lado > caja.width - 2 || y + lado > caja.height - 2) continue;
-        var r = { left: caja.left + x, right: caja.left + x + lado, top: caja.top + y, bottom: caja.top + y + lado };
-        if (textos.some(function (o) { return choca(r, o, 6); }) || puestos.some(function (o) { return choca(r, o, lado * .7); })) continue;
-        puestos.push(r);
-        var s = document.createElement('span'), img = document.createElement('img');
-        s.className = 'mp-stk mp-stk--pega mp-stk--' + ((n + 1) % 3);
-        s.setAttribute('aria-hidden', 'true');
-        s.style.cssText = 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;width:' + lado + 'px;--giro:' + ((a % 2 ? 1 : -1) * (6 + a * 3 % 11)) + 'deg;--d:-' + (a * .7).toFixed(1) + 's;--vel:.015';
-        img.src = STK(banco[(inicio + n) % banco.length]); img.alt = ''; img.width = lado; img.height = lado; img.loading = 'lazy'; img.decoding = 'async';
-        s.appendChild(img); sec.appendChild(s); n++;
-        if (observador) observador.observe(s);
-        break;
-      }
+  // Busca un cuadro libre para una pieza de lado x lado dentro de la sección
+  function lugarLibre(sec, lado, preferirLado) {
+    var caja = sec.getBoundingClientRect();
+    if (caja.height < lado + 2 * MARGEN + 40) return null;
+    var cajas = obstaculos(sec);
+    var libre = function (x, y) {
+      var r = { left: caja.left + x, right: caja.left + x + lado, top: caja.top + y, bottom: caja.top + y + lado };
+      return cajas.every(function (o) { return !choca(r, o, MARGEN); });
+    };
+    var candidatos = [];
+    // 1) Márgenes vacíos a los lados del contenido (pantallas anchas)
+    var wrap = sec.querySelector('.wrap');
+    if (wrap) {
+      var c = wrap.getBoundingClientRect(), izq = c.left - caja.left, der = caja.right - c.right;
+      if (izq >= lado + 2 * MARGEN) candidatos.push(['izq', (izq - lado) / 2]);
+      if (der >= lado + 2 * MARGEN) candidatos.push(['der', caja.width - der + (der - lado) / 2]);
+    }
+    // 2) Esquinas de la sección
+    candidatos.push(['izq', MARGEN], ['der', caja.width - lado - MARGEN]);
+    candidatos.sort(function (a, b) { return (a[0] === preferirLado ? 0 : 1) - (b[0] === preferirLado ? 0 : 1); });
+    var paso = Math.max(24, Math.round(lado / 2)), alto = caja.height - lado - MARGEN;
+    for (var k = 0; k < candidatos.length; k++) {
+      var x = Math.round(candidatos[k][1]);
+      if (x < 0 || x + lado > caja.width) continue;
+      // De arriba hacia abajo, empezando un poco abajo del borde
+      for (var y = MARGEN + 16; y <= alto; y += paso) if (libre(x, y)) return { x: x, y: y };
+    }
+    return null;
+  }
+
+  var observador = null, piezas = [];
+  function limpiar() { piezas.forEach(function (p) { if (observador) observador.unobserve(p); p.remove(); }); piezas = []; }
+
+  function repartir() {
+    limpiar();
+    var ancho = window.innerWidth, lectura = LECTURA.indexOf(pagina) >= 0;
+    var tope = lectura ? 1 : ancho >= 1180 ? 4 : 2;
+    var lado = ancho < 760 ? 46 : ancho < 1180 ? 60 : Math.round(Math.min(92, Math.max(70, ancho * .055)));
+    var secciones = Array.prototype.slice.call(document.querySelectorAll(lectura ? 'main .legal-hero' : 'main > section'));
+    var puestas = 0, salto = 0;
+    for (var i = 0; i < secciones.length && puestas < tope; i++) {
+      var sec = secciones[i];
+      // Una sección sí y la siguiente no: así nunca se amontonan
+      if (salto > 0) { salto--; continue; }
+      if (getComputedStyle(sec).position === 'static') sec.style.position = 'relative';
+      sec.classList.add('mp-con-stk');
+      var sitio = lugarLibre(sec, lado, puestas % 2 ? 'izq' : 'der');
+      if (!sitio) continue;
+      var banco = esNaranja(sec) ? SOBRE_NARANJA : VIVOS;
+      var s = document.createElement('span'), img = document.createElement('img');
+      s.className = 'mp-stk mp-stk--' + (puestas % 3);
+      s.setAttribute('aria-hidden', 'true');
+      s.style.cssText = 'left:' + sitio.x + 'px;top:' + sitio.y + 'px;width:' + lado + 'px;--giro:' + ((i % 2 ? 1 : -1) * (6 + (i * 5) % 9)) + 'deg;--d:-' + (i * .9).toFixed(1) + 's';
+      img.src = STK(banco[(i + puestas) % banco.length]); img.alt = ''; img.width = lado; img.height = lado; img.loading = 'lazy'; img.decoding = 'async';
+      s.appendChild(img); sec.appendChild(s); piezas.push(s);
+      if (observador) observador.observe(s); else s.classList.add('is-vivo');
+      puestas++; salto = 1;
     }
   }
 
@@ -109,14 +130,6 @@
     d.appendChild(t); sec.after(d);
   }
 
-  function barra() {
-    var b = document.createElement('div'); b.className = 'mp-avance'; b.setAttribute('aria-hidden', 'true'); document.body.appendChild(b);
-    return function () {
-      var h = document.documentElement, max = h.scrollHeight - h.clientHeight;
-      b.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, h.scrollTop / max) : 0) + ')';
-    };
-  }
-
   function etiquetarTablas() {
     document.querySelectorAll('.legal-table').forEach(function (t) {
       var cab = Array.prototype.map.call(t.querySelectorAll('thead th'), function (x) { return x.textContent.trim(); });
@@ -129,37 +142,23 @@
   function iniciar() {
     etiquetarTablas();
     cinta();
-    var lectura = LECTURA.indexOf(pagina) >= 0;
-    var secciones = Array.prototype.slice.call(document.querySelectorAll(lectura ? 'main .legal-hero' : 'main > section'));
+    // Solo se animan las que se ven (ahorra batería)
     if ('IntersectionObserver' in window) {
       observador = new IntersectionObserver(function (es) {
-        es.forEach(function (e) { e.target.classList.toggle('is-vivo', e.isIntersecting); if (e.isIntersecting) enVista.add(e.target); else enVista.delete(e.target); });
+        es.forEach(function (e) { e.target.classList.toggle('is-vivo', e.isIntersecting); });
       }, { rootMargin: '80px' });
     }
-    var repartir = function () {
-      secciones.forEach(function (sec, i) {
-        if (getComputedStyle(sec).position === 'static') sec.style.position = 'relative';
-        sec.classList.add('mp-con-stk');
-        poner(sec, i, lectura);
-      });
-    };
     repartir();
-    var anchoAntes = window.innerWidth, t = 0;
-    window.addEventListener('resize', function () {
-      if (window.innerWidth === anchoAntes) return; // la barra del celular cambia solo el alto
-      anchoAntes = window.innerWidth; clearTimeout(t); t = setTimeout(repartir, 260);
-    });
-    var pintarBarra = barra(), pendiente = false;
-    var alScroll = function () {
-      pintarBarra();
-      if (!reducir) enVista.forEach(function (s) {
-        var r = s.getBoundingClientRect(), v = Number(s.style.getPropertyValue('--vel')) || .05;
-        s.style.transform = 'translate3d(0,' + Math.round((r.top + r.height / 2 - window.innerHeight / 2) * -v) + 'px,0)';
-      });
-      pendiente = false;
+    // Se reubican si cambia el ancho o el alto de la página (fotos que terminan de cargar)
+    var anchoAntes = window.innerWidth, altoAntes = document.documentElement.scrollHeight, t = 0;
+    var revisar = function () {
+      var ancho = window.innerWidth, alto = document.documentElement.scrollHeight;
+      if (ancho === anchoAntes && Math.abs(alto - altoAntes) < 40) return; // la barra del celular solo cambia el alto visible
+      anchoAntes = ancho; altoAntes = alto;
+      clearTimeout(t); t = setTimeout(repartir, 260);
     };
-    window.addEventListener('scroll', function () { if (!pendiente) { pendiente = true; requestAnimationFrame(alScroll); } }, { passive: true });
-    alScroll();
+    window.addEventListener('resize', revisar);
+    if ('ResizeObserver' in window) new ResizeObserver(revisar).observe(document.body);
   }
   // Se mide cuando ya están las fuentes y las imágenes principales
   var arrancar = function () {

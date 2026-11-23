@@ -1,17 +1,23 @@
 /* =====================================================================
    ModoParche · mp-asistente.js
-   Parce, el asistente virtual. Habla con la Edge Function "asistente":
-   la llave de Groq vive en Supabase y nunca llega al navegador.
-   La conversación solo existe mientras la página esté abierta.
+   Parce, el asistente virtual de los PANELES (personas y negocios). Habla
+   con la Edge Function "asistente" con la sesión de la cuenta: la llave de
+   Groq vive en Supabase y nunca llega al navegador. La conversación solo
+   existe mientras la página esté abierta.
 ===================================================================== */
 (function () {
   'use strict';
   var URL_IA = 'https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/asistente';
   var MAX = 500;
-  var SUGERENCIAS = ['¿Qué es un parche?', '¿Cuánto cuesta para negocios?', '¿Cómo verifico mi cédula?', '¿Es seguro?'];
+  var NEGOCIO = /^\/empresa-dashboard/.test(location.pathname);
+  var SUGERENCIAS = NEGOCIO
+    ? ['¿Cuánto me cobran por cliente?', '¿Cómo funciona el Modo Puerta?', '¿Cómo creo un cupón?', '¿Cómo pago mi estado de cuenta?']
+    : ['¿Cómo abro un parche?', '¿Cómo verifico mi cédula?', '¿Cómo funcionan los cupones?', '¿Es seguro?'];
   var ERRORES = {
     DEMASIADOS: 'Vas muy rápido, parce. Espera unos minutos y me vuelves a preguntar.',
     OCUPADO: 'Estoy con mucha gente en este momento. Inténtalo en un ratico.',
+    SIN_SESION: 'Tu sesión venció. Recarga la página o vuelve a entrar y seguimos.',
+    SIN_CONFIGURAR: 'Todavía me están preparando. Mientras tanto, mira /preguntas o escríbenos a modoparcheoficial@gmail.com.',
   };
   var FALLO = 'Ahora no pude responder. Puedes mirar /preguntas o escribirnos a modoparcheoficial@gmail.com.';
   var ICONO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>';
@@ -50,14 +56,23 @@
     escribiendo(true);
     var respuesta = '';
     try {
+      // La sesión de la cuenta (la guarda supabase-js; mp-errores.js sabe leerla)
+      var token = window.MPErrores && window.MPErrores.tokenSesion ? window.MPErrores.tokenSesion(URL_IA) : null;
+      if (!token) throw new Error('SIN_CUENTA');
+      var cab = { 'Content-Type': 'application/json' };
+      if (token) cab.Authorization = 'Bearer ' + token;
       var r = await fetch(URL_IA, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: cab,
         body: JSON.stringify({ mensajes: historial.slice(-8) }), signal: AbortSignal.timeout(20000),
       });
       var d = await r.json().catch(function () { return null; });
       if (d && d.ok && d.respuesta) { respuesta = d.respuesta; historial.push({ rol: 'assistant', texto: respuesta }); }
       else { historial.pop(); respuesta = (d && ERRORES[d.codigo]) || FALLO; }
-    } catch (e) { historial.pop(); respuesta = navigator.onLine === false ? 'Estás sin conexión. Cuando vuelva el internet seguimos.' : FALLO; }
+    } catch (e) {
+      historial.pop();
+      respuesta = e && e.message === 'SIN_CUENTA' ? 'Respondo cuando entras con tu cuenta. En el panel de ejemplo no estoy activo.'
+        : navigator.onLine === false ? 'Estás sin conexión. Cuando vuelva el internet seguimos.' : FALLO;
+    }
     escribiendo(false);
     burbuja(respuesta, 'bot');
     ocupado = false; boton.disabled = false;
@@ -91,7 +106,7 @@
     document.body.appendChild(raiz);
     panel = raiz.querySelector('.pa-panel'); lista = raiz.querySelector('.pa-lista');
     campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button'); sug = raiz.querySelector('.pa-sug');
-    burbuja('¡Quiubo! Soy Parce. Te ayudo con planes, cuentas y negocios en ModoParche.', 'bot');
+    burbuja(NEGOCIO ? '¡Quiubo! Soy Parce. Te ayudo con tus parches, cupones, el Modo Puerta y los cobros.' : '¡Quiubo! Soy Parce. Te ayudo a armar planes, verificar tu cuenta y usar la app.', 'bot');
     SUGERENCIAS.forEach(function (t) {
       var b = document.createElement('button');
       b.type = 'button'; b.textContent = t;

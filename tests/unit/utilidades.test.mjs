@@ -370,3 +370,38 @@ describe('Fase 4: backend (revisión del código)', () => {
     expect(raiz('admin.js')).toContain("case 'ver-salud'");
   });
 });
+
+describe('Pasada visual del 23/11: piezas, barra, login y asistente', () => {
+  const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+  const htmls = fs.readdirSync(new URL('../../', import.meta.url)).filter(x => x.endsWith('.html'));
+  it('ya no hay barra de avance', () => {
+    expect(raiz('mp-energia.js')).not.toMatch(/mp-avance|function barra/);
+    expect(raiz('mp-energia.css')).not.toContain('.mp-avance');
+  });
+  it('pocas piezas: tope por página y una sección sí y otra no', () => {
+    const js = raiz('mp-energia.js');
+    expect(js).toMatch(/var tope = lectura \? 1 : ancho >= 1180 \? 4 : 2;/);
+    expect(js).toContain('salto = 1');
+    // Mide cada línea de texto real de la página (no solo etiquetas)
+    expect(js).toContain('createTreeWalker(document.body, NodeFilter.SHOW_TEXT');
+    // Sin efecto de scroll que las arrastre encima del texto
+    expect(js).not.toMatch(/translate3d|--vel/);
+  });
+  it('solo piezas de branding que existen', () => {
+    const js = raiz('mp-energia.js');
+    const nombres = [...js.matchAll(/'([a-z0-9-]+)'/g)].map(m => m[1]).filter(n => /brocha|grunge|chispas|estrella|fuego-2/.test(n));
+    for (const n of nombres) expect(fs.existsSync(new URL(`../../src/assets/web/stk/${n}.webp`, import.meta.url)), n).toBe(true);
+    for (const quitado of ['fuegonegrobrochacontorno', 'rayoblancogrungequebrado', 'rayonaranjagrungequebrado', 'sneaker', 'rumba-coctel']) expect(js, quitado).not.toContain(`'${quitado}'`);
+  });
+  it('la forma del acceso de personas es naranja brasa, no negra', () => {
+    expect(raiz('login.css')).toMatch(/\.page-auth:not\(\.page-biz-auth\) \.brand-panel::after \{ background: #e8430c; \}/);
+  });
+  it('el asistente está solo en los paneles y exige sesión', () => {
+    for (const f of htmls) {
+      const tiene = raiz(f).includes('mp-asistente');
+      expect(tiene, f).toBe(['dashboard.html', 'empresa-dashboard.html'].includes(f));
+    }
+    expect(raiz('supabase/config.toml')).toMatch(/\[functions\.asistente\]\s*\nverify_jwt = true/);
+    expect(raiz('mp-asistente.js')).toContain("cab.Authorization = 'Bearer ' + token");
+  });
+});

@@ -25,6 +25,6 @@ verify_jwt = false
 [functions.conciliar-pagos]
 verify_jwt = false
 
-# Asistente virtual público: se valida el origen y hay freno por IP
+# Asistente de los paneles: solo cuentas con sesión, origen del sitio y freno por cuenta
 [functions.asistente]
-verify_jwt = false
+verify_jwt = true

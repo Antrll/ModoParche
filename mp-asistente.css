@@ -10,6 +10,11 @@
 }
 html.is-dark .pa { --pa-papel: #1b1b1f; --pa-suave: #29292e; --pa-linea: rgba(255,255,255,.12); --pa-tinta: #ffffff; --pa-gris: #b9b9c2; }
 .pa--panel { bottom: 24px; }
+/* Mientras está el aviso de cookies (abajo), el botón no se ve: aparece al tocar "Entendido" */
+.pa { transition: opacity .3s ease, visibility .3s; }
+body:has(.mp-cookies.is-in) .pa:not(.is-abierto) { opacity: 0; visibility: hidden; pointer-events: none; }
+/* Con el chat abierto, va por encima de los avisos del panel (z-index 3000) para que no le tapen la cabecera */
+.pa.is-abierto { z-index: 3100; }
 .pa .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 .pa-fab {
