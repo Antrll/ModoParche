@@ -1,17 +1,26 @@
 {
   "name": "modoparche",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Planes en grupo en Villavicencio y el Meta.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node scripts/build.mjs",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:edge": "npx -y deno@2.9.6 check --config tests/edge/deno.json supabase/functions/*/index.ts && npx -y deno@2.9.6 test --config tests/edge/deno.json --allow-env --allow-read --no-check tests/edge/"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "dependencies": {
-    "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.118.0"
+  "private": true,
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22.12 <25"
   }
 }

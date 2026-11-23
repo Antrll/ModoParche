@@ -1,0 +1,43 @@
+# =====================================================================
+# ModoParche · Conciliación de pagos con Wompi (Edge Function conciliar-pagos)
+#
+# Cada hora (y a mano en Actions > Conciliar pagos > Run workflow) pregunta
+# a Wompi por los pagos que siguen "PENDIENTE" hace más de 15 minutos y
+# aplica el resultado. Sirve si el aviso (webhook) de Wompi se pierde.
+#
+# Secreto (GitHub > Settings > Secrets and variables > Actions):
+#   CRON_SECRET  el mismo valor de CRON_SECRET en Supabase > Edge Functions > Secrets
+# Ojo: las tareas programadas de GitHub solo corren desde la rama main.
+# Alternativa sin GitHub: pg_cron + pg_net (ver README > "Fase 4").
+# =====================================================================
+name: Conciliar pagos
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conciliar-pagos
+  cancel-in-progress: false
+
+jobs:
+  conciliar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Llamar conciliar-pagos
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Falta el secreto CRON_SECRET: no se concilió nada."
+            exit 0
+          fi
+          curl -fsS -X POST "https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/conciliar-pagos" \
+            -H "x-cron-secret: $CRON_SECRET" -H "Content-Type: application/json" -d '{}'
+          echo

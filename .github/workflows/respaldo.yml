@@ -1,0 +1,87 @@
+# =====================================================================
+# ModoParche · Respaldo automático de la base de datos (Supabase)
+#
+# Cada lunes a las 3:00 a. m. (hora de Colombia) y cuando lo corras a
+# mano (Actions > Respaldo de la base > Run workflow):
+#   1. Saca roles, estructura y datos con la CLI de Supabase.
+#   2. Los comprime y los CIFRA con AES-256.
+#   3. Los sube a un bucket PRIVADO (Cloudflare R2 o S3). No se usan
+#      artefactos de GitHub porque este repositorio es público.
+#
+# Secretos (GitHub > Settings > Secrets and variables > Actions):
+#   SUPABASE_DB_URL        Supabase > Connect > Session pooler (URI con la contraseña)
+#   RESPALDO_CLAVE         frase larga que solo sepa el equipo (guárdala aparte)
+#   RESPALDO_S3_BUCKET     nombre del bucket privado
+#   RESPALDO_S3_ENDPOINT   R2: https://<cuenta>.r2.cloudflarestorage.com · S3: https://s3.<region>.amazonaws.com
+#   RESPALDO_S3_KEY        llave de acceso, solo con permiso sobre ese bucket
+#   RESPALDO_S3_SECRET     secreto de esa llave
+#
+# Borra los respaldos viejos con una regla de ciclo de vida del bucket (30 días).
+# Ojo: las tareas programadas de GitHub solo corren desde la rama main.
+# Restaurar: ver README > "Respaldos de la base".
+# =====================================================================
+name: Respaldo de la base
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: respaldo-base
+  cancel-in-progress: false
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Revisar que estén los secretos
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+          BUCKET: ${{ secrets.RESPALDO_S3_BUCKET }}
+          ENDPOINT: ${{ secrets.RESPALDO_S3_ENDPOINT }}
+          LLAVE: ${{ secrets.RESPALDO_S3_KEY }}
+          SECRETO: ${{ secrets.RESPALDO_S3_SECRET }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$CLAVE" ] || [ -z "$BUCKET" ] || [ -z "$ENDPOINT" ] || [ -z "$LLAVE" ] || [ -z "$SECRETO" ]; then
+            echo "::error::Faltan secretos del respaldo. Revisa la lista al inicio de este archivo."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
+
+      - name: Sacar, cifrar y subir el respaldo
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+          BUCKET: ${{ secrets.RESPALDO_S3_BUCKET }}
+          ENDPOINT: ${{ secrets.RESPALDO_S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RESPALDO_S3_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RESPALDO_S3_SECRET }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          set -euo pipefail
+          umask 077
+          FECHA=$(date -u +%F)
+          trap 'rm -rf r respaldo-*.tgz respaldo-*.gpg' EXIT
+          mkdir -p r
+          supabase db dump --db-url "$DB" -f r/roles.sql --role-only
+          supabase db dump --db-url "$DB" -f r/esquema.sql
+          supabase db dump --db-url "$DB" -f r/datos.sql --data-only --use-copy
+          tar -czf "respaldo-$FECHA.tgz" -C r .
+          # La clave entra por stdin: no aparece en la lista de procesos
+          printf '%s' "$CLAVE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+              --symmetric --cipher-algo AES256 -o "respaldo-modoparche-$FECHA.tgz.gpg" "respaldo-$FECHA.tgz"
+          rm -rf r "respaldo-$FECHA.tgz"
+          aws s3 cp "respaldo-modoparche-$FECHA.tgz.gpg" "s3://$BUCKET/respaldos/respaldo-modoparche-$FECHA-${GITHUB_RUN_ID}.tgz.gpg" \
+              --endpoint-url "$ENDPOINT" --only-show-errors
+          echo "Respaldo cifrado subido."

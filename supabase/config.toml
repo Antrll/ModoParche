@@ -1,0 +1,30 @@
+# ModoParche · configuración de la CLI de Supabase
+project_id = "quxqqxnowlwiahorifpy"
+
+# Exige la sesión del negocio que paga
+[functions.wompi-checkout]
+verify_jwt = true
+
+# Wompi no manda sesión de Supabase: se valida la firma del evento
+[functions.wompi-webhook]
+verify_jwt = false
+
+# Lo llama el Database Webhook: se valida PUSH_WEBHOOK_SECRET
+[functions.enviar-push]
+verify_jwt = false
+
+# La llama un cron una vez al día: se valida CRON_SECRET (o PUSH_WEBHOOK_SECRET)
+[functions.depurar-archivos]
+verify_jwt = false
+
+# Formulario público de equipo.html: se valida el captcha de Turnstile
+[functions.contacto]
+verify_jwt = false
+
+# La llama un cron cada hora: se valida CRON_SECRET (o PUSH_WEBHOOK_SECRET)
+[functions.conciliar-pagos]
+verify_jwt = false
+
+# Asistente de los paneles: solo cuentas con sesión, origen del sitio y freno por cuenta
+[functions.asistente]
+verify_jwt = true

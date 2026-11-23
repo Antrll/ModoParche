@@ -1,5 +1,19 @@
-*.php
-includes/
 .agents/
 .taste-skill/
 skills-lock.json
+respaldo-dashboard-anterior/
+supabase/
+.claude/
+.env
+.env.*
+.impeccable/
+.github/
+
+# Originales en alta resolución (la web usa las versiones optimizadas de src/assets/web)
+src/assets/fuentes/
+
+# Exportaciones de datos personales (Ley 1581): nunca al sitio
+mis-datos-*
+*.bak
+dist/
+tests/

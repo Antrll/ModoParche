@@ -202,7 +202,7 @@
   padding: 6px 14px;
   font-size: var(--t-sm);
   font-weight: 700;
-  background: rgba(255, 255, 255, .14);
+  background: color-mix(in srgb, var(--paper) 14%, transparent);
 }
 .member--orange .member-tag {
   background: var(--ink);
@@ -393,4 +393,28 @@
   .manifesto-head, .manifesto-block--orange, .manifesto-block--paper, .manifesto-photo,
   .member { grid-column: 1 / -1; }
   .manifesto-photo { aspect-ratio: 16 / 9; }
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.contact-form .status.is-error { background: #fdecea; color: #7a1c12; }
+
+
+/* Formulario de contacto */
+.contact-form { --field-bg: var(--paper); border-radius: var(--r-lg); }
+.topic-chip { border: 1.5px solid color-mix(in srgb, var(--ink) 18%, transparent); border-radius: var(--r-pill); }
+.topic-chip:hover { border-color: var(--ink); }
+.topic-chip.is-active { border-color: var(--ink); }
+.topic-chip:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* El Orangeprint respira y el sello gira detrás */
+.team-hero { position: relative; overflow: hidden; isolation: isolate; }
+.team-hero::before {
+  content: ""; position: absolute; z-index: -1; right: -7%; top: -22%; width: min(56vw, 720px); aspect-ratio: 1;
+  background: color-mix(in srgb, var(--orange) 11%, transparent); clip-path: var(--burst); pointer-events: none;
+}
+.team-hero-art { border-radius: var(--r-lg); overflow: hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  .team-hero::before { animation: mp-giro 120s linear infinite; }
+  .team-hero-art.is-loaded > img { animation: mp-respira 22s ease-in-out infinite alternate; }
 }

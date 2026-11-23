@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobros, pagos y devoluciones - ModoParche</title>
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://modoparche.vercel.app/pagos">
+<meta name="description" content="Cobro por resultados para negocios: sin mensualidad, solo por clientes que llegan. Cómo se calcula, cómo se paga y devoluciones.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ModoParche">
+<meta property="og:title" content="Cobros, pagos y devoluciones - ModoParche">
+<meta property="og:description" content="Cobro por resultados para negocios: sin mensualidad, solo por clientes que llegan. Cómo se calcula, cómo se paga y devoluciones.">
+<meta property="og:url" content="https://modoparche.vercel.app/pagos">
+<meta property="og:image" content="https://modoparche.vercel.app/src/assets/web/banner.jpg">
+<meta property="og:locale" content="es_CO">
+<meta name="theme-color" content="#111111">
+<script src="/mp-init.js" data-js></script>
+<script src="/mp-errores.js"></script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="src/assets/Branding/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="src/assets/Branding/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="src/assets/Branding/favicon/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" href="/src/assets/fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/mp-fuentes.css">
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="mp-base.css">
+<link rel="stylesheet" href="mp-tema.css">
+<link rel="stylesheet" href="paginas.css">
+<link rel="stylesheet" href="legal.css">
+<link rel="stylesheet" href="mp-energia.css">
+</head>
+<body class="page-legal">
+
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="nav nav--ink mp-tinta-bloque">
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo" aria-label="ModoParche, inicio">
+      <span class="logo-mark"><img class="lm lm--negro" src="src/assets/web/isotipo-negro-96.png" alt="" width="44" height="44"><img class="lm lm--blanco" src="src/assets/web/isotipo-96.png" alt="" width="44" height="44"><img class="lm lm--naranja" src="src/assets/web/isotipo-naranja-96.png" alt="" width="44" height="44"></span>Modo<b class="mp-naranja-texto">Parche</b>
+    </a>
+    <nav class="nav-links" aria-label="Principal">
+      <a href="index.html">Inicio</a>
+      <a href="comercio.html">Para negocios</a>
+      <a href="preguntas.html">Preguntas</a>
+      <a href="marca.html">La marca</a>
+      <a href="equipo.html">Equipo</a>
+    </nav>
+    <div class="nav-right">
+      <button type="button" class="tema-toggle" aria-pressed="false" aria-label="Cambiar a modo oscuro" title="Modo oscuro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><mask id="mp-tema-luna"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle class="tema-sombra" cx="30" cy="-6" r="5" fill="#000"/></mask><circle class="tema-disco" cx="12" cy="12" r="5" fill="currentColor" mask="url(#mp-tema-luna)"/><g class="tema-rayos" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.2M12 20.3v2.2M1.5 12h2.2M20.3 12h2.2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/></g></svg></button>
+      <a href="login.html" class="nav-login">Iniciar sesión</a>
+      <a href="login.html#crear" class="btn btn--sm nav-cta"><span class="pulse" aria-hidden="true"></span>Crear cuenta</a>
+      <button class="nav-burger" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span></button>
+    </div>
+  </div>
+</header>
+
+<div class="mobile-menu mp-tinta-bloque" id="mobileMenu" aria-hidden="true">
+  <nav aria-label="Menú móvil">
+    <a href="index.html">Inicio</a>
+    <a href="comercio.html">Negocios</a>
+    <a href="preguntas.html">Preguntas</a>
+    <a href="marca.html">La marca</a>
+    <a href="equipo.html">Equipo</a>
+    <a href="login.html">Iniciar sesión</a>
+  </nav>
+  <div class="mobile-menu-foot">
+    <a href="login.html#crear" class="btn btn--block mp-fijo">Crear mi cuenta</a>
+    <a href="empresa.html" class="btn btn--block btn--ghost">Tengo un negocio</a>
+    <p>Villavicencio, Meta · @modoparcheoficial</p>
+  </div>
+</div>
+
+<main id="main">
+  <section class="legal-hero mp-tinta-bloque" aria-labelledby="legal-title">
+    <div class="wrap">
+      <span class="legal-kicker mp-fijo">Pagos y devoluciones</span>
+      <h1 id="legal-title">Precios claros, sin trampas</h1>
+      <p>Para las personas ModoParche es gratis. Los negocios pueden elegir un plan pago. Aquí está todo lo que cobramos, cómo cancelar y cómo pedir la devolución de tu dinero.</p>
+      <p class="legal-meta"><span>Versión <b><span data-legal="version"></span></b></span><span>Vigente desde el <b><span data-legal="vigencia"></span></b></span><span>Responsable: <b><span data-legal="responsable"></span></b></span></p>
+    </div>
+  </section>
+
+  <div class="wrap legal-layout">
+    <nav class="legal-toc" aria-label="En esta página">
+      <p>En esta página</p>
+        <a href="#gratis">1. Para personas: gratis</a>
+        <a href="#planes">2. Planes para negocios</a>
+        <a href="#calculo">3. Cómo se calcula el cobro</a>
+        <a href="#estado">4. Estado de cuenta y pago</a>
+        <a href="#cancelar">5. Cambiar de plan o cancelar</a>
+        <a href="#devoluciones">6. Reclamos y devoluciones</a>
+        <a href="#reversion">7. Reversión del pago</a>
+        <a href="#promos">8. Promociones de los negocios</a>
+    </nav>
+    <article class="legal-doc">
+      <section id="gratis" aria-labelledby="h-gratis">
+        <h2 id="h-gratis"><span class="n">1.</span>Para personas: gratis</h2>
+        <p>Crear tu cuenta, ver el radar, abrir parches, unirte y usar el chat <strong>no cuesta nada</strong>. ModoParche no te cobra comisiones.</p>
+        <p>El costo que aparece en un parche (cover, entrada, consumo o el precio de un paquete) lo define el negocio u organizador y <strong>se paga directamente en el lugar</strong>. Si apartas un paquete en la app, lo pagas en el local al llegar. Ese dinero no pasa por ModoParche.</p>
+      </section>
+
+      <section id="planes" aria-labelledby="h-planes">
+        <h2 id="h-planes"><span class="n">2.</span>Planes para negocios</h2>
+        <p>No hay mensualidades fijas: <strong>solo ganamos si tu negocio recibe clientes</strong>.</p>
+        <div class="legal-table-wrap"><table class="legal-table"><thead><tr><th>Plan</th><th>Cobro</th><th>Incluye</th></tr></thead><tbody>
+        <tr><td>Parche básico</td><td><strong>Gratis</strong>. 0% de comisión y $0 por cliente.</td><td>2 parches al mes, perfil en el radar, conteo de cupos y validación con QR.</td></tr>
+        <tr><td>Parche Villavo</td><td><strong>10%</strong> por paquete redimido o <strong>$2.500</strong> por cliente validado en mesa.</td><td>Parches ilimitados con foto, promos relámpago destacadas, prioridad en tu categoría y métricas de llegada.</td></tr>
+        <tr><td>Varias sedes</td><td><strong>8%</strong> por paquete redimido o <strong>$2.000</strong> por cliente validado en mesa.</td><td>Todo lo de Parche Villavo en todas tus sedes, panel central, métricas por sede y acompañamiento del equipo.</td></tr>
+        </tbody></table></div>
+        <div class="legal-note legal-note--ok"><p><strong>Sin costos ocultos.</strong> No cobramos inscripción, mensualidad, permanencia mínima ni cargos por cancelar. Si en un mes no llega nadie por ModoParche, tu cobro de ese mes es <strong>$0</strong>. Si algún día cambia una tarifa, te avisamos con 30 días de anticipación y puedes cambiar de plan antes.</p></div>
+      </section>
+
+      <section id="calculo" aria-labelledby="h-calculo">
+        <h2 id="h-calculo"><span class="n">3.</span>Cómo se calcula el cobro</h2>
+        <p>Cada parche que publicas es de uno de dos tipos, y tú lo eliges al crearlo:</p>
+        <ul>
+          <li><strong>Paquete cerrado</strong> (combos, catas, talleres, boletas o covers): el cliente lo aparta en la app y lo paga en tu local. Pagas el porcentaje de tu plan sobre el precio del paquete, <strong>solo por cada paquete redimido</strong>.</li>
+          <li><strong>Consumo libre en mesa</strong> (gastrobares, miradores, restaurantes a la carta, cafeterías): el cliente reserva su cupo o beneficio y paga su cuenta en tu caja. Pagas la tarifa fija de tu plan <strong>por cada persona que llegó</strong>. Las reservas del Modo Mesa se cobran igual.</li>
+        </ul>
+        <p><strong>Qué cuenta como cliente validado.</strong> Solo las llegadas verificadas: tu equipo escanea el QR del cliente o lo marca en la puerta, o el cliente marca su llegada con el QR del parche o con el GPS cerca de tu local. Si alguien aparta o reserva y no llega, no pagas nada.</p>
+        <p><strong>No fiscalizamos tus ventas.</strong> No pedimos cuentas de caja: el cobro sale únicamente de las llegadas verificadas. Cada cliente queda en tu panel con hora, fecha, forma de validación y código, para que revises cada peso.</p>
+      </section>
+
+      <section id="estado" aria-labelledby="h-estado">
+        <h2 id="h-estado"><span class="n">4.</span>Estado de cuenta y pago</h2>
+        <ul>
+          <li>El <strong>día 1 de cada mes</strong> armamos tu estado de cuenta del mes anterior, con el total y el detalle de cada cliente. Lo ves en <strong>Perfil y plan &gt; Cobros por resultados</strong> y te avisamos en la app.</li>
+          <li>Tienes hasta el <strong>día 15</strong> de ese mes para pagarlo.</li>
+          <li>Pagas con el datáfono virtual de <span data-legal="pasarela"></span> (tarjeta, PSE, Nequi o Bancolombia): escribes el valor exacto y la referencia de tu estado de cuenta. ModoParche no ve ni guarda los datos de tu tarjeta.</li>
+          <li>Después de pagar, tocas <strong>"Ya pagué"</strong> y escribes el número de transacción. El equipo lo confirma y el estado de cuenta queda pagado.</li>
+          <li>Si se vence sin pago, tus parches dejan de salir en el radar hasta que te pongas al día. No cobramos intereses ni multas.</li>
+        </ul>
+      </section>
+
+      <section id="cancelar" aria-labelledby="h-cancelar">
+        <h2 id="h-cancelar"><span class="n">5.</span>Cambiar de plan o cancelar</h2>
+        <p>Cambias de plan cuando quieras desde tu panel y el cambio es inmediato. Los clientes que ya llegaron antes del cambio se cobran con la tarifa que tenías en ese momento. Para dejar de pagar basta con pasarte a Parche básico: no hay multa ni permanencia, y no pierdes tu cuenta ni tus parches. Si cierras la cuenta, solo queda pendiente lo que ya se generó por clientes que llegaron.</p>
+      </section>
+
+      <section id="devoluciones" aria-labelledby="h-devoluciones">
+        <h2 id="h-devoluciones"><span class="n">6.</span>Reclamos y devoluciones</h2>
+        <p>Si en tu estado de cuenta aparece un cliente que no llegó, uno repetido o un valor que no corresponde, escríbenos a <a data-legal="correo" data-legal-mail href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a> con la referencia del estado de cuenta y el código del cliente, dentro de los 15 días siguientes. Si tienes razón, anulamos ese cobro.</p>
+        <p>Te devolvemos el dinero cuando pagaste de más, te cobramos dos veces o pagaste un cobro que luego se anuló. Respondemos cada solicitud en máximo 15 días hábiles y, si procede, devolvemos el dinero en máximo 30 días calendario por el mismo medio de pago.</p>
+      </section>
+
+      <section id="reversion" aria-labelledby="h-reversion">
+        <h2 id="h-reversion"><span class="n">7.</span>Reversión del pago</h2>
+        <p>Si pagaste con tarjeta u otro medio electrónico y fuiste víctima de fraude, la operación no fue solicitada por ti, el servicio no se prestó o no corresponde a lo que pediste, puedes pedir la reversión del pago (artículo 51 de la Ley 1480 de 2011). Debes presentar la queja ante nosotros y avisar al emisor de tu medio de pago dentro de los <strong>5 días hábiles</strong> siguientes a la fecha en que te enteraste.</p>
+      </section>
+
+      <section id="promos" aria-labelledby="h-promos">
+        <h2 id="h-promos"><span class="n">8.</span>Promociones de los negocios</h2>
+        <p>Las promociones, cupones y precios que publica un negocio en sus parches son responsabilidad de ese negocio y se pagan en el local. Deben decir sus condiciones completas. Si un negocio no cumple una promoción publicada, repórtalo con el botón <strong>Reportar</strong> o escríbenos.</p>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer class="foot mp-tinta-bloque">
+  <div class="wrap">
+    <svg class="foot-mark" viewBox="0 0 1000 150" role="img" aria-label="ModoParche">
+      <text x="0" y="132" font-size="160" textLength="1000" lengthAdjust="spacingAndGlyphs">Modo<tspan class="o">Parche</tspan></text>
+    </svg>
+    <div class="foot-grid">
+      <div class="foot-intro">
+        <p>Planes en grupo para Villavicencio. Sal, encuentra y conecta con gente de tu misma vibra.</p>
+        <a href="login.html#crear" class="btn btn--sm btn--on-ink mp-fijo">Crear mi cuenta</a>
+      </div>
+      <div class="foot-col">
+        <h2 class="mp-naranja-texto">Explora</h2>
+        <a href="index.html">Inicio</a>
+        <a href="preguntas.html">Preguntas</a>
+        <a href="marca.html">La marca</a>
+      </div>
+      <div class="foot-col">
+        <h2 class="mp-naranja-texto">Negocios</h2>
+        <a href="comercio.html">Para negocios</a>
+        <a href="empresa.html">Crear cuenta de negocio</a>
+        <a href="pagos.html">Pagos y devoluciones</a>
+      </div>
+      <div class="foot-col foot-contact">
+        <h2 class="mp-naranja-texto">Escríbenos</h2>
+        <a href="mailto:modoparcheoficial@gmail.com">modoparcheoficial@gmail.com</a>
+        <a href="https://www.instagram.com/modoparcheoficial/" target="_blank" rel="noopener">Instagram @modoparcheoficial</a>
+        <a href="equipo.html">Equipo y contacto</a>
+        <p>Villavicencio, Meta</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <p>© <span data-year>2026</span> ModoParche · Hecho en Villavo</p>
+      <nav class="foot-legal" aria-label="Documentos legales"><a href="terminos.html">Términos</a><a href="privacidad.html">Privacidad</a><a href="cookies.html">Cookies</a><a href="pagos.html">Pagos y devoluciones</a><a href="legal.html">Información legal</a></nav>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" type="button" aria-label="Volver arriba">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="mp-base.js" defer></script>
+<script src="mp-tema.js" defer></script>
+<script src="legal.js" defer></script>
+<script src="mp-energia.js" defer></script>
+</body>
+</html>

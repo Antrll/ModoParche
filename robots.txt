@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /empresa-dashboard
+Disallow: /seguro/
+Disallow: /api/
+
+Sitemap: https://modoparche.vercel.app/sitemap.xml

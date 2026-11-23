@@ -1,0 +1,2 @@
+# Las migraciones SQL siempre con saltos de línea LF (también en Windows)
+*.sql text eol=lf
