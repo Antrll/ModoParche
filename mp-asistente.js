@@ -40,8 +40,16 @@
   var FALLO = 'Ahora no pude responder. Puedes mirar /preguntas o escribirnos a modoparcheoficial@gmail.com.';
   var IMG_BOTON = '<img class="pa-avatar-img" src="/src/assets/web/parce-asistente.png" alt="" width="76" height="79" decoding="async">';
   var IMG_CABECERA =
-    '<img class="pa-avatar-img pa-img-lt" src="/src/assets/web/parce-asistente-negra.png" alt="" width="76" height="79" decoding="async">' +
-    '<img class="pa-avatar-img pa-img-dk" src="/src/assets/web/parce-asistente-blanca.png" alt="" width="76" height="79" decoding="async">';
+    '<span class="pa-tinta" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
+    '<img class="pa-avatar-img" src="/src/assets/web/parce-asistente.png" alt="" width="76" height="79" decoding="async">';
+  var SVG_FILTRO =
+    '<svg class="pa-svg-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>' +
+      '<filter id="pa-goo">' +
+        '<feGaussianBlur in="SourceGraphic" stdDeviation="5.2" result="blur"/>' +
+        '<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 21 -9" result="goo"/>' +
+        '<feComposite in="SourceGraphic" in2="goo" operator="atop"/>' +
+      '</filter>' +
+    '</defs></svg>';
   var CERRAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var ENVIAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
@@ -127,12 +135,22 @@
     if (on) { if (matchMedia('(pointer: fine)').matches) setTimeout(function () { campo.focus(); }, 180); }
     else { setTimeout(function () { if (!panel.classList.contains('is-abierto')) panel.hidden = true; }, 240); raiz.querySelector('.pa-fab').focus({ preventScroll: true }); }
   }
+  function ajustarTeclado() {
+    if (!raiz || !window.visualViewport) return;
+    var vv = window.visualViewport;
+    var teclado = vv.height < window.innerHeight - 90;
+    raiz.classList.toggle('is-teclado', teclado);
+    raiz.style.setProperty('--pa-vvh', Math.round(vv.height) + 'px');
+    var offsetBottom = Math.max(0, Math.round(window.innerHeight - (vv.height + vv.offsetTop)));
+    raiz.style.setProperty('--pa-kb', offsetBottom + 'px');
+  }
   function iniciar() {
     if (document.getElementById('pa-asistente')) return;
     raiz = document.createElement('div');
     raiz.id = 'pa-asistente';
     raiz.className = 'pa' + (document.getElementById('toasts') || document.querySelector('.bottom-nav') ? ' pa--panel' : '');
     raiz.innerHTML =
+      SVG_FILTRO +
       '<section class="pa-panel" role="dialog" aria-label="Parce, asistente virtual de ModoParche" hidden>' +
         '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + IMG_CABECERA + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
         '<button type="button" class="pa-x" aria-label="Cerrar el asistente">' + CERRAR + '</button></header>' +
@@ -165,6 +183,11 @@
     raiz.querySelector('.pa-x').addEventListener('click', function () { abrir(false); });
     raiz.querySelector('form').addEventListener('submit', function (e) { e.preventDefault(); preguntar(campo.value); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel.classList.contains('is-abierto')) abrir(false); });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', ajustarTeclado);
+      window.visualViewport.addEventListener('scroll', ajustarTeclado);
+      ajustarTeclado();
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();

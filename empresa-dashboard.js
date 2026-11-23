@@ -1768,6 +1768,27 @@
         return;
       }
       d = r.data;
+      const pend0 = ((d && d.liquidaciones) || []).filter(l => l.estado === 'pendiente');
+      if (d && (!(d.mes && d.mes.detalle && d.mes.detalle.length)) && pend0.length) {
+        try {
+          const det = await SB().rpc('mi_liquidacion_detalle', { p_id: Number(pend0[0].id) });
+          if (det && det.data && Array.isArray(det.data.cobros) && det.data.cobros.length) {
+            d.cobros_pendientes = det.data.cobros.map(c => ({
+              id: c.id || pend0[0].id,
+              cliente: c.cliente || 'Cliente validado',
+              personas: Number(c.personas) || 1,
+              titulo: c.titulo || `Estado de cuenta de ${fmtPeriodo(pend0[0].periodo)}`,
+              creado_en: c.fecha || new Date(pend0[0].periodo + 'T12:00:00').toISOString(),
+              validado_por: c.validado_por || 'qr',
+              codigo: c.codigo || pend0[0].referencia,
+              monto_cop: Number(c.monto) || 0,
+              base_cop: Number(c.base) || 0,
+              tipo: c.tipo || 'mesa',
+              reclamable: false,
+            }));
+          }
+        } catch (_e) { /* detalle opcional */ }
+      }
     }
     try { pintarCobros(d); } catch (e) { console.error(e); box.innerHTML = '<p class="meta">No pudimos mostrar tus cobros. Toca «Actualizar».</p>'; }
   }
@@ -1776,10 +1797,54 @@
     const liqs = d.liquidaciones || [], pend = liqs.filter(l => l.estado === 'pendiente'), viejas = liqs.filter(l => l.estado !== 'pendiente');
     const tarifa = d.tarifa_cliente ? `${d.comision_pct}% por paquete · ${money(d.tarifa_cliente)} por cliente en mesa` : 'Plan básico: $0 por cliente y 0% de comisión';
     const vencida = l => new Date(l.vence + 'T23:59:59').getTime() < NOW();
+    // Si este mes aún va en 0 pero hay clientes en el estado de cuenta pendiente o en parches locales, los mostramos abajo
+    let detalleLista = [...(mes.detalle || [])];
+    if (!detalleLista.length && Array.isArray(d.cobros_pendientes) && d.cobros_pendientes.length) {
+      detalleLista = d.cobros_pendientes;
+    }
+    if (!detalleLista.length) {
+      const llegadosLocal = [];
+      for (const p of (loc().parches || [])) {
+        for (const a of (p.asistentes || [])) {
+          if (a.llego) {
+            llegadosLocal.push({
+              id: a.id,
+              cliente: a.nombre || 'Cliente',
+              personas: 1,
+              titulo: p.titulo || 'Parche',
+              creado_en: new Date(a.llego).toISOString(),
+              validado_por: a.metodo || 'organizador',
+              codigo: String(p.id).slice(0, 8).toUpperCase(),
+              monto_cop: Number(d.tarifa_cliente) || 0,
+              tipo: 'mesa',
+              reclamable: false,
+            });
+          }
+        }
+      }
+      if (llegadosLocal.length) detalleLista = llegadosLocal;
+      else if (pend.some(l => Number(l.clientes) > 0)) {
+        detalleLista = pend.filter(l => Number(l.clientes) > 0).map(l => ({
+          id: l.id,
+          cliente: `${int(l.clientes)} ${Number(l.clientes) === 1 ? 'cliente validado' : 'clientes validados'}`,
+          personas: Number(l.clientes) || 1,
+          titulo: `Estado de cuenta de ${fmtPeriodo(l.periodo)}`,
+          creado_en: new Date(String(l.periodo).slice(0, 10) + 'T12:00:00').toISOString(),
+          validado_por: 'qr',
+          codigo: l.referencia,
+          monto_cop: Number(l.total) || 0,
+          tipo: 'mesa',
+          reclamable: false,
+        }));
+      }
+    }
+    const resumenTotal = Number(mes.total) || (pend[0] ? Number(pend[0].total) || 0 : 0);
+    const resumenClientes = Number(mes.clientes) || (pend[0] ? Number(pend[0].clientes) || 0 : detalleLista.reduce((s, c) => s + (Number(c.personas) || 1), 0));
+    const resumenPeriodo = Number(mes.clientes) || !pend[0] ? (mes.periodo || new Date(NOW()).toISOString()) : pend[0].periodo;
     box.innerHTML = `
       ${d.en_mora ? `<div class="cobro-alerta">${ic('i-alert')}<div><b>Tienes un pago vencido.</b><p>Mientras tanto tus parches no salen en el radar. Págalo abajo y avísanos para reactivarlos.</p></div></div>` : ''}
       <div class="cobro-resumen">
-        <div><span>Este mes · ${esc(fmtPeriodo(mes.periodo || new Date(NOW()).toISOString()))}</span><b class="num">${money(mes.total || 0)}</b><small>${int(mes.clientes || 0)} ${Number(mes.clientes) === 1 ? 'cliente validado' : 'clientes validados'}</small></div>
+        <div><span>${Number(mes.clientes) || !pend[0] ? 'Este mes' : 'Por pagar'} · ${esc(fmtPeriodo(resumenPeriodo))}</span><b class="num">${money(resumenTotal)}</b><small>${int(resumenClientes)} ${resumenClientes === 1 ? 'cliente validado' : 'clientes validados'}</small></div>
         <div><span>Tu tarifa</span><b class="cobro-tarifa">${esc(tarifa)}</b><small>Sin mensualidad. Si nadie llega, $0.</small></div>
       </div>
       ${Number(d.credito) > 0 ? `<p class="liq-ok">${ic('i-gift')}Tienes <b>${money(d.credito)}</b> de saldo a favor. Se descuenta solo de tu próximo estado de cuenta.</p>` : ''}
@@ -1790,9 +1855,29 @@
         <p class="liq-total num">${money(saldo)} <small>· ${int(l.clientes)} clientes${pagado ? ` · ya abonaste ${money(pagado)} de ${money(l.total)}` : ''}${Number(l.descuento) ? ` · descuento ${money(l.descuento)}` : ''}</small></p>
         ${pagado ? `<span class="track liq-track" role="img" aria-label="Pagado ${Math.round(pagado / l.total * 100)}%"><i class="in" style="width:${clamp(pagado / l.total, 0, 1) * 100}%"></i></span>` : ''}
         <p class="liq-ref">Referencia: <code>${esc(l.referencia)}</code> <span class="liq-ref-acts"><button type="button" class="text-btn" data-action="copiar-ref" data-ref="${esc(l.referencia)}">${ic('i-copy')}Copiar</button><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${ic('i-ticket')}Ver detalle</button></span></p>
-        <p class="liq-pasos-1">Toca <b>«Pagar ${money(saldo)}»</b>: el valor y la referencia ya van puestos. Pagas con tarjeta, PSE, Nequi, Daviplata o Bancolombia y, al aprobarse, el estado de cuenta queda pagado solo.</p>
+        <p class="liq-pasos-1">Toca <b>«Pagar ${money(saldo)}»</b>: el valor y la referencia ya van listos para que pagues con tarjeta, PSE, Nequi, Daviplata o Bancolombia en Wompi.</p>
         ${l.reportada_en && !pagado ? `<p class="liq-ok">${ic('i-check')}Avisaste el pago (${esc(l.pago_ref || '')}). El equipo lo confirma pronto.</p>` : ''}
-        <div class="liq-acts"><button type="button" class="btn primary" data-action="liq-pagar" data-id="${esc(l.id)}">${ic('i-card')}Pagar ${money(saldo)}</button><button type="button" class="btn" data-action="liq-reportar" data-id="${esc(l.id)}">Ya pagué por otro medio</button></div>
+        <div class="liq-acts"><button type="button" class="btn primary" data-action="liq-pagar" data-id="${esc(l.id)}">${ic('i-card')}Pagar ${money(saldo)}</button><button type="button" class="btn" data-action="liq-reportar" data-id="${esc(l.id)}" aria-expanded="false">Ya pagué por otro medio</button></div>
+        <div class="liq-rep-wrap" id="liq-rep-wrap-${esc(l.id)}">
+          <div class="liq-rep-box">
+            <div class="liq-rep-head">
+              <b>Registrar comprobante de pago (${money(saldo)})</b>
+              <button type="button" class="text-btn" data-action="liq-reportar" data-id="${esc(l.id)}">Cerrar</button>
+            </div>
+            <p class="hint">Elige por dónde pagaste y escribe el número de transacción o comprobante para que el equipo lo valide.</p>
+            <div class="liq-rep-medios" role="group" aria-label="Medio de pago">
+              <button type="button" class="liq-medio is-on" data-action="liq-medio" data-id="${esc(l.id)}" data-medio="Wompi">Wompi</button>
+              <button type="button" class="liq-medio" data-action="liq-medio" data-id="${esc(l.id)}" data-medio="Nequi">Nequi</button>
+              <button type="button" class="liq-medio" data-action="liq-medio" data-id="${esc(l.id)}" data-medio="Bancolombia">Bancolombia</button>
+              <button type="button" class="liq-medio" data-action="liq-medio" data-id="${esc(l.id)}" data-medio="PSE">PSE</button>
+              <button type="button" class="liq-medio" data-action="liq-medio" data-id="${esc(l.id)}" data-medio="Daviplata">Daviplata</button>
+            </div>
+            <div class="liq-rep-row">
+              <input class="input" type="text" id="liq-rep-inp-${esc(l.id)}" maxlength="50" placeholder="N.° de transacción o comprobante (ej. 12984-173...)">
+              <button type="button" class="btn primary" data-action="liq-rep-enviar" data-id="${esc(l.id)}">${ic('i-check')}Confirmar pago</button>
+            </div>
+          </div>
+        </div>
         ${saldo > minimo ? `<details class="liq-abono"><summary>Pagar solo una parte (abono)</summary>
           <div class="liq-abono-f"><label for="liq-abono-${esc(l.id)}">Valor del abono</label>
             <div class="liq-abono-row"><input class="input num" type="number" inputmode="numeric" id="liq-abono-${esc(l.id)}" min="${minimo}" max="${saldo}" step="1000" placeholder="${int(Math.ceil(saldo / 2 / 1000) * 1000)}">
@@ -1801,9 +1886,9 @@
         </details>` : ''}
         <p class="liq-estado" id="liq-estado-${esc(l.id)}" role="status" aria-live="polite"></p>
       </div>`; }).join('')}
-      <div class="mini-head"><p class="mini-title">Clientes validados este mes</p>${(mes.detalle || []).length ? `<button type="button" class="text-btn" data-action="cobros-csv">${ic('i-download')}Descargar Excel (CSV)</button>` : ''}</div>
-      ${(mes.detalle || []).length ? `<ul class="cobro-lista">${mes.detalle.map(c => `<li>
-          <span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}${c.personas > 1 ? ` y ${c.personas - 1} más` : ''}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))} · ${esc(VALIDO_POR[c.validado_por] || 'validado')} · código ${esc(c.codigo)}</small>
+      <div class="mini-head"><p class="mini-title">Clientes validados${!(mes.detalle || []).length && pend[0] ? ` (${esc(fmtPeriodo(pend[0].periodo))})` : ' este mes'}</p>${detalleLista.length ? `<button type="button" class="text-btn" data-action="cobros-csv">${ic('i-download')}Descargar Excel (CSV)</button>` : ''}</div>
+      ${detalleLista.length ? `<ul class="cobro-lista">${detalleLista.map(c => `<li>
+          <span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}${c.personas > 1 && !/clientes validados/i.test(c.cliente || '') ? ` y ${c.personas - 1} más` : ''}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))} · ${esc(VALIDO_POR[c.validado_por] || 'validado')} · código ${esc(c.codigo)}</small>
             ${c.reclamo ? `<span class="pill ${c.reclamo === 'aprobado' ? 'pos' : c.reclamo === 'rechazado' ? 'neg' : 'warn'} cobro-rec">Reclamo ${esc(RECLAMO_TXT[c.reclamo] || c.reclamo)}</span>`
               : c.reclamable !== false ? `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}">¿No llegó? Reclamar</button>` : ''}</span>
           <span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}<small>${c.tipo === 'paquete' ? `${d.comision_pct}% de ${money(c.base_cop || 0)}` : `${c.personas} × ${money(d.tarifa_cliente)}`}</small></span>
@@ -2025,16 +2110,6 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   }
   const pagosAvisados = new Set();
   const urlVueltaPago = ref => new URL('empresa-dashboard.html?pago=' + encodeURIComponent(ref), location.href).href;
-  function liqAlterno(id, monto, texto) {
-    liqEstado(id, 'error', texto);
-    const el = document.getElementById('liq-estado-' + id);
-    if (!el) return;
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'btn btn--sm'; b.dataset.action = 'liq-datafono'; b.dataset.id = id;
-    if (monto) b.dataset.monto = String(monto);
-    b.textContent = 'Pagar con el datáfono de Wompi';
-    el.append(' ', b);
-  }
   // Volvió de Wompi: se muestra el estado real del pago, no un mensaje genérico
   async function volverDeWompi(ref, txId) {
     if (txId) { try { await SB().functions.invoke('wompi-checkout', { body: { accion: 'confirmar', transaccion: txId } }); } catch (e) { /* el webhook lo confirma igual */ } }
@@ -2050,9 +2125,9 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     else toast('Tu pago sigue en proceso', 'Apenas Wompi lo apruebe, el estado de cuenta se marca solo.');
   }
   async function pagarLiquidacion(id, btn, monto = null) {
-    if (!REMOTE()) { toast('Panel de ejemplo', monto ? `En tu cuenta real se abre Wompi para abonar ${money(monto)}.` : 'En tu cuenta real se abre Wompi con el valor y la referencia ya puestos.'); return; }
+    if (!REMOTE()) { abrirDatafono(id, monto); return; }
     btn.disabled = true;
-    liqEstado(id, 'cargando', 'Preparando el pago seguro…');
+    liqEstado(id, 'cargando', 'Abriendo pasarela de pago Wompi…');
     let datos;
     try {
       const body = { liquidacion: Number(id) };
@@ -2068,10 +2143,9 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
       if (/DEMASIADOS/.test(m)) { liqEstado(id, 'error', 'Muchos intentos seguidos. Espera unos minutos.'); return; }
       if (/MONTO_INVALIDO/.test(m)) { liqEstado(id, 'error', 'Ese valor no sirve para abonar. Toca «Actualizar» y revisa el saldo.'); return; }
       if (/NO_SE_PUEDE_PAGAR|NO_ES_TUYO/.test(m)) { liqEstado(id, 'error', 'Este estado de cuenta ya no está pendiente. Toca «Actualizar».'); return; }
-      // Sin pago en línea no se salta solo a otro medio: el negocio ve qué pasó y decide
-      liqAlterno(id, monto, /COBROS_REALES_DESACTIVADOS/.test(m) ? 'Los cobros en línea están desactivados por ahora.'
-        : /PAGOS_SIN_CONFIGURAR/.test(m) ? 'El pago en línea todavía no está activo.'
-        : 'No pudimos conectar con el pago en línea. No se hizo ningún cobro.');
+      // Si el checkout integrado no está activo, abrimos directamente el pago rápido con Wompi
+      liqEstado(id, '', '');
+      abrirDatafono(id, monto);
       return;
     }
     // El widget de Wompi no cargó (red o bloqueador): mismo pago, en el checkout web de Wompi
@@ -2139,7 +2213,8 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     $('#df-copiar-ref').dataset.copiar = l.referencia;
     $('#df-abrir').dataset.valor = String(valor);
     $('#df-abrir').dataset.id = String(id);
-    $('#df-estado').textContent = '';
+    try { navigator.clipboard.writeText(String(valor)); } catch (_e) { /* opcional */ }
+    $('#df-estado').textContent = `Valor (${money(valor)}) copiado automáticamente. Toca «Abrir Wompi» para pagar.`;
     $('#dlg-datafono').showModal();
   }
   async function copiarDato(btn) {
@@ -2153,20 +2228,54 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     try { await navigator.clipboard.writeText(valor); copiado = true; } catch (e) { /* sin portapapeles */ }
     window.open(DATAFONO_WOMPI, '_blank', 'noopener');
     $('#df-estado').textContent = copiado
-      ? `Copiamos ${money(Number(valor))}: en Wompi pega el valor (mantén presionado y «Pegar») y pon la referencia en la descripción.`
+      ? `Copiamos ${money(Number(valor))}: en Wompi pega el valor y pon la referencia en la descripción.`
       : `En Wompi escribe exactamente ${money(Number(valor))} y pon la referencia en la descripción.`;
-    liqEstado(btn.dataset.id, 'info', 'Cuando Wompi apruebe, toca «Ya pagué por otro medio» y escribe el número de la transacción.');
+    const dlg = $('#dlg-datafono');
+    if (dlg && dlg.open) dlg.close();
+    reportarPago(btn.dataset.id, true);
   }
 
-  async function reportarPago(id) {
-    const v = window.prompt('Ya pagué\n\nEscribe el número de transacción que te dio Wompi. El equipo lo revisa y marca tu estado de cuenta como pagado.', '');
-    if (v === null) return;
-    const ref = v.trim().slice(0, 60);
-    if (ref.length < 4) { toast('Falta el número', 'Escríbelo como aparece en el comprobante de Wompi.', { error: true }); return; }
-    if (!REMOTE()) { toast('Panel de ejemplo', 'En tu cuenta real el aviso le llega al equipo.'); return; }
+  function reportarPago(id, forzarAbrir = false) {
+    const wrap = document.getElementById('liq-rep-wrap-' + id);
+    if (!wrap) return;
+    const abrir = forzarAbrir ? true : !wrap.classList.contains('is-open');
+    wrap.classList.toggle('is-open', abrir);
+    const btn = document.querySelector(`[data-action="liq-reportar"][data-id="${CSS.escape(String(id))}"]`);
+    if (btn) btn.setAttribute('aria-expanded', String(abrir));
+    if (abrir) {
+      setTimeout(() => {
+        const inp = document.getElementById('liq-rep-inp-' + id);
+        if (inp) inp.focus();
+      }, 160);
+    }
+  }
+  function elegirMedioPago(btn) {
+    const box = btn.closest('.liq-rep-medios');
+    if (!box) return;
+    box.querySelectorAll('.liq-medio').forEach(b => b.classList.toggle('is-on', b === btn));
+  }
+  async function enviarReportePago(id, btn) {
+    const inp = document.getElementById('liq-rep-inp-' + id);
+    const wrap = document.getElementById('liq-rep-wrap-' + id);
+    const medioBtn = wrap && wrap.querySelector('.liq-medio.is-on');
+    const medio = (medioBtn && medioBtn.dataset.medio) || 'Wompi';
+    const raw = String((inp && inp.value) || '').trim();
+    if (raw.length < 4) {
+      toast('Falta el número de comprobante', 'Escribe el número de transacción tal como aparece en tu comprobante.', { error: true });
+      if (inp) inp.focus();
+      return;
+    }
+    const ref = `${medio} · ${raw}`.slice(0, 60);
+    if (!REMOTE()) {
+      wrap.classList.remove('is-open');
+      toast('Comprobante registrado', `Guardamos tu aviso (${ref}).`);
+      return;
+    }
+    if (btn) btn.disabled = true;
     const { error } = await SB().rpc('reportar_pago_liquidacion', { p_id: Number(id), p_ref: ref });
+    if (btn) btn.disabled = false;
     if (error) { const [t, dd] = errorDB(error); toast(t, dd, { error: true }); return; }
-    toast('Aviso enviado', 'El equipo confirma tu pago. Gracias por estar al día.');
+    toast('Comprobante enviado', 'El equipo confirma tu pago y actualiza tu estado de cuenta.');
     cargarCobros(true);
   }
   async function copiarRef(ref) {
@@ -3134,6 +3243,8 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'pagar-plan': cambiarPlan('villavo'); break;
         case 'cobros-recargar': conCarga(a, () => cargarCobros(true)); break;
         case 'liq-reportar': reportarPago(a.dataset.id); break;
+        case 'liq-medio': elegirMedioPago(a); break;
+        case 'liq-rep-enviar': enviarReportePago(a.dataset.id, a); break;
         case 'liq-pagar': pagarLiquidacion(a.dataset.id, a); break;
         case 'liq-datafono': abrirDatafono(a.dataset.id, Number(a.dataset.monto) || null); break;
         case 'liq-abonar': abonarLiquidacion(a.dataset.id, a); break;

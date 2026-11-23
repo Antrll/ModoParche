@@ -1,6 +1,6 @@
 /* =====================================================================
    ModoParche · mp-asistente.css — Parce, el asistente virtual
-   Animaciones liquid (spring physics) y avatar que sobresale del borde.
+   Animaciones liquid (spring physics) y mancha de tinta líquida viva.
 ===================================================================== */
 .pa {
   --pa-papel: #ffffff; --pa-suave: #f4f4f5; --pa-linea: rgba(17,17,17,.1); --pa-tinta: #111111; --pa-gris: #55555c;
@@ -17,6 +17,7 @@
 }
 html.is-dark .pa { --pa-papel: #1b1b1f; --pa-suave: #29292e; --pa-linea: rgba(255,255,255,.12); --pa-tinta: #ffffff; --pa-gris: #b9b9c2; }
 .pa--panel { bottom: 16px; }
+.pa-svg-defs { position: absolute; width: 0; height: 0; pointer-events: none; overflow: hidden; }
 /* Cuando el menú lateral completo está abierto en celular, Parce se aparta */
 body:has(.sidebar.open, .sidebar.is-open, .mobile-menu.is-open, .door:not([hidden])) .pa:not(.is-abierto) {
   opacity: 0; visibility: hidden; pointer-events: none;
@@ -53,7 +54,7 @@ html.is-dark .pa-fab {
 .pa-panel {
   position: relative; display: flex; flex-direction: column;
   width: min(370px, calc(100vw - 28px)); height: min(468px, calc(100svh - 212px));
-  margin-top: 18px;
+  margin-top: 20px;
   overflow: visible; border-radius: 26px; background: var(--pa-papel);
   box-shadow: 0 2px 6px rgba(17,17,17,.1), 0 28px 60px -20px rgba(17,17,17,.55);
   transform-origin: 90% 100%; opacity: 0;
@@ -63,35 +64,77 @@ html.is-dark .pa-fab {
 .pa-panel[hidden] { display: none; }
 .pa-panel.is-abierto { opacity: 1; transform: none; }
 
-/* Cabecera naranja: Parce sobresale más allá del borde superior */
+/* Cabecera naranja: Parce con corona naranja sobre mancha de tinta negra líquida en movimiento */
 .pa-head {
   position: relative; z-index: 2;
-  display: flex; align-items: center; gap: 10px;
-  padding: 13px 14px 13px 12px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 14px 13px 14px;
   border-radius: 26px 26px 0 0;
   background: #FF5A1F; color: #111111;
 }
 .pa-sello {
-  position: relative; display: grid; place-items: center; flex: none;
+  position: relative; isolation: isolate;
+  display: grid; place-items: center; flex: none;
   width: 74px; height: 78px;
-  margin: -30px -2px -12px -4px;
+  margin: -28px 2px -12px -2px;
   background: transparent;
-  filter: drop-shadow(0 8px 14px rgba(17,17,17,.36));
   transform-origin: 50% 80%;
   transition: transform .55s var(--pa-spring);
 }
 .pa-panel.is-abierto .pa-sello { animation: pa-sello-pop .65s .05s var(--pa-spring) both; }
 @media (hover: hover) and (pointer: fine) {
-  .pa-head:hover .pa-sello { transform: translateY(-3px) rotate(-6deg) scale(1.06); }
+  .pa-head:hover .pa-sello { transform: translateY(-3px) rotate(-5deg) scale(1.05); }
 }
-.pa-sello .pa-avatar-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
-.pa-sello .pa-img-dk { display: none; }
-html.is-dark .pa-sello .pa-img-lt { display: none; }
-html.is-dark .pa-sello .pa-img-dk { display: block; }
-.pa-head div { flex: 1; min-width: 0; display: grid; }
+.pa-sello .pa-avatar-img {
+  position: relative; z-index: 2;
+  width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.45));
+}
+
+/* Mancha de tinta negra líquida (gooey filter) que enmascara detrás de Parce y su corona naranja */
+.pa-tinta {
+  position: absolute; inset: -14px -18px -12px -16px; z-index: 1;
+  pointer-events: none;
+  filter: url(#pa-goo);
+}
+.pa-tinta i {
+  position: absolute; display: block;
+  background: #111111;
+  border-radius: 50%;
+}
+/* Núcleo principal detrás de la cara y la corona */
+.pa-tinta i:nth-child(1) {
+  inset: 8px 14px 10px 14px;
+  border-radius: 54% 46% 48% 52% / 58% 54% 46% 42%;
+  animation: pa-tinta-nucleo 4.8s ease-in-out infinite;
+}
+/* Lóbulo superior que envuelve las 3 puntas de la corona naranja */
+.pa-tinta i:nth-child(2) {
+  top: 4px; left: 11px; right: 13px; height: 52px;
+  border-radius: 58% 42% 52% 48% / 62% 58% 42% 38%;
+  animation: pa-tinta-corona 3.9s ease-in-out infinite;
+}
+/* Gota líquida derecha que se estira hacia el apartado naranja y los rayos */
+.pa-tinta i:nth-child(3) {
+  top: 22px; right: 4px; width: 38px; height: 38px;
+  animation: pa-tinta-gota-der 4.3s ease-in-out infinite;
+}
+/* Gota líquida izquierda que ondula alrededor de la corona */
+.pa-tinta i:nth-child(4) {
+  top: 10px; left: 6px; width: 34px; height: 36px;
+  animation: pa-tinta-gota-izq 3.6s ease-in-out infinite;
+}
+/* Gota líquida inferior que se funde dentro de la barra naranja */
+.pa-tinta i:nth-child(5) {
+  bottom: 4px; left: 22px; width: 44px; height: 32px;
+  animation: pa-tinta-base 5.1s ease-in-out infinite;
+}
+
+.pa-head div { position: relative; z-index: 2; flex: 1; min-width: 0; display: grid; }
 .pa-head b { font-family: var(--font-display, 'Gagalin', sans-serif); font-weight: 400; font-size: 1.5rem; line-height: 1; text-transform: uppercase; }
 .pa-head small { margin-top: 3px; font-size: .78rem; font-weight: 700; }
 .pa-x {
+  position: relative; z-index: 2;
   display: grid; place-items: center; flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%;
   background: rgba(17,17,17,.14); color: #111111; cursor: pointer;
   transition: transform .35s var(--pa-spring), background-color .18s ease;
@@ -190,6 +233,29 @@ html.is-dark .pa-msg--yo { background: #FF5A1F; color: #111111; }
   background: var(--pa-papel); color: var(--pa-gris); font-size: .72rem; line-height: 1.35; text-align: center;
 }
 
+@keyframes pa-tinta-nucleo {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); border-radius: 54% 46% 48% 52% / 58% 54% 46% 42%; }
+  33% { transform: scale(1.06, .95) rotate(6deg); border-radius: 44% 56% 54% 46% / 48% 62% 38% 52%; }
+  66% { transform: scale(.96, 1.05) rotate(-5deg); border-radius: 60% 40% 44% 56% / 52% 44% 56% 48%; }
+}
+@keyframes pa-tinta-corona {
+  0%, 100% { transform: translate(0, 0) scale(1, 1); }
+  50% { transform: translate(3px, -4px) scale(1.08, 1.06) rotate(-4deg); }
+}
+@keyframes pa-tinta-gota-der {
+  0%, 100% { transform: translate(0, 0) scale(.92); }
+  45% { transform: translate(11px, -6px) scale(1.12, .9); }
+  75% { transform: translate(5px, 6px) scale(.86, 1.08); }
+}
+@keyframes pa-tinta-gota-izq {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-8px, -5px) scale(1.14, .88); }
+}
+@keyframes pa-tinta-base {
+  0%, 100% { transform: translate(0, 0) scaleX(1); }
+  50% { transform: translate(10px, 4px) scaleX(1.22) scaleY(.88); }
+}
+
 @keyframes pa-gota {
   0% { opacity: 0; transform: translateY(10px) scale(.82, .74); }
   100% { opacity: 1; transform: none; }
@@ -209,14 +275,37 @@ html.is-dark .pa-msg--yo { background: #FF5A1F; color: #111111; }
 @media (prefers-reduced-motion: no-preference) { .pa:not(.is-abierto) .pa-fab .pa-avatar-img { animation: pa-flotar 3.4s ease-in-out infinite; } }
 @media (prefers-reduced-motion: reduce) {
   .pa-panel, .pa-fab, .pa-sug-wrap, .pa-sug-lista button { transition: none; }
-  .pa-msg, .pa-escribe i, .pa-fab .pa-avatar-img, .pa-panel.is-abierto .pa-sello, .pa.is-abierto .pa-fab { animation: none; }
+  .pa-msg, .pa-escribe i, .pa-fab .pa-avatar-img, .pa-panel.is-abierto .pa-sello, .pa.is-abierto .pa-fab, .pa-tinta i { animation: none; }
 }
 
 @media (max-width: 760px) {
   .pa { right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); }
   body:has(.bottom-nav) .pa { bottom: calc(84px + env(safe-area-inset-bottom)); }
   .pa-fab { width: 68px; height: 71px; }
-  .pa-panel { width: min(364px, calc(100vw - 24px)); height: min(450px, calc(100svh - 248px)); }
-  .pa-sello { width: 68px; height: 71px; margin: -26px -2px -10px -4px; }
+  /* En celular, con el chat abierto se oculta el emoji de abajo para que el panel tenga todo el espacio y no se corte con el teclado */
+  .pa.is-abierto { left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); align-items: stretch; }
+  body:has(.bottom-nav) .pa.is-abierto { bottom: calc(82px + env(safe-area-inset-bottom)); }
+  .pa.is-abierto .pa-fab { display: none; }
+  .pa-panel {
+    width: 100%;
+    height: min(460px, calc(100dvh - 120px));
+    max-height: calc(100dvh - 110px);
+    transform-origin: 92% 100%;
+  }
+  body:has(.bottom-nav) .pa-panel {
+    height: min(450px, calc(100dvh - 185px));
+    max-height: calc(100dvh - 180px);
+  }
+  /* Cuando se abre el teclado del celular, el chat se ajusta al alto visible real (visualViewport) */
+  .pa.is-abierto.is-teclado, body:has(.bottom-nav) .pa.is-abierto.is-teclado {
+    bottom: calc(var(--pa-kb, 0px) + 8px);
+  }
+  .pa.is-abierto.is-teclado .pa-panel, body:has(.bottom-nav) .pa.is-abierto.is-teclado .pa-panel {
+    height: calc(var(--pa-vvh, 100dvh) - 34px);
+    max-height: calc(var(--pa-vvh, 100dvh) - 34px);
+    margin-top: 16px;
+  }
+  .pa.is-abierto.is-teclado .pa-nota { display: none; }
+  .pa-sello { width: 68px; height: 71px; margin: -24px 2px -10px -2px; }
 }
 @media print { .pa { display: none; } }

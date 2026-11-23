@@ -1532,6 +1532,41 @@ html.is-dark .kpi--lead { background: var(--night); color: #fff; box-shadow: ins
 .liq-ok { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 600; color: var(--positive); }
 .liq-ok .ic { width: 16px; height: 16px; }
 .liq-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.liq-rep-wrap {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+.liq-rep-wrap.is-open { grid-template-rows: 1fr; }
+.liq-rep-box {
+  min-height: 0; overflow: hidden;
+  display: grid; gap: 10px;
+  padding: 0 14px;
+  border-radius: 14px; background: var(--surface);
+  border: 0 solid var(--border);
+  opacity: 0;
+  transition: opacity .22s ease, padding .35s cubic-bezier(.34, 1.56, .64, 1), margin-top .35s cubic-bezier(.34, 1.56, .64, 1), border-width .2s ease;
+}
+.liq-rep-wrap.is-open .liq-rep-box {
+  margin-top: 6px; padding: 14px;
+  border-width: 1.5px; opacity: 1;
+  box-shadow: 0 10px 24px -14px rgba(17, 17, 17, .18);
+}
+.liq-rep-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; }
+.liq-rep-box > .hint { margin: 0; }
+.liq-rep-medios { display: flex; flex-wrap: wrap; gap: 6px; }
+.liq-medio {
+  height: 32px; padding: 0 12px; border: 1.5px solid var(--border); border-radius: 999px;
+  background: var(--raised); color: var(--text); font: 700 12.5px/1 var(--font);
+  cursor: pointer; transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.liq-medio:hover { border-color: var(--accent); }
+.liq-medio:active { transform: scale(.93); }
+.liq-medio.is-on { background: var(--text); color: var(--on-text, #fff); border-color: var(--text); }
+.liq-rep-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+@media (max-width: 560px) {
+  .liq-rep-row { grid-template-columns: 1fr; }
+  .liq-rep-row .btn { width: 100%; justify-content: center; }
+}
 .cobro-lista, .liq-hist { display: grid; margin: 0; padding: 0; list-style: none; }
 .cobro-lista li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); }
 .cobro-lista li:first-child { border-top: 0; }
