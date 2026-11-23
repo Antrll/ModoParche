@@ -7,7 +7,8 @@
 ===================================================================== */
 (function () {
   'use strict';
-  var URL_IA = 'https://quxqqxnowlwiahorifpy.supabase.co/functions/v1/asistente';
+  var URL_IA = '/api/asistente';
+  var URL_SB = (window.MP_SUPABASE && window.MP_SUPABASE.url) || 'https://quxqqxnowlwiahorifpy.supabase.co';
   var MAX = 500;
   var NEGOCIO = /^\/empresa-dashboard/.test(location.pathname);
   var SUGERENCIAS = NEGOCIO
@@ -18,6 +19,9 @@
     OCUPADO: 'Estoy con mucha gente en este momento. Inténtalo en un ratico.',
     SIN_SESION: 'Tu sesión venció. Recarga la página o vuelve a entrar y seguimos.',
     SIN_CONFIGURAR: 'Todavía me están preparando. Mientras tanto, mira /preguntas o escríbenos a modoparcheoficial@gmail.com.',
+    TIEMPO: 'Me demoré más de la cuenta pensando. Inténtalo otra vez.',
+    SIN_MENSAJE: 'Escríbeme tu pregunta para poder ayudarte.',
+    ORIGEN: 'Recarga la página para volver a hablar conmigo.',
   };
   var FALLO = 'Ahora no pude responder. Puedes mirar /preguntas o escribirnos a modoparcheoficial@gmail.com.';
   var ICONO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>';
@@ -45,6 +49,17 @@
     lista.appendChild(t);
     lista.scrollTop = lista.scrollHeight;
   }
+  async function obtenerToken() {
+    var t = window.MPErrores && window.MPErrores.tokenSesion ? window.MPErrores.tokenSesion(URL_SB) : null;
+    if (t) return t;
+    if (window.mpSupabase && window.mpSupabase.auth && window.mpSupabase.auth.getSession) {
+      try {
+        var r = await window.mpSupabase.auth.getSession();
+        return r && r.data && r.data.session && r.data.session.access_token ? r.data.session.access_token : null;
+      } catch (_e) { return null; }
+    }
+    return null;
+  }
   async function preguntar(texto) {
     texto = String(texto || '').trim().slice(0, MAX);
     if (!texto || ocupado) return;
@@ -57,13 +72,13 @@
     var respuesta = '';
     try {
       // La sesión de la cuenta (la guarda supabase-js; mp-errores.js sabe leerla)
-      var token = window.MPErrores && window.MPErrores.tokenSesion ? window.MPErrores.tokenSesion(URL_IA) : null;
+      var token = await obtenerToken();
       if (!token) throw new Error('SIN_CUENTA');
       var cab = { 'Content-Type': 'application/json' };
       if (token) cab.Authorization = 'Bearer ' + token;
       var r = await fetch(URL_IA, {
         method: 'POST', headers: cab,
-        body: JSON.stringify({ mensajes: historial.slice(-8) }), signal: AbortSignal.timeout(20000),
+        body: JSON.stringify({ panel: NEGOCIO ? 'negocio' : 'persona', mensajes: historial.slice(-8) }), signal: AbortSignal.timeout(20000),
       });
       var d = await r.json().catch(function () { return null; });
       if (d && d.ok && d.respuesta) { respuesta = d.respuesta; historial.push({ rol: 'assistant', texto: respuesta }); }
@@ -102,7 +117,7 @@
         '<input id="pa-campo" maxlength="' + MAX + '" placeholder="Pregúntame lo que quieras"><button type="submit" aria-label="Enviar">' + ENVIAR + '</button></form>' +
         '<p class="pa-nota">Puede equivocarse. No escribas cédula, claves ni datos de pago.</p>' +
       '</section>' +
-      '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir el asistente virtual">' + ICONO + '</button>';
+      '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir a Parce, asistente virtual">' + ICONO + '<span class="pa-fab-txt">Parce</span></button>';
     document.body.appendChild(raiz);
     panel = raiz.querySelector('.pa-panel'); lista = raiz.querySelector('.pa-lista');
     campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button'); sug = raiz.querySelector('.pa-sug');
