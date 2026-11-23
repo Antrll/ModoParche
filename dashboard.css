@@ -637,6 +637,7 @@ select.input {
 .chat-tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .chat-tools > .btn { min-height: 34px; font-size: .8125rem; padding: 0 14px; }
 .plegable { flex: 0 1 auto; min-width: 0; }
+.plegable.transporte { display: none; }
 .plegable[open] { flex: 1 0 100%; }
 .plegable summary {
   display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px;
