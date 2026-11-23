@@ -290,7 +290,9 @@
   }
 
   let transicion = null;
+  let capaMovil = null;
   let urlEnUso = null;
+  const COLOR_TINTA = { claro: '#ffffff', mixto: '#111111', oscuro: '#161618' };
 
   function centroBoton(btn, evento) {
     if (evento && evento.clientX && evento.clientY) return { x: evento.clientX, y: evento.clientY };
@@ -315,10 +317,56 @@
 
   // Toques muy seguidos: se ignoran los que llegan a menos de 250 ms del anterior
   let ultimoToque = 0, generacion = 0, ultimoCambio = -1e9;
+  function limpiarCapa(capa, url) {
+    if (capaMovil === capa) { capa.remove(); capaMovil = null; }
+    if (urlEnUso && urlEnUso !== url) URL.revokeObjectURL(urlEnUso);
+    urlEnUso = url;
+  }
+
+  function cambiarConTintaMovil(oscuro, url, x, y, D) {
+    if (!Element.prototype.animate) {
+      if (urlEnUso && urlEnUso !== url) URL.revokeObjectURL(urlEnUso);
+      urlEnUso = url;
+      cambiarConFundido(oscuro);
+      return;
+    }
+    root.style.setProperty('--mp-tinta', `url("${url}")`);
+    const capa = document.createElement('div');
+    capa.className = 'mp-tinta-capa';
+    capa.setAttribute('aria-hidden', 'true');
+    capa.style.backgroundColor = COLOR_TINTA[oscuro] || '#161618';
+    document.body.appendChild(capa);
+    capaMovil = capa;
+
+    capa.animate({
+      [MASK.size]: ['0px 0px', `${D}px ${D}px`],
+      [MASK.pos]: [`${x}px ${y}px`, `${x - D / 2}px ${y - D / 2}px`],
+    }, {
+      duration: 520,
+      easing: 'cubic-bezier(.5, .05, .3, 1)',
+      fill: 'forwards',
+    }).finished.then(() => {
+      if (capaMovil !== capa) return null;
+      root.classList.add('mp-tema-ya');
+      aplicar(oscuro);
+      root.classList.remove('mp-tema-ya');
+      return capa.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 360,
+        easing: 'ease-out',
+        fill: 'forwards',
+      }).finished;
+    }).catch(() => {
+      if (capaMovil === capa) aplicar(oscuro);
+    }).finally(() => {
+      limpiarCapa(capa, url);
+    });
+  }
+
   function terminarTinta() {
     const t = transicion;
     transicion = null;
     if (t) { try { t.skipTransition(); } catch (e) { /* ya terminó */ } }
+    if (capaMovil) { capaMovil.remove(); capaMovil = null; }
     root.classList.remove('mp-tinta', 'mp-tema-ya');
   }
 
@@ -336,9 +384,10 @@
     // Toques seguidos (menos de 1,5 s): fundido rápido, sin tinta, para que no se trabe
     const seguido = ahora - ultimoCambio < 1500;
     ultimoCambio = ahora;
-    if (transicion || esperando || seguido) { terminarTinta(); cambiarConFundido(oscuro); return; }
+    if (transicion || capaMovil || esperando || seguido) { terminarTinta(); cambiarConFundido(oscuro); return; }
 
-    if (!document.startViewTransition || reduceMotion.matches) { cambiarConFundido(oscuro); return; }
+    const esMovil = window.matchMedia('(pointer: coarse)').matches;
+    if (reduceMotion.matches || (!esMovil && !document.startViewTransition)) { cambiarConFundido(oscuro); return; }
 
     if (!siguienteMascara) prepararMascara();
     esperando = true;
@@ -352,6 +401,8 @@
     const w = document.documentElement.clientWidth, h = window.innerHeight;
     const lejos = Math.max(Math.hypot(x, y), Math.hypot(w - x, y), Math.hypot(x, h - y), Math.hypot(w - x, h - y));
     const D = Math.ceil(lejos / RADIO_MIN) + 40; // tamaño final: el borde más corto ya pasó la esquina más lejana
+
+    if (esMovil) { cambiarConTintaMovil(oscuro, url, x, y, D); return; }
 
     root.style.setProperty('--mp-tinta', `url("${url}")`);
     root.classList.add('mp-tinta', 'mp-tema-ya');
@@ -497,7 +548,7 @@
     let r = 0;
     window.addEventListener('resize', () => { clearTimeout(r); r = setTimeout(() => { try { ajustarLogosPagina(); } catch (e) { /* nada */ } }, 300); });
 
-    if (document.startViewTransition && !reduceMotion.matches) {
+    if (!reduceMotion.matches) {
       ('requestIdleCallback' in window ? requestIdleCallback : setTimeout)(prepararMascara);
     }
   }
