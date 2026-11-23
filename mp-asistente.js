@@ -38,7 +38,7 @@
     ORIGEN: 'Recarga la página para volver a hablar conmigo.',
   };
   var FALLO = 'Ahora no pude responder. Puedes mirar /preguntas o escribirnos a modoparcheoficial@gmail.com.';
-  var ICONO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>';
+  var IMG_PARCE = '<img class="pa-avatar-img" src="/src/assets/web/parce-asistente.png" alt="" width="76" height="79" decoding="async">';
   var CERRAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var ENVIAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
@@ -132,7 +132,7 @@
     raiz.className = 'pa' + (document.getElementById('toasts') || document.querySelector('.bottom-nav') ? ' pa--panel' : '');
     raiz.innerHTML =
       '<section class="pa-panel" role="dialog" aria-label="Parce, asistente virtual de ModoParche" hidden>' +
-        '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + ICONO + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
+        '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + IMG_PARCE + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
         '<button type="button" class="pa-x" aria-label="Cerrar el asistente">' + CERRAR + '</button></header>' +
         '<div class="pa-lista" role="log" aria-live="polite"></div>' +
         '<div class="pa-sug is-abierto">' +
@@ -145,7 +145,7 @@
         '<input id="pa-campo" maxlength="' + MAX + '" placeholder="Pregúntame lo que quieras"><button type="submit" aria-label="Enviar">' + ENVIAR + '</button></form>' +
         '<p class="pa-nota">Puede equivocarse. No escribas cédula, claves ni datos de pago.</p>' +
       '</section>' +
-      '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir a Parce, asistente virtual">' + ICONO + '<span class="pa-fab-txt">Parce</span></button>';
+      '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir a Parce, asistente virtual">' + IMG_PARCE + '</button>';
     document.body.appendChild(raiz);
     panel = raiz.querySelector('.pa-panel'); lista = raiz.querySelector('.pa-lista');
     campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button');
