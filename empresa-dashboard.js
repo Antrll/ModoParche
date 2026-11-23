@@ -1606,7 +1606,7 @@
         map = L.map('map', { zoomControl: true }).setView([own.perfil.lat, own.perfil.lng], 14);
         tiles().addTo(map);
         layer = L.layerGroup().addTo(map);
-        if (window.MPMapa) window.MPMapa.buscador(map, { placeholder: 'Busca un lugar o dirección', posicion: 'topright' });
+        if (window.MPMapa) window.MPMapa.buscador(map, { placeholder: 'Busca un lugar o dirección' });
       }
       map.invalidateSize();
       layer.clearLayers();

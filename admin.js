@@ -1028,7 +1028,7 @@
       map = L.map('map', { zoomControl: true, attributionControl: true }).setView(CENTRO, 13);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
       // Buscar un lugar o dirección y volar hasta allá (mp-mapa.js)
-      if (window.MPMapa) window.MPMapa.buscador(map, { placeholder: 'Busca un lugar o dirección', posicion: 'topright' });
+      if (window.MPMapa) window.MPMapa.buscador(map, { placeholder: 'Busca un lugar o dirección' });
     }
     if (layer) layer.remove();
     layer = L.layerGroup().addTo(map);

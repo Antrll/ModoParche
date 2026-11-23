@@ -238,6 +238,9 @@
   function buscador(map, opts) {
     opts = opts || {};
     if (!map || typeof L === 'undefined') return null;
+    if (map.zoomControl && map.zoomControl.setPosition) {
+      map.zoomControl.setPosition('bottomright');
+    }
     var Control = L.Control.extend({
       options: { position: opts.posicion || 'topleft' },
       onAdd: function () {

@@ -115,6 +115,9 @@ html {
   border: 2px solid transparent;
   background-clip: content-box;
 }
+@media (pointer: coarse) {
+  ::-webkit-scrollbar:horizontal { height: 0; display: none; }
+}
 
 body {
   font-family: var(--font-body);

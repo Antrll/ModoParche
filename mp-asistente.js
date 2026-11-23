@@ -50,7 +50,6 @@
     if (!sug || !sugBtn || !sugLista) return;
     sug.classList.toggle('is-abierto', abierto);
     sugBtn.setAttribute('aria-expanded', String(abierto));
-    sugLista.hidden = !abierto;
   }
 
   function burbuja(texto, quien) {
@@ -135,11 +134,11 @@
         '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + IMG_PARCE + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
         '<button type="button" class="pa-x" aria-label="Cerrar el asistente">' + CERRAR + '</button></header>' +
         '<div class="pa-lista" role="log" aria-live="polite"></div>' +
-        '<div class="pa-sug is-abierto">' +
-          '<button type="button" class="pa-sug-toggle" aria-expanded="true" aria-controls="pa-sug-lista">' +
+        '<div class="pa-sug">' +
+          '<button type="button" class="pa-sug-toggle" aria-expanded="false" aria-controls="pa-sug-lista">' +
             '<span>Preguntas frecuentes</span>' + FLECHA +
           '</button>' +
-          '<div class="pa-sug-lista" id="pa-sug-lista"></div>' +
+          '<div class="pa-sug-wrap"><div class="pa-sug-lista" id="pa-sug-lista"></div></div>' +
         '</div>' +
         '<form class="pa-form" autocomplete="off"><label class="sr-only" for="pa-campo">Escribe tu pregunta</label>' +
         '<input id="pa-campo" maxlength="' + MAX + '" placeholder="Pregúntame lo que quieras"><button type="submit" aria-label="Enviar">' + ENVIAR + '</button></form>' +
@@ -151,9 +150,10 @@
     campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button');
     sug = raiz.querySelector('.pa-sug'); sugBtn = raiz.querySelector('.pa-sug-toggle'); sugLista = raiz.querySelector('.pa-sug-lista');
     burbuja(NEGOCIO ? '¡Quiubo! Soy Parce. Te ayudo con tus parches, cupones, el Modo Puerta y los cobros.' : '¡Quiubo! Soy Parce. Te ayudo a armar planes, verificar tu cuenta y usar la app.', 'bot');
-    SUGERENCIAS.forEach(function (t) {
+    SUGERENCIAS.forEach(function (t, idx) {
       var b = document.createElement('button');
       b.type = 'button'; b.textContent = t;
+      b.style.setProperty('--i', String(idx));
       b.addEventListener('click', function () { preguntar(t); });
       sugLista.appendChild(b);
     });

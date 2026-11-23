@@ -738,7 +738,7 @@ body.no-scroll .toast { background: var(--night-2); border: 1px solid var(--nigh
 @media (max-width: 860px) {
   :root { --pad: 16px; --topbar: 62px; --control-height: 42px; --nav-row: 44px; }
   .app { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { position: fixed; inset: 0; z-index: 50; width: 100%; height: 100%; height: 100dvh; padding: 6px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--surface); border: 0; transform: translateX(-100%); transition: transform var(--t-ui) var(--ease-out); }
+  .sidebar { position: fixed; inset: 0; z-index: 1300; width: 100%; height: 100%; height: 100dvh; padding: 6px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--surface); border: 0; transform: translateX(-100%); transition: transform var(--t-ui) var(--ease-out); }
   .sidebar.open { transform: none; }
   .icon-btn.menu-close, .icon-btn.menu-toggle { display: inline-grid; width: 42px; height: 42px; background: var(--raised); }
   .icon-btn.menu-close .ic, .icon-btn.menu-toggle .ic { width: 20px; height: 20px; }
@@ -1785,3 +1785,6 @@ html {
 }
 .sidebar:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 65%, transparent); }
 .sidebar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+@media (pointer: coarse) {
+  ::-webkit-scrollbar:horizontal { height: 0; display: none; }
+}

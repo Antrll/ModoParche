@@ -93,6 +93,9 @@ html {
   border: 2px solid transparent;
   background-clip: content-box;
 }
+@media (pointer: coarse) {
+  ::-webkit-scrollbar:horizontal { height: 0; display: none; }
+}
 body {
   font-family: var(--font-body);
   font-size: 1rem;
@@ -1738,6 +1741,11 @@ a.of-tk:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
   .of-tickets { grid-template-columns: 1fr; }
 }
 
+#photo-remove { text-decoration: none; color: var(--muted); font-size: .8125rem; }
+#photo-remove:hover { color: var(--danger); }
+@media (max-width: 760px) {
+  .rail-track { display: none; }
+}
 /* Riel de la marca bajo los lugares sugeridos */
 .place-rail .place-chips { margin-bottom: 6px; }
 .rail-track {

@@ -2,8 +2,13 @@
    ModoParche · mp-mapa.css
    Caja de búsqueda de lugares dentro de los mapas (mp-mapa.js).
 ===================================================================== */
+/* Aísla las capas internas de Leaflet (z-index 400-1000) para que nunca tapen menús, barras ni modales */
+.leaflet-container { isolation: isolate; z-index: 1; }
+/* El buscador va arriba sin chocar con los botones de zoom (que pasan abajo a la derecha) */
+.leaflet-top.leaflet-left:has(.mpm-search) { right: 0; }
+.leaflet-top.leaflet-left .mpm-search { float: none; margin: 10px 10px 0; }
 .mpm-search {
-  width: min(340px, calc(100vw - 92px));
+  width: min(340px, calc(100% - 20px));
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: #111111;
 }
@@ -79,7 +84,11 @@
 }
 .mpm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* En mini-mapas (Perfil y plan, modales), buscador más compacto para no tapar el pin central */
+#map-perfil .mpm-input, #dlg-map .mpm-input, #create-map .mpm-input { height: 38px; font-size: 14px; }
+#map-perfil .mpm-list, #dlg-map .mpm-list, #create-map .mpm-list { max-height: 145px; }
+
 @media (max-width: 520px) {
-  .mpm-search { width: calc(100vw - 84px); }
-  .mpm-input { font-size: 16px; } /* evita el zoom de iOS al enfocar */
+  .mpm-search { width: calc(100% - 20px); }
+  .mpm-input, #map-perfil .mpm-input, #dlg-map .mpm-input, #create-map .mpm-input { font-size: 16px; } /* evita el zoom de iOS al enfocar */
 }
