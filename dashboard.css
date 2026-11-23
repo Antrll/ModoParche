@@ -586,7 +586,7 @@ select.input {
 
 .chat {
   display: flex; flex-direction: column;
-  height: min(72vh, 680px); min-height: 460px;
+  height: clamp(680px, calc(100svh - 140px), 860px); min-height: 640px;
   background: var(--paper); border-radius: var(--r-lg); overflow: hidden;
   box-shadow: var(--shadow-soft);
 }
@@ -595,7 +595,7 @@ select.input {
 .chat-placeholder h3 { font-family: var(--font-display); font-size: 1.6rem; text-transform: uppercase; }
 .chat-placeholder p { color: var(--muted); max-width: 32ch; }
 
-.chat-head { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.chat-head { padding: 10px 14px; border-bottom: 1px solid var(--line); }
 .chat-head-top { display: flex; align-items: center; gap: 12px; }
 .chat-head-top > div:first-of-type { flex: 1; min-width: 0; }
 .chat-head h2 { font-size: 1.05rem; font-weight: 800; line-height: 1.25; }
@@ -604,7 +604,7 @@ select.input {
 .chat-head-actions .icon-btn { width: 38px; height: 38px; }
 .chat-head-actions .ic { width: 18px; height: 18px; }
 .chat-back { display: none; }
-.attendees { margin-top: 10px; }
+.attendees { margin-top: 6px; }
 .attendees summary {
   display: inline-flex; align-items: center; gap: 10px; cursor: pointer; list-style: none;
   font-size: .8125rem; font-weight: 700; padding: 4px 10px 4px 4px; border-radius: var(--r-pill); background: var(--soft);
@@ -615,7 +615,7 @@ select.input {
 .att-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; animation: rise .35s var(--ease-out) both; }
 .att-list span { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: var(--r-pill); background: var(--soft); font-size: .8125rem; font-weight: 600; }
 
-.chat-msgs { flex: 1; overflow-y: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); overscroll-behavior: contain; }
+.chat-msgs { flex: 1; min-height: 240px; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); overscroll-behavior: contain; }
 .msg { display: flex; align-items: flex-end; gap: 8px; max-width: 82%; animation: msgIn .35s var(--ease-out) both; }
 .msg .bubble { padding: 10px 14px; border-radius: 18px 18px 18px 6px; background: var(--paper); box-shadow: 0 1px 2px rgba(17,17,17,.06); font-size: .9375rem; line-height: 1.4; }
 .msg .bubble small { display: block; font-size: .75rem; font-weight: 800; color: var(--orange-deep); margin-bottom: 2px; }
@@ -633,14 +633,15 @@ select.input {
 .typing i:nth-child(2) { animation-delay: .15s; }
 .typing i:nth-child(3) { animation-delay: .3s; }
 
-.chat-foot { padding: 12px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
-.chat-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
-.chat-tools > .btn { min-height: 40px; font-size: .875rem; padding: 0 16px; }
-.plegable { flex: 1; min-width: 220px; }
+.chat-foot { padding: 10px 14px; border-top: 1px solid var(--line); display: grid; gap: 7px; }
+.chat-tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chat-tools > .btn { min-height: 34px; font-size: .8125rem; padding: 0 14px; }
+.plegable { flex: 0 1 auto; min-width: 0; }
+.plegable[open] { flex: 1 0 100%; }
 .plegable summary {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px;
   border-radius: var(--r-pill); background: var(--olive-soft); color: var(--olive-deep);
-  font-weight: 700; font-size: .875rem; cursor: pointer; list-style: none;
+  font-weight: 700; font-size: .8125rem; cursor: pointer; list-style: none;
 }
 .plegable summary::-webkit-details-marker { display: none; }
 .plegable summary .ic { width: 16px; height: 16px; }
@@ -887,6 +888,7 @@ select.input {
     display: flex; position: fixed; inset: 0; z-index: 1500; height: auto; min-height: 0; border-radius: 0;
     animation: sheetIn .4s var(--ease-drawer) both;
   }
+  .mis.is-chat .chat-msgs { min-height: 0; }
   .view:has(.mis.is-chat) { animation: none; transform: none; }
   body:has(.mis.is-chat) .toasts { top: calc(12px + env(safe-area-inset-top)); bottom: auto; }
   body:has(.mis.is-chat) { overflow: hidden; }
@@ -1180,11 +1182,11 @@ label.pv-row { cursor: pointer; }
 .mesa-actions .form-summary { flex: 1 1 100%; margin: 0 0 2px; color: var(--ink); }
 
 /* Llegada al parche: botones en el chat */
-.checkin-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.checkin-row .btn { min-height: 40px; }
-.checkin-done { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--r-pill); background: var(--ok-soft); color: var(--ok); font-weight: 700; font-size: .875rem; }
+.checkin-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.checkin-row .btn { min-height: 34px; padding: 0 13px; font-size: .8125rem; }
+.checkin-done { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--ok-soft); color: var(--ok); font-weight: 700; font-size: .8125rem; }
 .checkin-done .ic { width: 18px; height: 18px; stroke-width: 2.6; }
-.checkin-msg { flex-basis: 100%; display: flex; align-items: flex-start; gap: 6px; font-size: .8125rem; font-weight: 600; color: var(--muted); }
+.checkin-msg { flex: 1 1 auto; display: flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 600; color: var(--muted); }
 .checkin-msg:empty { display: none; }
 .checkin-msg .ic { width: 15px; height: 15px; margin-top: 2px; flex: none; }
 .checkin-msg.is-error { color: var(--danger); }
@@ -1853,12 +1855,12 @@ a.of-tk:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
 }
 
 /* Chat de parches grandes: pestañas y localidad */
-.chat-tabs { display: flex; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
-.ctab { flex: none; min-height: 34px; padding: 0 14px; border-radius: var(--r-pill); font-size: .8125rem; font-weight: 700; color: var(--muted); background: var(--soft); transition: background-color .2s ease, color .2s ease; }
+.chat-tabs { display: flex; gap: 6px; padding: 6px 14px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.ctab { flex: none; min-height: 30px; padding: 0 12px; border-radius: var(--r-pill); font-size: .8125rem; font-weight: 700; color: var(--muted); background: var(--soft); transition: background-color .2s ease, color .2s ease; }
 .ctab[aria-selected="true"] { background: var(--ink); color: var(--paper); }
-.loc-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .8125rem; }
+.loc-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: .78rem; }
 .loc-pick > span { font-weight: 700; color: var(--muted); margin-right: 2px; }
-.loc-chip { min-height: 32px; padding: 0 12px; border-radius: var(--r-pill); background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--line); font-weight: 700; transition: background-color .2s ease, color .2s ease; }
+.loc-chip { min-height: 28px; padding: 0 10px; border-radius: var(--r-pill); background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--line); font-weight: 700; transition: background-color .2s ease, color .2s ease; }
 .loc-chip[aria-pressed="true"] { background: var(--orange); box-shadow: inset 0 0 0 1.5px var(--ink); }
 .msg-loc { margin-left: 6px; padding: 1px 7px; border-radius: var(--r-pill); background: var(--orange-soft); color: var(--orange-deep); font-style: normal; font-size: .6875rem; font-weight: 800; }
 .chat-vacio { align-self: center; margin: auto; color: var(--muted); font-size: .875rem; text-align: center; }
@@ -1977,9 +1979,9 @@ a.of-tk:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
 .id-qr-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
 
 /* Botones de acción del chat */
-.chat-acts { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.chat-acts { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-btn {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: var(--r-pill);
   background: var(--soft); font-size: .8125rem; font-weight: 700; color: var(--ink);
   transition: background-color .2s ease, transform .15s var(--ease-out);
 }
