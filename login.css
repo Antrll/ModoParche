@@ -392,7 +392,7 @@
 .brand-panel::before { width: 96%; right: -22%; bottom: -24%; background: #e8430c; }
 .brand-panel::after { width: 30%; left: -9%; bottom: 9%; background: var(--olive); }
 .biz-aside { isolation: isolate; }
-.biz-aside::before { width: 74%; right: -24%; top: -12%; background: color-mix(in srgb, var(--orange) 20%, transparent); }
+.biz-aside::before { width: 74%; right: -24%; top: -12%; background: color-mix(in srgb, var(--olive) 28%, transparent); }
 @media (prefers-reduced-motion: no-preference) {
   .brand-panel::before, .biz-aside::before { animation: mp-giro 110s linear infinite; }
   .brand-panel::after { animation: mp-giro-atras 70s linear infinite; }
@@ -407,8 +407,8 @@
 }
 .bc--mark { width: min(46%, 38svh); }
 
-/* El verde oliva es de las empresas: en el acceso de personas todo va en naranja */
-.page-auth:not(.page-biz-auth) { --olive: var(--orange); --olive-deep: var(--orange-deep); --olive-soft: var(--orange-soft); }
+/* Enlace inferior: en personas ("Negocios") queda oliva; en negocios ("Personas") va en naranja */
+.page-biz-auth .biz-link { --olive: var(--orange); --olive-deep: var(--orange-deep); --olive-soft: var(--orange-soft); }
 /* Misma brasa que la estrella grande de al lado (antes era negra) */
 .page-auth:not(.page-biz-auth) .brand-panel::after { background: #e8430c; }
 
