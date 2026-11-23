@@ -47,7 +47,7 @@ html.mp-tinta::view-transition-new(root) {
 .mp-tinta-capa {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: 1001;
   pointer-events: none;
   -webkit-mask-image: var(--mp-tinta);
   mask-image: var(--mp-tinta);
