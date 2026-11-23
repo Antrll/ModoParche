@@ -175,3 +175,94 @@ html.is-dark .legal-table th { background: #2a2a2f; }
   .legal-table td:first-child { font-size: 1.02rem; }
   .legal-table td:not(:first-child)[data-col]::before { content: attr(data-col); display: block; color: var(--muted); font-size: .74rem; font-weight: 700; }
 }
+
+/* =====================================================================
+   Modal de consentimiento de mayoría de edad (+18)
+===================================================================== */
+html.mp-edad-abierto { overflow: hidden; }
+.mp-edad {
+  position: fixed; inset: 0; z-index: 6500;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(17, 17, 17, .68);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  opacity: 0; transition: opacity .3s ease;
+}
+.mp-edad.is-in { opacity: 1; }
+.mp-edad.is-out { opacity: 0; pointer-events: none; }
+.mp-edad-card {
+  width: min(430px, 100%); overflow: hidden;
+  border-radius: 30px; background: #ffffff; color: #111111;
+  box-shadow: 0 32px 70px -20px rgba(0, 0, 0, .65), 0 0 0 1px rgba(17, 17, 17, .08);
+  transform: translateY(24px) scale(.9);
+  transition: transform .52s cubic-bezier(.34, 1.56, .64, 1);
+}
+.mp-edad.is-in .mp-edad-card { transform: none; }
+.mp-edad.is-out .mp-edad-card { transform: translateY(16px) scale(.94); transition: transform .26s ease; }
+.mp-edad-top {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  background:
+    radial-gradient(circle at 86% 24%, rgba(255, 255, 255, .24), transparent 46%),
+    radial-gradient(rgba(17, 17, 17, .12) 1px, transparent 1px),
+    #FF5A1F;
+  background-size: auto, 16px 16px, auto;
+}
+.mp-edad-logo {
+  display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%;
+  background: #111111; box-shadow: 0 10px 22px -8px rgba(0, 0, 0, .55);
+}
+.mp-edad-logo img { width: 38px; height: 38px; object-fit: contain; display: block; }
+.mp-edad-badge {
+  display: inline-grid; place-items: center; min-width: 64px; height: 42px; padding: 0 14px;
+  border-radius: 999px; background: #111111; color: #FF5A1F;
+  font-family: var(--font-display, 'Gagalin', sans-serif); font-size: 1.55rem; line-height: 1; letter-spacing: .02em;
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, .55);
+}
+.mp-edad-body { display: grid; gap: 12px; padding: 24px 26px 26px; text-align: center; }
+.mp-edad-body[hidden] { display: none; }
+.mp-edad-kicker {
+  margin: 0 auto; padding: 4px 12px; border-radius: 999px;
+  background: rgba(255, 90, 31, .12); color: #b83709;
+  font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+}
+.mp-edad-title {
+  margin: 0; font-family: var(--font-display, 'Gagalin', sans-serif); font-weight: 400;
+  font-size: clamp(1.85rem, 6vw, 2.35rem); line-height: .96; text-transform: uppercase;
+  color: #111111;
+}
+.mp-edad-desc { margin: 0; font-size: .95rem; line-height: 1.5; color: #55555c; }
+.mp-edad-acts { display: grid; gap: 9px; margin-top: 6px; }
+.mp-edad-ok {
+  display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 50px;
+  padding: 0 20px; border: 0; border-radius: 999px; text-decoration: none;
+  background: #FF5A1F; color: #111111;
+  font: 800 .98rem/1 'Inter', system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 14px 28px -12px rgba(255, 90, 31, .85);
+  transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), background-color .18s ease, color .18s ease;
+}
+.mp-edad-ok:hover { background: #111111; color: #ffffff; transform: translateY(-2px); }
+.mp-edad-ok:active { transform: scale(.96); }
+.mp-edad-no {
+  width: 100%; min-height: 44px; padding: 0 16px;
+  border: 1.5px solid rgba(17, 17, 17, .12); border-radius: 999px;
+  background: transparent; color: #55555c;
+  font: 700 .88rem/1 'Inter', system-ui, sans-serif; cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+.mp-edad-no:hover { background: #f4f4f5; color: #111111; border-color: rgba(17, 17, 17, .24); }
+.mp-edad-ok:focus-visible, .mp-edad-no:focus-visible, .mp-edad-foot a:focus-visible { outline: 3px solid #FF5A1F; outline-offset: 3px; }
+.mp-edad-foot { margin: 4px 0 0; font-size: .78rem; color: #6e6e77; }
+.mp-edad-foot a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+
+html.is-dark .mp-edad-card { background: #19191d; color: #ffffff; box-shadow: 0 32px 70px -20px #000000, 0 0 0 1px rgba(255, 255, 255, .1); }
+html.is-dark .mp-edad-title { color: #ffffff; }
+html.is-dark .mp-edad-desc { color: #b9b9c2; }
+html.is-dark .mp-edad-kicker { background: rgba(255, 90, 31, .18); color: #ff8d64; }
+html.is-dark .mp-edad-ok:hover { background: #ffffff; color: #111111; }
+html.is-dark .mp-edad-no { border-color: rgba(255, 255, 255, .14); color: #b9b9c2; }
+html.is-dark .mp-edad-no:hover { background: #26262c; color: #ffffff; }
+html.is-dark .mp-edad-foot { color: #8c8c96; }
+@media (prefers-reduced-motion: reduce) {
+  .mp-edad, .mp-edad-card, .mp-edad-ok { transition: none; }
+}

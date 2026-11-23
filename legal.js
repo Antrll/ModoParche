@@ -84,7 +84,72 @@
     document.querySelectorAll('.legal-doc > section[id]').forEach(function (s) { io.observe(s); });
   }
 
-  function init() { fill(); banner(); toc(); }
+  // ---------- Consentimiento de mayoría de edad (+18) ----------
+  var KEY_EDAD = 'mp_mayor18_v1';
+  var RUTAS_SIN_EDAD = /^\/(dashboard|empresa-dashboard|admin|terminos|privacidad|cookies|pagos|legal|pitch|offline)(\.html|\/|$)/i;
+  function esMayorConfirmado() { try { return localStorage.getItem(KEY_EDAD) === '1'; } catch (e) { return true; } }
+  function guardarMayor() { try { localStorage.setItem(KEY_EDAD, '1'); } catch (e) { /* sin almacenamiento */ } }
+  function avisoEdad() {
+    if (esMayorConfirmado() || RUTAS_SIN_EDAD.test(location.pathname) || document.body.hasAttribute('data-sin-aviso-edad')) return;
+    if (document.getElementById('mp-edad')) return;
+    var base = document.body.getAttribute('data-raiz') || '';
+    var capa = document.createElement('div');
+    capa.id = 'mp-edad';
+    capa.className = 'mp-edad';
+    capa.setAttribute('role', 'dialog');
+    capa.setAttribute('aria-modal', 'true');
+    capa.setAttribute('aria-labelledby', 'mp-edad-titulo');
+    capa.innerHTML =
+      '<div class="mp-edad-card">' +
+        '<div class="mp-edad-top">' +
+          '<span class="mp-edad-logo" aria-hidden="true"><img src="' + base + 'src/assets/web/isotipo-light-96.png" alt="" width="40" height="40"></span>' +
+          '<span class="mp-edad-badge">+18</span>' +
+        '</div>' +
+        '<div class="mp-edad-body" id="mp-edad-paso-1">' +
+          '<p class="mp-edad-kicker">Acceso responsable · Villavicencio</p>' +
+          '<h2 class="mp-edad-title" id="mp-edad-titulo">Solo para mayores de 18</h2>' +
+          '<p class="mp-edad-desc">ModoParche conecta personas en planes presenciales, bares y eventos locales. Confirma que eres mayor de edad para continuar.</p>' +
+          '<div class="mp-edad-acts">' +
+            '<button type="button" class="mp-edad-ok" id="mp-edad-si">Tengo más de 18 años</button>' +
+            '<button type="button" class="mp-edad-no" id="mp-edad-no">Soy menor de 18 años</button>' +
+          '</div>' +
+          '<p class="mp-edad-foot">Al entrar aceptas nuestros <a href="' + base + 'terminos.html">Términos</a> y <a href="' + base + 'privacidad.html">Privacidad</a>.</p>' +
+        '</div>' +
+        '<div class="mp-edad-body" id="mp-edad-paso-2" hidden>' +
+          '<p class="mp-edad-kicker">Acceso restringido</p>' +
+          '<h2 class="mp-edad-title">Te esperamos cuando cumplas 18</h2>' +
+          '<p class="mp-edad-desc">Por seguridad y normativa local, ModoParche es exclusivo para personas mayores de edad.</p>' +
+          '<div class="mp-edad-acts">' +
+            '<a class="mp-edad-ok" href="https://www.google.com">Salir del sitio</a>' +
+            '<button type="button" class="mp-edad-no" id="mp-edad-volver">Me equivoqué, volver</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.documentElement.classList.add('mp-edad-abierto');
+    document.body.appendChild(capa);
+    requestAnimationFrame(function () {
+      capa.classList.add('is-in');
+      var ok = document.getElementById('mp-edad-si');
+      if (ok) ok.focus({ preventScroll: true });
+    });
+    document.getElementById('mp-edad-si').addEventListener('click', function () {
+      guardarMayor();
+      capa.classList.remove('is-in');
+      capa.classList.add('is-out');
+      document.documentElement.classList.remove('mp-edad-abierto');
+      setTimeout(function () { capa.remove(); }, 380);
+    });
+    document.getElementById('mp-edad-no').addEventListener('click', function () {
+      document.getElementById('mp-edad-paso-1').hidden = true;
+      document.getElementById('mp-edad-paso-2').hidden = false;
+    });
+    document.getElementById('mp-edad-volver').addEventListener('click', function () {
+      document.getElementById('mp-edad-paso-2').hidden = true;
+      document.getElementById('mp-edad-paso-1').hidden = false;
+    });
+  }
+
+  function init() { fill(); avisoEdad(); banner(); toc(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
