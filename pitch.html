@@ -34,7 +34,7 @@
   </div>
   <div class="deck-progress" aria-hidden="true"><span id="barFill"></span></div>
   <div class="deck-tools">
-    <span class="deck-count" id="slideCount">1 / 9</span>
+    <span class="deck-count" id="slideCount">1 / 10</span>
     <button type="button" class="tool-btn" id="btnNotes" aria-pressed="false" title="Show easy speaker script (N)">
       <span>Easy script</span>
     </button>
@@ -47,7 +47,7 @@
 <main class="deck" id="deck" aria-live="polite">
 
   <!-- SLIDE 1: COVER -->
-  <section class="slide slide--orange is-active" data-note="Hello everyone! Today we present ModoParche. It is a web app made in Villavicencio. It helps people find safe group plans and helps local places get real clients.">
+  <section class="slide slide--orange is-active" data-note="Hello everyone! Today we present ModoParche. It is a live web app made in Villavicencio. It helps people find safe group plans and helps local places get real clients.">
     <div class="slide-inner cover-grid">
       <div class="cover-copy">
         <span class="pill pill--ink">Villavicencio, Colombia · Live App</span>
@@ -55,8 +55,9 @@
         <p class="lead">Safe group plans for people. Real clients for local places.</p>
         <div class="cover-chips">
           <span>modoparche.vercel.app</span>
-          <span>Web App (PWA)</span>
-          <span>AI Assistant</span>
+          <span>Mobile PWA</span>
+          <span>Groq AI Guide</span>
+          <span>3 Live Panels</span>
         </div>
       </div>
       <div class="cover-visual" aria-hidden="true">
@@ -71,7 +72,7 @@
   </section>
 
   <!-- SLIDE 2: THE PROBLEM -->
-  <section class="slide slide--light" data-note="We saw two simple problems in our city. First, people want to go out, but group chats die and going alone feels unsafe. Second, local restaurants and bars have slow days and lose money on ads.">
+  <section class="slide slide--light" data-note="We saw two simple problems in our city. First, people want to go out, but group chats die and going alone feels unsafe. Second, local bars and restaurants have empty tables on slow days and lose money on ads.">
     <div class="slide-inner">
       <span class="kicker">01 · The Problem</span>
       <h2 class="display-lg">Two simple problems in our city</h2>
@@ -86,91 +87,185 @@
           </ul>
         </article>
         <article class="card card--olive-top">
-          <span class="card-tag card-tag--olive">For Businesses</span>
+          <span class="card-tag card-tag--olive">For Local Businesses</span>
           <h3>Empty tables on slow days</h3>
           <ul class="bullets">
-            <li>Ads cost money even if <b>nobody comes</b>.</li>
-            <li>Slow traffic on weekdays.</li>
-            <li>No clear way to track real visitors.</li>
+            <li>Social ads cost money even if <b>nobody comes</b>.</li>
+            <li>Slow traffic on Tuesday or Wednesday nights.</li>
+            <li>No clear way to measure real visitors.</li>
           </ul>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- SLIDE 3: THE SOLUTION -->
-  <section class="slide slide--dark" data-note="ModoParche connects both sides in three easy steps. First, you open the map and find a plan. Second, you join or create your own in 30 seconds. Third, you chat, arrive, and scan a QR code.">
+  <!-- SLIDE 3: HOW IT WORKS -->
+  <section class="slide slide--dark" data-note="ModoParche solves both sides in three easy steps. First, you open the live map and filter plans. Second, you join or create your own in 30 seconds. Third, you chat with the group, arrive, and scan a QR code.">
     <div class="slide-inner">
       <span class="kicker kicker--orange">02 · The Solution</span>
       <h2 class="display-lg">How ModoParche works</h2>
       <div class="grid-3">
         <article class="step-card">
           <span class="step-num">01</span>
-          <h3>Find a plan</h3>
-          <p>See live group plans on a map by mood, time, and free spots.</p>
+          <h3>Discover on the map</h3>
+          <p>Filter live group plans by category, date, distance, and open spots.</p>
         </article>
         <article class="step-card">
           <span class="step-num">02</span>
-          <h3>Join or create</h3>
-          <p>Make a plan in 30 seconds — even with a <b>Plan B</b> if it rains.</p>
+          <h3>Join or create fast</h3>
+          <p>Open a plan in 30 seconds — with an automatic <b>Plan B</b> if it rains.</p>
         </article>
         <article class="step-card">
           <span class="step-num">03</span>
-          <h3>Meet &amp; scan QR</h3>
-          <p>Chat with the group, check in at the door, and get venue coupons.</p>
+          <h3>Meet &amp; check in</h3>
+          <p>Chat before arriving, confirm arrival by QR or GPS, and get coupons.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- SLIDE 4: SAFETY & TRUST -->
-  <section class="slide slide--light" data-note="Safety is our top priority. Users verify their ID once. Exact addresses stay private until you join. At the place, everyone checks in by QR code, and hosts can remove anyone who causes trouble.">
+  <!-- SLIDE 4: USER FEATURES -->
+  <section class="slide slide--light" data-note="Here are the main features for users inside their dashboard. They get a live map radar, real-time group chat with polls and photos, a Rain Plan B, permanent badges, friends chat, and one-tap Google login.">
     <div class="slide-inner">
-      <span class="kicker">03 · Safety First</span>
-      <h2 class="display-lg">Built for real-life trust</h2>
-      <div class="grid-2">
+      <span class="kicker">03 · User Dashboard Features</span>
+      <h2 class="display-lg">Everything a user needs to go out</h2>
+      <div class="feat-grid">
+        <article class="feat-card">
+          <span class="feat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></svg></span>
+          <h3>Live Radar &amp; Map</h3>
+          <p>Interactive map with clusters, filters by mood, and live spots left.</p>
+        </article>
+        <article class="feat-card">
+          <span class="feat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span>
+          <h3>Group Chat, Polls &amp; Album</h3>
+          <p>Real-time chat with replies, quick group polls, and shared event photos.</p>
+        </article>
+        <article class="feat-card">
+          <span class="feat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14a8 8 0 0 1 16 0Z"/><path d="M12 14v5a2 2 0 0 0 4 0"/></svg></span>
+          <h3>Automatic Rain Plan B</h3>
+          <p>Hosts switch to an indoor spot in one tap and notify everyone.</p>
+        </article>
+        <article class="feat-card">
+          <span class="feat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7"/></svg></span>
+          <h3>Badges &amp; Reputation</h3>
+          <p>Earn permanent medals and star ratings when you show up to plans.</p>
+        </article>
+        <article class="feat-card">
+          <span class="feat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.8 3.5 2.8 3.5 5.7"/></svg></span>
+          <h3>Friends &amp; Direct Chat</h3>
+          <p>Add people you actually met at a plan and message them directly.</p>
+        </article>
+        <article class="feat-card">
+          <span class="feat-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"/></svg></span>
+          <h3>Google Login &amp; 3 Themes</h3>
+          <p>Fast Google Sign-In plus Light, Mixed, and Dark liquid-ink themes.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: BUSINESS FEATURES -->
+  <section class="slide slide--cream" data-note="For local venues, we built a complete Business Panel. They have Door Mode to scan QR codes at the entrance, a printable venue QR, flash promos for slow nights, automatic coupons, and clear Wompi billing.">
+    <div class="slide-inner">
+      <span class="kicker kicker--olive">04 · Business Panel Features</span>
+      <h2 class="display-lg">Tools to fill tables and track results</h2>
+      <div class="feat-grid">
+        <article class="feat-card feat-card--biz">
+          <span class="feat-ic feat-ic--biz" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></svg></span>
+          <h3>Door Mode (Modo Puerta)</h3>
+          <p>Full-screen QR scanner at the entrance to validate guests in 2 seconds.</p>
+        </article>
+        <article class="feat-card feat-card--biz">
+          <span class="feat-ic feat-ic--biz" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2v6h-6v-2"/></svg></span>
+          <h3>Fixed Venue QR Poster</h3>
+          <p>Printable QR poster for the door so guests check in on their own.</p>
+        </article>
+        <article class="feat-card feat-card--biz">
+          <span class="feat-ic feat-ic--biz" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>
+          <h3>Flash Promos (Relámpago)</h3>
+          <p>Launch instant promos on slow nights to bring groups right away.</p>
+        </article>
+        <article class="feat-card feat-card--biz">
+          <span class="feat-ic feat-ic--biz" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/></svg></span>
+          <h3>Auto Coupons &amp; Table Mode</h3>
+          <p>Send welcome or check-in coupons automatically and manage tables.</p>
+        </article>
+        <article class="feat-card feat-card--biz">
+          <span class="feat-ic feat-ic--biz" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M9 20v-6h6v6"/></svg></span>
+          <h3>Guest List &amp; Group Chat</h3>
+          <p>Message attendees, mark arrivals, or remove guests who cancel.</p>
+        </article>
+        <article class="feat-card feat-card--biz">
+          <span class="feat-ic feat-ic--biz" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M7 15h4"/></svg></span>
+          <h3>Wompi Billing &amp; Excel Export</h3>
+          <p>Live visitor metrics, CSV export, and one-tap Wompi payments.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: SAFETY & TRUST -->
+  <section class="slide slide--light" data-note="Safety is our top priority. We added six real layers: an 18+ age gate, one-time ID verification, hidden exact locations, QR identity with live safe route, host guest removal, and automatic chat link filters.">
+    <div class="slide-inner">
+      <span class="kicker">05 · Safety &amp; Trust</span>
+      <h2 class="display-lg">Six real layers of protection</h2>
+      <div class="grid-3 grid-3--tight">
         <article class="mini-card">
           <span class="mini-num">01</span>
           <div>
-            <b>ID Verification</b>
-            <p>Users verify their ID once to get a trust badge.</p>
+            <b>+18 Age Consent Gate</b>
+            <p>Stylized entry modal confirming adult access before browsing.</p>
           </div>
         </article>
         <article class="mini-card">
           <span class="mini-num">02</span>
           <div>
-            <b>Private Locations</b>
-            <p>Exact addresses are hidden from people without an account.</p>
+            <b>ID Verification</b>
+            <p>One-time ID check to earn the <em>Parcero Verificado</em> badge.</p>
           </div>
         </article>
         <article class="mini-card">
           <span class="mini-num">03</span>
           <div>
-            <b>QR Check-in &amp; Safe Route</b>
-            <p>QR codes confirm who arrived, plus live emergency sharing.</p>
+            <b>Private Locations</b>
+            <p>Exact meeting addresses stay hidden from anonymous visitors.</p>
           </div>
         </article>
         <article class="mini-card">
           <span class="mini-num">04</span>
           <div>
-            <b>Host Control</b>
+            <b>QR Identity &amp; Safe Route</b>
+            <p>Personal QR check-in plus live GPS sharing with trusted people.</p>
+          </div>
+        </article>
+        <article class="mini-card">
+          <span class="mini-num">05</span>
+          <div>
+            <b>Host Moderation</b>
             <p>Organizers can remove disruptive guests or block accounts.</p>
+          </div>
+        </article>
+        <article class="mini-card">
+          <span class="mini-num">06</span>
+          <div>
+            <b>Smart Chat Filter</b>
+            <p>Blocks suspicious links automatically and supports fast reports.</p>
           </div>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- SLIDE 5: BUSINESS MODEL -->
-  <section class="slide slide--cream" data-note="Our business model is very simple. The app is free for users. Businesses pay zero monthly fees. They only pay a small fee when a verified client actually arrives, using Wompi.">
+  <!-- SLIDE 7: BUSINESS MODEL -->
+  <section class="slide slide--cream" data-note="Our business model is simple and fair. The app is 100 percent free for users. Businesses pay zero monthly fees — they only pay a small fee when a verified client actually arrives, using Wompi.">
     <div class="slide-inner">
-      <span class="kicker kicker--olive">04 · Business Model</span>
+      <span class="kicker kicker--olive">06 · Business Model</span>
       <h2 class="display-lg">Free for users. Zero risk for venues.</h2>
       <div class="grid-3">
         <article class="tier-card">
           <span class="tier-name">Basic</span>
           <strong class="tier-price">$0</strong>
-          <p>2 plans per month. 0% fee. Easy way to start.</p>
+          <p>2 plans per month. 0% fee. Easy way for any venue to start.</p>
         </article>
         <article class="tier-card tier-card--feat">
           <span class="tier-name">Villavo · Popular</span>
@@ -180,98 +275,80 @@
         <article class="tier-card">
           <span class="tier-name">Multi-Branch</span>
           <strong class="tier-price">8% <span>or $2,000 COP / guest</span></strong>
-          <p>Lower rate for brands with more than one location.</p>
+          <p>Lower rate for local brands with multiple locations.</p>
         </article>
       </div>
-      <p class="callout"><b>Simple rule:</b> No arrivals = <b>$0 to pay</b>. Monthly payments go through <b>Wompi</b>.</p>
+      <p class="callout"><b>Simple rule:</b> No arrivals = <b>$0 to pay</b>. Monthly statements are paid easily via <b>Wompi</b> (Card, PSE, Nequi, Bancolombia).</p>
     </div>
   </section>
 
-  <!-- SLIDE 6: PARCE AI ASSISTANT -->
-  <section class="slide slide--orange" data-note="We also built Parce, our own AI assistant powered by Groq. It lives inside both dashboards. It answers user questions and helps business staff manage check-ins, coupons, and payments in seconds.">
+  <!-- SLIDE 8: PARCE AI ASSISTANT -->
+  <section class="slide slide--orange" data-note="We also built Parce, our own AI assistant powered by Groq. It lives inside both dashboards with collapsible FAQs, answering user questions and helping business staff run Door Mode, promos, and billing in seconds.">
     <div class="slide-inner parce-grid">
       <div class="parce-visual" aria-hidden="true">
         <div class="parce-ink-stage">
           <span class="parce-ink"><i></i><i></i><i></i><i></i><i></i></span>
           <img src="src/assets/web/parce-asistente.png" alt="Parce AI Assistant" width="220" height="228">
         </div>
-        <div class="parce-quote">“Hi! I'm Parce — I help users and local staff 24/7 inside the app.”</div>
+        <div class="parce-quote">“Hi! I'm Parce — I guide users and local staff 24/7 inside their panel.”</div>
       </div>
       <div class="parce-copy">
-        <span class="pill pill--ink">05 · AI Assistant · Groq</span>
+        <span class="pill pill--ink">07 · AI Assistant · Groq LLM</span>
         <h2 class="display-lg">Meet Parce, our AI guide</h2>
         <ul class="bullets bullets--dark">
-          <li><b>For Users:</b> Explains plans, ID verification, and coupons.</li>
-          <li><b>For Businesses:</b> Helps with Door Mode, promos, and billing.</li>
-          <li><b>Safe &amp; Private:</b> Login required, rate-limited, blocks card data.</li>
+          <li><b>For Users:</b> Explains plans, ID verification, coupons, and check-in.</li>
+          <li><b>For Businesses:</b> Helps staff run Door Mode, promos, and Wompi bills.</li>
+          <li><b>Secure API:</b> JWT auth, triple rate-limiting, and blocks card numbers.</li>
         </ul>
       </div>
     </div>
   </section>
 
-  <!-- SLIDE 7: TECH STACK -->
-  <section class="slide slide--dark" data-note="For technology, we used a fast and modern stack. The frontend is a Progressive Web App that works on phones. The backend uses Supabase and Vercel, maps use free OpenStreetMap, and we have 67 automated tests.">
+  <!-- SLIDE 9: TECH STACK & METRICS -->
+  <section class="slide slide--dark" data-note="On the technical side, ModoParche is a fast Progressive Web App with zero heavy frameworks. We use Supabase for Postgres and real-time chat, Vercel for serverless APIs, free OpenStreetMap maps, and 67 automated tests.">
     <div class="slide-inner">
-      <span class="kicker kicker--orange">06 · Technology</span>
-      <h2 class="display-lg">Modern, fast, and low-cost stack</h2>
+      <span class="kicker kicker--orange">08 · Technology &amp; Quality</span>
+      <h2 class="display-lg">Fast, secure, and production-ready</h2>
+      <div class="stats-strip">
+        <div><b>18</b><span>Web Pages</span></div>
+        <div><b>3</b><span>Live Panels</span></div>
+        <div><b>67</b><span>Auto Tests</span></div>
+        <div><b>$0</b><span>Map API Cost</span></div>
+      </div>
       <div class="grid-2">
         <article class="tech-card">
           <b>Frontend &amp; Mobile PWA</b>
-          <p>HTML5, CSS3 &amp; JavaScript · Offline mode · Light, Mixed &amp; Dark themes.</p>
+          <p>HTML5, CSS3 &amp; ES2020 · Offline Service Worker · Pull-to-refresh · 3 themes.</p>
         </article>
         <article class="tech-card">
           <b>Backend &amp; Security</b>
-          <p>Supabase Postgres + Row Level Security, live chat, Google Sign-In &amp; Vercel APIs.</p>
+          <p>Supabase PostgreSQL with Row Level Security (RLS), Realtime chat, Google OAuth &amp; Vercel APIs.</p>
         </article>
         <article class="tech-card">
           <b>Maps &amp; Payments</b>
-          <p>Leaflet + OpenStreetMap (free maps) and Wompi online checkout.</p>
+          <p>Leaflet + OpenStreetMap + Photon search (free) and Wompi checkout.</p>
         </article>
         <article class="tech-card">
-          <b>Tested &amp; Reliable</b>
-          <p>67 automated tests (unit + real Postgres security tests) with zero lint errors.</p>
+          <b>Admin &amp; Testing</b>
+          <p>Full Admin Console for ID reviews &amp; health checks · Vitest + PGlite SQL suites.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- SLIDE 8: LIVE PLATFORM -->
-  <section class="slide slide--light" data-note="ModoParche is not just a prototype — it is live today. We built three complete panels: one for users, one for local businesses, and an admin panel to keep everything safe.">
-    <div class="slide-inner">
-      <span class="kicker">07 · Live Today</span>
-      <h2 class="display-lg">Three working panels in production</h2>
-      <div class="grid-3">
-        <article class="card card--orange-top">
-          <span class="card-tag">Users</span>
-          <h3>User Panel</h3>
-          <p>Map radar, group chat, QR check-in, badges, friends, and Parce AI.</p>
-        </article>
-        <article class="card card--olive-top">
-          <span class="card-tag card-tag--olive">Businesses</span>
-          <h3>Business Panel</h3>
-          <p>Create plans, <b>Door Mode</b> QR scanner, auto coupons, and Wompi bills.</p>
-        </article>
-        <article class="card card--ink-top">
-          <span class="card-tag card-tag--ink">Team</span>
-          <h3>Admin Panel</h3>
-          <p>Review IDs, moderate reports, check payments, and monitor health.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- SLIDE 9: LIVE DEMO & THANK YOU -->
-  <section class="slide slide--dark slide--finale" data-note="That is ModoParche: real people, real local places, and real software live today. Now we can show you a quick live demo or answer your questions. Thank you!">
+  <!-- SLIDE 10: LIVE DEMO & THANK YOU -->
+  <section class="slide slide--dark slide--finale" data-note="That is ModoParche: real people, real local places, and real software live today. Now we can open the live app for a quick demo or answer your questions. Thank you!">
     <div class="slide-inner finale-box">
       <img class="finale-logo" src="src/assets/web/logo-isotipo-light.webp" alt="ModoParche" width="110" height="132">
       <span class="pill pill--orange">Live Demo &amp; Questions</span>
       <h2 class="display-xl">THANK <span>YOU!</span></h2>
-      <p class="lead lead--dark">Let's open the live app or answer your questions.</p>
+      <p class="lead lead--dark">Let's explore the live app or answer your questions.</p>
       <div class="demo-links">
         <a class="demo-btn demo-btn--orange" href="index.html" target="_blank" rel="noopener">Open Home</a>
         <a class="demo-btn" href="dashboard.html" target="_blank" rel="noopener">User Panel</a>
         <a class="demo-btn" href="empresa-dashboard.html" target="_blank" rel="noopener">Business Panel</a>
         <a class="demo-btn" href="comercio.html" target="_blank" rel="noopener">For Businesses</a>
+        <a class="demo-btn" href="admin.html" target="_blank" rel="noopener">Admin Panel</a>
       </div>
       <p class="finale-foot">ModoParche · Villavicencio, Meta · modoparche.vercel.app</p>
     </div>

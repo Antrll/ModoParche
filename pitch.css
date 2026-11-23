@@ -111,14 +111,23 @@ html, body {
 .slide.is-active .step-card,
 .slide.is-active .mini-card,
 .slide.is-active .tier-card,
-.slide.is-active .tech-card {
+.slide.is-active .tech-card,
+.slide.is-active .feat-card {
   animation: pCardIn .55s var(--spring) both;
 }
 .slide.is-active .grid-2 > :nth-child(2),
-.slide.is-active .grid-3 > :nth-child(2) { animation-delay: .07s; }
+.slide.is-active .grid-3 > :nth-child(2),
+.slide.is-active .feat-grid > :nth-child(2) { animation-delay: .05s; }
 .slide.is-active .grid-2 > :nth-child(3),
-.slide.is-active .grid-3 > :nth-child(3) { animation-delay: .14s; }
-.slide.is-active .grid-2 > :nth-child(4) { animation-delay: .2s; }
+.slide.is-active .grid-3 > :nth-child(3),
+.slide.is-active .feat-grid > :nth-child(3) { animation-delay: .1s; }
+.slide.is-active .grid-2 > :nth-child(4),
+.slide.is-active .grid-3 > :nth-child(4),
+.slide.is-active .feat-grid > :nth-child(4) { animation-delay: .15s; }
+.slide.is-active .grid-3 > :nth-child(5),
+.slide.is-active .feat-grid > :nth-child(5) { animation-delay: .2s; }
+.slide.is-active .grid-3 > :nth-child(6),
+.slide.is-active .feat-grid > :nth-child(6) { animation-delay: .25s; }
 
 /* Typography */
 .kicker {
@@ -274,6 +283,44 @@ html, body {
 }
 .parce-copy { display: grid; gap: 18px; }
 
+/* Feature showcase grids (User & Business slides) */
+.feat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.feat-card {
+  display: grid; gap: 10px; align-content: start;
+  padding: 20px 22px; border-radius: 22px;
+  background: var(--soft); border: 1.5px solid rgba(17, 17, 17, .06);
+  box-shadow: 0 14px 28px -24px rgba(17, 17, 17, .24);
+  transition: transform .3s var(--spring), border-color .2s ease;
+}
+.feat-card:hover { transform: translateY(-3px); border-color: rgba(255, 90, 31, .45); }
+.feat-card--biz { background: #ffffff; border-color: rgba(45, 64, 48, .12); }
+.feat-card--biz:hover { border-color: var(--olive); }
+.feat-ic {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px;
+  background: var(--orange); color: var(--ink);
+}
+.feat-ic--biz { background: var(--olive); color: #FAF7F2; }
+.feat-ic svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+.feat-card h3 { margin: 0; font-size: 1.12rem; font-weight: 800; line-height: 1.2; color: var(--ink); }
+.feat-card p { margin: 0; font-size: .92rem; line-height: 1.45; color: var(--muted); }
+.grid-3--tight { gap: 16px; }
+.grid-3--tight .mini-card { padding: 18px 20px; gap: 13px; }
+.grid-3--tight .mini-card b { font-size: 1.05rem; }
+.grid-3--tight .mini-card p { font-size: .9rem; }
+
+/* Slide 9: Stats strip + Tech */
+.stats-strip {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;
+}
+.stats-strip div {
+  display: grid; justify-items: center; gap: 2px;
+  padding: 16px 12px; border-radius: 20px;
+  background: rgba(255, 90, 31, .14); border: 1px solid rgba(255, 90, 31, .32);
+  text-align: center;
+}
+.stats-strip b { font-family: 'Gagalin', sans-serif; font-size: 2.2rem; line-height: 1; color: var(--orange); font-weight: 400; }
+.stats-strip span { font-size: .8rem; font-weight: 700; color: rgba(255, 255, 255, .86); text-transform: uppercase; letter-spacing: .04em; }
+
 /* Slide 7: Tech */
 .tech-card {
   display: grid; gap: 8px; padding: 24px 26px; border-radius: 22px;
@@ -350,7 +397,8 @@ html, body {
 @keyframes pInk5 { 0%, 100% { transform: translate(0, 0) scaleX(1); } 50% { transform: translate(14px, 8px) scaleX(1.18); } }
 
 @media (max-width: 860px) {
-  .cover-grid, .parce-grid, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .cover-grid, .parce-grid, .grid-2, .grid-3, .feat-grid { grid-template-columns: 1fr; }
+  .stats-strip { grid-template-columns: repeat(2, 1fr); }
   .deck-tag { display: none; }
   .seal-wrap { width: 175px; }
   .seal-ring { padding: 20px; }
