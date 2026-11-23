@@ -398,3 +398,10 @@ Producción tiene `a2e2bae` más la mejora visual (`fd307e7` sin el resto de la 
   - Las sugerencias cambian para personas y para negocios. En los paneles de ejemplo dice que responde solo con una cuenta real.
   - El chat abierto va por encima de los avisos del panel, y el botón se oculta mientras está el aviso de cookies (que lo tapaba en el celular).
 - **Llave de Groq:** se pegó una en el chat. **Hay que revocarla** en console.groq.com y crear otra directamente en Supabase como `GROQ_API_KEY`.
+
+## 16. Producción y Vercel (estado al 23/11)
+
+- **Publicado:** `main` (`e76a7bc`, merge del PR #3) en https://modoparche.vercel.app, con la CLI de Vercel. Migraciones de las Fases 3 y 4 y `quitar_vaca` ya corridas en Supabase.
+- **Proyecto de Vercel real:** "modoparche" del equipo **`mode-parche`** (`prj_rFj8Orwk2IZ7d4GKL65xoJiaZeD8`), con los dominios modoparche.vercel.app y modoparche-hazel.vercel.app. El proyecto `davzd/modoparche` (el que comenta "Preview" en los PR) es otro y **no** maneja producción.
+- **Cómo publicar:** desde una copia de `main`, `vercel deploy --prod`, o en Vercel (equipo mode-parche) Deployments > ⋯ > Promote to Production. Unir un PR a `main` en Antrll/ModoParche no publica solo.
+- **Falta para que todo funcione:** secretos en Supabase (`TURNSTILE_SECRET`, `CRON_SECRET`, `GROQ_API_KEY` nueva) y `npx supabase functions deploy`.

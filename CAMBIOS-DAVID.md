@@ -156,3 +156,11 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 
 ## 15. RLS en `private.tareas_ejecutadas`
 - Al correr la Fase 4, Supabase avisó que la tabla `private.tareas_ejecutadas` no tenía RLS. No era un riesgo (está en el esquema `private` y sin permisos para `anon` ni `authenticated`), pero se le activó RLS sin reglas en `20261126120000_backend_mantenimiento_fase4.sql` para que el aviso no salga y quede protegida dos veces. Las funciones del servidor la siguen usando igual.
+
+## 16. Publicado en producción (23/11)
+- **Qué se publicó:** `main` en el commit `e76a7bc` (merge del PR Antrll/ModoParche#3, con todo `SubidaDavidClaudeWeb` hasta `476f56f`). Despliegue `modoparche-1dsq6l9a2-mode-parche.vercel.app`, alias https://modoparche.vercel.app.
+- **Cómo:** con la CLI de Vercel desde una copia limpia de `main` (`vercel deploy --prod`), igual que se venía publicando. En Supabase ya estaban corridas las migraciones de las Fases 3 y 4 y `quitar_vaca`.
+- **Comprobado en el sitio:** el inicio ya no carga el asistente, no hay barra de avance, la estrella del login es naranja brasa, todas las páginas responden 200 y `/comercios` redirige con 301.
+- **Dato importante sobre Vercel:** el dominio modoparche.vercel.app es del proyecto **"modoparche" del equipo `mode-parche`** (`prj_rFj8Orwk2IZ7d4GKL65xoJiaZeD8`), no del proyecto `davzd/modoparche` que comenta en los pull requests. Por eso unir un PR a `main` en Antrll/ModoParche **no publica solo**: hay que publicar con `vercel deploy --prod` (o "Promote to Production" en ese proyecto).
+- **Pendiente:** secretos `TURNSTILE_SECRET`, `CRON_SECRET` y una llave nueva `GROQ_API_KEY` en Supabase y `npx supabase functions deploy`; hasta entonces no funcionan el formulario de contacto ni el asistente.
+- **Seguridad:** el token de Vercel usado se pegó en el chat: hay que borrarlo en vercel.com/account/settings/tokens. Vercel recomienda activar 2FA en la cuenta.
