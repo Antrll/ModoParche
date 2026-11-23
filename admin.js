@@ -2512,6 +2512,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
     updateCounts(); stampRefresh();
     go(location.hash.slice(1) || 'resumen', { force: true });
     hideBoot();
+    window.mpPullRefresh = () => refrescarTodo(true);
     cargarVerificaciones().catch(fallo('verificaciones'));
     depurarArchivos().catch(e => console.warn('[depurar]', e));
     tiempoReal();

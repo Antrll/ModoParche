@@ -114,6 +114,56 @@ html.is-dark .mp-cargando-txt { background: rgba(255,255,255,.9); color: #111111
   .mp-cargando-ring { animation-duration: 1.6s; }
 }
 
+/* =====================================================================
+   Pull to refresh con el logo de ModoParche en dispositivos móviles
+===================================================================== */
+@media (pointer: coarse) {
+  body { overscroll-behavior-y: contain; }
+}
+.mp-ptr {
+  position: fixed; z-index: 1250; top: var(--top-h, var(--topbar, var(--nav-h, 64px))); left: 50%;
+  width: 52px; height: 52px; margin-left: -26px;
+  pointer-events: none;
+  translate: 0 calc(var(--pd, 0) * 1px - 60px);
+  transition: translate .55s cubic-bezier(.34, 1.56, .64, 1);
+}
+.mp-ptr.is-pulling { transition: none; }
+.mp-ptr-badge {
+  position: relative; width: 100%; height: 100%;
+  display: grid; place-items: center; border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(17,17,17,.08), 0 10px 24px -12px rgba(17,17,17,.45);
+  opacity: calc(var(--pp, 0) * 1.6);
+  scale: calc(.6 + var(--pp, 0) * .4);
+  transition: opacity .2s ease, scale .4s cubic-bezier(.34, 1.56, .64, 1);
+}
+.mp-ptr.is-pulling .mp-ptr-badge { transition: none; }
+.mp-ptr-badge img { width: 30px; height: 30px; rotate: calc(var(--pd, 0) * 3deg); transition: rotate .5s cubic-bezier(.34, 1.56, .64, 1); }
+.mp-ptr.is-pulling .mp-ptr-badge img { transition: none; }
+.mp-ptr-dk { display: none; }
+.mp-ptr-ring { position: absolute; inset: 0; width: 100%; height: 100%; rotate: -90deg; }
+.mp-ptr-trk { fill: none; stroke: #e9e9eb; stroke-width: 3; }
+.mp-ptr-val {
+  fill: none; stroke: #FF5A1F; stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 100px; stroke-dashoffset: calc(100px - var(--pp, 0) * 100px);
+}
+.mp-ptr.is-armed .mp-ptr-badge { scale: 1.06; }
+.mp-ptr.is-loading .mp-ptr-badge { opacity: 1; scale: 1; }
+.mp-ptr.is-loading .mp-ptr-badge img { rotate: 0deg; animation: mpCargandoBob .9s cubic-bezier(.77, 0, .175, 1) infinite; }
+.mp-ptr.is-loading .mp-ptr-ring { animation: mpCargandoGiro .85s linear infinite; }
+.mp-ptr.is-loading .mp-ptr-val { stroke-dasharray: 26px 74px; stroke-dashoffset: 0; transition: stroke-dasharray .3s ease; }
+.mp-ptr.is-done .mp-ptr-badge { opacity: 0; scale: .2; transition: opacity .28s ease .1s, scale .32s cubic-bezier(.5, 0, .75, 0) .05s; }
+.mp-ptr.is-done .mp-ptr-badge img { rotate: 0deg; }
+.mp-ptr.is-done .mp-ptr-val { stroke-dashoffset: 0; }
+html.is-dark .mp-ptr-badge { background: #1f1f23; box-shadow: inset 0 0 0 1px #2e2e33, 0 10px 24px -12px #000000; }
+html.is-dark .mp-ptr-trk { stroke: #36363c; }
+html.is-dark .mp-ptr-lt { display: none; }
+html.is-dark .mp-ptr-dk { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .mp-ptr { transition: none; }
+  .mp-ptr.is-loading .mp-ptr-badge img { animation: none; }
+}
+
 /* ---------- Barra de aviso fija (mp-utils.js: versión nueva, sin conexión) ---------- */
 .mp-barra {
   position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%);

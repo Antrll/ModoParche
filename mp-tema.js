@@ -152,8 +152,8 @@
   }
 
   // Las piezas de marca.html muestran el logo a propósito sobre un fondo fijo: no se tocan.
-  // .logo-dk / .logo-lt: el dashboard ya trae las dos versiones y su CSS muestra la correcta.
-  const NO_TOCAR = '.nav, .logo-card, .logo-rules, .donts, [data-logo-fijo], .logo-dk, .logo-lt';
+  // .logo-dk / .logo-lt / .mp-ptr-badge / .mp-cargando-badge: ya traen las dos versiones y su CSS muestra la correcta.
+  const NO_TOCAR = '.nav, .logo-card, .logo-rules, .donts, [data-logo-fijo], .logo-dk, .logo-lt, .mp-ptr-badge, .mp-cargando-badge';
 
   function ajustarLogosPagina() {
     document.querySelectorAll('img').forEach(img => {
@@ -458,11 +458,95 @@
     return btn;
   }
 
+  /* ---------- Pull to refresh con el logo en dispositivos móviles ---------- */
+  function iniciarPullToRefresh() {
+    if (document.getElementById('ptr') || document.getElementById('mp-ptr')) return;
+    if (!('ontouchstart' in window)) return;
+    const ptr = document.createElement('div');
+    ptr.className = 'mp-ptr';
+    ptr.id = 'mp-ptr';
+    ptr.setAttribute('aria-hidden', 'true');
+    ptr.innerHTML =
+      '<div class="mp-ptr-badge">' +
+        '<svg class="mp-ptr-ring" viewBox="0 0 48 48"><circle class="mp-ptr-trk" cx="24" cy="24" r="21"/><circle class="mp-ptr-val" cx="24" cy="24" r="21" pathLength="100"/></svg>' +
+        '<img class="mp-ptr-lt" src="src/assets/web/isotipo-96.png" alt="" width="30" height="30" decoding="async">' +
+        '<img class="mp-ptr-dk" src="src/assets/web/isotipo-light-96.png" alt="" width="30" height="30" decoding="async">' +
+      '</div>';
+    document.body.appendChild(ptr);
+
+    const MAX = 140, TRIG = 72, REST = 64;
+    let y0 = null, x0 = 0, pulling = false, armed = false, busy = false, d = 0;
+    const set = v => {
+      d = v;
+      ptr.style.setProperty('--pd', v.toFixed(1));
+      ptr.style.setProperty('--pp', Math.min(1, v / TRIG).toFixed(3));
+    };
+    const bloqueado = t => busy || window.scrollY > 0
+      || document.body.classList.contains('no-scroll') || document.body.classList.contains('menu-open')
+      || !!(t && t.closest && t.closest('.leaflet-container, .chat-msgs, .pa-panel, .modal, .backdrop:not([hidden]), .sidebar.is-open, .mobile-menu.is-open, .door:not([hidden]), input, textarea, select'));
+
+    document.addEventListener('touchstart', e => {
+      y0 = null;
+      if (e.touches.length !== 1 || bloqueado(e.target)) return;
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; pulling = false;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (y0 == null) return;
+      const dy = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
+      if (!pulling) {
+        if (dy < -4 || Math.abs(dx) > 12 || window.scrollY > 0) { y0 = null; return; }
+        if (dy < 8 || Math.abs(dx) > dy) return;
+        pulling = true; armed = false;
+        root.classList.add('is-ptr');
+        ptr.classList.remove('is-done', 'is-loading');
+        ptr.classList.add('is-pulling');
+      }
+      if (e.cancelable) e.preventDefault();
+      set(MAX * (1 - Math.exp(-(dy - 8) / MAX)));
+      const now = d >= TRIG;
+      if (now !== armed) {
+        armed = now;
+        ptr.classList.toggle('is-armed', armed);
+        if (armed && navigator.vibrate) { try { navigator.vibrate(8); } catch (_e) { /* sin vibración */ } }
+      }
+    }, { passive: false });
+
+    const end = async () => {
+      if (!pulling) { y0 = null; return; }
+      pulling = false; y0 = null;
+      ptr.classList.remove('is-pulling');
+      if (!armed) {
+        ptr.classList.remove('is-armed');
+        set(0);
+        root.classList.remove('is-ptr');
+        return;
+      }
+      busy = true;
+      ptr.classList.add('is-loading');
+      set(REST);
+      if (typeof window.mpPullRefresh === 'function') {
+        try { await Promise.all([window.mpPullRefresh(), new Promise(r => setTimeout(r, 900))]); }
+        catch (_e) { /* el panel maneja su aviso */ }
+        ptr.classList.remove('is-loading', 'is-armed');
+        ptr.classList.add('is-done');
+        const sinMov = reduceMotion.matches;
+        setTimeout(() => { set(0); }, sinMov ? 0 : 380);
+        setTimeout(() => { ptr.classList.remove('is-done'); busy = false; root.classList.remove('is-ptr'); }, sinMov ? 0 : 900);
+      } else {
+        setTimeout(() => { location.reload(); }, 650);
+      }
+    };
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', end, { passive: true });
+  }
+
   /* ---------- Inicio ---------- */
   function init() {
     try { crearBoton(); document.querySelectorAll('.tema-toggle').forEach(asegurarIconoMixto); } catch (e) { console.warn('[tema] botón', e); }
     vigilarLogosBarra();
     sincronizar();
+    iniciarPullToRefresh();
 
     // Si otra parte de la página cambia el tema (ajustes del dashboard), el botón se entera
     if ('MutationObserver' in window) {

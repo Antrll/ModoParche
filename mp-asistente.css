@@ -66,12 +66,25 @@ html.is-dark .pa-msg--yo { background: #FF5A1F; color: #111111; }
 .pa-escribe i:nth-child(2) { animation-delay: .14s; }
 .pa-escribe i:nth-child(3) { animation-delay: .28s; }
 
-.pa-sug { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
-.pa-sug button {
-  min-height: 34px; padding: 5px 12px; border: 1.5px solid var(--pa-linea); border-radius: 999px; background: transparent;
-  color: inherit; font: 600 .8125rem/1.2 Inter, system-ui, sans-serif; cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
+.pa-sug { border-top: 1px solid var(--pa-linea); background: var(--pa-papel); }
+.pa-sug-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 14px; border: 0; background: transparent; color: var(--pa-gris);
+  font: 700 .78rem/1.2 Inter, system-ui, sans-serif; letter-spacing: .02em; text-transform: uppercase;
+  cursor: pointer; transition: color .15s ease, background-color .15s ease;
 }
-@media (hover: hover) and (pointer: fine) { .pa-sug button:hover { border-color: #FF5A1F; background: rgba(255,90,31,.1); } }
+.pa-sug-toggle svg { width: 16px; height: 16px; flex: none; transition: transform .22s cubic-bezier(.23,1,.32,1); }
+.pa-sug.is-abierto .pa-sug-toggle { color: var(--pa-tinta); }
+.pa-sug.is-abierto .pa-sug-toggle svg { transform: rotate(180deg); color: #FF5A1F; }
+@media (hover: hover) and (pointer: fine) { .pa-sug-toggle:hover { color: var(--pa-tinta); background: var(--pa-suave); } }
+.pa-sug-lista { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 14px 10px; max-height: 150px; overflow-y: auto; }
+.pa-sug-lista[hidden] { display: none; }
+.pa-sug-lista button {
+  min-height: 32px; padding: 5px 11px; border: 1.5px solid var(--pa-linea); border-radius: 999px; background: transparent;
+  color: inherit; font: 600 .8rem/1.2 Inter, system-ui, sans-serif; cursor: pointer; text-align: left;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+@media (hover: hover) and (pointer: fine) { .pa-sug-lista button:hover { border-color: #FF5A1F; background: rgba(255,90,31,.1); } }
 .pa-form { display: flex; gap: 8px; padding: 10px 12px 6px; border-top: 1px solid var(--pa-linea); }
 .pa-form input {
   flex: 1; min-width: 0; height: 44px; padding: 0 15px; border: 1.5px solid transparent; border-radius: 999px;

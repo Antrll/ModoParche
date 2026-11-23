@@ -12,8 +12,22 @@
   var MAX = 500;
   var NEGOCIO = /^\/empresa-dashboard/.test(location.pathname);
   var SUGERENCIAS = NEGOCIO
-    ? ['¿Cuánto me cobran por cliente?', '¿Cómo funciona el Modo Puerta?', '¿Cómo creo un cupón?', '¿Cómo pago mi estado de cuenta?']
-    : ['¿Cómo abro un parche?', '¿Cómo verifico mi cédula?', '¿Cómo funcionan los cupones?', '¿Es seguro?'];
+    ? [
+      '¿Cuánto me cobran por cliente?',
+      '¿Cómo funciona el Modo Puerta?',
+      '¿Cómo creo un cupón?',
+      '¿Cómo pago mi estado de cuenta?',
+      '¿Cómo lanzo un parche relámpago?',
+      '¿Cómo ubico mi local en el mapa?',
+    ]
+    : [
+      '¿Cómo abro un parche?',
+      '¿Cómo verifico mi cédula?',
+      '¿Cómo funcionan los cupones?',
+      '¿Es seguro ir a un parche?',
+      '¿Cómo gano insignias?',
+      '¿Cómo funciona el check-in?',
+    ];
   var ERRORES = {
     DEMASIADOS: 'Vas muy rápido, parce. Espera unos minutos y me vuelves a preguntar.',
     OCUPADO: 'Estoy con mucha gente en este momento. Inténtalo en un ratico.',
@@ -28,7 +42,16 @@
   var CERRAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var ENVIAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
-  var historial = [], ocupado = false, raiz, panel, lista, campo, boton, sug;
+  var FLECHA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+
+  var historial = [], ocupado = false, raiz, panel, lista, campo, boton, sug, sugBtn, sugLista;
+
+  function plegarSug(abierto) {
+    if (!sug || !sugBtn || !sugLista) return;
+    sug.classList.toggle('is-abierto', abierto);
+    sugBtn.setAttribute('aria-expanded', String(abierto));
+    sugLista.hidden = !abierto;
+  }
 
   function burbuja(texto, quien) {
     var d = document.createElement('div');
@@ -64,7 +87,7 @@
     texto = String(texto || '').trim().slice(0, MAX);
     if (!texto || ocupado) return;
     ocupado = true; boton.disabled = true;
-    if (sug) { sug.remove(); sug = null; }
+    plegarSug(false);
     burbuja(texto, 'yo');
     historial.push({ rol: 'user', texto: texto });
     campo.value = '';
@@ -112,7 +135,12 @@
         '<header class="pa-head"><span class="pa-sello" aria-hidden="true">' + ICONO + '</span><div><b>Parce</b><small>Asistente con IA de ModoParche</small></div>' +
         '<button type="button" class="pa-x" aria-label="Cerrar el asistente">' + CERRAR + '</button></header>' +
         '<div class="pa-lista" role="log" aria-live="polite"></div>' +
-        '<div class="pa-sug"></div>' +
+        '<div class="pa-sug is-abierto">' +
+          '<button type="button" class="pa-sug-toggle" aria-expanded="true" aria-controls="pa-sug-lista">' +
+            '<span>Preguntas frecuentes</span>' + FLECHA +
+          '</button>' +
+          '<div class="pa-sug-lista" id="pa-sug-lista"></div>' +
+        '</div>' +
         '<form class="pa-form" autocomplete="off"><label class="sr-only" for="pa-campo">Escribe tu pregunta</label>' +
         '<input id="pa-campo" maxlength="' + MAX + '" placeholder="Pregúntame lo que quieras"><button type="submit" aria-label="Enviar">' + ENVIAR + '</button></form>' +
         '<p class="pa-nota">Puede equivocarse. No escribas cédula, claves ni datos de pago.</p>' +
@@ -120,14 +148,16 @@
       '<button type="button" class="pa-fab" aria-expanded="false" aria-label="Abrir a Parce, asistente virtual">' + ICONO + '<span class="pa-fab-txt">Parce</span></button>';
     document.body.appendChild(raiz);
     panel = raiz.querySelector('.pa-panel'); lista = raiz.querySelector('.pa-lista');
-    campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button'); sug = raiz.querySelector('.pa-sug');
+    campo = raiz.querySelector('input'); boton = raiz.querySelector('.pa-form button');
+    sug = raiz.querySelector('.pa-sug'); sugBtn = raiz.querySelector('.pa-sug-toggle'); sugLista = raiz.querySelector('.pa-sug-lista');
     burbuja(NEGOCIO ? '¡Quiubo! Soy Parce. Te ayudo con tus parches, cupones, el Modo Puerta y los cobros.' : '¡Quiubo! Soy Parce. Te ayudo a armar planes, verificar tu cuenta y usar la app.', 'bot');
     SUGERENCIAS.forEach(function (t) {
       var b = document.createElement('button');
       b.type = 'button'; b.textContent = t;
       b.addEventListener('click', function () { preguntar(t); });
-      sug.appendChild(b);
+      sugLista.appendChild(b);
     });
+    sugBtn.addEventListener('click', function () { plegarSug(!sug.classList.contains('is-abierto')); });
     raiz.querySelector('.pa-fab').addEventListener('click', function () { abrir(!panel.classList.contains('is-abierto')); });
     raiz.querySelector('.pa-x').addEventListener('click', function () { abrir(false); });
     raiz.querySelector('form').addEventListener('submit', function (e) { e.preventDefault(); preguntar(campo.value); });

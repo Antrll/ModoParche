@@ -3316,6 +3316,15 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
     bind();
     go();
     hideBoot();
+    window.mpPullRefresh = async () => {
+      if (REMOTE()) {
+        await Promise.all([cargarParchesRemotos(), recargarNegocio()]);
+        syncCanalParches();
+      }
+      if (route === 'perfil') await cargarCobros(true);
+      render();
+      return true;
+    };
     const qs = new URLSearchParams(location.search), P = loc().perfil;
     if (qs.has('bienvenida')) {
       setTimeout(() => {
