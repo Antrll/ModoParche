@@ -1785,6 +1785,9 @@ html {
 }
 .sidebar:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 65%, transparent); }
 .sidebar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+.person-acts { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.person-kick { color: var(--negative); }
+.person-kick:hover { background: var(--negative-100); border-color: var(--negative); }
 @media (pointer: coarse) {
   ::-webkit-scrollbar:horizontal { height: 0; display: none; }
 }

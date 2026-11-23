@@ -38,7 +38,9 @@
     ORIGEN: 'Recarga la página para volver a hablar conmigo.',
   };
   var FALLO = 'Ahora no pude responder. Puedes mirar /preguntas o escribirnos a modoparcheoficial@gmail.com.';
-  var IMG_PARCE = '<img class="pa-avatar-img" src="/src/assets/web/parce-asistente.png" alt="" width="76" height="79" decoding="async">';
+  var IMG_PARCE =
+    '<img class="pa-avatar-img pa-img-lt" src="/src/assets/web/parce-asistente-negra.png" alt="" width="76" height="79" decoding="async">' +
+    '<img class="pa-avatar-img pa-img-dk" src="/src/assets/web/parce-asistente-blanca.png" alt="" width="76" height="79" decoding="async">';
   var CERRAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var ENVIAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 

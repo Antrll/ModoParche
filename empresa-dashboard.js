@@ -1413,7 +1413,10 @@
     $('#people').innerHTML = rows.map(a => `<li class="person ${a.id === justIn ? 'just-in' : ''}">${avatar(a)}
         <span><b>${esc(a.nombre)}</b><small>${a.walkin ? 'Llegó sin confirmar' : `Confirmó ${esc(fmtCuando(a.confirmo).toLowerCase())}`}</small></span>
         ${a.llego ? `<span class="pill pos">${ic('i-check')}Llegó ${fmtHora(a.llego)}</span>` : '<span class="pill">Por llegar</span>'}
-        ${puede ? (a.llego ? `<button class="btn ghost btn--sm" data-action="checkout" data-pid="${p.id}" data-uid="${a.id}">Deshacer</button>` : `<button class="btn btn--sm" data-action="checkin" data-pid="${p.id}" data-uid="${a.id}">${ic('i-check')}Marcar llegada</button>`) : '<span></span>'}
+        <span class="person-acts">
+          ${puede ? (a.llego ? `<button class="btn ghost btn--sm" data-action="checkout" data-pid="${p.id}" data-uid="${a.id}">Deshacer</button>` : `<button class="btn btn--sm" data-action="checkin" data-pid="${p.id}" data-uid="${a.id}">${ic('i-check')}Marcar llegada</button>`) : ''}
+          ${!a.llego ? `<button class="btn ghost btn--sm person-kick" data-action="sacar-asistente" data-pid="${p.id}" data-uid="${a.id}" title="Sacar del parche" aria-label="Sacar a ${esc(a.nombre)} del parche">${ic('i-x')}Sacar</button>` : ''}
+        </span>
       </li>`).join('') || '<li><p class="empty">Nadie ha confirmado todavía. Comparte el afiche del parche.</p></li>';
   }
 
@@ -3169,6 +3172,23 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'fly': flyTo(a.dataset.local); break;
         case 'checkin': { const p = findParche(a.dataset.pid), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { const r = checkIn(p, u); burstFrom(a, 20); renderShell(); renderAsistentes(u.id); avisarCupones(u.nombre, r); } break; }
         case 'checkout': { const p = findParche(a.dataset.pid), u = p && p.asistentes.find(x => x.id === a.dataset.uid); if (u) { checkOut(p, u); renderShell(); renderAsistentes(); toast('Llegada deshecha', `${u.nombre} vuelve a estar por llegar.`); } break; }
+        case 'sacar-asistente': {
+          const p = findParche(a.dataset.pid), u = p && p.asistentes.find(x => x.id === a.dataset.uid);
+          if (!u || u.llego) break;
+          (async () => {
+            if (REMOTE() && p.remoto && esUuid(u.id)) {
+              let r = await SB().rpc('sacar_del_parche', { p_parche: p.id, p_usuario: u.id });
+              if (r.error && /sacar_del_parche|PGRST202/i.test(`${r.error.code} ${r.error.message}`)) {
+                r = await SB().from('parche_miembros').delete().eq('parche_id', p.id).eq('usuario_id', u.id);
+              }
+              if (r.error) { toast('No se pudo sacar del parche', errorDB(r.error).join('. '), { error: true }); return; }
+            }
+            p.asistentes = p.asistentes.filter(x => x.id !== u.id);
+            save(); renderShell(); renderAsistentes();
+            toast(`Sacaste a ${u.nombre}`, 'Su cupo quedó libre en el parche.');
+          })();
+          break;
+        }
         case 'usar-codigo': $('#code-input').value = a.dataset.code; $('#code-input').focus(); $('#validar').scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'center' }); break;
         case 'ir-validar': irValidar(); break;
         case 'escanear': openScan(); break;

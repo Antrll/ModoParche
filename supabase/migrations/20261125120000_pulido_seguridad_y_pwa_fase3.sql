@@ -355,3 +355,53 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 revoke all on function public.es_miembro(uuid, uuid) from public, anon;
 grant execute on function public.es_miembro(uuid, uuid) to authenticated;
+
+-- =====================================================================
+-- 8. ADMINISTRAR ASISTENTES: SACAR DEL PARCHE (ORGANIZADOR)
+-- Quien creó el parche puede sacar a un asistente que aún no tenga
+-- llegada confirmada (check-in), liberando su cupo.
+-- =====================================================================
+drop policy if exists "miembros: salirse" on public.parche_miembros;
+create policy "miembros: salirse" on public.parche_miembros for delete to authenticated
+  using (
+    (
+      (select auth.uid()) = usuario_id
+      and not exists (select 1 from public.parches p where p.id = parche_id and p.creador_id = (select auth.uid()))
+    )
+    or (
+      usuario_id <> (select auth.uid())
+      and not checkin
+      and exists (select 1 from public.parches p where p.id = parche_id and p.creador_id = (select auth.uid()))
+    )
+  );
+
+create or replace function public.sacar_del_parche(p_parche uuid, p_usuario uuid)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare
+  v_yo uuid := auth.uid();
+  v_creador uuid;
+  v_titulo text;
+  v_checkin boolean;
+begin
+  if v_yo is null then
+    raise exception 'Inicia sesión para continuar.' using errcode = '42501';
+  end if;
+  if p_parche is null or p_usuario is null or p_usuario = v_yo then
+    raise exception 'Elige a la persona que vas a sacar del parche.' using errcode = '22023';
+  end if;
+  select creador_id, titulo into v_creador, v_titulo from public.parches where id = p_parche;
+  if v_creador is distinct from v_yo then
+    raise exception 'Solo quien organiza el parche puede sacar asistentes.' using errcode = '42501';
+  end if;
+  select checkin into v_checkin from public.parche_miembros where parche_id = p_parche and usuario_id = p_usuario;
+  if not found then
+    return false;
+  end if;
+  if v_checkin then
+    raise exception 'No se puede sacar a alguien con llegada ya confirmada.' using errcode = 'P0001';
+  end if;
+  delete from public.parche_miembros where parche_id = p_parche and usuario_id = p_usuario;
+  return true;
+end $$;
+revoke all on function public.sacar_del_parche(uuid, uuid) from public, anon;
+grant execute on function public.sacar_del_parche(uuid, uuid) to authenticated;

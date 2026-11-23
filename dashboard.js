@@ -1433,6 +1433,37 @@
     refresh();
   }
 
+  function askKick(pid, uid) {
+    const p = findP(pid);
+    if (!p || !isMine(p) || !uid || uid === 'me') return;
+    const nombre = personById(uid)?.nombre || 'este parcero';
+    $('#confirm-title').textContent = `¿Sacar a ${nombre}?`;
+    $('#confirm-text').textContent = `Sale de "${p.titulo}", se libera su cupo y deja de ver el chat del grupo.`;
+    $('#confirm-ok').textContent = 'Sí, sacar del parche';
+    $('#confirm-ok').onclick = async () => {
+      closeModal('modal-confirm');
+      if (isRemote(p) && isUuid(uid)) {
+        let r = await sb.rpc('sacar_del_parche', { p_parche: p.id, p_usuario: uid });
+        if (r.error && /sacar_del_parche|PGRST202/i.test(`${r.error.code} ${r.error.message}`)) {
+          r = await sb.from('parche_miembros').delete().eq('parche_id', p.id).eq('usuario_id', uid);
+        }
+        if (r.error) { toast('No se pudo sacar del parche', dbMsg(r.error), { type: 'error' }); return; }
+      }
+      p.confirmados = (p.confirmados || []).filter(x => x !== uid);
+      if (p.locs) delete p.locs[uid];
+      p.chat.push({ tipo: 'bot', texto: `${nombre} salió del parche`, ts: Date.now() });
+      save();
+      refresh();
+      if (state.chatId === p.id) renderChat();
+      toast(`${nombre} salió del parche`, 'Su cupo quedó libre.', {
+        icon: 'i-logout',
+        action: isUuid(uid) ? 'Bloquear también' : null,
+        onAction: isUuid(uid) ? () => bloquear(uid) : null,
+      });
+    };
+    openModal('modal-confirm');
+  }
+
   /* =====================================================================
      9. MIS PARCHES + CHAT
   ===================================================================== */
@@ -1897,8 +1928,8 @@
           </div>
         </div>
         <details class="attendees">
-          <summary><span class="stack">${ids.slice(0, 5).map(id => avHTML(id, 'av--sm')).join('')}</span><span class="tnum">${ocupados(p)} de ${p.cuposMax} van</span>${ic('i-chev-down')}</summary>
-          <div class="att-list">${ids.map((id, i) => `<span>${avHTML(id, 'av--sm')}${esc(names[i])}${sello(id)}${id !== 'me' && /^[0-9a-f-]{36}$/i.test(String(id)) ? `<button class="att-rep" data-action="reportar" data-tipo="persona" data-id="${id}" aria-label="Reportar a ${esc(names[i])}" title="Reportar">${ic('i-flag')}</button>` : ''}</span>`).join('')}</div>
+          <summary><span class="stack">${ids.slice(0, 5).map(id => avHTML(id, 'av--sm')).join('')}</span><span class="tnum">${ocupados(p)} de ${p.cuposMax} van${isMine(p) && ids.length > 1 ? ' · Administrar' : ''}</span>${ic('i-chev-down')}</summary>
+          <div class="att-list">${ids.map((id, i) => `<span>${avHTML(id, 'av--sm')}${esc(names[i])}${sello(id)}${isMine(p) && id !== 'me' ? `<button type="button" class="att-kick" data-action="sacar-miembro" data-pid="${esc(p.id)}" data-id="${esc(id)}" aria-label="Sacar a ${esc(names[i])} del parche" title="Sacar del parche">${ic('i-close')}<b>Sacar</b></button>` : ''}${id !== 'me' && /^[0-9a-f-]{36}$/i.test(String(id)) ? `<button type="button" class="att-rep" data-action="reportar" data-tipo="persona" data-id="${id}" aria-label="Reportar a ${esc(names[i])}" title="Reportar">${ic('i-flag')}</button>` : ''}</span>`).join('')}</div>
         </details>
       </div>
       ${chatTabsHTML(p)}
@@ -4772,6 +4803,7 @@
       case 'reply-cancel': clearReply(); $('#chat-input')?.focus({ preventScroll: true }); break;
       case 'ir-msg': irAMensaje(a.dataset.key); break;
       case 'salir': askLeave(id); break;
+      case 'sacar-miembro': askKick(a.dataset.pid, id); break;
       case 'editar': closeAllModals(); openCreate({ id }); break;
       case 'cancelar': askDelete(id); break;
       case 'ver-mapa': flyToParche(id); break;

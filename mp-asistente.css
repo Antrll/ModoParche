@@ -5,8 +5,8 @@
 .pa {
   --pa-papel: #ffffff; --pa-suave: #f4f4f5; --pa-linea: rgba(17,17,17,.1); --pa-tinta: #111111; --pa-gris: #55555c;
   --pa-spring: cubic-bezier(.34, 1.56, .64, 1);
-  position: fixed; right: 20px; bottom: 92px; z-index: 1500;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+  position: fixed; right: 20px; bottom: 84px; z-index: 1500;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
   font: 500 .9375rem/1.45 Inter, system-ui, sans-serif; color: var(--pa-tinta);
   transition: opacity .28s ease, visibility .28s;
 }
@@ -16,7 +16,7 @@
   }
 }
 html.is-dark .pa { --pa-papel: #1b1b1f; --pa-suave: #29292e; --pa-linea: rgba(255,255,255,.12); --pa-tinta: #ffffff; --pa-gris: #b9b9c2; }
-.pa--panel { bottom: 24px; }
+.pa--panel { bottom: 16px; }
 /* Cuando el menú lateral completo está abierto en celular, Parce se aparta */
 body:has(.sidebar.open, .sidebar.is-open, .mobile-menu.is-open, .door:not([hidden])) .pa:not(.is-abierto) {
   opacity: 0; visibility: hidden; pointer-events: none;
@@ -40,6 +40,9 @@ html.is-dark .pa-fab {
   width: 100%; height: 100%; object-fit: contain; display: block;
   pointer-events: none; user-select: none; -webkit-user-drag: none;
 }
+.pa .pa-img-dk { display: none; }
+html.is-dark .pa .pa-img-lt { display: none; }
+html.is-dark .pa .pa-img-dk { display: block; }
 .pa-fab:active { transform: scale(.86, .92) rotate(-6deg); }
 .pa.is-abierto .pa-fab { animation: pa-jelly .55s var(--pa-spring); }
 .pa-fab:focus-visible, .pa-x:focus-visible, .pa-sug-toggle:focus-visible, .pa-sug-lista button:focus-visible, .pa-form button:focus-visible { outline: 3px solid #FF5A1F; outline-offset: 3px; }
@@ -52,8 +55,8 @@ html.is-dark .pa-fab {
 
 .pa-panel {
   position: relative; display: flex; flex-direction: column;
-  width: min(374px, calc(100vw - 28px)); height: min(540px, calc(100svh - 156px));
-  margin-top: 24px;
+  width: min(370px, calc(100vw - 28px)); height: min(468px, calc(100svh - 212px));
+  margin-top: 18px;
   overflow: visible; border-radius: 26px; background: var(--pa-papel);
   box-shadow: 0 2px 6px rgba(17,17,17,.1), 0 28px 60px -20px rgba(17,17,17,.55);
   transform-origin: 90% 100%; opacity: 0;
@@ -210,10 +213,10 @@ html.is-dark .pa-msg--yo { background: #FF5A1F; color: #111111; }
 }
 
 @media (max-width: 760px) {
-  .pa { right: 12px; bottom: calc(18px + env(safe-area-inset-bottom)); }
-  body:has(.bottom-nav) .pa { bottom: calc(86px + env(safe-area-inset-bottom)); }
-  .pa-fab { width: 70px; height: 73px; }
-  .pa-panel { width: min(368px, calc(100vw - 24px)); height: min(530px, calc(100svh - 176px)); }
+  .pa { right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); }
+  body:has(.bottom-nav) .pa { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .pa-fab { width: 68px; height: 71px; }
+  .pa-panel { width: min(364px, calc(100vw - 24px)); height: min(450px, calc(100svh - 248px)); }
   .pa-sello { width: 68px; height: 71px; margin: -26px -2px -10px -4px; }
 }
 @media print { .pa { display: none; } }
