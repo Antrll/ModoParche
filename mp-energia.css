@@ -26,6 +26,7 @@
   background: #FF5A1F; color: #111111; rotate: -1deg; --speed: 58s;
   box-shadow: 0 8px 18px -12px rgba(17,17,17,.55);
 }
+.faq-hero + .mp-cinta { margin-top: -32px; }
 .mp-cinta span { font-family: var(--font-display); font-size: clamp(1.15rem, 1.9vw, 1.7rem); line-height: 1; text-transform: uppercase; }
 .mp-cinta i { flex: none; width: 18px; height: 18px; margin: 0 clamp(16px, 2.2vw, 30px); background: #111111; clip-path: var(--burst); }
 main:has(.mp-cinta) { overflow-x: clip; }

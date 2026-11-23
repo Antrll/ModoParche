@@ -164,3 +164,13 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 - **Dato importante sobre Vercel:** el dominio modoparche.vercel.app es del proyecto **"modoparche" del equipo `mode-parche`** (`prj_rFj8Orwk2IZ7d4GKL65xoJiaZeD8`), no del proyecto `davzd/modoparche` que comenta en los pull requests. Por eso unir un PR a `main` en Antrll/ModoParche **no publica solo**: hay que publicar con `vercel deploy --prod` (o "Promote to Production" en ese proyecto).
 - **Pendiente:** secretos `TURNSTILE_SECRET`, `CRON_SECRET` y una llave nueva `GROQ_API_KEY` en Supabase y `npx supabase functions deploy`; hasta entonces no funcionan el formulario de contacto ni el asistente.
 - **Seguridad:** el token de Vercel usado se pegó en el chat: hay que borrarlo en vercel.com/account/settings/tokens. Vercel recomienda activar 2FA en la cuenta.
+
+
+## 17. Correcciones visuales UI puras (rama `mejoras-ui-ux`)
+- **Qué:** ajustes estrictamente visuales (sin tocar funcionalidad ni el botón Claro / Mixto / Oscuro):
+  - **Modal de cambio de plan (`empresa-dashboard.html`, `empresa-dashboard.css`):** se movió `#plan-hold-ayuda` encima del footer fijo para evitar que el texto quedara cortado abajo.
+  - **Botón principal de «Todo Villavo junto» (`index.html`):** se quitó `data-reveal` de «Crear mi cuenta» para que nunca se muestre deslavado o con opacidad parcial, y se fijó `color: #111111` en los chips activos del radar (`index.html`, `index.css`).
+  - **Cinta de frases en `marca.html` (`mp-energia.js`):** se retiró la cinta naranja inclinada de `.br-hero`, porque esa cabecera ya tiene su propia marquesina y ambas barras se montaban una encima de la otra.
+  - **Barra de proporción de color (`marca.html`, `paginas.css`):** borde exterior visible para distinguir el blanco 45% sobre fondo blanco, etiqueta `5%` en verde oliva y reglas para modo oscuro (`ratio-label`, `.ratio-bar`, `.r-ink`) manteniendo `.ratio.is-in` siempre visible.
+  - **Fotografía en `marca.html` (`marca.html`, `paginas.css`):** se retiró la tarjeta «Gente real» y la grilla pasó a 2 columnas simétricas (`Luz cálida` y `Villavo de fondo`).
+  - **Cabecera de Preguntas (`mp-energia.css`, `paginas.css`):** se amplió el margen inferior de `.faq-hero` y el solapamiento superior de `.faq-hero + .mp-cinta` (`-32px`) para eliminar la cuña blanca que se separaba del fondo naranja al inclinarse la cinta.

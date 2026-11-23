@@ -1619,7 +1619,7 @@ html:not(.is-dark):not(.is-mixto) .kpi--lead .kpi-value { color: #b83709; }
 .plan-hold:disabled { opacity: .45; cursor: not-allowed; }
 .plan-hold.nudge { animation: planNudge .35s ease; }
 @keyframes planNudge { 0%, 100% { translate: 0; } 25% { translate: -4px; } 75% { translate: 4px; } }
-.plan-hold-ayuda { margin: 10px 0 0; font-size: 12px; color: var(--muted); text-align: right; }
+.plan-hold-ayuda { margin: 10px 0 14px; font-size: 12px; color: var(--muted); text-align: left; }
 @media (max-width: 560px) {
   .plan-cmp-row { padding: 9px 10px; font-size: 13px; }
   .plan-foot { flex-direction: column-reverse; align-items: stretch; }

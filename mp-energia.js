@@ -19,7 +19,7 @@
   var SOBRE_NARANJA = ['estrellablancagrunge5puntas', 'estrellanegratrazografiti', 'coronablancabrochabasquiat'];
   // Lo que una pieza nunca puede tapar (además de cada línea de texto)
   var SOLIDOS = 'img:not(.mp-stk img),video,canvas,svg,iframe,input,select,textarea,button,a,figure,form,table,details,article,[class*="card"],[class*="tile"],.media,.plan-main,.plan-tier,.member,.photo-card,.value,.stage,.manifesto-block';
-  var CINTAS = { '': '.how', equipo: '.team-hero', preguntas: '.faq-hero', marca: '.br-hero' };
+  var CINTAS = { '': '.how', equipo: '.team-hero', preguntas: '.faq-hero' };
   var FRASES = ['Sal', 'Encuentra', 'Conecta', '¿Qué se arma hoy?', 'Hecho en Villavo'];
   var LECTURA = ['pagos', 'legal', 'privacidad', 'terminos', 'cookies'];
   var MARGEN = 26; // lo que se mueve la animación + aire alrededor
