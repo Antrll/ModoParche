@@ -174,3 +174,8 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
   - **Barra de proporción de color (`marca.html`, `paginas.css`):** borde exterior visible para distinguir el blanco 45% sobre fondo blanco, etiqueta `5%` en verde oliva y reglas para modo oscuro (`ratio-label`, `.ratio-bar`, `.r-ink`) manteniendo `.ratio.is-in` siempre visible.
   - **Fotografía en `marca.html` (`marca.html`, `paginas.css`):** se retiró la tarjeta «Gente real» y la grilla pasó a 2 columnas simétricas (`Luz cálida` y `Villavo de fondo`).
   - **Cabecera de Preguntas (`mp-energia.css`, `paginas.css`):** se amplió el margen inferior de `.faq-hero` y el solapamiento superior de `.faq-hero + .mp-cinta` (`-32px`) para eliminar la cuña blanca que se separaba del fondo naranja al inclinarse la cinta.
+- **Ajustes UI adicionales:**
+  - **Isotipos según fondo (`mp-tema.js`):** fondos claros usan `isotipo.png` / `isotipo-96.png` / `logo-isotipo.webp` y fondos negros/oscuros usan `isotipo-light.png` / `isotipo-light-96.png` / `logo-isotipo-light.webp` en los 3 modos (se mide el color final sin transición para que nunca quede un isotipo claro sobre gris claro).
+  - **Barra fija en móvil al cambiar tema (`mp-tema.js`, `mp-tema.css`):** en pantallas táctiles usa transición por fundido (`cambiarConFundido`) para que `position: sticky` de la barra superior no se oculte ni se suba, y en escritorio fija `view-transition-name: mp-barra-sup`.
+  - **Negocios sin «Ver panel de ejemplo» (`comercio.html`, `empresa.html`):** quitado el acceso público al demo.
+  - **«Iniciar sesión» visible en celular (`mp-base.css`):** se mantiene junto a «Crear cuenta» incluso por debajo de `430px`.

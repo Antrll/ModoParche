@@ -125,6 +125,10 @@
   }
 
   function vigilarLogosBarra() {
+    document.querySelectorAll('.logo-mark .lm--negro').forEach(img => {
+      const s = img.getAttribute('src');
+      if (s && s.includes('isotipo-negro-96.png')) img.setAttribute('src', s.replace('isotipo-negro-96.png', 'isotipo-light-96.png'));
+    });
     document.querySelectorAll('.logo-mark .lm').forEach(img => {
       const falla = () => { img.classList.add('lm-falla'); programarLogos(); };
       if (img.complete && img.naturalWidth === 0 && img.currentSrc) falla();
@@ -133,17 +137,18 @@
   }
 
   /* ---------- Logos dentro de la página ---------- */
-  // Familias de isotipo: versión para fondo claro, oscuro y naranja.
+  // Familias de isotipo: versión para fondo claro (isotipo / isotipo-96),
+  // fondo negro/oscuro (isotipo-light / isotipo-light-96) y naranja.
   const FAMILIAS = [
-    { claro: 'logo-isotipo.webp', oscuro: 'logo-isotipo-negro.webp', naranja: 'logo-isotipo-naranja.webp' },
-    { claro: 'isotipo.png', oscuro: 'isotipo-negro.png', naranja: 'isotipo-naranja.png' },
-    { claro: 'isotipo-96.png', oscuro: 'isotipo-negro-96.png', naranja: 'isotipo-naranja-96.png' },
+    { claro: 'logo-isotipo.webp', oscuro: 'logo-isotipo-light.webp', naranja: 'logo-isotipo-naranja.webp', alias: ['logo-isotipo-negro.webp'] },
+    { claro: 'isotipo.png', oscuro: 'isotipo-light.png', naranja: 'isotipo-naranja.png', alias: ['isotipo-negro.png'] },
+    { claro: 'isotipo-96.png', oscuro: 'isotipo-light-96.png', naranja: 'isotipo-naranja-96.png', alias: ['isotipo-negro-96.png'] },
     { claro: 'logo-imagotipo.webp', oscuro: 'logo-imagotipo-light.webp' },
   ];
   const nombreDe = src => (src || '').split(/[?#]/)[0].split('/').pop();
   function familiaDe(src) {
     const n = nombreDe(src);
-    return FAMILIAS.find(f => Object.values(f).includes(n)) || null;
+    return FAMILIAS.find(f => f.claro === n || f.oscuro === n || f.naranja === n || (f.alias && f.alias.includes(n))) || null;
   }
 
   // Las piezas de marca.html muestran el logo a propósito sobre un fondo fijo: no se tocan.
@@ -158,16 +163,11 @@
       if (!fam) return;
       if (!img.dataset.logoOriginal) img.dataset.logoOriginal = original;
 
-      // En modo mixto todo queda como se diseñó
-      if (temaActual() === 'mixto' && !PANEL) { cambiarSrc(img, original); return; }
-
       const tipo = tipoDeFondo(fondoDetras(img.parentElement || img));
       const nombreOriginal = nombreDe(original);
-      const tipoOriginal = Object.keys(fam).find(k => fam[k] === nombreOriginal);
-      // Si la versión original ya sirve para ese fondo, se respeta
-      if (tipoOriginal === tipo || (tipo === 'naranja' && !fam.naranja && tipoOriginal === 'claro')) { cambiarSrc(img, original); return; }
       const nombre = fam[tipo] || (tipo === 'naranja' ? fam.claro : null);
       if (!nombre) { cambiarSrc(img, original); return; }
+      if (nombre === nombreOriginal) { cambiarSrc(img, original); return; }
       const base = original.slice(0, original.lastIndexOf(nombreOriginal));
       cambiarSrc(img, base + nombre);
     });
@@ -300,9 +300,12 @@
 
   function cambiarConFundido(tema) {
     if (reduceMotion.matches) { aplicar(tema); return; }
-    root.classList.add('mp-tema-fade');
+    // Se calcula el fondo final sin transición para que el isotipo cambie al instante
+    root.classList.add('mp-tema-ya');
     aplicar(tema);
-    setTimeout(() => root.classList.remove('mp-tema-fade'), 420);
+    root.classList.remove('mp-tema-ya');
+    root.classList.add('mp-tema-fade');
+    setTimeout(() => { root.classList.remove('mp-tema-fade'); sincronizar(); }, 420);
   }
 
   let esperando = false;
@@ -335,7 +338,7 @@
     ultimoCambio = ahora;
     if (transicion || esperando || seguido) { terminarTinta(); cambiarConFundido(oscuro); return; }
 
-    if (!document.startViewTransition || reduceMotion.matches) { cambiarConFundido(oscuro); return; }
+    if (!document.startViewTransition || reduceMotion.matches || window.matchMedia('(pointer: coarse)').matches) { cambiarConFundido(oscuro); return; }
 
     if (!siguienteMascara) prepararMascara();
     esperando = true;

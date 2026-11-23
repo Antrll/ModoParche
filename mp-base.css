@@ -854,9 +854,14 @@ html.is-dark .tile-face img[src*="estrella-punteada"] { mix-blend-mode: normal; 
 .nav[data-logo] .logo-mark .lm.lm-on { opacity: 1; }
 .logo-mark .lm.lm-falla { visibility: hidden; } /* conserva el espacio del isotipo */
 .logo-mark[hidden] { display: none; }
-/* Celular angosto: "Iniciar sesión" ya está dentro del menú, así cabe el botón de tema */
+/* Celular angosto: mantener "Iniciar sesión" visible junto a "Crear cuenta" */
 @media (max-width: 430px) {
-  .nav-right:has(.nav-burger) .nav-login { display: none; }
+  .nav-right { gap: 4px; }
+  .nav-login { padding: 0 8px; font-size: .78rem; min-height: 36px; }
+  .nav-right .nav-cta { min-height: 36px; padding: 0 11px; font-size: .78rem; margin: 3px 2px; }
+  .nav-right .nav-cta::before { inset: -4px; }
+  .tema-toggle { width: 36px; height: 36px; }
+  .nav-burger { width: 38px; margin-right: -6px; }
 }
 
 /* Recuadro de Cloudflare Turnstile: solo ocupa espacio si Cloudflare pide interactuar */
