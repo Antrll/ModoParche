@@ -42,20 +42,6 @@ html.mp-tinta::view-transition-new(root) {
   -webkit-mask-size: 0 0;
   mask-size: 0 0;
 }
-/* En celular la mancha de tinta corre en una capa fija (sin startViewTransition)
-   para evitar el bug de Chromium Android que sube la barra superior. */
-.mp-tinta-capa {
-  position: fixed;
-  inset: 0;
-  z-index: 1001;
-  pointer-events: none;
-  -webkit-mask-image: var(--mp-tinta);
-  mask-image: var(--mp-tinta);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: 0 0;
-  mask-size: 0 0;
-}
 /* Sin View Transitions: cambio de color suave */
 html.mp-tema-fade, html.mp-tema-fade *, html.mp-tema-fade *::before, html.mp-tema-fade *::after {
   transition: background-color .35s ease, color .35s ease, border-color .35s ease, fill .35s ease !important;
