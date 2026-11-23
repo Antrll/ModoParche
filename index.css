@@ -540,12 +540,45 @@
   color: var(--ink);
   max-width: 30ch;
 }
-/* La diferencia de ModoParche: etiqueta naranja de la marca antes del texto */
-.spec-head .spec-dif { font-size: 1rem; line-height: 1.5; max-width: 34ch; }
-.spec-dif b {
-  display: inline-block; margin-right: 6px; padding: 1px 10px;
-  border-radius: var(--r-pill); background: var(--orange); color: #111;
-  font-size: .8125rem; font-weight: 800; letter-spacing: .02em; vertical-align: 1px;
+/* La diferencia de ModoParche: tarjeta editorial limpia y escaneable */
+.spec-dif {
+  position: relative; width: 100%; max-width: 340px;
+  display: grid; gap: 11px;
+  padding: 16px 18px 16px 20px;
+  border-radius: 20px;
+  background: var(--soft);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  box-shadow: 0 14px 30px -24px rgba(17, 17, 17, .22);
+  overflow: hidden;
+}
+.spec-dif::before {
+  content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px;
+  border-radius: 0 4px 4px 0; background: var(--orange);
+}
+.spec-dif-tag {
+  display: inline-flex; align-items: center; width: max-content;
+  padding: 4px 11px; border-radius: var(--r-pill);
+  background: var(--orange); color: #111111;
+  font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+}
+.spec-dif .spec-dif-lead {
+  margin: 0; font-size: .98rem; font-weight: 800; line-height: 1.35;
+  color: var(--ink); max-width: none;
+}
+.spec-dif-list {
+  display: grid; gap: 8px; margin: 0; padding: 0; list-style: none;
+}
+.spec-dif-list li {
+  position: relative; padding-left: 16px;
+  font-size: .875rem; line-height: 1.42; color: var(--muted);
+}
+.spec-dif-list li::before {
+  content: ""; position: absolute; left: 0; top: .52em;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--orange);
+}
+.spec-dif-list b { color: var(--ink); font-weight: 700; }
+@media (max-width: 900px) {
+  .spec-dif { max-width: none; }
 }
 
 .tiles {
