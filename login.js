@@ -309,41 +309,91 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  /* Google directo: la ventana de Google muestra el dominio de ModoParche y no el
-     de Supabase. Solo corre en los dominios ya autorizados en Google Cloud
-     (Clientes > Orígenes de JavaScript). En los demás sigue el flujo anterior. */
+  /* Google directo con el botón original y redirección a pantalla completa:
+     la pantalla de Google muestra modoparche.vercel.app en lugar de supabase.co. */
   const GOOGLE_CLIENT_ID = '1019735207166-4thm053g3sk4a4bbf390tpgejmqhnkah.apps.googleusercontent.com';
   const GOOGLE_DOMINIOS = ['modoparche.vercel.app'];
-  async function activarGoogleDirecto() {
-    if (!sb || !GOOGLE_DOMINIOS.includes(location.hostname)) return;
-    await new Promise((ok, mal) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
-    const crudo = crypto.randomUUID() + crypto.randomUUID();
-    const huella = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(crudo)))).map(b => b.toString(16).padStart(2, '0')).join('');
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID, nonce: huella, use_fedcm_for_button: true,
-      callback: async ({ credential }) => {
-        const { error } = await sb.auth.signInWithIdToken({ provider: 'google', token: credential, nonce: crudo });
-        if (error) { showStatus('login-status', 'error', ...authError(error)); return; }
-        location.replace('dashboard.html');
-      },
-    });
-    document.querySelectorAll('[data-google]').forEach(btn => {
-      const caja = document.createElement('div');
-      caja.className = 'google-directo';
-      btn.after(caja);
-      window.google.accounts.id.renderButton(caja, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', locale: 'es', width: 360 });
-      btn.hidden = true;
-    });
-  }
-  activarGoogleDirecto().catch(() => { /* sigue el botón con el flujo anterior */ });
+  const sha256Hex = async txt => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt))))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
 
-  // Entrar o crear cuenta con Google (Supabase OAuth). Después del regreso, el
-  // dashboard pide una sola vez cédula, fecha de nacimiento y autorizaciones.
+  async function completarGoogleDirecto() {
+    const rawHash = location.hash || '';
+    if (!/(?:^#|&)(?:id_token|error)=/.test(rawHash)) return;
+    const params = new URLSearchParams(rawHash.slice(1));
+    const idToken = params.get('id_token');
+    const gErr = params.get('error');
+    if (!idToken && !gErr) return;
+    const state = params.get('state') || '';
+    if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+
+    let crudo = '', savedState = '', savedStatus = '';
+    try {
+      crudo = sessionStorage.getItem('mp_g_nonce') || '';
+      savedState = sessionStorage.getItem('mp_g_state') || '';
+      savedStatus = sessionStorage.getItem('mp_g_status') || '';
+      sessionStorage.removeItem('mp_g_nonce');
+      sessionStorage.removeItem('mp_g_state');
+      sessionStorage.removeItem('mp_g_status');
+    } catch (e) { /* sin sessionStorage */ }
+
+    const statusId = savedStatus === 'reg-status' ? 'reg-status' : 'login-status';
+    if (statusId === 'reg-status') switchAuth('signup', { updateHash: false });
+    if (gErr) {
+      if (gErr === 'access_denied') return;
+      showStatus(statusId, 'error', 'No se pudo entrar con Google', 'Intenta de nuevo o entra con tu correo.');
+      return;
+    }
+    if (!sb) { noClient(statusId); return; }
+    if (!savedState || state !== savedState || !crudo) {
+      showStatus(statusId, 'error', 'Sesión de Google vencida', 'Vuelve a tocar el botón de Google para intentarlo de nuevo.');
+      return;
+    }
+    const botones = Array.from(document.querySelectorAll('[data-google]'));
+    botones.forEach(b => setLoading(b, true));
+    try {
+      const { data, error } = await sb.auth.signInWithIdToken({ provider: 'google', token: idToken, nonce: crudo });
+      if (error) throw error;
+      window.location.replace(await destino(data.user));
+    } catch (err) {
+      botones.forEach(b => setLoading(b, false));
+      showStatus(statusId, 'error', ...authError(err));
+    }
+  }
+  completarGoogleDirecto().catch(() => { /* si algo falla queda listo el formulario */ });
+
+  // Entrar o crear cuenta con Google. En los dominios autorizados va directo a
+  // Google y vuelve a /login#id_token=...; en los demás usa Supabase OAuth.
   document.querySelectorAll('[data-google]').forEach(btn => btn.addEventListener('click', async () => {
     const status = btn.closest('#view-signup') ? 'reg-status' : 'login-status';
     if (!sb) { noClient(status); return; }
     setLoading(btn, true);
     try {
+      if (GOOGLE_DOMINIOS.includes(location.hostname) && window.crypto && crypto.subtle && typeof crypto.randomUUID === 'function') {
+        const crudo = crypto.randomUUID() + crypto.randomUUID();
+        const estado = crypto.randomUUID();
+        const huella = await sha256Hex(crudo);
+        let guardado = false;
+        try {
+          sessionStorage.setItem('mp_g_nonce', crudo);
+          sessionStorage.setItem('mp_g_state', estado);
+          sessionStorage.setItem('mp_g_status', status);
+          guardado = sessionStorage.getItem('mp_g_state') === estado;
+        } catch (e) { guardado = false; }
+        if (guardado) {
+          const q = new URLSearchParams({
+            client_id: GOOGLE_CLIENT_ID,
+            redirect_uri: `${location.origin}/login`,
+            response_type: 'id_token',
+            scope: 'openid email profile',
+            nonce: huella,
+            state: estado,
+            prompt: 'select_account',
+          });
+          location.assign('https://accounts.google.com/o/oauth2/v2/auth?' + q.toString());
+          setTimeout(() => setLoading(btn, false), 4000);
+          return;
+        }
+      }
       const { error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: new URL('dashboard.html', location.href).href, queryParams: { prompt: 'select_account' } },
