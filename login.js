@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      de Supabase. Solo corre en los dominios ya autorizados en Google Cloud
      (Clientes > Orígenes de JavaScript). En los demás sigue el flujo anterior. */
   const GOOGLE_CLIENT_ID = '1019735207166-4thm053g3sk4a4bbf390tpgejmqhnkah.apps.googleusercontent.com';
-  const GOOGLE_DOMINIOS = [];
+  const GOOGLE_DOMINIOS = ['modoparche.vercel.app'];
   async function activarGoogleDirecto() {
     if (!sb || !GOOGLE_DOMINIOS.includes(location.hostname)) return;
     await new Promise((ok, mal) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
