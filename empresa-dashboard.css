@@ -1574,6 +1574,7 @@ button.cobro-rec:hover { color: var(--negative); }
    MODO MIXTO: contenido claro con la barra lateral y la de arriba oscuras
 ===================================================================== */
 html.is-mixto :is(.topbar, .sidebar) {
+  color-scheme: dark;
   --ground: #121214; --surface: #1a1a1d; --raised: #242428; --border: #303036; --rule: #26262b; --control: #45454c;
   --text: #ffffff; --muted: #b9b3ad; --faint: #a29c96; --on-text: #121214;
   --accent-50: #2a1a10; --accent-100: #3a2213; --accent-200: #5a3218; --accent-ink: #ffb07a;
@@ -1721,3 +1722,49 @@ button.cobro-rec { min-height: 0; padding: 0; box-shadow: none; background: none
 /* Escáner de cupones (html5-qrcode) */
 #scan-reader { width: 100%; min-height: 260px; overflow: hidden; border-radius: 14px; background: #111; }
 #scan-reader video { display: block; width: 100% !important; height: auto !important; object-fit: cover; }
+
+/* =====================================================================
+   Barras de desplazamiento personalizadas (ventana, paneles y menú lateral)
+===================================================================== */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 26%, transparent) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 24%, transparent);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:active {
+  background: var(--accent);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.sidebar {
+  padding: 0 14px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent;
+}
+.sidebar .group-label { margin: 14px 14px 4px; }
+.sidebar .side-bottom { padding-top: 10px; }
+.sidebar .door-cta { padding: 13px 14px; }
+.sidebar::-webkit-scrollbar { width: 5px; height: 5px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; margin-block: 10px; }
+.sidebar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  border: 0;
+  border-radius: 999px;
+}
+.sidebar:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 65%, transparent); }
+.sidebar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
