@@ -50,6 +50,8 @@ create table if not exists private.tareas_ejecutadas (
   detalle     jsonb not null default '{}'::jsonb
 );
 revoke all on private.tareas_ejecutadas from public, anon, authenticated;
+-- RLS activo sin reglas: nadie la lee por la API (solo funciones del servidor)
+alter table private.tareas_ejecutadas enable row level security;
 
 create or replace function private.anotar_tarea(p_nombre text, p_ok boolean, p_detalle jsonb)
 returns void language sql security definer set search_path = '' as $$

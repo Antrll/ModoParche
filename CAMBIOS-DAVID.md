@@ -153,3 +153,6 @@ Resultado: lint 0 errores · Vitest 62/62 (58 unitarias + 318 comprobaciones SQL
 - **Asistente solo en los paneles:** quitado de 10 páginas públicas y legales. `supabase/functions/asistente` exige sesión (`verify_jwt = true` en `config.toml`, `usuarioDe()` nuevo en `_shared/utilidades.ts`) y frena por cuenta (20 cada 10 min). `mp-asistente.js` manda la sesión, cambia las sugerencias para personas y negocios, y en los paneles de ejemplo no llama al servidor. `mp-asistente.css`: el chat abierto va sobre los avisos y el botón se oculta mientras está el aviso de cookies.
 - **Pruebas:** 2 pruebas nuevas del asistente con Deno (sin sesión → 401; freno por cuenta y CORS con `authorization`) y 5 unitarias (sin barra, tope de piezas, solo branding existente, login en brasa y asistente solo en paneles).
 - **Seguridad:** la llave de Groq que se pegó en el chat debe revocarse y crearse otra solo en Supabase.
+
+## 15. RLS en `private.tareas_ejecutadas`
+- Al correr la Fase 4, Supabase avisó que la tabla `private.tareas_ejecutadas` no tenía RLS. No era un riesgo (está en el esquema `private` y sin permisos para `anon` ni `authenticated`), pero se le activó RLS sin reglas en `20261126120000_backend_mantenimiento_fase4.sql` para que el aviso no salga y quede protegida dos veces. Las funciones del servidor la siguen usando igual.
