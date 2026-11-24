@@ -1,6 +1,6 @@
 /* =====================================================================
    ModoParche · pitch.js
-   Interactive keyboard, touch & speaker-cue controls for /pitch
+   Interactive keyboard, touch & live QR generator for /pitch
 ===================================================================== */
 (function () {
   'use strict';
@@ -10,10 +10,7 @@
   var barEl = document.getElementById('barFill');
   var btnPrev = document.getElementById('btnPrev');
   var btnNext = document.getElementById('btnNext');
-  var btnNotes = document.getElementById('btnNotes');
   var btnFull = document.getElementById('btnFull');
-  var notesDrawer = document.getElementById('notesDrawer');
-  var notesText = document.getElementById('notesText');
   var total = slides.length;
   var index = 0;
 
@@ -38,14 +35,7 @@
     barEl.style.width = (((index + 1) / total) * 100).toFixed(2) + '%';
     btnPrev.disabled = index === 0;
     btnNext.disabled = index === total - 1;
-    notesText.textContent = slides[index].getAttribute('data-note') || '';
     if (history.replaceState) history.replaceState(null, '', '#slide-' + (index + 1));
-  }
-
-  function toggleNotes() {
-    var on = notesDrawer.hidden;
-    notesDrawer.hidden = !on;
-    btnNotes.setAttribute('aria-pressed', String(on));
   }
 
   function toggleFull() {
@@ -56,9 +46,37 @@
     }
   }
 
+  function qrSVG(url) {
+    if (typeof window.qrcode !== 'function') return '';
+    try {
+      var q = window.qrcode(0, 'M');
+      q.addData(url);
+      q.make();
+      var n = q.getModuleCount();
+      var pad = 2;
+      var size = n + pad * 2;
+      var d = '';
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          if (q.isDark(r, c)) d += 'M' + (c + pad) + ',' + (r + pad) + 'h1v1h-1z';
+        }
+      }
+      return '<svg viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="crispEdges"><rect width="' + size + '" height="' + size + '" fill="#ffffff"/><path d="' + d + '" fill="#111111"/></svg>';
+    } catch (_e) {
+      return '';
+    }
+  }
+
+  function renderQRs() {
+    document.querySelectorAll('[data-qr]').forEach(function (card) {
+      var box = card.querySelector('.qr-svg');
+      var url = card.getAttribute('data-qr');
+      if (box && url) box.innerHTML = qrSVG(url);
+    });
+  }
+
   btnPrev.addEventListener('click', function () { go(index - 1); });
   btnNext.addEventListener('click', function () { go(index + 1); });
-  btnNotes.addEventListener('click', toggleNotes);
   btnFull.addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
@@ -66,7 +84,6 @@
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(index - 1); }
     else if (e.key === 'Home') { e.preventDefault(); go(0); }
     else if (e.key === 'End') { e.preventDefault(); go(total - 1); }
-    else if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
     else if (e.key === 'f' || e.key === 'F') { toggleFull(); }
   });
 
@@ -86,6 +103,7 @@
     }
   }, { passive: true });
 
+  renderQRs();
   var hashMatch = /^#slide-(\d+)$/.exec(location.hash);
   go(hashMatch ? parseInt(hashMatch[1], 10) - 1 : 0);
 })();

@@ -1569,6 +1569,7 @@ html.is-dark .kpi--lead { background: var(--night); color: #fff; box-shadow: ins
 }
 .cobro-lista, .liq-hist { display: grid; margin: 0; padding: 0; list-style: none; }
 .cobro-lista li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); }
+.cobro-rec-wrap { grid-column: 1 / -1; }
 .cobro-lista li:first-child { border-top: 0; }
 .cobro-txt { display: grid; gap: 2px; min-width: 0; }
 .cobro-txt b { font-size: 14px; }

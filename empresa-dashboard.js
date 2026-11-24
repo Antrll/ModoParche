@@ -1890,11 +1890,12 @@
       ${detalleLista.length ? `<ul class="cobro-lista">${detalleLista.map(c => `<li>
           <span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}${c.personas > 1 && !/clientes validados/i.test(c.cliente || '') ? ` y ${c.personas - 1} más` : ''}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))} · ${esc(VALIDO_POR[c.validado_por] || 'validado')} · código ${esc(c.codigo)}</small>
             ${c.reclamo ? `<span class="pill ${c.reclamo === 'aprobado' ? 'pos' : c.reclamo === 'rechazado' ? 'neg' : 'warn'} cobro-rec">Reclamo ${esc(RECLAMO_TXT[c.reclamo] || c.reclamo)}</span>`
-              : c.reclamable !== false ? `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}">¿No llegó? Reclamar</button>` : ''}</span>
+              : c.reclamable !== false ? `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}" aria-expanded="false">¿No llegó? Reclamar</button>` : ''}</span>
           <span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}<small>${c.tipo === 'paquete' ? `${d.comision_pct}% de ${money(c.base_cop || 0)}` : `${c.personas} × ${money(d.tarifa_cliente)}`}</small></span>
+          ${!c.reclamo && c.reclamable !== false ? reclamoDrawerHTML(c.id, c.codigo) : ''}
         </li>`).join('')}</ul>
         <p class="hint">Puedes corregir una llegada hasta 48 horas después. Después de eso, reclama aquí (hasta 15 días) y el equipo lo revisa.</p>` : '<p class="meta">Todavía nadie ha llegado este mes por ModoParche. Cuando alguien llegue y lo validen (QR, GPS o en la puerta), aparece aquí.</p>'}
-      ${(d.reclamables_mes_anterior || []).length ? `<p class="mini-title">Del mes pasado: aún puedes reclamar</p><ul class="cobro-lista">${d.reclamables_mes_anterior.map(c => `<li><span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))}</small>${c.reclamo ? `<span class="pill ${c.reclamo === 'aprobado' ? 'pos' : c.reclamo === 'rechazado' ? 'neg' : 'warn'} cobro-rec">Reclamo ${esc(RECLAMO_TXT[c.reclamo] || c.reclamo)}</span>` : `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}">¿No llegó? Reclamar</button>`}</span><span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}</span></li>`).join('')}</ul>` : ''}
+      ${(d.reclamables_mes_anterior || []).length ? `<p class="mini-title">Del mes pasado: aún puedes reclamar</p><ul class="cobro-lista">${d.reclamables_mes_anterior.map(c => `<li><span class="cobro-txt"><b>${esc(c.cliente || 'Cliente')}</b><small>${esc(c.titulo || '')} · ${esc(fmtDia(Date.parse(c.creado_en)))}</small>${c.reclamo ? `<span class="pill ${c.reclamo === 'aprobado' ? 'pos' : c.reclamo === 'rechazado' ? 'neg' : 'warn'} cobro-rec">Reclamo ${esc(RECLAMO_TXT[c.reclamo] || c.reclamo)}</span>` : `<button type="button" class="text-btn cobro-rec" data-action="cobro-reclamar" data-id="${esc(c.id)}" data-codigo="${esc(c.codigo)}" aria-expanded="false">¿No llegó? Reclamar</button>`}</span><span class="cobro-monto num">${c.monto_cop ? money(c.monto_cop) : '$0'}</span>${!c.reclamo ? reclamoDrawerHTML(c.id, c.codigo) : ''}</li>`).join('')}</ul>` : ''}
       ${(d.reclamos || []).length ? `<p class="mini-title">Tus reclamos</p><ul class="liq-hist">${d.reclamos.map(r => `<li><span>Código ${esc(r.codigo)}<small class="hint" style="display:block">${esc(r.respuesta || r.motivo)}</small></span><span class="num">${money(r.monto)}</span><span class="pill ${r.estado === 'aprobado' ? 'pos' : r.estado === 'rechazado' ? 'neg' : 'warn'}">${esc(RECLAMO_TXT[r.estado] || r.estado)}</span></li>`).join('')}</ul>` : ''}
       ${viejas.length ? `<p class="mini-title">Meses anteriores</p><ul class="liq-hist">${viejas.map(l => `<li><span>${esc(fmtPeriodo(l.periodo))}</span><span class="num">${money(l.total)}</span><span class="pill ${l.estado === 'pagada' ? 'pos' : ''}">${esc(ESTADOS_LIQ[l.estado] || l.estado)}</span><button type="button" class="text-btn" data-action="liq-comprobante" data-id="${esc(l.id)}">${ic('i-ticket')}${l.estado === 'pagada' ? 'Comprobante' : 'Detalle'}</button></li>`).join('')}</ul>` : ''}
       ${d.demo ? '<p class="meta">Panel de ejemplo: estos cobros no son reales.</p>' : ''}`;
@@ -1903,14 +1904,65 @@
   const RECLAMO_TXT = { pendiente: 'en revisión', aprobado: 'aprobado', rechazado: 'rechazado' };
   let ultimaCuenta = null;
 
+  function reclamoDrawerHTML(id, codigo) {
+    return `<div class="liq-rep-wrap cobro-rec-wrap" id="cobro-rec-wrap-${esc(id)}">
+      <div class="liq-rep-box">
+        <div class="liq-rep-head">
+          <b>Reclamar cobro ${esc(codigo || '')}</b>
+          <button type="button" class="text-btn" data-action="cobro-reclamar" data-id="${esc(id)}" data-codigo="${esc(codigo || '')}">Cerrar</button>
+        </div>
+        <div class="liq-rep-medios" role="group" aria-label="Motivo rápido">
+          <button type="button" class="liq-medio" data-action="cobro-motivo" data-id="${esc(id)}" data-motivo="No vino nadie al local">No vino nadie</button>
+          <button type="button" class="liq-medio" data-action="cobro-motivo" data-id="${esc(id)}" data-motivo="Llegaron menos personas">Llegaron menos</button>
+          <button type="button" class="liq-medio" data-action="cobro-motivo" data-id="${esc(id)}" data-motivo="Se marcó llegada por error">Marcado por error</button>
+        </div>
+        <div class="liq-rep-row">
+          <input class="input" type="text" id="cobro-rec-inp-${esc(id)}" maxlength="300" placeholder="Cuéntanos brevemente qué pasó…">
+          <button type="button" class="btn primary" data-action="cobro-rec-enviar" data-id="${esc(id)}">${ic('i-check')}Enviar reclamo</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // Reclamo: «esta persona no llegó». El equipo lo revisa; si se aprueba, el cobro se anula.
-  async function reclamarCobro(id, codigo) {
-    const v = window.prompt(`Reclamar el cobro ${codigo}\n\n¿Qué pasó? (por ejemplo: «no vino nadie», «llegaron 2, no 4», «lo marcaron por error»)`, '');
-    if (v === null) return;
-    const motivo = v.trim();
-    if (motivo.length < 5) { toast('Cuéntanos un poco más', 'Escribe en pocas palabras qué pasó (mínimo 5 letras).', { error: true }); return; }
-    if (!REMOTE()) { toast('Panel de ejemplo', 'En tu cuenta real el reclamo le llega al equipo y te respondemos por notificación.'); return; }
+  function reclamarCobro(id) {
+    const wrap = document.getElementById('cobro-rec-wrap-' + id);
+    if (!wrap) return;
+    const abrir = !wrap.classList.contains('is-open');
+    wrap.classList.toggle('is-open', abrir);
+    const btn = document.querySelector(`[data-action="cobro-reclamar"][data-id="${CSS.escape(String(id))}"]`);
+    if (btn) btn.setAttribute('aria-expanded', String(abrir));
+    if (abrir) {
+      setTimeout(() => {
+        const inp = document.getElementById('cobro-rec-inp-' + id);
+        if (inp) inp.focus();
+      }, 160);
+    }
+  }
+  function elegirMotivoReclamo(btn) {
+    const id = btn.dataset.id, txt = btn.dataset.motivo || '';
+    const box = btn.closest('.liq-rep-medios');
+    if (box) box.querySelectorAll('.liq-medio').forEach(b => b.classList.toggle('is-on', b === btn));
+    const inp = document.getElementById('cobro-rec-inp-' + id);
+    if (inp) { inp.value = txt; inp.focus(); }
+  }
+  async function enviarReclamoCobro(id, btn) {
+    const inp = document.getElementById('cobro-rec-inp-' + id);
+    const wrap = document.getElementById('cobro-rec-wrap-' + id);
+    const motivo = String((inp && inp.value) || '').trim();
+    if (motivo.length < 5) {
+      toast('Cuéntanos un poco más', 'Elige un motivo o escribe en pocas palabras qué pasó (mínimo 5 letras).', { error: true });
+      if (inp) inp.focus();
+      return;
+    }
+    if (!REMOTE()) {
+      if (wrap) wrap.classList.remove('is-open');
+      toast('Panel de ejemplo', 'En tu cuenta real el reclamo le llega al equipo y te respondemos por notificación.');
+      return;
+    }
+    if (btn) btn.disabled = true;
     const { error } = await SB().rpc('reclamar_cobro', { p_cobro: Number(id), p_motivo: motivo.slice(0, 300) });
+    if (btn) btn.disabled = false;
     if (error) {
       const m = error.message || '';
       if (/reclamar_cobro|PGRST202/.test(m)) { toast('Falta una actualización', 'Los reclamos aún no están activos en la base de datos.', { error: true }); return; }
@@ -3251,7 +3303,9 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
         case 'df-copiar': copiarDato(a); break;
         case 'df-abrir': abrirWompiDatafono(a); break;
         case 'liq-comprobante': comprobanteLiquidacion(a.dataset.id); break;
-        case 'cobro-reclamar': reclamarCobro(a.dataset.id, a.dataset.codigo); break;
+        case 'cobro-reclamar': reclamarCobro(a.dataset.id); break;
+        case 'cobro-motivo': elegirMotivoReclamo(a); break;
+        case 'cobro-rec-enviar': enviarReclamoCobro(a.dataset.id, a); break;
         case 'cobros-csv': exportarCobrosCSV(); break;
         case 'qrlocal-imprimir': imprimirQRLocal(); break;
         case 'qrlocal-nuevo': cargarQRLocal(true); break;

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Memofichas · ModoParche Pitch</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0d0d10">
+<link rel="icon" href="src/assets/Branding/favicon/favicon.ico" sizes="any">
+<link rel="preload" href="/src/assets/fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="src/assets/fonts/Gagalin-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/mp-fuentes.css">
+<link rel="stylesheet" href="notas.css">
+</head>
+<body>
+
+<header class="nf-bar">
+  <div class="nf-brand">
+    <img src="src/assets/web/isotipo-light-96.png" alt="" width="28" height="28">
+    <h1>Memofichas</h1>
+    <span class="nf-count" id="nfCount">1 / 10</span>
+  </div>
+  <div class="nf-tools">
+    <button type="button" class="nf-tool" id="btnLess" aria-label="Reducir texto">A−</button>
+    <button type="button" class="nf-tool" id="btnMore" aria-label="Agrandar texto">A+</button>
+    <button type="button" class="nf-tool is-on" id="btnEs" aria-pressed="true" title="Mostrar u ocultar guía en español">ES</button>
+  </div>
+</header>
+
+<nav class="nf-strip" id="nfStrip" aria-label="Elegir diapositiva"></nav>
+
+<main class="nf-main" id="nfMain" aria-live="polite">
+  <article class="nf-card" id="nfCard">
+    <div class="nf-card-head">
+      <span class="nf-pill" id="nfSlideNum">SLIDE 1</span>
+      <span class="nf-time" id="nfTime">~20 s</span>
+    </div>
+    <h2 class="nf-title" id="nfTitle">Cover — ModoParche</h2>
+
+    <div class="nf-en" id="nfEn"></div>
+
+    <div class="nf-tip" id="nfTip"></div>
+
+    <div class="nf-es" id="nfEsBox">
+      <span class="nf-es-k">Significado rápido (ES)</span>
+      <p id="nfEs"></p>
+    </div>
+  </article>
+</main>
+
+<footer class="nf-foot">
+  <button type="button" class="nf-nav" id="btnPrev">← Anterior</button>
+  <button type="button" class="nf-nav nf-nav--next" id="btnNext">Siguiente →</button>
+</footer>
+
+<script defer src="notas.js"></script>
+</body>
+</html>

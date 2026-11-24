@@ -35,9 +35,6 @@
   <div class="deck-progress" aria-hidden="true"><span id="barFill"></span></div>
   <div class="deck-tools">
     <span class="deck-count" id="slideCount">1 / 10</span>
-    <button type="button" class="tool-btn" id="btnNotes" aria-pressed="false" title="Show easy speaker script (N)">
-      <span>Easy script</span>
-    </button>
     <button type="button" class="tool-btn" id="btnFull" title="Fullscreen (F)">
       <span>Fullscreen</span>
     </button>
@@ -58,6 +55,13 @@
           <span>Mobile PWA</span>
           <span>Groq AI Guide</span>
           <span>3 Live Panels</span>
+        </div>
+        <div class="qr-card" data-qr="https://modoparche.vercel.app">
+          <div class="qr-svg" aria-hidden="true"></div>
+          <div class="qr-txt">
+            <b>Scan to try live</b>
+            <span>modoparche.vercel.app</span>
+          </div>
         </div>
       </div>
       <div class="cover-visual" aria-hidden="true">
@@ -342,7 +346,14 @@
       <img class="finale-logo" src="src/assets/web/logo-isotipo-light.webp" alt="ModoParche" width="110" height="132">
       <span class="pill pill--orange">Live Demo &amp; Questions</span>
       <h2 class="display-xl">THANK <span>YOU!</span></h2>
-      <p class="lead lead--dark">Let's explore the live app or answer your questions.</p>
+      <p class="lead lead--dark">Scan the QR to test on your phone or open the live app below.</p>
+      <div class="qr-card qr-card--lg" data-qr="https://modoparche.vercel.app">
+        <div class="qr-svg" aria-hidden="true"></div>
+        <div class="qr-txt">
+          <b>Try ModoParche Live</b>
+          <span>Point your camera · modoparche.vercel.app</span>
+        </div>
+      </div>
       <div class="demo-links">
         <a class="demo-btn demo-btn--orange" href="index.html" target="_blank" rel="noopener">Open Home</a>
         <a class="demo-btn" href="dashboard.html" target="_blank" rel="noopener">User Panel</a>
@@ -356,17 +367,13 @@
 
 </main>
 
-<aside class="notes-drawer" id="notesDrawer" hidden>
-  <span class="notes-label">Easy English script:</span>
-  <p id="notesText"></p>
-</aside>
-
 <nav class="deck-nav" aria-label="Slide controls">
   <button type="button" class="nav-btn" id="btnPrev" aria-label="Previous slide">← Prev</button>
   <div class="deck-dots" id="deckDots" role="tablist" aria-label="Choose slide"></div>
   <button type="button" class="nav-btn nav-btn--next" id="btnNext" aria-label="Next slide">Next →</button>
 </nav>
 
+<script defer src="src/vendor/qrcode.js"></script>
 <script defer src="pitch.js"></script>
 </body>
 </html>
