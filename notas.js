@@ -164,10 +164,16 @@
         '<b>16. ¿Cómo cumplen con privacidad y cédulas (Ley 1581)?</b> Consentimiento explícito, fotos en espacio privado, revisión humana y <b>borrado automático</b> de las fotos al aprobar o rechazar (solo queda el sello).',
         '<b>17. ¿Qué pasa si ocurre un incidente en un parche?</b> Filtro obligatorio +18, cédula verificada para organizar, <b>Ruta Segura</b> con GPS en vivo para familiares, expulsión de usuarios molestos, reportes y suspensión en Panel Admin.',
         '<b>18. ¿Por qué web móvil y no aplicación de tienda desde el día 1?</b> Funciona en Android y iPhone con un solo código, <b>sin descargar nada</b> al escanear el QR, se actualiza al instante y evita costos de tiendas al arrancar.',
-        '<b>19. ¿Qué pasa si falla la IA Parce o baja la señal?</b> Hay modo sin conexión para consultas básicas y el Modo Puerta sigue operando; si la IA falla o llega a su límite, toda la plataforma sigue funcionando al 100%.'
+        '<b>19. ¿Qué pasa si falla la IA Parce o baja la señal?</b> Hay modo sin conexión para consultas básicas y el Modo Puerta sigue operando; si la IA falla o llega a su límite, toda la plataforma sigue funcionando al 100%.',
+        '<b>— MEJORAS DE PRODUCTO (MAPA, IA, CHAT Y NEGOCIOS) —</b>',
+        '<b>20. ¿Cómo mejorarían el mapa a futuro y cuánto cuesta?</b> Hoy usamos <b>OpenStreetMap + Leaflet ($0/mes)</b>. A futuro podemos integrar:<br>• <b>Mapbox o MapTiler:</b> mapas vectoriales 3D con estilo propio y modo oscuro nativo (gratis hasta 50.000 cargas/mes; luego ~$5 USD por cada 1.000 cargas extra).<br>• <b>Rutas y tiempos reales</b> (a pie, moto o carro), <b>mapa de calor</b> de zonas activas, filtro por radio (1 km, 3 km, 5 km) y botón directo a <b>Waze / Uber / InDrive</b>.',
+        '<b>21. ¿Qué mejoras harían en el chat y notificaciones?</b> Recordatorios automáticos 1 hora antes del parche, notas de voz cortas, ubicación en vivo dentro del grupo y moderación asistida con IA contra acoso o estafas.',
+        '<b>22. ¿Cómo mejorarían la IA Parce?</b> Pasar de solo responder dudas a <b>recomendar parches personalizados</b> según gustos, presupuesto y cercanía, y ayudar a los negocios a redactar <b>Promos Relámpago</b> en un toque.',
+        '<b>23. ¿Qué mejoras sumarían para negocios?</b> Reservas con abono anticipado por Wompi (cero mesas perdidas), métricas de clientes recurrentes y horas pico, fidelización por puntos y facturación electrónica (DIAN).',
+        '<b>24. ¿Cuál es el mayor riesgo del proyecto y cómo lo mitigan?</b><br>• <b>Arrancar sin masa crítica:</b> foco 100% en Villavicencio (universidades y eventos) antes de abrir otra ciudad.<br>• <b>Seguridad en encuentros:</b> +18, cédula verificada, Ruta Segura GPS y control del anfitrión.<br>• <b>Límites del plan gratis:</b> con solo 5 negocios activos ya se cubren Supabase Pro y Vercel Pro.'
       ],
-      tip: 'Tip: Números 100% cuadrados (tasa $4.000 COP/USD) y 100% en español, listos para defender ante el jurado.',
-      es: 'Ficha completa en español con desglose exacto de costos (Supabase Pro $25 USD, Vercel Pro $20 USD), tabla de Wompi, punto de equilibrio en parches y negocios, mejoras futuras, operación y seguridad.'
+      tip: 'Tip: 24 respuestas 100% en español (finanzas, Wompi, mapa, IA, negocios, seguridad y riesgos).',
+      es: 'Ficha completa en español con 24 preguntas: costos exactos, Wompi, punto de equilibrio, mapa (Mapbox/rutas/Waze), mejoras de chat/IA/negocios, seguridad Ley 1581 y riesgos.'
     }
   ];
 
