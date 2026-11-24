@@ -138,18 +138,22 @@
       es: 'Eso es ModoParche: planes seguros, sitios locales y una app viva hoy. Escaneen el código para probarla en cualquier celular ahora. Si gustan, podemos mostrar una demo rápida en vivo. ¡Gracias! ¿Preguntas?'
     },
     {
-      titulo: 'Q&A · Jury Questions',
+      titulo: 'Q&A · Preguntas del jurado',
       tiempo: 'Extra',
       en: [
-        '<b>1. Operating cost?</b> Today it costs <b>$0/month</b> (Vercel, Supabase, OpenStreetMap, Groq). At scale: ~<b>$50 USD/month</b> (~$250,000 COP).',
-        '<b>2. Wompi fee?</b> About <b>3.15% + $833 COP</b> per bill. Because venues pay <b>one monthly bill</b>, not guest by guest, we keep ~<b>96%</b>.',
-        '<b>3. Break-even?</b> Today, <b>1 active venue</b> is already net positive. With paid servers, just <b>6 active venues</b> (20 guests/month each = $50,000 COP) cover 100% of costs.',
-        '<b>4. Why will venues scan the QR?</b> Guests get <b>coupons and badges</b> when they check in, so guests ask to scan. And venues only pay when people show up.',
-        '<b>5. How do you get the first users?</b> Hyper-local launch in <b>Villavicencio</b>: universities, monthly official plans, and flash promos from local spots.',
-        '<b>6. Data & ID privacy?</b> Explicit consent (<b>Law 1581</b>), private storage, and ID photos are <b>deleted</b> right after admin review — only the badge stays.'
+        '<b>1. ¿Cuánto nos cuesta operar?</b> Hoy <b>$0/mes</b> (Vercel, Supabase, OpenStreetMap, Groq y lector de cédula en el celular). A escala (miles de usuarios): <b>~$50 USD/mes (~$250.000 COP)</b>.',
+        '<b>2. ¿Cuánto nos quita Wompi?</b> Aprox. <b>3.15% + $833 COP</b> por pago (2.65% + $700 + IVA). Como cobramos <b>una sola factura mensual</b> por negocio y no cliente por cliente, nos queda <b>~96% neto</b>.',
+        '<b>3. ¿Cuántos negocios para ser rentables?</b> Hoy ($0 de operación): desde <b>1 negocio activo</b>. Con servidores pagos ($250k/mes): solo <b>6 negocios</b> (20 clientes/mes × $2.500 = $50k c/u). Con 20 negocios = <b>$1M COP/mes</b>.',
+        '<b>4. ¿Y si el negocio no escanea el QR para no pagar?</b> El cliente gana <b>cupones y la insignia Cero fantasma</b> al escanear, así que él mismo lo pide. Además, el negocio solo paga cuando la persona sí llega.',
+        '<b>5. ¿Qué pasa si un negocio no paga su factura?</b> Con liquidación vencida se bloquean promos y parches nuevos hasta pagar por Wompi, y cada check-in queda registrado con hora exacta.',
+        '<b>6. ¿Por qué es gratis para usuarios?</b> Para crecer sin fricción y tener masa crítica. Cobramos del lado donde hay retorno directo: locales que llenan mesas vacías en días flojos.',
+        '<b>7. ¿Cómo consiguen los primeros usuarios?</b> Arranque hiper-local en <b>Villavicencio</b>: universidades, parches oficiales del mes (conciertos) y <b>Promos Relámpago</b> de locales aliados.',
+        '<b>8. ¿Qué nos diferencia de WhatsApp o Instagram?</b> WhatsApp no descubre planes nuevos, Instagram no maneja cupos ni check-in, y ninguno ofrece cédula verificada, Ruta Segura GPS ni cobro por cliente real.',
+        '<b>9. ¿Cómo cumplen con privacidad y cédulas (Ley 1581)?</b> Consentimiento explícito, fotos en espacio privado, revisión humana y <b>borrado automático</b> de las fotos al aprobar o rechazar (solo queda el sello).',
+        '<b>10. ¿Cómo escalan a otras ciudades?</b> OpenStreetMap cubre todo Colombia a $0 y todo filtra por ciudad. Validamos en Villavicencio y replicamos ciudad por ciudad (Acacías, Yopal, Tunja, etc.).'
       ],
-      tip: 'Tip: Usa esta ficha solo si el profe pregunta costos, Wompi, rentabilidad o privacidad.',
-      es: '1. Costo operativo: $0/mes hoy; ~$50 USD/mes (~$250k COP) a escala. 2. Wompi: ~3.15% + $833 COP por factura mensual consolidada (~96% neto). 3. Punto de equilibrio: hoy 1 negocio; con servidores pagos, 6 negocios activos. 4. Escaneo QR: el cliente gana cupones e insignias, así que pide escanear. 5. Primeros usuarios: universidades, parches oficiales y promos en Villavo. 6. Privacidad: Ley 1581 y borrado automático de fotos tras revisión.'
+      tip: 'Tip: Respuestas en español para la ronda de preguntas del profe/jurado.',
+      es: 'Esta ficha ya está en español: cubre costos, Wompi, punto de equilibrio, control de pagos, adquisición de usuarios, diferenciadores, Ley 1581 y escalabilidad.'
     }
   ];
 
