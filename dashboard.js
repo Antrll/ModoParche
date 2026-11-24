@@ -104,7 +104,6 @@
     { id: 'piedra', nombre: 'Mirador La Piedra del Amor', ref: 'Buenavista, Vía Antigua a Bogotá', lat: 4.17173, lng: -73.67540 },
     { id: 'siete', nombre: 'Parque Siete de Agosto', ref: 'Barrio Siete de Agosto', lat: 4.1462, lng: -73.6335 },
     { id: 'viva', nombre: 'C.C. Viva Villavicencio', ref: 'Av. 40', lat: 4.125621, lng: -73.638716 },
-    { id: 'hacha', nombre: 'Parque del Hacha', ref: 'Centro', lat: 4.1488, lng: -73.6382 },
     { id: 'carmen', nombre: 'Vereda El Carmen', ref: 'Inicio del sendero ecológico', lat: 4.1410, lng: -73.6615 },
   ];
   const lugar = id => LUGARES.find(l => l.id === id);
@@ -148,7 +147,7 @@
     const L = id => { const l = lugar(id); return { lugar: l.nombre, barrio: l.ref, lat: l.lat, lng: l.lng }; };
     return [
       { id: 'd1', titulo: 'Hora feliz 2x1 en la terraza del C.C. Viva', categoria: 'rumba', ...L('viva'), inicio: soon(70), costo: 0, presupuesto: 25000, cuposMax: 20, creadorNombre: 'Terraza C.C. Viva', aliado: true, imagen: 'src/assets/web/discoteca.jpg', promo: '2x1 en cócteles', descripcion: '2x1 en cócteles mientras dure la hora feliz. Terraza al aire libre y buena música.' },
-      { id: 'd2', titulo: 'Atardecer en la Piedra del Amor', categoria: 'pueblear', ...L('piedra'), inicio: at(1, 16, 30), costo: 0, presupuesto: 15000, cuposMax: 12, creadorId: 'me', propio: true, unido: true, creadoPorMi: false, descripcion: 'Subimos al mirador de Buenavista a ver cómo se prende Villavo. Salimos en grupo desde el Parque del Hacha.' },
+      { id: 'd2', titulo: 'Atardecer en la Piedra del Amor', categoria: 'pueblear', ...L('piedra'), inicio: at(1, 16, 30), costo: 0, presupuesto: 15000, cuposMax: 12, creadorId: 'me', propio: true, unido: true, creadoPorMi: false, descripcion: 'Subimos al mirador de Buenavista a ver cómo se prende Villavo. Salimos en grupo desde el centro.' },
     ].map(normalizeParche).map(p => {
       p.chat = [{ tipo: 'sys', texto: isMine(p) ? 'Abriste el parche. Cuando alguien se una, aparece aquí.' : `${creatorName(p)} abrió el parche`, ts: Date.now() - 26 * HOUR }];
       return p;
@@ -3444,10 +3443,10 @@
     perfil = Object.assign({}, PERFIL_DEF, { nombre: c.nombre, primer: String(c.nombre || 'Parcero').split(' ')[0], ciudad: c.ciudad || 'Villavicencio', tel: '', mail: me.email || '', cedula: '', intereses: [] });
     return true;
   }
-  // Al salir no queda información de la cuenta en este navegador (el tema y el aviso de cookies sí)
+  // Al salir no queda información de la cuenta en este navegador (el tema, cookies y +18 sí)
   function limpiarLocal() {
     try {
-      Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1'].includes(k)).forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1', 'mp_mayor18_v1'].includes(k)).forEach(k => localStorage.removeItem(k));
       Object.keys(sessionStorage).filter(k => k.startsWith('mp_')).forEach(k => sessionStorage.removeItem(k));
     } catch (e) { /* sin almacenamiento */ }
   }

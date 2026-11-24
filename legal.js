@@ -86,9 +86,30 @@
 
   // ---------- Consentimiento de mayoría de edad (+18) ----------
   var KEY_EDAD = 'mp_mayor18_v1';
-  var RUTAS_SIN_EDAD = /^\/(dashboard|empresa-dashboard|admin|terminos|privacidad|cookies|pagos|legal|pitch|offline)(\.html|\/|$)/i;
-  function esMayorConfirmado() { try { return localStorage.getItem(KEY_EDAD) === '1'; } catch (e) { return true; } }
-  function guardarMayor() { try { localStorage.setItem(KEY_EDAD, '1'); } catch (e) { /* sin almacenamiento */ } }
+  var RUTAS_SIN_EDAD = /^\/(dashboard|empresa-dashboard|admin|terminos|privacidad|cookies|pagos|legal|pitch|notas|offline)(\.html|\/|$)/i;
+  function tieneCookieEdad() {
+    try { return new RegExp('(?:^|;\\s*)' + KEY_EDAD + '=1(?:;|$)').test(document.cookie || ''); } catch (e) { return false; }
+  }
+  function tieneSesionActiva() {
+    try { return Object.keys(localStorage).some(function (k) { return /^sb-.*-auth-token$/.test(k); }); } catch (e) { return false; }
+  }
+  function guardarMayor() {
+    try { localStorage.setItem(KEY_EDAD, '1'); } catch (e) { /* sin almacenamiento */ }
+    try { document.cookie = KEY_EDAD + '=1; max-age=31536000; path=/; SameSite=Lax'; } catch (e) { /* sin cookies */ }
+  }
+  function esMayorConfirmado() {
+    try {
+      if (localStorage.getItem(KEY_EDAD) === '1') {
+        if (!tieneCookieEdad()) guardarMayor();
+        return true;
+      }
+    } catch (e) { return true; }
+    if (tieneCookieEdad() || tieneSesionActiva()) {
+      guardarMayor();
+      return true;
+    }
+    return false;
+  }
   function avisoEdad() {
     if (esMayorConfirmado() || RUTAS_SIN_EDAD.test(location.pathname) || document.body.hasAttribute('data-sin-aviso-edad')) return;
     if (document.getElementById('mp-edad')) return;

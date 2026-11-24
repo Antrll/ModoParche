@@ -3261,7 +3261,7 @@ h1{font-size:40px;margin:0 0 6px;line-height:1.05}p{font-size:18px;margin:6px 0;
   }
   function limpiarLocal() {
     try {
-      Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1'].includes(k) && !k.startsWith('mp_cupones_subidos_')).forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1', 'mp_mayor18_v1'].includes(k) && !k.startsWith('mp_cupones_subidos_')).forEach(k => localStorage.removeItem(k));
       Object.keys(sessionStorage).filter(k => k.startsWith('mp_')).forEach(k => sessionStorage.removeItem(k));
     } catch (e) { /* sin almacenamiento */ }
   }

@@ -294,7 +294,7 @@
       const creado = Math.min(now - 10 * MIN, inicio - (1 + R() * 6) * DAY);
       const cupos = pick([6, 8, 10, 12, 15, 20]);
       const p = { id: uid(), titulo: pick(TIT[cat]), categoria: cat, descripcion: 'Plan abierto para conocer gente y pasarla bien.', inicio: new Date(inicio).toISOString(),
-        lugar: neg ? neg.nombre : pick(['Parque Los Fundadores', 'C.C. Primavera Urbana', 'Parque del Hacha', 'Parque La Grama', 'C.C. Viva Villavicencio', 'Mirador La Piedra del Amor']), barrio: neg ? neg.barrio : pick(BAR),
+        lugar: neg ? neg.nombre : pick(['Parque Los Fundadores', 'C.C. Primavera Urbana', 'Parque La Grama', 'C.C. Viva Villavicencio', 'Mirador La Piedra del Amor']), barrio: neg ? neg.barrio : pick(BAR),
         lat: neg ? neg.lat : 4.142 + (R() - .5) * .05, lng: neg ? neg.lng : -73.627 + (R() - .5) * .05, costo: R() < .5 ? 0 : Math.round(R() * 30) * 1000, cupos_max: cupos,
         creador_id: neg ? neg.id : dueño.id, creador_nombre: neg ? neg.nombre : null, aliado: !!neg, verificado: !!(neg && neg.verificado), demo: false, relampago: !!neg && R() < .25, promo: neg && R() < .5 ? '2x1 en la primera ronda' : null,
         creado_en: new Date(creado).toISOString(), miembros: 0 };
@@ -2269,7 +2269,7 @@ ${fila('Personas nuevas', 'registros')}${fila('Negocios nuevos', 'negocios')}${f
 
   async function salir() {
     if (!DEMO && sb()) { try { sb().removeAllChannels(); await sb().auth.signOut(); } catch (e) { /* salimos igual */ } }
-    try { Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1', 'mp_2fa_espera'].includes(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* nada */ }
+    try { Object.keys(localStorage).filter(k => k.startsWith('mp_') && !['mp_tema', 'mp_aviso_cookies_v1', 'mp_mayor18_v1', 'mp_2fa_espera'].includes(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* nada */ }
     location.replace('login.html');
   }
 
