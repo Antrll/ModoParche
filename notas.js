@@ -116,14 +116,14 @@
       titulo: '08 · How We Built It',
       tiempo: '~1 min',
       en: [
-        'Here is how we built <b>ModoParche</b>.',
+        'Now, let us see how we made <b>ModoParche</b>.',
         'It is a fast <b>mobile web app</b> — no download needed.',
-        'We use <b>Supabase</b> for data, login, and live chat, and <b>Vercel</b> to host the site.',
-        'For maps, we use <b>OpenStreetMap</b>, so our map cost is <b>$0</b>.',
+        'We use <b>Supabase</b> to save data, login, and live chat, and <b>Vercel</b> to host the site.',
+        'On maps, we use <b>OpenStreetMap</b>, so map costs stay at <b>$0</b>.',
         'We also made an <b>Admin Panel</b> to check IDs and keep the app safe.'
       ],
       tip: 'Tip: Señala los 4 números grandes: 18 páginas, 3 paneles, IA 24/7, $0 mapas.',
-      es: 'Es una app web rápida para celular sin descargas. Usamos Supabase para datos, login y chat en vivo, Vercel para hospedarla, OpenStreetMap por $0 en mapas y un Panel Admin para revisar cédulas.'
+      es: 'Ahora veamos cómo hicimos ModoParche. Es una app web rápida para celular sin descargas. Usamos Supabase para datos, login y chat en vivo, Vercel para hospedarla, OpenStreetMap para que los mapas cuesten $0 y un Panel Admin para revisar cédulas.'
     },
     {
       titulo: '09 · Thank You & Demo',
