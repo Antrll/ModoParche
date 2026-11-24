@@ -98,7 +98,6 @@
 
   // Coordenadas reales verificadas
   const LUGARES = [
-    { id: 'capachos', nombre: 'Discoteca Los Capachos', ref: 'Km 4 Vía Acacías', lat: 4.1165, lng: -73.6508 },
     { id: 'primavera', nombre: 'C.C. Primavera Urbana', ref: 'Calle 15 # 40-01', lat: 4.13468, lng: -73.64046 },
     { id: 'fundadores', nombre: 'Parque Los Fundadores', ref: 'Entrada sur, Av. 40', lat: 4.1242, lng: -73.6395 },
     { id: 'piedra', nombre: 'Mirador La Piedra del Amor', ref: 'Buenavista, Vía Antigua a Bogotá', lat: 4.17173, lng: -73.67540 },
@@ -180,10 +179,10 @@
 
   // Modo Mesa de ejemplo (solo en ?demo=1)
   function demoMesas() {
-    const lc = lugar('capachos'), pri = lugar('primavera');
+    const viva = lugar('viva'), pri = lugar('primavera');
     return [
-      { id: 'm1', titulo: 'Mesa de 6: botella de la casa', beneficio: 'Botella de aguardiente de cortesía si llegan 6 o más', descripcion: 'Reserva tu mesa y llega con tu gente. Válido de jueves a sábado.', min_personas: 6, max_personas: 12, dias: [4, 5, 6], hora_desde: '20:00', hora_hasta: '02:00',
-        negocio: { id: 'n1', nombre: 'Discoteca Los Capachos', direccion: lc.ref, barrio: 'Vía Acacías', lat: lc.lat, lng: lc.lng, verificado: true } },
+      { id: 'm1', titulo: 'Mesa de 6: ronda de la casa', beneficio: 'Cócteles de bienvenida si llegan 6 o más', descripcion: 'Reserva tu mesa y llega con tu gente. Válido de jueves a sábado.', min_personas: 6, max_personas: 12, dias: [4, 5, 6], hora_desde: '20:00', hora_hasta: '02:00',
+        negocio: { id: 'n1', nombre: 'Terraza C.C. Viva', direccion: viva.ref, barrio: 'Av. 40', lat: viva.lat, lng: viva.lng, verificado: true } },
       { id: 'm2', titulo: 'Combo parche de 4', beneficio: '4 hamburguesas y una jarra de limonada a precio de 3', descripcion: 'Para grupos de 4 a 8. Mesa guardada 20 minutos.', min_personas: 4, max_personas: 8, dias: [0, 1, 2, 3, 4, 5, 6], hora_desde: '12:00', hora_hasta: '22:00',
         negocio: { id: 'n2', nombre: 'Patio de comidas Primavera', direccion: pri.ref, barrio: 'Primavera', lat: pri.lat, lng: pri.lng, verificado: false } },
     ];
