@@ -114,17 +114,17 @@
       es: 'También creamos a Parce, nuestro asistente con IA usando Groq. Vive en ambos paneles 24/7. A los usuarios les explica planes, verificación y cupones; al personal de negocios les ayuda con Modo Puerta, promos y cobros Wompi. Además es seguro: pide sesión, tiene límites de uso y bloquea datos sensibles como tarjetas.'
     },
     {
-      titulo: '08 · Technology & Quality',
+      titulo: '08 · How We Built It',
       tiempo: '~1 min',
       en: [
         'Let us briefly share how we built ModoParche.',
-        'It is a fast <b>Progressive Web App</b> that works smoothly on any phone, with no heavy frameworks.',
-        'We use <b>Supabase</b> for our Postgres database, login, and real-time chat, and <b>Vercel</b> for our server APIs.',
-        'For maps, we use <b>OpenStreetMap and Leaflet</b> — which means <b>$0 in map API costs</b>.',
-        'We also built a full <b>Admin Panel</b> to review IDs, and we tested the app with <b>67 automated tests</b>.'
+        'It is a fast <b>Mobile Web App</b> that works smoothly on any phone — no download needed.',
+        'We use <b>Supabase</b> for our database, login, and live chat, and <b>Vercel</b> to keep the app online.',
+        'For maps, we use <b>OpenStreetMap</b> — which means <b>$0 in map costs</b>.',
+        'And we built a full <b>Admin Panel</b> so our team can review IDs and keep the community safe.'
       ],
-      tip: 'Tip (~1 min): Señala los 4 números grandes arriba: 18 páginas, 3 paneles, 67 pruebas, $0 en mapas.',
-      es: 'Les contamos rápido la tecnología. Es una PWA rápida para celular sin frameworks pesados. Usamos Supabase para base de datos Postgres, login y chat en vivo; Vercel para las APIs; y OpenStreetMap con Leaflet, que nos da mapas por $0. Además hicimos un Panel Admin completo y 67 pruebas automatizadas.'
+      tip: 'Tip (~1 min): Señala los 4 números grandes arriba: 18 páginas, 3 paneles, IA 24/7, $0 en mapas.',
+      es: 'Les contamos rápido cómo lo construimos. Es una app web rápida para celular sin necesidad de descargar nada. Usamos Supabase para datos, inicio de sesión y chat en vivo, y Vercel para mantenerla en línea. Los mapas son con OpenStreetMap ($0 de costo). Además hicimos un Panel Admin para revisar cédulas y cuidar la comunidad.'
     },
     {
       titulo: '09 · Thank You & Live Demo',
