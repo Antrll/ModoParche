@@ -34,22 +34,22 @@
       en: [
         'ModoParche connects both sides in <b>three easy steps</b>.',
         'First, you open the <b>live map</b> and find a plan.',
-        'Second, you join or create one in <b>30 seconds</b> — even with a <b>Plan B</b> if it rains.',
+        'Second, you join or create one in <b>30 seconds</b> — with an optional <b>Plan B</b> if it rains.',
         'Third, you chat with the group, arrive, and <b>scan a QR code</b>.'
       ],
       tip: 'Tip: Cuenta con los dedos: 1 (map), 2 (30 seconds + Plan B), 3 (chat + QR).',
-      es: 'ModoParche conecta ambos lados en 3 pasos fáciles. Primero abres el mapa en vivo. Segundo te unes o creas un plan en 30 segundos, incluso con Plan B por lluvia. Tercero chateas, llegas y escaneas un QR.'
+      es: 'ModoParche conecta ambos lados en 3 pasos fáciles. Primero abres el mapa en vivo. Segundo te unes o creas un plan en 30 segundos, con Plan B opcional por lluvia. Tercero chateas, llegas y escaneas un QR.'
     },
     {
       titulo: '03 · User Dashboard Features',
       tiempo: '~30 s',
       en: [
-        'Inside the <b>User Panel</b>, people have everything to go out.',
-        'They get a live map radar, real-time <b>group chat with polls and photos</b>, and an automatic <b>Rain Plan B</b>.',
-        'They also earn <b>badges</b>, add real friends, and log in fast with <b>Google</b> in three visual themes.'
+        'Inside the <b>User Panel</b>, people have great tools to go out.',
+        'They get a live map radar, real-time <b>group chat with polls and photos</b>, and a backup <b>Plan B</b> if it rains.',
+        'They can also check in by QR for coupons, add friends, and log in with <b>email or Google</b> in three themes.'
       ],
       tip: 'Tip: No leas las 6 tarjetas palabra por palabra; menciona 3 o 4 con naturalidad.',
-      es: 'Dentro del Panel de Usuarios tienen todo para salir: radar en el mapa, chat en vivo con encuestas y fotos, Plan B por lluvia, insignias, amigos y acceso con Google en 3 temas.'
+      es: 'Dentro del Panel de Usuarios tienen radar en el mapa, chat en vivo con encuestas y fotos, Plan B por lluvia, check-in por QR para cupones, amigos y acceso con correo o Google en 3 temas.'
     },
     {
       titulo: '04 · Business Panel Features',
@@ -67,22 +67,22 @@
       tiempo: '~30 s',
       en: [
         'Safety is our <b>number one priority</b>.',
-        'We built <b>six real layers</b>: an 18+ age gate, one-time <b>ID verification</b>, and private locations for anonymous visitors.',
+        'We built <b>six real layers</b>: an 18+ age gate, one-time <b>ID verification</b>, and meeting details visible only to signed-in users.',
         'We also include <b>QR identity</b>, live safe route sharing, host moderation, and a smart chat filter.'
       ],
       tip: 'Tip: Esta diapositiva impresiona mucho al jurado — habla pausado y seguro.',
-      es: 'La seguridad es nuestra prioridad número uno. Creamos 6 capas reales: filtro +18, verificación de cédula, ubicaciones privadas, QR de identidad con ruta segura, control del organizador y filtro en el chat.'
+      es: 'La seguridad es nuestra prioridad número uno. Creamos 6 capas reales: filtro +18, verificación de cédula, detalles del punto solo para usuarios con cuenta, QR de identidad con ruta segura, control del organizador y filtro en el chat.'
     },
     {
-      titulo: '06 · Business Model',
+      titulo: '06 · Business Model (For Businesses)',
       tiempo: '~25 s',
       en: [
-        'Our business model is simple and fair.',
-        'The app is <b>100% free for users</b>, and businesses pay <b>zero monthly fees</b>.',
-        'Venues only pay a small fee when a <b>verified client actually arrives</b>. No arrivals means <b>zero cost</b>.'
+        'Our business model is built for <b>local businesses</b> with zero monthly fees.',
+        'The app is free for users, and venues only pay a small fee when a <b>verified client actually arrives</b>.',
+        'If nobody arrives, the business pays <b>zero</b> — and monthly bills are paid via <b>Wompi</b>.'
       ],
-      tip: 'Tip: Haz una mini pausa antes de decir "No arrivals means zero cost".',
-      es: 'Nuestro modelo es sencillo y justo. Es 100% gratis para usuarios y sin mensualidades para negocios. Solo pagan una pequeña tarifa cuando llega un cliente verificado. Si nadie llega, pagan $0.'
+      tip: 'Tip: Haz una mini pausa antes de decir "the business pays zero".',
+      es: 'Nuestro modelo está pensado para negocios sin mensualidades. Es gratis para usuarios y los locales solo pagan cuando llega un cliente verificado. Si nadie llega, pagan $0, y se paga por Wompi.'
     },
     {
       titulo: '07 · Meet Parce (AI Guide)',
