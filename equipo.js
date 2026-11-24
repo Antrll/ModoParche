@@ -20,58 +20,127 @@
   });
 })();
 
-/* Formulario de contacto y empleo: se guarda en la base y lo ve el equipo en el panel */
+/* Formulario de contacto y empleo: envía a /api/contacto y ofrece respaldo directo si falla */
 (() => {
   const form = document.getElementById('contactForm');
   if (!form) return;
-  const btn = form.querySelector('button[type="submit"]'), status = form.querySelector('.status'), txt = status.querySelector('.status-text');
-  const URL_CONTACTO = ((window.MP_SUPABASE && window.MP_SUPABASE.url) || 'https://quxqqxnowlwiahorifpy.supabase.co') + '/functions/v1/contacto';
-  const MOTIVOS = { 'Tengo una idea o parche': 'contacto', 'Quiero sumarme al equipo': 'empleo', 'Tengo un negocio en Villavo': 'negocio', 'Prensa o alianza': 'prensa' };
-  const aviso = (titulo, detalle, error) => {
+  const btn = form.querySelector('button[type="submit"]');
+  const status = form.querySelector('.status');
+  const txt = status.querySelector('.status-text');
+  const msgIn = document.getElementById('msg');
+  const countEl = document.getElementById('msgCount');
+  const MOTIVOS = {
+    'Tengo una idea o parche': 'contacto',
+    'Quiero sumarme al equipo': 'empleo',
+    'Tengo un negocio en Villavo': 'negocio',
+    'Prensa o alianza': 'prensa',
+  };
+
+  if (msgIn && countEl) {
+    const syncCount = () => { countEl.textContent = `${msgIn.value.length}/1500`; };
+    msgIn.addEventListener('input', syncCount);
+    syncCount();
+  }
+
+  const aviso = (titulo, detalle, error, respaldo) => {
     txt.replaceChildren();
-    const b = document.createElement('b'), s2 = document.createElement('small');
-    b.textContent = titulo; s2.textContent = detalle;
+    const b = document.createElement('b');
+    const s2 = document.createElement('small');
+    b.textContent = titulo;
+    s2.textContent = detalle;
     txt.append(b, s2);
+    if (respaldo) {
+      const acciones = document.createElement('div');
+      acciones.className = 'status-actions';
+      const mailto = document.createElement('a');
+      mailto.className = 'status-link';
+      const asunto = encodeURIComponent(`[ModoParche] ${respaldo.tema}`);
+      const cuerpo = encodeURIComponent(`Nombre: ${respaldo.nombre}\nCorreo: ${respaldo.correo}\n\n${respaldo.mensaje}`);
+      mailto.href = `mailto:modoparcheoficial@gmail.com?subject=${asunto}&body=${cuerpo}`;
+      mailto.textContent = 'Enviar por correo';
+      const wa = document.createElement('a');
+      wa.className = 'status-link status-link--alt';
+      wa.target = '_blank';
+      wa.rel = 'noopener noreferrer';
+      wa.href = `https://wa.me/573112363903?text=${encodeURIComponent(`Hola ModoParche (${respaldo.tema}). Soy ${respaldo.nombre} (${respaldo.correo}): ${respaldo.mensaje}`)}`;
+      wa.textContent = 'Enviar por WhatsApp';
+      acciones.append(mailto, wa);
+      txt.append(acciones);
+    }
     status.classList.toggle('is-error', !!error);
     status.classList.add('is-visible');
     status.focus({ preventScroll: true });
   };
+
+  const URL_EDGE = ((window.MP_SUPABASE && window.MP_SUPABASE.url) || 'https://quxqqxnowlwiahorifpy.supabase.co') + '/functions/v1/contacto';
+  const enviarA = async (url, cuerpo) => {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+      signal: AbortSignal.timeout(15000),
+    });
+    const d = await r.json().catch(() => null);
+    return { r, d };
+  };
+
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (btn.disabled) return;
     if (window.MPValidar && !window.MPValidar(form)) return;
-    btn.disabled = true; btn.classList.add('is-loading'); btn.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+    btn.classList.add('is-loading');
+    btn.setAttribute('aria-busy', 'true');
     status.classList.remove('is-visible');
-    // Captcha de Cloudflare (casi siempre invisible). El servidor lo verifica antes de guardar.
-    let token;
-    try { token = window.MPCaptcha ? await window.MPCaptcha.token(form) : undefined; }
-    catch (err) {
-      const [t, d] = window.MPCaptcha ? window.MPCaptcha.mensaje(err) : ['No pudimos verificarte', 'Recarga la página e intenta de nuevo.'];
-      aviso(t, d, true);
-      btn.disabled = false; btn.classList.remove('is-loading'); btn.removeAttribute('aria-busy');
-      return;
+
+    const respaldo = {
+      tema: form.topic ? form.topic.value : 'Contacto',
+      nombre: form.name.value.trim(),
+      correo: form.email.value.trim(),
+      mensaje: form.msg.value.trim(),
+    };
+
+    // Token de Turnstile opcional (si bloqueador o red lo frena, no bloquea el envío)
+    let token = '';
+    if (window.MPCaptcha && window.MPCaptcha.activo && window.MPCaptcha.activo()) {
+      try { token = (await window.MPCaptcha.token(form)) || ''; }
+      catch { token = ''; }
     }
+
+    const cuerpo = {
+      nombre: respaldo.nombre,
+      correo: respaldo.correo,
+      motivo: MOTIVOS[respaldo.tema] || 'contacto',
+      mensaje: respaldo.mensaje,
+      sitio: form.sitio ? form.sitio.value : '',
+      token,
+    };
+
     try {
-      // Edge Function de Supabase: verifica el captcha y guarda (la llave maestra nunca sale de Supabase)
-      const r = await fetch(URL_CONTACTO, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: form.name.value, correo: form.email.value, motivo: MOTIVOS[form.topic.value] || 'contacto',
-          mensaje: form.msg.value, sitio: form.sitio ? form.sitio.value : '', token: token || '',
-        }),
-        signal: AbortSignal.timeout(15000),
-      });
-      const d = await r.json().catch(() => null);
-      // El servidor explica qué pasó (captcha, sin configurar) aunque no sea 200
-      if (!r.ok && !(d && d.hint)) throw new Error('servidor');
-      if (!d || d.ok !== true) { aviso('No se envió', (d && d.hint) || 'Revisa los datos e intenta de nuevo.', true); return; }
-      aviso('¡Mensaje enviado!', 'Lo leemos y te respondemos al correo que dejaste.', false);
-      form.reset();
-    } catch (err) {
-      aviso('No pudimos enviarlo', 'Revisa tu conexión e intenta otra vez, o escríbenos a modoparcheoficial@gmail.com.', true);
+      let { r, d } = await enviarA('/api/contacto', cuerpo);
+      if (r.status === 404) ({ r, d } = await enviarA(URL_EDGE, cuerpo));
+      if (r.ok && d && d.ok === true) {
+        aviso('¡Mensaje enviado!', 'Lo recibimos en nuestro panel y te respondemos pronto al correo que dejaste.', false);
+        form.reset();
+        if (countEl) countEl.textContent = '0/1500';
+        return;
+      }
+      if (d && d.hint) {
+        aviso('No se pudo enviar automático', d.hint, true, r.status >= 500 ? respaldo : null);
+        return;
+      }
+      throw new Error('servidor');
+    } catch {
+      aviso(
+        'No pudimos enviarlo por aquí',
+        'Puedes mandarnos exactamente este mismo mensaje en un toque por correo o WhatsApp:',
+        true,
+        respaldo
+      );
     } finally {
-      btn.disabled = false; btn.classList.remove('is-loading'); btn.removeAttribute('aria-busy');
+      btn.disabled = false;
+      btn.classList.remove('is-loading');
+      btn.removeAttribute('aria-busy');
     }
   });
 })();

@@ -398,6 +398,19 @@
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .contact-form .status.is-error { background: #fdecea; color: #7a1c12; }
+.contact-form .status.is-error .status-icon { background: #d93829; color: #ffffff; }
+.contact-form .status.is-error .status-icon svg { display: none; }
+.contact-form .status.is-error .status-icon::after { content: "!"; font-weight: 900; font-size: 1rem; line-height: 1; }
+.msg-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.msg-count { font-size: .78rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.status-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.status-link {
+  display: inline-flex; align-items: center; padding: 7px 14px; border-radius: var(--r-pill);
+  background: var(--orange); color: #111; font-size: .82rem; font-weight: 800; text-decoration: none;
+  transition: transform .15s ease, filter .15s ease;
+}
+.status-link:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.status-link--alt { background: var(--ink); color: #fff; }
 
 
 /* Formulario de contacto */
