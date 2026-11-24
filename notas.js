@@ -141,21 +141,31 @@
       titulo: 'Preguntas del jurado',
       tiempo: 'Extra',
       en: [
+        '<b>— FINANZAS, WOMPI Y RENTABILIDAD —</b>',
         '<b>1. ¿Cuánto nos cuesta operar?</b> Hoy <b>$0/mes</b> (Vercel, Supabase, OpenStreetMap, Groq y lector de cédula en el celular). A escala (miles de usuarios): <b>~$50 USD/mes (~$210.000–$250.000 COP)</b>.',
-        '<b>2. ¿Cuánto nos quita Wompi?</b> Aprox. <b>3,15% + $833 COP</b> por pago (2,65% + $700 + IVA). Como cobramos <b>una sola factura mensual</b> por negocio y no cliente por cliente, nos queda <b>~96% neto</b>.',
-        '<b>3. ¿Cuántos negocios para ser rentables?</b> Hoy ($0 de operación): desde <b>1 negocio activo</b>. Con servidores pagos (~$250k/mes): solo <b>6 negocios</b> (20 clientes/mes × $2.500 = $50k c/u). Con 20 negocios = <b>$1M COP/mes</b>.',
-        '<b>4. ¿Qué mejoras implementarían más adelante y cuánto cuestan?</b><br>• <b>Supabase Pro ($25 USD/mes ≈ $105.000 COP):</b> 8 GB de base de datos, copias de seguridad diarias y más de 100.000 usuarios activos.<br>• <b>Vercel Pro ($20 USD/mes ≈ $85.000 COP):</b> mayor tráfico, velocidad y trabajo en equipo.<br>• <b>Dominio propio modoparche.co/.com (~$65.000 COP/año):</b> salir de .vercel.app.<br>• <b>Tiendas móviles (Google Play $25 USD único / Apple $99 USD/año):</b> publicar la versión móvil.<br>• <b>Verificación automática de identidad (~$800–$1.500 COP por registro) y avisos por WhatsApp (~$200 COP/mensaje):</b> cuando crezca el volumen.',
-        '<b>5. ¿Cuándo pagarían esos paquetes?</b> Solo con ingresos reales: al llegar a <b>6–10 negocios activos</b> o superar <b>2.000–5.000 usuarios/mes</b>. Así la plataforma se paga sola sin invertir de bolsillo.',
-        '<b>6. ¿Y si el negocio no escanea el QR para no pagar?</b> El cliente gana <b>cupones y la insignia Cero fantasma</b> al escanear, así que él mismo lo pide. Además, el negocio solo paga cuando la persona sí llega.',
-        '<b>7. ¿Qué pasa si un negocio no paga su factura?</b> Con liquidación vencida se bloquean promociones y parches nuevos hasta pagar por Wompi, y cada llegada queda registrada con hora exacta.',
-        '<b>8. ¿Por qué es gratis para usuarios?</b> Para crecer sin fricción y tener masa crítica. Cobramos del lado donde hay retorno directo: locales que llenan mesas vacías en días flojos.',
-        '<b>9. ¿Cómo consiguen los primeros usuarios?</b> Arranque hiperlocal en <b>Villavicencio</b>: universidades, parches oficiales del mes (conciertos) y <b>Promos Relámpago</b> de locales aliados.',
-        '<b>10. ¿Qué nos diferencia de WhatsApp o Instagram?</b> WhatsApp no descubre planes nuevos, Instagram no maneja cupos ni registro de llegada, y ninguno ofrece cédula verificada, Ruta Segura GPS ni cobro por cliente real.',
-        '<b>11. ¿Cómo cumplen con privacidad y cédulas (Ley 1581)?</b> Consentimiento explícito, fotos en espacio privado, revisión humana y <b>borrado automático</b> de las fotos al aprobar o rechazar (solo queda el sello).',
-        '<b>12. ¿Cómo escalan a otras ciudades?</b> OpenStreetMap cubre todo Colombia a $0 y todo filtra por ciudad. Validamos en Villavicencio y replicamos ciudad por ciudad (Acacías, Yopal, Tunja, etc.).'
+        '<b>2. ¿Cuánto nos quita Wompi?</b> Aprox. <b>3,15% + $833 COP</b> por pago (2,65% + $700 + IVA). Como cobramos <b>una sola factura mensual</b> por negocio y no persona por persona, nos queda <b>~96% neto</b>.',
+        '<b>3. ¿Cuántos parches al mes necesitamos para ser rentables?</b><br>• <b>Hoy ($0 de costo):</b> con <b>1 solo parche al mes</b> ya generamos utilidad.<br>• <b>Con servidores pagos (~$250.000 COP/mes):</b> si un parche promedio lleva <b>6 personas</b> × $2.500 = <b>$15.000 COP/parche</b>, solo necesitamos <b>17–18 parches al mes</b> (~4 por semana en toda la ciudad).<br>• <b>Con equipo/sueldos (ej. $3M COP/mes):</b> unos <b>200 parches/mes</b> (~6–7 diarios) o menos cuando aplique el 10% en cuentas grandes.',
+        '<b>4. ¿Cuántos negocios necesitamos para ser rentables?</b> Hoy: <b>1 negocio activo</b>. Con servidores pagos ($250k/mes): solo <b>6 negocios</b> (20 clientes/mes × $2.500 = $50k c/u). Con 20 negocios = <b>$1M COP/mes</b>; con 60 negocios = <b>$3M+ COP/mes</b>.',
+        '<b>5. ¿Cuánto gana un negocio frente a lo que nos paga?</b> Si un cliente consume <b>$40.000–$60.000 COP</b> y el local nos paga <b>$2.500 COP</b> (o 10%), su costo por cliente real es apenas <b>4%–10%</b> de una venta garantizada — mucho mejor que pagar anuncios sin saber si alguien va.',
+        '<b>6. ¿Qué otras fuentes de ingreso tienen a futuro?</b> Plan multisede para cadenas, <b>parches oficiales</b> con patrocinadores (conciertos/eventos), lugares destacados en el mapa y comisión en paquetes grupales.',
+        '<b>— MEJORAS FUTURAS Y PAQUETES —</b>',
+        '<b>7. ¿Qué mejoras implementarían más adelante y cuánto cuestan?</b><br>• <b>Supabase Pro ($25 USD/mes ≈ $105.000 COP):</b> 8 GB de base de datos, copias de seguridad diarias y más de 100.000 usuarios activos.<br>• <b>Vercel Pro ($20 USD/mes ≈ $85.000 COP):</b> mayor tráfico, velocidad y trabajo en equipo.<br>• <b>Dominio propio modoparche.co/.com (~$65.000 COP/año):</b> salir de .vercel.app.<br>• <b>Tiendas móviles:</b> Google Play ($25 USD único) y Apple ($99 USD/año).<br>• <b>Validación automática de cédula (~$800–$1.500 COP/registro) y avisos por WhatsApp (~$200 COP/mensaje):</b> cuando haya alto volumen.',
+        '<b>8. ¿Cuándo pagarían esos paquetes?</b> Solo con ingresos reales: al llegar a <b>6–10 negocios activos</b> o superar <b>2.000–5.000 usuarios/mes</b>. Así la plataforma se paga sola sin invertir de bolsillo.',
+        '<b>9. ¿Cómo escalan a otras ciudades?</b> OpenStreetMap cubre toda Colombia a $0 y todo filtra por ciudad. Validamos tracción en Villavicencio y replicamos ciudad por ciudad (Acacías, Yopal, Tunja, Bucaramanga, etc.).',
+        '<b>— OPERACIÓN Y CRECIMIENTO —</b>',
+        '<b>10. ¿Y si el negocio no escanea el QR para no pagar?</b> El cliente gana <b>cupones y la insignia Cero fantasma</b> al escanear, así que él mismo lo pide. Además, el negocio solo paga cuando la persona sí llega.',
+        '<b>11. ¿Qué pasa si un negocio no paga su factura?</b> Con liquidación vencida se bloquean promociones y parches nuevos hasta pagar por Wompi, y cada llegada queda registrada con fecha y hora exacta.',
+        '<b>12. ¿Por qué es gratis para usuarios?</b> Para crecer sin fricción y lograr masa crítica rápido. Cobramos del lado donde hay retorno directo: locales que llenan mesas vacías en días flojos.',
+        '<b>13. ¿Cómo consiguen los primeros usuarios?</b> Arranque hiperlocal en <b>Villavicencio</b>: universidades, parches oficiales del mes (conciertos/eventos) y <b>Promos Relámpago</b> de locales aliados.',
+        '<b>14. ¿Qué nos diferencia de WhatsApp o Instagram?</b> WhatsApp es cerrado (no descubres planes nuevos), Instagram no maneja cupos ni llegadas, y ninguno tiene cédula verificada, Ruta Segura GPS ni cobro por cliente real.',
+        '<b>— SEGURIDAD, LEGAL Y TECNOLOGÍA —</b>',
+        '<b>15. ¿Cómo cumplen con privacidad y cédulas (Ley 1581)?</b> Consentimiento explícito, fotos en espacio privado, revisión humana y <b>borrado automático</b> de las fotos al aprobar o rechazar (solo queda el sello).',
+        '<b>16. ¿Qué pasa si hay un problema de seguridad en un parche?</b> Filtro obligatorio +18, cédula verificada para organizar, <b>Ruta Segura</b> con GPS en vivo para familiares, expulsión de usuarios molestos, reportes y suspensión en Panel Admin.',
+        '<b>17. ¿Por qué web móvil y no aplicación de tienda desde el día 1?</b> Funciona en Android y iPhone con un solo código, <b>sin descargar nada</b> al escanear el QR, se actualiza al instante y evita costos de tiendas al arrancar.',
+        '<b>18. ¿Qué pasa si falla la IA Parce o baja la señal?</b> Hay modo sin conexión para consultas básicas y el Modo Puerta sigue operando; si la IA falla o llega a su límite, toda la plataforma sigue funcionando al 100%.'
       ],
-      tip: 'Tip: Todas las respuestas están 100% en español para la ronda de preguntas del profe/jurado.',
-      es: 'Ficha de apoyo en español: costos hoy y a escala, Wompi, punto de equilibrio, paquetes futuros (Supabase Pro, Vercel Pro, dominio, tiendas, WhatsApp), control de pagos, adquisición, diferenciadores, Ley 1581 y expansión.'
+      tip: 'Tip: 18 respuestas rápidas 100% en español agrupadas por tema para encontrarlas al instante.',
+      es: 'Ficha completa en español con 18 preguntas clave de finanzas, Wompi, parches/negocios para punto de equilibrio, paquetes futuros, operación, seguridad y tecnología.'
     }
   ];
 
