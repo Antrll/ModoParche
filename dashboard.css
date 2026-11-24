@@ -536,8 +536,8 @@ select.input {
 }
 .map-counter b { color: var(--orange-deep); }
 .map-locate {
-  position: absolute; z-index: 500; right: 14px; top: 14px;
-  width: 46px; height: 46px; display: grid; place-items: center;
+  position: absolute; z-index: 600; right: 64px; top: 12px;
+  width: 42px; height: 42px; display: grid; place-items: center;
   border-radius: 50%; background: var(--paper); box-shadow: var(--shadow-soft);
   transition: transform .15s var(--ease-out), background-color .2s ease, color .2s ease;
 }
@@ -2529,3 +2529,6 @@ label:has(> input[type="file"].sr-only:focus-visible) { outline: 3px solid var(-
 
 /* El contador no tapa el buscador del mapa */
 .map-counter { top: auto; bottom: 14px; left: 14px; right: auto; transform: none; }
+@media (max-width: 520px) {
+  .map-todos, .map-locate { top: 64px; }
+}
