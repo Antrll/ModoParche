@@ -129,13 +129,13 @@
       titulo: '09 · Thank You & Demo',
       tiempo: '~1 min',
       en: [
-        'That is <b>ModoParche</b>: real people, real local places, and a real app <b>live today</b>.',
-        'Scan the <b>QR code</b> to test it on your phone right now.',
-        'If you want, we can open the app here for a <b>quick live demo</b>.',
+        'That is <b>ModoParche</b>: safe plans, local spots, and a live app <b>today</b>.',
+        'Scan the <b>code</b> to test it on any phone now.',
+        'If you like, we can show a <b>fast live demo</b>.',
         '<b>Thank you!</b> Any questions?'
       ],
       tip: 'Tip: Si queda tiempo, abre "User Panel" o "Business Panel" para mostrar 1 min en vivo.',
-      es: 'Eso es ModoParche: personas reales, locales reales y una app real viva hoy. Escaneen el QR para probarla. Si quieren hacemos una demo rápida en vivo. ¡Gracias! ¿Preguntas?'
+      es: 'Eso es ModoParche: planes seguros, sitios locales y una app viva hoy. Escaneen el código para probarla en cualquier celular ahora. Si gustan, podemos mostrar una demo rápida en vivo. ¡Gracias! ¿Preguntas?'
     }
   ];
 
