@@ -89,15 +89,15 @@
       titulo: '06 · Business Model',
       tiempo: '~1 min',
       en: [
-        'Now let us see how the <b>business model</b> works.',
-        'First: the app is <b>free for users</b>.',
-        'For businesses, there are <b>zero monthly fees</b>.',
-        'They can start free on <b>Basic</b>, with two plans a month.',
-        'On the <b>Villavo</b> plan, they only pay <b>10% or $2,500 pesos</b> when a guest really arrives.',
-        'Simple rule: <b>if nobody comes, they pay zero</b>. Bills are paid with <b>Wompi</b>.'
+        'Now, let us see how we <b>make money</b>.',
+        'One: the app costs <b>nothing</b> to use.',
+        'Local places pay <b>no monthly fee</b>.',
+        'They can begin on <b>Basic</b> at <b>no cost</b>, with two plans a month.',
+        'On the <b>Villavo</b> plan, they only pay <b>10%</b> — at least <b>$2,500 pesos</b> — when a guest comes in.',
+        'Easy deal: <b>if nobody comes, they pay nothing</b>. All bills go via <b>Wompi</b>.'
       ],
-      tip: 'Tip: Haz una mini pausa antes de decir "if nobody comes, they pay zero".',
-      es: 'Es gratis para usuarios y sin mensualidades para negocios. Pueden empezar gratis en Básico (2 planes/mes). En Villavo solo pagan 10% o $2.500 cuando el cliente sí llega. Si nadie llega, pagan $0, y se paga por Wompi.'
+      tip: 'Tip: Haz una mini pausa antes de decir "if nobody comes, they pay nothing".',
+      es: 'Ahora veamos cómo ganamos dinero. La app no cuesta nada para la gente, y los locales no pagan mensualidad. Pueden empezar sin costo en Básico (2 planes al mes). En Villavo solo pagan 10% (mínimo $2.500) cuando el cliente sí llega. Si nadie llega, no pagan nada, y todo se paga por Wompi.'
     },
     {
       titulo: '07 · Meet Parce (AI)',
