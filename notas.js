@@ -136,6 +136,20 @@
       ],
       tip: 'Tip: Si queda tiempo, abre "User Panel" o "Business Panel" para mostrar 1 min en vivo.',
       es: 'Eso es ModoParche: planes seguros, sitios locales y una app viva hoy. Escaneen el código para probarla en cualquier celular ahora. Si gustan, podemos mostrar una demo rápida en vivo. ¡Gracias! ¿Preguntas?'
+    },
+    {
+      titulo: 'Q&A · Jury Questions',
+      tiempo: 'Extra',
+      en: [
+        '<b>1. Operating cost?</b> Today it costs <b>$0/month</b> (Vercel, Supabase, OpenStreetMap, Groq). At scale: ~<b>$50 USD/month</b> (~$250,000 COP).',
+        '<b>2. Wompi fee?</b> About <b>3.15% + $833 COP</b> per bill. Because venues pay <b>one monthly bill</b>, not guest by guest, we keep ~<b>96%</b>.',
+        '<b>3. Break-even?</b> Today, <b>1 active venue</b> is already net positive. With paid servers, just <b>6 active venues</b> (20 guests/month each = $50,000 COP) cover 100% of costs.',
+        '<b>4. Why will venues scan the QR?</b> Guests get <b>coupons and badges</b> when they check in, so guests ask to scan. And venues only pay when people show up.',
+        '<b>5. How do you get the first users?</b> Hyper-local launch in <b>Villavicencio</b>: universities, monthly official plans, and flash promos from local spots.',
+        '<b>6. Data & ID privacy?</b> Explicit consent (<b>Law 1581</b>), private storage, and ID photos are <b>deleted</b> right after admin review — only the badge stays.'
+      ],
+      tip: 'Tip: Usa esta ficha solo si el profe pregunta costos, Wompi, rentabilidad o privacidad.',
+      es: '1. Costo operativo: $0/mes hoy; ~$50 USD/mes (~$250k COP) a escala. 2. Wompi: ~3.15% + $833 COP por factura mensual consolidada (~96% neto). 3. Punto de equilibrio: hoy 1 negocio; con servidores pagos, 6 negocios activos. 4. Escaneo QR: el cliente gana cupones e insignias, así que pide escanear. 5. Primeros usuarios: universidades, parches oficiales y promos en Villavo. 6. Privacidad: Ley 1581 y borrado automático de fotos tras revisión.'
     }
   ];
 
