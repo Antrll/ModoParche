@@ -2399,12 +2399,13 @@
     $('#photo-remove').hidden = editingPhoto || !has;
   }
 
-  /* Insignias: se ganan por cómo parchas */
-  const enCategoria = cat => () => state.parches.some(p => inside(p) && p.categoria === cat);
+  /* Insignias: toda cuenta nueva arranca en 0 y se ganan con parches reales (no de ejemplo) */
+  const cuentaParaInsignia = p => !!p && !p.demo && p.creadoPorMi !== false;
+  const enCategoria = cat => () => state.parches.some(p => cuentaParaInsignia(p) && inside(p) && p.categoria === cat);
   const INSIGNIAS = [
-    { img: 'medalla-el-armador', nombre: 'El armador', como: 'Arma tu primer parche', ok: () => state.parches.some(isMine) },
-    { img: 'medalla-firme-parche', nombre: 'Firme al parche', como: 'Únete a 3 parches', ok: () => state.parches.filter(p => p.unido).length >= 3 },
-    { img: 'medalla-cero-fantasma', nombre: 'Cero fantasma', como: 'Haz check-in al llegar', ok: () => state.parches.some(p => p.checkin) },
+    { img: 'medalla-el-armador', nombre: 'El armador', como: 'Arma tu primer parche', ok: () => state.parches.some(p => cuentaParaInsignia(p) && isMine(p)) },
+    { img: 'medalla-firme-parche', nombre: 'Firme al parche', como: 'Únete a 3 parches', ok: () => state.parches.filter(p => cuentaParaInsignia(p) && p.unido && !isMine(p)).length >= 3 },
+    { img: 'medalla-cero-fantasma', nombre: 'Cero fantasma', como: 'Haz check-in al llegar', ok: () => state.parches.some(p => cuentaParaInsignia(p) && p.checkin) },
     { img: 'medalla-buena-vibra', nombre: 'Buena vibra', como: 'Recibe 3 buenas calificaciones', ok: () => (perfil.resenas || 0) >= 3 && (perfil.rating || 0) >= 4.5 },
     { img: 'medalla-rumbero-oficial', nombre: 'Rumbero oficial', como: 'Cáele a un parche de rumba', ok: enCategoria('rumba') },
     { img: 'medalla-catador-bajon', nombre: 'Catador del bajón', como: 'Cáele a un parche de comida', ok: enCategoria('comida') },
@@ -2416,6 +2417,7 @@
     if (DEMO || !sb || soloLectura) return;
     const { data, error } = await sb.rpc('mis_insignias');
     if (error) return;
+    insigniasGanadas.clear();
     (data || []).forEach(k => insigniasGanadas.add(k));
     if (state.view === 'perfil') renderInsignias();
   }

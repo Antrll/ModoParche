@@ -405,3 +405,50 @@ describe('Pasada visual del 23/11: piezas, barra, login y asistente', () => {
     expect(raiz('mp-asistente.js')).toContain("cab.Authorization = 'Bearer ' + token");
   });
 });
+
+describe('Verificación de cédula (MPVerificacion)', () => {
+  let V;
+  beforeAll(() => {
+    const ctx = vm.createContext({
+      window: {},
+      document: { createElement: () => ({ toDataURL: () => '' }) },
+      URL, String, Number, Math, RegExp, Promise, Map, Uint8Array, Uint8ClampedArray, Uint32Array,
+    });
+    cargar('mp-verificacion.js', ctx);
+    V = ctx.window.MPVerificacion;
+  });
+
+  it('reconoce la cédula en PDF417 (amarilla), frente con puntos, MRZ digital y confusiones OCR', () => {
+    const pdf417 = 'PubDSK_1' + ' '.repeat(40) + '1121000456ROJAS';
+    expect(V.contieneCedula(pdf417, '1121000456')).toBe(true);
+    expect(V.contieneCedula('NUIP 1.121.000.456', '1121000456')).toBe(true);
+    expect(V.contieneCedula('NUMERO 1 121 000 456', '1121000456')).toBe(true);
+    // MRZ de cédula digital con dígito verificador pegado al final
+    expect(V.contieneCedula('I<COL11210004567<<<<<<<<<<<<<<', '1121000456')).toBe(true);
+    // Confusiones típicas de Tesseract (O/0, I/1, S/5, B/8)
+    expect(V.contieneCedula('NUIP 1.121.O00.456', '1121000456')).toBe(true);
+    expect(V.contieneCedula('I.121.000.4S6', '1121000456')).toBe(true);
+    expect(V.contieneCedula('1.121.000.4B6', '1121000486')).toBe(true);
+  });
+
+  it('no da falsos positivos con otra cédula ni con texto normal', () => {
+    expect(V.contieneCedula('REPUBLICA DE COLOMBIA', '1121000456')).toBe(false);
+    expect(V.contieneCedula('NUIP 1.121.999.999', '1121000456')).toBe(false);
+  });
+
+  it('distingue un QR cifrado/URL de cédula digital de un PDF417 con otra cédula', () => {
+    expect(V.pareceOtraCedula('https://ceduladigital.registraduria.gov.co/verificar?t=abc')).toBe(false);
+    expect(V.pareceOtraCedula('eyJhbGciOiJFUzI1NiJ9.QWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU2Nzg5')).toBe(false);
+    expect(V.pareceOtraCedula('PubDSK_1' + ' '.repeat(40) + '1121999888GOMEZ')).toBe(true);
+    expect(V.pareceOtraCedula('1121999888')).toBe(true);
+  });
+});
+
+describe('Insignias al crear cuenta', () => {
+  const raiz = n => fs.readFileSync(new URL(`../../${n}`, import.meta.url), 'utf8');
+  it('las insignias ignoran parches de ejemplo/demo y limpian el set al recargar', () => {
+    const js = raiz('dashboard.js');
+    expect(js).toContain('const cuentaParaInsignia = p => !!p && !p.demo && p.creadoPorMi !== false;');
+    expect(js).toContain('insigniasGanadas.clear();');
+  });
+});

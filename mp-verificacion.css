@@ -166,6 +166,14 @@ html.is-dark .vf {
 .vf-status--error { background: var(--vf-err-soft); }
 .vf-status--error > svg, .vf-status--error b { color: var(--vf-err); }
 .vf-status--info { background: var(--vf-orange-soft); }
+.vf-status-act {
+  margin-top: 8px; padding: 7px 13px; border: 1.5px solid currentColor; border-radius: 999px;
+  background: transparent; color: var(--vf-ink); font: 700 .78rem/1.1 var(--font-body, 'Inter', system-ui, sans-serif);
+  cursor: pointer; transition: background-color .15s ease, transform .14s ease;
+}
+.vf-status-act:hover { background: color-mix(in srgb, var(--vf-ink) 8%, transparent); }
+.vf-status-act:active { transform: scale(.97); }
+.vf-status-act:focus-visible { outline: 3px solid var(--vf-orange); outline-offset: 2px; }
 .vf-spin { display: block; border: 3px solid var(--vf-orange); border-right-color: transparent; border-radius: 50%; animation: vfSpin .7s linear infinite; }
 
 /* ---------- Consentimiento y pie ---------- */

@@ -101,7 +101,7 @@
     if (file.size > 25 * 1024 * 1024) return Promise.reject(new Error('La foto pesa más de 25 MB. Prueba con otra.'));
 
     return abrirImagen(file).then(function (src) {
-      var lectura = lienzo(src, 2000); // para el lector: más resolución, sin compresión
+      var lectura = lienzo(src, 2400); // para el lector: más resolución para PDF417 densos, sin compresión
       var ancho = Math.min(maxAncho, src.width);
 
       // Busca la calidad que deja el archivo entre minKB y maxKB (búsqueda binaria)
@@ -140,27 +140,64 @@
   var soloDigitos = function (s) { return String(s || '').replace(/\D/g, ''); };
   var sinCeros = function (s) { return soloDigitos(s).replace(/^0+/, ''); };
 
-  /* ¿El texto leído trae esta cédula?
-     - Cédula amarilla (PDF417): el número va en las posiciones 48 a 58,
-       relleno con ceros, y a veces pegado al código de la tarjeta.
-     - Cédula digital (QR / zona MRZ): el número aparece suelto o al final
-       de un bloque de dígitos.
-     - OCR del frente: "1.121.000.456" (con puntos o espacios). */
-  function contieneCedula(texto, cedula) {
-    var ced = sinCeros(cedula);
-    if (ced.length < 5) return false;
-    var raw = String(texto || '');
+  /* Normaliza confusiones típicas de OCR solo dentro de bloques numéricos
+     (por ejemplo "1.121.O00.456" o "I.121.000.4S6" -> "1121000456") sin
+     alterar palabras normales como "COLOMBIA". */
+  var MAPA_OCR = { O: '0', o: '0', Q: '0', D: '0', I: '1', i: '1', l: '1', '|': '1', Z: '2', z: '2', S: '5', s: '5', G: '6', B: '8' };
+  function normalizarOcr(raw) {
+    return String(raw || '').replace(/[0-9OoQDIil|ZzSsGB][0-9OoQDIil|ZzSsGB.\s,'’\-]{4,}/g, function (seg) {
+      var digitos = (seg.match(/\d/g) || []).length;
+      if (digitos < 4) return seg;
+      return seg.replace(/[OoQDIil|ZzSsGB]/g, function (ch) { return MAPA_OCR[ch] || ch; });
+    });
+  }
+
+  function buscarCedulaEnTexto(raw, ced) {
     if (sinCeros(raw.substring(48, 58)) === ced) return true;
-    var unido = raw.replace(/(\d)[.\s,'’](?=\d)/g, '$1'); // 1.121.000.456 -> 1121000456
+    var unido = raw.replace(/(\d)[.\s,'’\-](?=\d)/g, '$1'); // 1.121.000.456 -> 1121000456
     var bloques = unido.match(/\d+/g) || [];
     return bloques.some(function (b) {
       var bb = b.replace(/^0+/, '');
       if (bb === ced) return true;
+      if (ced.length >= 6 && bb.indexOf(ced) >= 0) return true; // MRZ con dígito verificador al final o prefijo
       return b.length > ced.length && b.length - ced.length <= 12 && b.slice(-ced.length) === ced;
     });
   }
 
-  // Variantes del canvas: girado y en escala de grises con más contraste
+  /* ¿El texto leído trae esta cédula?
+     - Cédula amarilla (PDF417): el número va en las posiciones 48 a 58,
+       relleno con ceros, y a veces pegado al código de la tarjeta.
+     - Cédula digital (QR / zona MRZ): el número aparece suelto o seguido
+       de un dígito verificador en la zona MRZ.
+     - OCR del frente: "1.121.000.456" (con puntos, espacios o confusiones O/0, I/1). */
+  function contieneCedula(texto, cedula) {
+    var ced = sinCeros(cedula);
+    if (ced.length < 5) return false;
+    var raw = String(texto || '');
+    if (buscarCedulaEnTexto(raw, ced)) return true;
+    var norm = normalizarOcr(raw);
+    return norm !== raw && buscarCedulaEnTexto(norm, ced);
+  }
+
+  /* ¿Un código leído parece realmente otra cédula (y no el QR cifrado/URL de
+     la cédula digital)? Evita mostrar "El número no coincide" por error. */
+  function pareceOtraCedula(texto) {
+    var raw = String(texto || '').trim();
+    if (!raw) return false;
+    if (/^PubDSK/i.test(raw)) return true;
+    var pos = sinCeros(raw.substring(48, 58));
+    if (pos.length >= 6 && pos.length <= 10) return true;
+    if (/^https?:\/\//i.test(raw)) return false;
+    // Si es un payload largo en base64/hex (típico QR firmado), no asumir que es otra cédula
+    if (raw.length > 60 && /^[A-Za-z0-9+/=_\-\s]+$/.test(raw)) return false;
+    var bloques = raw.replace(/(\d)[.\s,'’\-](?=\d)/g, '$1').match(/\d+/g) || [];
+    return bloques.some(function (b) {
+      var bb = b.replace(/^0+/, '');
+      return bb.length >= 7 && bb.length <= 10;
+    });
+  }
+
+  // Variantes del canvas: girado, recortado y con contraste adaptable
   function rotado(c, grados) {
     var r = document.createElement('canvas');
     var gira = grados % 180 !== 0;
@@ -169,6 +206,25 @@
     ctx.translate(r.width / 2, r.height / 2);
     ctx.rotate(grados * Math.PI / 180);
     ctx.drawImage(c, -c.width / 2, -c.height / 2);
+    return r;
+  }
+  function recortarCentro(c, fx, fy) {
+    var r = document.createElement('canvas');
+    var sw = Math.max(1, Math.round(c.width * fx));
+    var sh = Math.max(1, Math.round(c.height * fy));
+    var sx = Math.round((c.width - sw) / 2);
+    var sy = Math.round((c.height - sh) / 2);
+    r.width = sw; r.height = sh;
+    r.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
+    return r;
+  }
+  // Recorta la franja inferior del respaldo (zona MRZ de la cédula digital, sin el QR encima)
+  function recortarFranjaInferior(c, desde) {
+    var r = document.createElement('canvas');
+    var sy = Math.round(c.height * desde);
+    var sh = Math.max(1, c.height - sy);
+    r.width = c.width; r.height = sh;
+    r.getContext('2d').drawImage(c, 0, sy, c.width, sh, 0, 0, c.width, sh);
     return r;
   }
   function grises(c, contraste) {
@@ -181,19 +237,30 @@
     }
     return g;
   }
+  // Auto-niveles (percentiles 5% y 95%): funciona bien con poca luz, reflejos y fondo amarillo
   function paraOCR(c) {
     var o = lienzo(c, 1800), ctx = o.getContext('2d');
     var d = ctx.getImageData(0, 0, o.width, o.height), px = d.data;
-    for (var i = 0; i < px.length; i += 4) {
-      var y = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-      y = Math.max(0, Math.min(255, (y - 128) * 1.8 + 128));
-      px[i] = px[i + 1] = px[i + 2] = y;
+    var hist = new Uint32Array(256), total = o.width * o.height;
+    var lum = new Uint8Array(total);
+    for (var i = 0, j = 0; i < px.length; i += 4, j++) {
+      var y = Math.round(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
+      lum[j] = y; hist[y]++;
+    }
+    var lowCut = total * 0.05, highCut = total * 0.95, acc = 0, lo = 0, hi = 255;
+    for (var b = 0; b < 256; b++) { acc += hist[b]; if (acc >= lowCut) { lo = b; break; } }
+    acc = 0;
+    for (var b2 = 0; b2 < 256; b2++) { acc += hist[b2]; if (acc >= highCut) { hi = b2; break; } }
+    var span = Math.max(30, hi - lo);
+    for (var i2 = 0, j2 = 0; i2 < px.length; i2 += 4, j2++) {
+      var v = Math.max(0, Math.min(255, Math.round(((lum[j2] - lo) * 255) / span)));
+      px[i2] = px[i2 + 1] = px[i2 + 2] = v;
     }
     ctx.putImageData(d, 0, 0);
     return o;
   }
 
-  // a) Lector nativo del navegador
+  // a) Lector nativo del navegador (prueba 0°, 90° y 270° por si la foto salió vertical)
   function leerNativo(c) {
     if (!('BarcodeDetector' in window)) return Promise.resolve(null);
     return Promise.resolve(window.BarcodeDetector.getSupportedFormats ? window.BarcodeDetector.getSupportedFormats() : ['pdf417', 'qr_code'])
@@ -201,12 +268,23 @@
         var quiero = ['pdf417', 'qr_code'].filter(function (f) { return fmts.indexOf(f) >= 0; });
         if (!quiero.length) return null;
         var det = new window.BarcodeDetector({ formats: quiero });
-        return det.detect(c).then(function (r) { return r && r.length ? r.map(function (x) { return x.rawValue; }).join('\n') : null; });
+        var grados = [0, 90, 270];
+        var idx = 0;
+        function probar() {
+          if (idx >= grados.length) return Promise.resolve(null);
+          var g = grados[idx++];
+          var cv = g ? rotado(c, g) : c;
+          return det.detect(cv).then(function (r) {
+            if (r && r.length) return r.map(function (x) { return x.rawValue; }).join('\n');
+            return probar();
+          }).catch(function () { return probar(); });
+        }
+        return probar();
       })
       .catch(function () { return null; });
   }
 
-  // b) ZXing-js: PDF417 y QR, en varias orientaciones
+  // b) ZXing-js: PDF417 y QR, en varias orientaciones y recorte central (sin congelar la UI)
   function leerZXing(c) {
     return cargarScript(LIB_ZXING, function () { return !!(window.ZXing && window.ZXing.MultiFormatReader); }).then(function () {
       var Z = window.ZXing;
@@ -215,21 +293,32 @@
       hints.set(Z.DecodeHintType.TRY_HARDER, true);
       var reader = new Z.MultiFormatReader();
       reader.setHints(hints);
-      var base = lienzo(c, 1600);
-      var variantes = [0, 90, 270, 180];
-      for (var v = 0; v < variantes.length; v++) {
-        var cv = variantes[v] ? rotado(base, variantes[v]) : base;
+      var base = lienzo(c, 2200);
+      var centro = recortarCentro(base, 0.78, 0.72);
+      var tareas = [
+        function () { return base; },
+        function () { return rotado(base, 90); },
+        function () { return rotado(base, 270); },
+        function () { return rotado(base, 180); },
+        function () { return centro; },
+        function () { return rotado(centro, 90); },
+      ];
+      var i = 0;
+      function siguiente() {
+        if (i >= tareas.length) return Promise.resolve(null);
+        var cv = tareas[i++]();
         for (var k = 0; k < 2; k++) {
           try {
             var lum = new Z.RGBLuminanceSource(grises(cv, k === 1), cv.width, cv.height);
             var bin = k === 0 ? new Z.HybridBinarizer(lum) : new Z.GlobalHistogramBinarizer(lum);
             var res = reader.decode(new Z.BinaryBitmap(bin));
-            if (res && res.getText()) return res.getText();
+            if (res && res.getText()) return Promise.resolve(res.getText());
           } catch (e) { /* no se encontró en esta variante */ }
           reader.reset && reader.reset();
         }
+        return new Promise(function (res) { setTimeout(res, 0); }).then(siguiente);
       }
-      return null;
+      return siguiente();
     }).catch(function () { return null; });
   }
 
@@ -259,22 +348,27 @@
           });
         })
         .then(function (w) {
-          return w.setParameters({ tessedit_char_whitelist: '0123456789.<ABCDEFGHIJKLMNOPQRSTUVWXYZ ' }).then(function () { worker = w; return w; });
+          return w.setParameters({ tessedit_char_whitelist: '0123456789.,-<ABCDEFGHIJKLMNOPQRSTUVWXYZ ' }).then(function () { worker = w; return w; });
         })
         // No cargó la librería, el núcleo o el modelo de idioma: es la conexión
         .catch(function (e) { creando = null; throw errorDeRed(e); });
       return creando;
     }
     return {
-      // Lee varios lienzos con el mismo lector; un fallo al leer una foto no es de red
-      leer: function (canvases) {
+      // Prueba lienzos uno a uno y se detiene apenas encuentra la cédula
+      buscar: function (pasos, cedula) {
         return asegurar().then(function (w) {
-          var textos = [], i = 0;
+          var i = 0;
           function siguiente() {
-            if (i >= canvases.length) return Promise.resolve(textos);
-            var c = canvases[i++];
-            if (!c) return siguiente();
-            return w.recognize(paraOCR(c)).then(function (r) { textos.push((r && r.data && r.data.text) || ''); }, function () { textos.push(''); }).then(siguiente);
+            if (i >= pasos.length) return Promise.resolve(false);
+            var p = pasos[i++];
+            if (!p || !p.canvas) return siguiente();
+            if (onEstado && p.aviso) onEstado(p.aviso);
+            return w.recognize(paraOCR(p.canvas))
+              .then(function (r) {
+                var txt = (r && r.data && r.data.text) || '';
+                return contieneCedula(txt, cedula) ? true : siguiente();
+              }, function () { return siguiente(); });
           }
           return siguiente();
         });
@@ -293,23 +387,36 @@
   function leerNumero(trasera, frontal, cedula, onEstado) {
     var estado = onEstado || function () {};
     var lector = null;
-    estado('Buscando el código de barras del respaldo...');
+    estado('Buscando el código de barras o QR del respaldo...');
     return leerNativo(trasera).then(function (t) {
       if (t && contieneCedula(t, cedula)) return { ok: true, metodo: 'codigo' };
       return leerZXing(trasera).then(function (t2) {
         if (t2 && contieneCedula(t2, cedula)) return { ok: true, metodo: 'codigo' };
-        var leido = !!(t || t2);
-        estado('No vimos el código. Probando con lectura de texto (puede tardar unos segundos)...');
+        var leido = pareceOtraCedula(t) || pareceOtraCedula(t2);
+        estado('Leyendo el número en tu cédula (puede tardar unos segundos)...');
         lector = crearLectorOCR(estado);
-        return lector.leer([trasera]).then(function (txts) {
-          if (txts.some(function (x) { return contieneCedula(x, cedula); })) return { ok: true, metodo: 'ocr' };
-          if (!frontal) return { ok: false, metodo: null, leido: leido };
-          estado('Revisando el número en el frente...');
-          // El mismo lector: no se descarga ni se arranca otra vez
-          return lector.leer([frontal]).then(function (t3) {
-            if (t3.some(function (x) { return contieneCedula(x, cedula); })) return { ok: true, metodo: 'ocr' };
-            return { ok: false, metodo: null, leido: leido };
-          });
+        // En la cédula amarilla el número legible está en el frente; en la digital está en el frente
+        // y en las 3 líneas MRZ de la parte inferior del respaldo (el QR viene firmado y no trae el número plano).
+        var pasos = [];
+        if (frontal) {
+          pasos.push({ canvas: frontal, aviso: 'Leyendo el número en el frente...' });
+        }
+        if (trasera) {
+          pasos.push({ canvas: recortarFranjaInferior(trasera, 0.52), aviso: 'Leyendo el código MRZ del respaldo...' });
+          pasos.push({ canvas: trasera, aviso: 'Leyendo el texto del respaldo...' });
+        }
+        if (frontal) {
+          pasos.push({ canvas: rotado(frontal, 90), aviso: 'Probando el frente girado...' });
+          pasos.push({ canvas: rotado(frontal, 270), aviso: 'Probando el frente en otra orientación...' });
+        }
+        if (trasera) {
+          var t90 = rotado(trasera, 90), t270 = rotado(trasera, 270);
+          pasos.push({ canvas: recortarFranjaInferior(t90, 0.52), aviso: 'Probando el respaldo girado...' });
+          pasos.push({ canvas: recortarFranjaInferior(t270, 0.52), aviso: 'Probando el respaldo en otra orientación...' });
+        }
+        return lector.buscar(pasos, cedula).then(function (encontrado) {
+          if (encontrado) return { ok: true, metodo: 'ocr' };
+          return { ok: false, metodo: null, leido: leido };
         }).catch(function (e) {
           if (e && e.message === ERROR_RED) return { ok: false, metodo: null, leido: leido, sinRed: true };
           return { ok: false, metodo: null, leido: leido };
@@ -336,7 +443,7 @@
   var ICON_LOAD = '<span class="vf-spin" aria-hidden="true"></span>';
   var ICON_INFO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>';
 
-  function estado(tipo, titulo, texto) {
+  function estado(tipo, titulo, texto, accion) {
     var box = $('#vf-status');
     if (!box) return;
     if (!tipo) { box.hidden = true; box.innerHTML = ''; return; }
@@ -346,6 +453,14 @@
       + '<div><b></b>' + (texto ? '<small></small>' : '') + '</div>';
     box.querySelector('b').textContent = titulo;
     if (texto) box.querySelector('small').textContent = texto;
+    if (accion && accion.texto && accion.alClick) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'vf-status-act';
+      b.textContent = accion.texto;
+      b.addEventListener('click', accion.alClick);
+      box.querySelector('div').appendChild(b);
+    }
   }
 
   function pintarSlot(lado) {
@@ -388,6 +503,13 @@
     pintarSlot('frontal'); pintarSlot('trasera');
   }
 
+  function activarManual(turno) {
+    if (lectura.para !== turno) return;
+    lectura = { ok: true, metodo: 'ocr', para: turno };
+    estado('info', 'Listo para revisión manual', 'Enviaremos tus dos fotos al equipo para confirmar tu cédula. Marca la autorización y toca "Verificar mi identidad".');
+    pintarSlot('trasera');
+  }
+
   function revisarLectura() {
     if (!fotos.trasera) return Promise.resolve();
     var turno = {};
@@ -399,14 +521,23 @@
     }).then(function (r) {
       if (lectura.para !== turno) return;
       lectura = { ok: r.ok, metodo: r.metodo, para: turno };
+      var opcionManual = fotos.frontal ? { texto: 'Enviar de todas formas a revisión manual', alClick: function () { activarManual(turno); } } : null;
       if (r.ok) {
         estado('ok', 'El número coincide con tu registro', 'Cédula terminada en ' + String(ctx.cedula).slice(-3) + '. Ya puedes verificar.');
       } else if (r.sinRed && !r.leido) {
-        estado('error', 'No se pudo descargar el lector', 'Parece un problema de conexión, no de la foto. Revisa tu internet y vuelve a tomar la foto del respaldo.');
+        estado('error', 'No se pudo descargar el lector automático',
+          fotos.frontal
+            ? 'Parece un problema de conexión. Puedes intentar de nuevo o enviar tus fotos a revisión manual.'
+            : 'Parece un problema de conexión. Sube también el frente para enviarla a revisión manual.',
+          opcionManual);
       } else if (r.leido) {
         estado('error', 'El número no coincide con tu registro', 'Revisa que sea tu cédula. Si la digitaste mal al registrarte, escríbenos a modoparcheoficial@gmail.com.');
       } else {
-        estado('error', 'No pudimos leer el número', 'Repite la foto del respaldo con mejor luz: sin reflejos, sin dedos encima y con el código de barras completo y enfocado.');
+        estado('error', 'No pudimos leer el número automáticamente',
+          fotos.frontal
+            ? 'Si tus dos fotos se ven claras y completas, puedes repetir la del respaldo o enviarlas a revisión manual.'
+            : 'Sube también el frente de tu cédula o repite el respaldo con mejor luz y sin reflejos.',
+          opcionManual);
       }
       pintarSlot('trasera');
     });
@@ -424,7 +555,7 @@
       pintarSlot(lado);
       if (lado === 'trasera' || (lado === 'frontal' && fotos.trasera && !lectura.ok)) return revisarLectura();
       estado(null);
-      if (!fotos.trasera) estado('info', 'Frente listo', 'Ahora toma la foto del respaldo, donde está el código de barras.');
+      if (!fotos.trasera) estado('info', 'Frente listo', 'Ahora toma la foto del respaldo, donde está el código de barras o el QR.');
     }).catch(function (e) {
       slot.classList.remove('is-loading');
       estado('error', 'No pudimos usar esa foto', e.message || 'Prueba con otra.');
@@ -542,5 +673,6 @@
     comprimirImagen: comprimirImagen,
     leerNumero: leerNumero,
     contieneCedula: contieneCedula,
+    pareceOtraCedula: pareceOtraCedula,
   };
 })();
