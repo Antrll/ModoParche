@@ -351,26 +351,27 @@ html, body {
 
 /* Live QR Code card on Cover and Finale */
 .qr-card {
-  display: inline-flex; align-items: center; gap: 14px; width: max-content; max-width: 100%;
-  padding: 10px 18px 10px 10px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 16px; width: max-content; max-width: 100%;
+  padding: 12px 22px 12px 12px; border-radius: 22px;
   background: var(--ink); color: #fff;
-  box-shadow: 0 18px 36px -18px rgba(0, 0, 0, .55);
+  border: 1.5px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 20px 40px -16px rgba(0, 0, 0, .6);
 }
 .qr-svg {
-  width: 78px; height: 78px; flex: none; padding: 5px; border-radius: 12px;
+  width: 112px; height: 112px; flex: none; padding: 7px; border-radius: 14px;
   background: #ffffff; display: grid; place-items: center;
 }
 .qr-svg svg { width: 100%; height: 100%; display: block; }
-.qr-txt { display: grid; gap: 2px; text-align: left; }
-.qr-txt b { font-size: .95rem; font-weight: 800; color: var(--orange); }
-.qr-txt span { font-size: .82rem; font-weight: 600; color: rgba(255, 255, 255, .82); }
+.qr-txt { display: grid; gap: 3px; text-align: left; }
+.qr-txt b { font-size: 1.06rem; font-weight: 800; color: var(--orange); }
+.qr-txt span { font-size: .88rem; font-weight: 600; color: rgba(255, 255, 255, .86); }
 .qr-card--lg {
-  padding: 12px 22px 12px 12px; border: 1.5px solid rgba(255, 90, 31, .45);
+  padding: 14px 24px 14px 14px; border: 1.5px solid rgba(255, 90, 31, .5);
   background: rgba(255, 255, 255, .08);
 }
-.qr-card--lg .qr-svg { width: 112px; height: 112px; padding: 6px; border-radius: 14px; }
-.qr-card--lg .qr-txt b { font-size: 1.08rem; }
-.qr-card--lg .qr-txt span { font-size: .88rem; }
+.qr-card--lg .qr-svg { width: 124px; height: 124px; padding: 7px; border-radius: 15px; }
+.qr-card--lg .qr-txt b { font-size: 1.12rem; }
+.qr-card--lg .qr-txt span { font-size: .9rem; }
 
 /* Bottom navigation */
 .deck-nav {

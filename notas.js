@@ -8,114 +8,135 @@
   var FICHAS = [
     {
       titulo: 'Cover — ModoParche',
-      tiempo: '~20 s',
+      tiempo: '~45 s',
       en: [
-        'Hello everyone! Today we present <b>ModoParche</b>.',
-        'It is a live web app made in <b>Villavicencio</b>.',
-        'It helps people find <b>safe group plans</b>, and helps local venues get <b>real clients</b>.'
+        'Hello everyone! Today we are happy to present <b>ModoParche</b>.',
+        'ModoParche is a real web app built here in <b>Villavicencio</b>.',
+        'It is not just a slide deck — it is <b>live online today</b> at modoparche.vercel.app.',
+        'Our goal is very simple: help people find <b>safe group plans</b>, and help local places get <b>real clients</b>.',
+        'If you want, you can scan the <b>QR code</b> on screen with your phone to see it live.'
       ],
-      tip: 'Tip: Sonríe, haz una pausa corta y señala el código QR en pantalla.',
-      es: '¡Hola a todos! Hoy presentamos ModoParche. Es una app web en vivo hecha en Villavicencio. Ayuda a las personas a encontrar planes seguros en grupo y a los locales a recibir clientes reales.'
+      tip: 'Tip (~45 s): Saluda con calma, sonríe y señala el código QR grande en la pantalla.',
+      es: '¡Hola a todos! Hoy presentamos ModoParche. Es una app web real hecha aquí en Villavicencio. No son solo diapositivas: ya está en vivo hoy en modoparche.vercel.app. Nuestra meta es simple: ayudar a la gente a encontrar planes seguros en grupo y ayudar a los negocios locales a recibir clientes reales. Si quieren, pueden escanear el QR en pantalla.'
     },
     {
       titulo: '01 · The Problem',
-      tiempo: '~25 s',
+      tiempo: '~1 min',
       en: [
-        'We saw <b>two simple problems</b> in our city.',
-        'For people: group chats die, plans get canceled, and going out alone feels <b>unsafe</b>.',
-        'For businesses: they have <b>empty tables</b> on slow days and pay for ads even if nobody arrives.'
+        'Before we built the app, we saw <b>two simple problems</b> in our city.',
+        'First, <b>for people</b>: you want to go out, but WhatsApp groups die and plans get canceled.',
+        'Also, going out alone feels <b>awkward or unsafe</b>, and it is hard to see what is happening <b>today</b>.',
+        'Second, <b>for local businesses</b>: bars, cafes, and restaurants have <b>empty tables</b> on slow nights like Tuesday or Wednesday.',
+        'They pay for social media ads, even when <b>nobody actually walks in</b>.'
       ],
-      tip: 'Tip: Señala primero la tarjeta naranja (personas) y luego la oliva (negocios).',
-      es: 'Vimos dos problemas sencillos en nuestra ciudad. Para las personas: los chats mueren, los planes se cancelan y salir solo se siente inseguro. Para los negocios: tienen mesas vacías en días flojos y pagan publicidad aunque no llegue nadie.'
+      tip: 'Tip (~1 min): Señala primero la tarjeta naranja (personas) y luego la tarjeta oliva (negocios).',
+      es: 'Antes de crear la app vimos dos problemas simples en nuestra ciudad. Primero, para las personas: los grupos de WhatsApp mueren, los planes se cancelan, salir solo se siente incómodo o inseguro y cuesta ver qué hay hoy. Segundo, para los negocios: tienen mesas vacías entre semana y pagan publicidad aunque no entre nadie.'
     },
     {
       titulo: '02 · How It Works',
-      tiempo: '~25 s',
+      tiempo: '~1 min',
       en: [
-        'ModoParche connects both sides in <b>three easy steps</b>.',
-        'First, you open the <b>live map</b> and find a plan.',
-        'Second, you join or create one in <b>30 seconds</b> — with an optional <b>Plan B</b> if it rains.',
-        'Third, you chat with the group, arrive, and <b>scan a QR code</b>.'
+        'ModoParche connects people and local places in <b>three easy steps</b>.',
+        '<b>Step one:</b> open the live map and filter plans by mood, date, distance, or open spots.',
+        '<b>Step two:</b> join a plan with one tap, or create your own in <b>30 seconds</b>.',
+        'You can even add an optional <b>Plan B</b> indoors, just in case it rains.',
+        '<b>Step three:</b> talk in the group chat before you go, meet at the place, and <b>check in with a QR code</b> to unlock coupons.'
       ],
-      tip: 'Tip: Cuenta con los dedos: 1 (map), 2 (30 seconds + Plan B), 3 (chat + QR).',
-      es: 'ModoParche conecta ambos lados en 3 pasos fáciles. Primero abres el mapa en vivo. Segundo te unes o creas un plan en 30 segundos, con Plan B opcional por lluvia. Tercero chateas, llegas y escaneas un QR.'
+      tip: 'Tip (~1 min): Cuenta con los dedos: 1 (map), 2 (join or create + Plan B), 3 (chat + QR).',
+      es: 'ModoParche conecta personas y locales en 3 pasos fáciles. Paso 1: abres el mapa en vivo y filtras planes. Paso 2: te unes o creas tu plan en 30 segundos, incluso con un Plan B opcional bajo techo por si llueve. Paso 3: hablas en el chat antes de llegar, te encuentras con el grupo y haces check-in con QR para ganar cupones.'
     },
     {
       titulo: '03 · User Dashboard Features',
-      tiempo: '~30 s',
+      tiempo: '~1 min',
       en: [
-        'Inside the <b>User Panel</b>, people have great tools to go out.',
-        'They get a live map radar, real-time <b>group chat with polls and photos</b>, and a backup <b>Plan B</b> if it rains.',
-        'They can also check in by QR for coupons, add friends, and log in with <b>email or Google</b> in three themes.'
+        'Now let us show you what users can actually do inside the <b>User Panel</b>.',
+        'They have a <b>live map</b> to see nearby plans and how many spots are left.',
+        'Every plan has a <b>real-time group chat</b> with quick polls and a shared photo album.',
+        'If it starts to rain, the host can turn on their <b>Plan B</b> and alert the group.',
+        'When users arrive, they use <b>QR check-in</b> to get partner coupons, add new friends, and rate the plan.',
+        'And they can sign in easily with <b>email or Google</b>, and pick Light, Mixed, or Dark mode.'
       ],
-      tip: 'Tip: No leas las 6 tarjetas palabra por palabra; menciona 3 o 4 con naturalidad.',
-      es: 'Dentro del Panel de Usuarios tienen radar en el mapa, chat en vivo con encuestas y fotos, Plan B por lluvia, check-in por QR para cupones, amigos y acceso con correo o Google en 3 temas.'
+      tip: 'Tip (~1 min): Habla tranquilo mirando al público; no hace falta leer cada tarjeta en orden exacto.',
+      es: 'Ahora les mostramos qué pueden hacer los usuarios en su panel. Tienen mapa en vivo con cupos, chat en tiempo real con encuestas y álbum de fotos, y Plan B si llueve. Al llegar hacen check-in por QR para cupones, agregan amigos y califican. Además entran fácil con correo o Google y eligen entre 3 temas.'
     },
     {
       titulo: '04 · Business Panel Features',
-      tiempo: '~30 s',
+      tiempo: '~1 min',
       en: [
-        'For local venues, we built a complete <b>Business Panel</b>.',
-        'Staff can use <b>Door Mode</b> to scan QR codes at the entrance in two seconds, or print a <b>fixed venue QR</b>.',
-        'They can also launch <b>flash promos</b> on slow nights, send automatic coupons, and pay bills with <b>Wompi</b>.'
+        'For local venues, we built a dedicated <b>Business Panel</b>.',
+        'At the entrance, staff can open <b>Door Mode</b> — a full-screen QR scanner that checks in guests in <b>two seconds</b>.',
+        'Venues can also print a <b>fixed QR poster</b> for the door so guests check in on their own.',
+        'On slow nights, the owner can launch a <b>Flash Promo</b> right away to bring groups in.',
+        'They also get <b>automatic coupons</b>, Table Mode for groups, guest chat, Excel reports, and easy <b>Wompi</b> payments.'
       ],
-      tip: 'Tip: Enfatiza "Door Mode" (Modo Puerta) y "Flash promos" (Relámpagos).',
-      es: 'Para los locales hicimos un Panel de Negocios completo: Modo Puerta para escanear QR en 2 segundos, QR fijo impreso, promos relámpago en noches flojas, cupones automáticos y pagos con Wompi.'
+      tip: 'Tip (~1 min): Remarca "Door Mode" (escáner en 2 segundos) y "Flash Promo" para noches flojas.',
+      es: 'Para los locales creamos un Panel de Negocios completo. En la puerta abren Modo Puerta para escanear QR en 2 segundos, o imprimen un QR fijo. En noches flojas lanzan una Promo Relámpago para atraer grupos al instante. También tienen cupones automáticos, Modo Mesa, chat con asistentes, reportes Excel y pagos por Wompi.'
     },
     {
       titulo: '05 · Safety & Trust',
-      tiempo: '~30 s',
+      tiempo: '~1:10',
       en: [
-        'Safety is our <b>number one priority</b>.',
-        'We built <b>six real layers</b>: an 18+ age gate, one-time <b>ID verification</b>, and meeting details visible only to signed-in users.',
-        'We also include <b>QR identity</b>, live safe route sharing, host moderation, and a smart chat filter.'
+        'Safety is the <b>most important part</b> of ModoParche.',
+        'We built <b>six real layers</b> of protection inside the app.',
+        'First, an <b>18+ age check</b> before browsing, and one-time <b>ID verification</b> to earn the <em>Parcero Verificado</em> badge.',
+        'Second, <b>account-only details</b>: only signed-in users can see exact meeting points and who is going.',
+        'Third, <b>QR identity and Safe Route</b>: users can share their live GPS location with a trusted friend or family member.',
+        'Finally, <b>host control</b> to remove rude guests, plus a <b>chat filter</b> that blocks bad links.'
       ],
-      tip: 'Tip: Esta diapositiva impresiona mucho al jurado — habla pausado y seguro.',
-      es: 'La seguridad es nuestra prioridad número uno. Creamos 6 capas reales: filtro +18, verificación de cédula, detalles del punto solo para usuarios con cuenta, QR de identidad con ruta segura, control del organizador y filtro en el chat.'
+      tip: 'Tip (~1:10): Esta diapositiva gusta mucho a los profes/jurados. Habla pausado y claro.',
+      es: 'La seguridad es lo más importante en ModoParche. Creamos 6 capas reales: filtro +18, verificación de cédula para la insignia Parcero Verificado, detalles exactos solo para usuarios con cuenta, QR de identidad con Ruta Segura para compartir GPS a gente de confianza, control del anfitrión para sacar personas y filtro en el chat contra enlaces malos.'
     },
     {
       titulo: '06 · Business Model (For Businesses)',
-      tiempo: '~25 s',
+      tiempo: '~1 min',
       en: [
-        'Our business model is built for <b>local businesses</b> with zero monthly fees.',
-        'The app is free for users, and venues only pay a small fee when a <b>verified client actually arrives</b>.',
-        'If nobody arrives, the business pays <b>zero</b> — and monthly bills are paid via <b>Wompi</b>.'
+        'Now let us talk about the <b>Business Model</b> — how ModoParche makes money with businesses.',
+        'First: the app is <b>100% free for users</b>.',
+        'For businesses, there are <b>zero monthly fees</b>.',
+        'Any venue can start on the <b>Basic</b> plan for $0 with two plans per month.',
+        'On the <b>Villavo</b> plan, they only pay <b>10% or $2,500 pesos</b> when a verified guest actually arrives — and <b>8%</b> for multi-branch brands.',
+        'The rule is simple: <b>if nobody arrives, the business pays zero</b>. And monthly bills are paid easily with <b>Wompi</b>.'
       ],
-      tip: 'Tip: Haz una mini pausa antes de decir "the business pays zero".',
-      es: 'Nuestro modelo está pensado para negocios sin mensualidades. Es gratis para usuarios y los locales solo pagan cuando llega un cliente verificado. Si nadie llega, pagan $0, y se paga por Wompi.'
+      tip: 'Tip (~1 min): Haz una pausa corta antes de decir "if nobody arrives, the business pays zero".',
+      es: 'Ahora el modelo de negocio para comercios. La app es 100% gratis para usuarios y para los negocios no hay mensualidades. Pueden empezar en el plan Básico por $0. En el plan Villavo solo pagan 10% o $2.500 por cliente verificado que sí llega (y 8% en Multisede). Regla simple: si nadie llega, pagan $0, y se paga fácil con Wompi.'
     },
     {
       titulo: '07 · Meet Parce (AI Guide)',
-      tiempo: '~25 s',
+      tiempo: '~55 s',
       en: [
-        'We also built <b>Parce</b>, our own AI assistant powered by <b>Groq</b>.',
-        'It lives inside both dashboards to answer questions <b>24/7</b> — helping users and local staff in seconds.',
-        'It is secure by design: it requires login, has <b>rate limits</b>, and blocks sensitive data like card numbers.'
+        'We also added our own AI helper called <b>Parce</b>, powered by <b>Groq</b>.',
+        'Parce lives inside <b>both panels</b> and answers questions <b>24/7</b>.',
+        'For users, it explains how to join plans, verify their ID, or use coupons.',
+        'For business staff, it helps them run <b>Door Mode</b>, launch promos, or check Wompi bills in seconds.',
+        'And it is safe: it requires login, has <b>usage limits</b>, and blocks sensitive info like card numbers.'
       ],
-      tip: 'Tip: Señala la animación de tinta negra moviéndose detrás de Parce.',
-      es: 'También creamos a Parce, nuestro asistente con IA usando Groq. Vive en ambos paneles 24/7 para ayudar a usuarios y personal de negocios en segundos, con inicio de sesión, límites de uso y bloqueo de datos sensibles.'
+      tip: 'Tip (~55 s): Señala a Parce y la tinta negra animada mientras explicas qué hace.',
+      es: 'También creamos a Parce, nuestro asistente con IA usando Groq. Vive en ambos paneles 24/7. A los usuarios les explica planes, verificación y cupones; al personal de negocios les ayuda con Modo Puerta, promos y cobros Wompi. Además es seguro: pide sesión, tiene límites de uso y bloquea datos sensibles como tarjetas.'
     },
     {
       titulo: '08 · Technology & Quality',
-      tiempo: '~25 s',
+      tiempo: '~1 min',
       en: [
-        'For technology, we built a fast <b>Progressive Web App</b> that works smoothly on phones.',
-        'We use <b>Supabase</b> for Postgres and real-time chat, <b>Vercel</b> for serverless APIs, and free <b>OpenStreetMap</b> maps.',
-        'Everything is verified with <b>67 automated tests</b> and zero lint errors.'
+        'Let us briefly share how we built ModoParche.',
+        'It is a fast <b>Progressive Web App</b> that works smoothly on any phone, with no heavy frameworks.',
+        'We use <b>Supabase</b> for our Postgres database, login, and real-time chat, and <b>Vercel</b> for our server APIs.',
+        'For maps, we use <b>OpenStreetMap and Leaflet</b> — which means <b>$0 in map API costs</b>.',
+        'We also built a full <b>Admin Panel</b> to review IDs, and we tested the app with <b>67 automated tests</b>.'
       ],
-      tip: 'Tip: Destaca los números grandes arriba: 18 páginas, 3 paneles, 67 pruebas, $0 en mapas.',
-      es: 'En tecnología hicimos una PWA rápida para celular. Usamos Supabase para Postgres y chat en tiempo real, Vercel para APIs, mapas gratis con OpenStreetMap y 67 pruebas automatizadas.'
+      tip: 'Tip (~1 min): Señala los 4 números grandes arriba: 18 páginas, 3 paneles, 67 pruebas, $0 en mapas.',
+      es: 'Les contamos rápido la tecnología. Es una PWA rápida para celular sin frameworks pesados. Usamos Supabase para base de datos Postgres, login y chat en vivo; Vercel para las APIs; y OpenStreetMap con Leaflet, que nos da mapas por $0. Además hicimos un Panel Admin completo y 67 pruebas automatizadas.'
     },
     {
       titulo: '09 · Thank You & Live Demo',
-      tiempo: '~15 s',
+      tiempo: '~1 min',
       en: [
-        'That is <b>ModoParche</b>: real people, real local venues, and real software <b>live today</b>.',
-        'You can scan the QR code on screen to try it on your phone right now.',
-        '<b>Thank you!</b> Would you like to see a quick live demo or ask any questions?'
+        'To wrap up: <b>ModoParche</b> connects real people, real local venues, and real software <b>working today</b>.',
+        'You can scan the <b>QR code</b> on screen to try it on your own phone right now.',
+        'If you would like, we can open the <b>live app</b> right here and show you a quick demo of the map, chat, or Door Mode.',
+        '<b>Thank you very much!</b> Do you have any questions for us?'
       ],
-      tip: 'Tip: Invita al jurado a escanear el QR o abre el Panel de Usuarios en vivo.',
-      es: 'Eso es ModoParche: personas reales, locales reales y software real funcionando hoy. Pueden escanear el QR en pantalla para probarlo ahora. ¡Gracias! ¿Quieren ver una demo en vivo o tienen preguntas?'
+      tip: 'Tip (~1 min): Si queda tiempo, abre "User Panel" o "Business Panel" abajo para mostrar 1 minuto en vivo.',
+      es: 'Para cerrar: ModoParche conecta personas reales, locales reales y software real funcionando hoy. Pueden escanear el QR para probarlo en su celular. Si quieren abrimos la app en vivo aquí mismo para una demo rápida. ¡Muchas gracias! ¿Tienen alguna pregunta?'
     }
   ];
 
