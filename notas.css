@@ -18,7 +18,7 @@
   --muted: #a6a6b2;
   --orange: #FF5A1F;
   --olive: #9fb8a3;
-  --en-size: 1.32rem;
+  --en-size: 0.98rem;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -36,100 +36,100 @@ body {
 
 /* Top bar */
 .nf-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
   border-bottom: 1px solid var(--line);
   background: rgba(13, 13, 16, .95);
 }
-.nf-brand { display: flex; align-items: center; gap: 8px; }
-.nf-brand h1 { margin: 0; font-family: 'Gagalin', sans-serif; font-weight: 400; font-size: 1.25rem; letter-spacing: .02em; text-transform: uppercase; }
+.nf-brand { display: flex; align-items: center; gap: 7px; }
+.nf-brand h1 { margin: 0; font-family: 'Gagalin', sans-serif; font-weight: 400; font-size: 1.15rem; letter-spacing: .02em; text-transform: uppercase; }
 .nf-count {
-  padding: 3px 9px; border-radius: 999px;
+  padding: 2px 8px; border-radius: 999px;
   background: rgba(255, 90, 31, .18); color: var(--orange);
-  font-size: .78rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  font-size: .74rem; font-weight: 800; font-variant-numeric: tabular-nums;
 }
-.nf-tools { display: flex; gap: 6px; }
+.nf-tools { display: flex; gap: 5px; }
 .nf-tool {
-  min-width: 38px; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px;
-  background: var(--card); color: var(--ink); font: 800 .8rem/1 'Inter', sans-serif; cursor: pointer;
+  min-width: 34px; height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--card); color: var(--ink); font: 800 .76rem/1 'Inter', sans-serif; cursor: pointer;
 }
 .nf-tool.is-on { background: var(--orange); border-color: var(--orange); color: #111; }
 .nf-tool:active { transform: scale(.94); }
 
 /* Slide number strip */
 .nf-strip {
-  display: flex; gap: 6px; padding: 10px 14px;
+  display: flex; gap: 5px; padding: 7px 12px;
   overflow-x: auto; scrollbar-width: none;
   border-bottom: 1px solid var(--line);
 }
 .nf-strip::-webkit-scrollbar { display: none; }
 .nf-num {
-  flex: none; min-width: 38px; height: 36px; padding: 0 10px;
-  border: 1px solid var(--line); border-radius: 12px;
+  flex: none; min-width: 34px; height: 32px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 10px;
   background: var(--card); color: var(--muted);
-  font: 800 .88rem/1 'Inter', sans-serif; cursor: pointer;
+  font: 800 .82rem/1 'Inter', sans-serif; cursor: pointer;
   transition: background-color .16s ease, color .16s ease, transform .2s ease;
 }
-.nf-num.is-on { background: var(--orange); border-color: var(--orange); color: #111; transform: scale(1.06); }
+.nf-num.is-on { background: var(--orange); border-color: var(--orange); color: #111; transform: scale(1.05); }
 
 /* Card stage */
 .nf-main {
-  overflow-y: auto; padding: 16px 14px 20px;
+  overflow-y: auto; padding: 10px 12px 12px;
   display: grid; align-content: start;
 }
 .nf-card {
   width: min(560px, 100%); margin: 0 auto;
-  display: grid; gap: 16px;
-  padding: 20px 18px; border-radius: 24px;
+  display: grid; gap: 11px;
+  padding: 14px 14px; border-radius: 20px;
   background: var(--card); border: 1px solid var(--line);
-  box-shadow: 0 20px 40px -24px #000;
+  box-shadow: 0 16px 32px -20px #000;
 }
-.nf-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nf-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .nf-pill {
-  padding: 5px 12px; border-radius: 999px;
+  padding: 4px 10px; border-radius: 999px;
   background: var(--orange); color: #111;
-  font-size: .76rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  font-size: .7rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
 }
-.nf-time { font-size: .8rem; font-weight: 700; color: var(--muted); }
+.nf-time { font-size: .76rem; font-weight: 700; color: var(--muted); }
 .nf-title {
   margin: 0; font-family: 'Gagalin', sans-serif; font-weight: 400;
-  font-size: 1.7rem; line-height: 1.02; text-transform: uppercase; color: #fff;
+  font-size: 1.32rem; line-height: 1.04; text-transform: uppercase; color: #fff;
 }
 
 /* English script lines */
-.nf-en { display: grid; gap: 13px; }
+.nf-en { display: grid; gap: 8px; }
 .nf-en p {
-  margin: 0; font-size: var(--en-size); line-height: 1.48; font-weight: 600; color: #ffffff;
+  margin: 0; font-size: var(--en-size); line-height: 1.38; font-weight: 600; color: #ffffff;
 }
 .nf-en b { color: var(--orange); font-weight: 800; }
 
 /* Stage tip */
 .nf-tip {
-  padding: 11px 14px; border-radius: 14px;
+  padding: 8px 11px; border-radius: 12px;
   background: rgba(159, 184, 163, .12); border: 1px solid rgba(159, 184, 163, .26);
-  color: var(--olive); font-size: .88rem; font-weight: 700; line-height: 1.4;
+  color: var(--olive); font-size: .78rem; font-weight: 700; line-height: 1.35;
 }
 
 /* Spanish meaning helper */
 .nf-es {
-  padding: 12px 14px; border-radius: 14px;
+  padding: 9px 11px; border-radius: 12px;
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
 }
 .nf-es[hidden] { display: none; }
-.nf-es-k { display: block; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-.nf-es p { margin: 0; font-size: .92rem; line-height: 1.45; color: #d1d1dc; }
+.nf-es-k { display: block; font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.nf-es p { margin: 0; font-size: .82rem; line-height: 1.38; color: #d1d1dc; }
 
 /* Bottom thumb buttons */
 .nf-foot {
-  display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px;
-  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: 1fr 1.35fr; gap: 8px;
+  padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: rgba(13, 13, 16, .96);
 }
 .nf-nav {
-  height: 54px; border: 1px solid var(--line); border-radius: 16px;
+  height: 46px; border: 1px solid var(--line); border-radius: 14px;
   background: var(--card); color: #fff;
-  font: 800 1rem/1 'Inter', sans-serif; cursor: pointer;
+  font: 800 .94rem/1 'Inter', sans-serif; cursor: pointer;
 }
 .nf-nav--next { background: var(--orange); border-color: var(--orange); color: #111; }
 .nf-nav:disabled { opacity: .35; cursor: default; }
