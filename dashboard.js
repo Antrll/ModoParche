@@ -3194,14 +3194,9 @@
   const isRealMsg = r => r.tipo !== 'user' || !!r.autor_id;
   const msgFromRow = r => ({ id: r.id, tipo: r.tipo, texto: r.texto, ts: Date.parse(r.creado_en), autor: r.autor_id ? (r.autor_id === me.id ? 'me' : r.autor_id) : r.autor_demo, replyId: r.responde_a ?? null, encuestaId: r.encuesta_id ?? null });
 
-  // De los parches de ejemplo de la base de datos solo mostramos dos
-  const DEMO_LIMIT = 2;
-  let demoIds = null;
+  // En producción no mostramos parches de ejemplo (demo) de la base de datos
   function keepRows(rows) {
-    const demos = rows.filter(r => r.demo).sort((a, b) => (b.aliado - a.aliado) || (Date.parse(a.inicio) - Date.parse(b.inicio)));
-    const upcoming = demos.filter(r => Date.parse(r.inicio) > Date.now() - 90 * MIN);
-    demoIds = new Set((upcoming.length ? upcoming : demos).slice(0, DEMO_LIMIT).map(r => r.id));
-    return rows.filter(r => !r.demo || demoIds.has(r.id));
+    return rows.filter(r => !r.demo);
   }
 
   // Columnas de parche_miembros: "localidad" existe desde la migración de noviembre
@@ -3283,7 +3278,7 @@
       if (wasOpen) toast('Parche cancelado', 'El organizador canceló este plan.', { icon: 'i-trash' });
       return;
     }
-    if (row.demo && demoIds && !demoIds.has(row.id)) return;
+    if (row.demo) return;
     const miembros = mm.data || [];
     await cachePeople([row.creador_id].concat(miembros.map(m => m.usuario_id)));
     const idx = state.parches.findIndex(p => p.id === id);
