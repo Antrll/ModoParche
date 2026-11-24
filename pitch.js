@@ -11,6 +11,7 @@
   var btnPrev = document.getElementById('btnPrev');
   var btnNext = document.getElementById('btnNext');
   var btnFull = document.getElementById('btnFull');
+  var qrFloat = document.getElementById('qrFloat');
   var total = slides.length;
   var index = 0;
 
@@ -35,6 +36,11 @@
     barEl.style.width = (((index + 1) / total) * 100).toFixed(2) + '%';
     btnPrev.disabled = index === 0;
     btnNext.disabled = index === total - 1;
+    if (qrFloat) {
+      var hasOwnQr = !!slides[index].querySelector('[data-qr]');
+      qrFloat.classList.toggle('is-hidden', hasOwnQr);
+      if (hasOwnQr) qrFloat.classList.remove('is-big');
+    }
     if (history.replaceState) history.replaceState(null, '', '#slide-' + (index + 1));
   }
 
@@ -78,6 +84,7 @@
   btnPrev.addEventListener('click', function () { go(index - 1); });
   btnNext.addEventListener('click', function () { go(index + 1); });
   btnFull.addEventListener('click', toggleFull);
+  if (qrFloat) qrFloat.addEventListener('click', function () { qrFloat.classList.toggle('is-big'); });
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(index + 1); }
@@ -85,6 +92,7 @@
     else if (e.key === 'Home') { e.preventDefault(); go(0); }
     else if (e.key === 'End') { e.preventDefault(); go(total - 1); }
     else if (e.key === 'f' || e.key === 'F') { toggleFull(); }
+    else if ((e.key === 'q' || e.key === 'Q') && qrFloat && !qrFloat.classList.contains('is-hidden')) { qrFloat.classList.toggle('is-big'); }
   });
 
   // Touch swipe navigation for mobile/tablet presenting
